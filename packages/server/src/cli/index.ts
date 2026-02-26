@@ -8,6 +8,8 @@ import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { runStdioMcpServer } from '../mcp/server.js'
 import { loadCommandableConfig, type CommandableConfig } from '../config/loader.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
+import { openCredentialStore } from './credentialManager.js'
+import { loadIntegrationCredentialConfig } from '../integrations/dataLoader.js'
 
 class InMemoryCredentialStore implements CredentialStore {
   private readonly map = new Map<string, Record<string, string>>()
@@ -18,6 +20,18 @@ class InMemoryCredentialStore implements CredentialStore {
 
   async getCredentials(spaceId: string, credentialId: string) {
     return this.map.get(`${spaceId}:${credentialId}`) ?? null
+  }
+}
+
+class CompositeCredentialStore implements CredentialStore {
+  constructor(
+    private readonly primary: CredentialStore,
+    private readonly fallback: CredentialStore,
+  ) {}
+
+  async getCredentials(spaceId: string, credentialId: string) {
+    return await this.primary.getCredentials(spaceId, credentialId)
+      ?? await this.fallback.getCredentials(spaceId, credentialId)
   }
 }
 
@@ -44,6 +58,7 @@ function help(exitCode: number = 0): never {
     picocolors.bold('Notes'),
     `- Your MCP client should run this via: ${picocolors.cyan('npx @commandable/mcp --config /absolute/path/to/commandable.json')}`,
     `- If ${picocolors.dim('./commandable.json')} exists, running ${picocolors.cyan('commandable-mcp')} will start the server using it.`,
+    `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
     '',
   ]
   console.error(lines.join('\n'))
@@ -74,11 +89,21 @@ function getConfigIntegrations(cfg: CommandableConfig, spaceId: string, credStor
       config: i.config,
     }
 
-    if (i.credentials) {
+    const supportsCredentials = !!loadIntegrationCredentialConfig(i.type)
+    if (supportsCredentials) {
       const credentialId = `${referenceId}-creds`
       integ.connectionMethod = 'credentials'
       integ.credentialId = credentialId
-      credStore.set(spaceId, credentialId, i.credentials)
+
+      if (i.credentials) {
+        console.error(
+          picocolors.yellow(
+            `Warning: Found credentials inline in config for '${i.type}'. ` +
+            `It's safer to store credentials in the encrypted local store (run 'commandable-mcp init').`,
+          ),
+        )
+        credStore.set(spaceId, credentialId, i.credentials)
+      }
     }
 
     return integ
@@ -100,11 +125,14 @@ async function runStdioFromConfig() {
       : resolve(baseDir, cfg.integrationDataDir)
   }
 
-  const credStore = new InMemoryCredentialStore()
-  const integrations: IntegrationData[] = getConfigIntegrations(cfg, spaceId, credStore)
+  const memStore = new InMemoryCredentialStore()
+  const integrations: IntegrationData[] = getConfigIntegrations(cfg, spaceId, memStore)
+
+  const { store: sqlStore } = await openCredentialStore()
+  const credentialStore: CredentialStore = new CompositeCredentialStore(memStore, sqlStore)
 
   const proxy = new IntegrationProxy({
-    credentialStore: credStore,
+    credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
   })
 

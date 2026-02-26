@@ -1,6 +1,7 @@
 # Commandable MCP
 
-Connect your everyday apps to any AI assistant that supports the [Model Context Protocol](https://modelcontextprotocol.io). Set up once, and every MCP-compatible client — Claude Desktop, Cursor, Cline, and others — gets access to all your tools through a single server.
+Connect your everyday apps to any AI assistant that supports the [Model Context Protocol](https://modelcontextprotocol.io). Set up once, and every MCP-compatible client — Claude Desktop, Cursor, Cline, and others — gets access to all your tools through a single encrypted, self-hosted server.
+
 
 ## Supported integrations
 
@@ -89,12 +90,13 @@ Nothing to do. Your MCP client reads its config at startup and launches the serv
 
 ---
 
-## Credentials and security
+## Security
 
-- Credentials are stored encrypted at rest in a local SQLite database, not in `commandable.json`.
-- `commandable.json` contains only non-sensitive config (which integrations are active, where the integration data lives).
-- You can also use `env:VARNAME` as a credential value to read from your environment at runtime — useful for CI or shared setups.
-- Nothing leaves your machine. No cloud account, no telemetry.
+Most MCP setups ask you to put API keys directly in a config file — which then lives in your project folder, gets committed to git, and ends up in backups, logs, and teammates' laptops.
+
+Commandable MCP doesn't work that way. When you enter a credential, it's encrypted immediately and stored in your home directory, outside any project. Your `commandable.json` contains zero secrets — it's just a list of which integrations you've connected. Commit it, share it, don't think about it.
+
+Nothing is sent to Commandable, or anyone else. Your keys go from your terminal to your machine's encrypted store, and from there directly to the integration API when you use a tool. That's it.
 
 ---
 

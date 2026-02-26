@@ -15,6 +15,7 @@ import {
 import { listIntegrationCatalog } from '../integrations/catalog.js'
 import { loadIntegrationCredentialConfig } from '../integrations/dataLoader.js'
 import type { CommandableConfig } from '../config/loader.js'
+import { getCommandableDir, saveIntegrationCredentials } from './credentialManager.js'
 
 function parseJsonFile(path: string): any {
   const raw = readFileSync(path, 'utf8')
@@ -186,10 +187,13 @@ export async function runInitInteractive(outPath: string) {
       outro('Cancelled.')
       return
     }
-    integrations.push({
-      type,
-      credentials: Object.keys(credentials).length ? credentials : undefined,
-    })
+    if (Object.keys(credentials).length) {
+      const spaceId = 'local'
+      const credentialId = `${type}-creds`
+      await saveIntegrationCredentials(spaceId, credentialId, credentials)
+    }
+
+    integrations.push({ type })
   }
 
   const cfg: CommandableConfig = {
@@ -201,6 +205,7 @@ export async function runInitInteractive(outPath: string) {
   const writtenAbs = writeConfigFile(outPath, cfg)
 
   log.success(`Config saved to ${picocolors.dim(writtenAbs)}`)
+  log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
 
   note(
     JSON.stringify(makeClaudeDesktopSnippet(writtenAbs), null, 2),
@@ -248,10 +253,13 @@ export async function runAddInteractive(configPath: string) {
       outro('Cancelled.')
       return
     }
-    cfg.integrations.push({
-      type,
-      credentials: Object.keys(credentials).length ? credentials : undefined,
-    })
+    if (Object.keys(credentials).length) {
+      const spaceId = cfg.spaceId || 'local'
+      const credentialId = `${type}-creds`
+      await saveIntegrationCredentials(spaceId, credentialId, credentials)
+    }
+
+    cfg.integrations.push({ type })
     added.push(type)
   }
 

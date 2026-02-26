@@ -1,4 +1,5 @@
 import { resolve } from 'node:path'
+import { homedir } from 'node:os'
 import Database from 'better-sqlite3'
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3'
 import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres'
@@ -39,7 +40,7 @@ export function createDb(opts: CreateDbOptions = {}): DbClient {
 
   const sqlitePath = opts.sqlitePath
     ? resolve(opts.sqlitePath)
-    : resolve(process.cwd(), 'commandable-mcp.sqlite')
+    : resolve(homedir(), '.commandable', 'credentials.sqlite')
 
   const sqlite = new Database(sqlitePath)
   const db = drizzleSqlite(sqlite)
