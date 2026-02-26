@@ -9,19 +9,22 @@ import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 // - GSHEETS_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-sheet')
 // - GSHEETS_TEST_SPREADSHEET_ID (an accessible spreadsheet ID)
 
-describe('google-sheet read handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'GSHEETS_TEST_CONNECTION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('google-sheet read handlers (live)', () => {
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
   let sheetTitle: string | undefined
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSHEETS_TEST_CONNECTION_ID } = env
-
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GSHEETS_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Google Sheets tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

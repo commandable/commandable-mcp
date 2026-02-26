@@ -16,8 +16,19 @@ interface Ctx {
   issue_number?: number
 }
 
-describe('github write handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'GITHUB_TEST_CONNECTION_ID',
+  'GITHUB_TEST_OWNER',
+  'GITHUB_TEST_REPO',
+)
+  ? describe
+  : describe.skip
+
+suite('github write handlers (live)', () => {
   const ctx: Ctx = {}
   let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
@@ -30,12 +41,6 @@ describe('github write handlers (live)', () => {
       GITHUB_TEST_OWNER,
       GITHUB_TEST_REPO,
     } = env
-
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GITHUB_TEST_CONNECTION_ID || !GITHUB_TEST_OWNER || !GITHUB_TEST_REPO) {
-      console.warn('Skipping live GitHub write tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

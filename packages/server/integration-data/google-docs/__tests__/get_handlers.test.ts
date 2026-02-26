@@ -9,18 +9,21 @@ import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 // - GDOCS_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-docs')
 // - GDOCS_TEST_DOCUMENT_ID (an accessible document ID)
 
-describe('google-docs read handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'GDOCS_TEST_CONNECTION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('google-docs read handlers (live)', () => {
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GDOCS_TEST_CONNECTION_ID } = env
-
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GDOCS_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Google Docs tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

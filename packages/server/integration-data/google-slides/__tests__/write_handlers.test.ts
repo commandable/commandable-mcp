@@ -11,19 +11,23 @@ import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 
 interface Ctx { presentationId?: string }
 
-describe('google-slides write handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'GSLIDES_TEST_CONNECTION_ID',
+  'GSLIDES_TEST_PRESENTATION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('google-slides write handlers (live)', () => {
   const ctx: Ctx = {}
   let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSLIDES_TEST_CONNECTION_ID, GSLIDES_TEST_PRESENTATION_ID } = env
-
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GSLIDES_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Google Slides write tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

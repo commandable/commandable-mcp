@@ -9,18 +9,21 @@ import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 // - GSLIDES_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-slides')
 // - GSLIDES_TEST_PRESENTATION_ID (an accessible presentation ID)
 
-describe('google-slides read handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'GSLIDES_TEST_CONNECTION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('google-slides read handlers (live)', () => {
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSLIDES_TEST_CONNECTION_ID } = env
-
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GSLIDES_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Google Slides tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

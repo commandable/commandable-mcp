@@ -14,19 +14,22 @@ interface Ctx {
   recordId?: string
 }
 
-describe('airtable read handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'AIRTABLE_TEST_CONNECTION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('airtable read handlers (live)', () => {
   const ctx: Ctx = {}
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, AIRTABLE_TEST_CONNECTION_ID } = env
-
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !AIRTABLE_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Airtable tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

@@ -8,19 +8,23 @@ interface Ctx {
   createdDatabaseId?: string
 }
 
-describe('notion write handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'NOTION_TEST_CONNECTION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('notion write handlers (live)', () => {
   const ctx: Ctx = {}
   let buildWrite: (name: string) => ((input: any) => Promise<any>)
   let buildRead: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, NOTION_TEST_CONNECTION_ID } = env
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !NOTION_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Notion write tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     const proxy = new IntegrationProxy({
       managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,

@@ -16,8 +16,17 @@ interface Ctx {
   aclRuleId?: string
 }
 
-describe('google-calendar write & admin handlers (live)', () => {
-  const env = process.env as Record<string, string>
+const env = process.env as Record<string, string>
+const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
+const suite = hasEnv(
+  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
+  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
+  'GCAL_TEST_CONNECTION_ID',
+)
+  ? describe
+  : describe.skip
+
+suite('google-calendar write & admin handlers (live)', () => {
   const ctx: Ctx = { calendarId: 'primary' }
   let buildWrite: (name: string) => ((input: any) => Promise<any>)
   let buildRead: (name: string) => ((input: any) => Promise<any>)
@@ -25,11 +34,6 @@ describe('google-calendar write & admin handlers (live)', () => {
 
   beforeAll(async () => {
     const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GCAL_TEST_CONNECTION_ID, GCAL_TEST_CALENDAR_ID } = env
-    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GCAL_TEST_CONNECTION_ID) {
-      console.warn('Skipping live Google Calendar write/admin tests: missing required env vars')
-      expect(false).toBe(true)
-      return
-    }
 
     ctx.calendarId = GCAL_TEST_CALENDAR_ID || 'primary'
 
