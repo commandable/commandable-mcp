@@ -28,6 +28,17 @@ None of these are great. Commandable MCP exists so that developers and teams can
 
 **Power users** who are already deep in the MCP ecosystem and want a single, well-maintained server that covers the 8-10 integrations they use daily, rather than running a separate MCP server for each one.
 
+## Using Commandable as a web API (agent frameworks)
+
+Some users won’t connect via a desktop MCP client at all. They’ll want to point an agent framework at Commandable (as a URL) and dynamically discover + invoke tools.
+
+- **The “automatic connect” path**: expose Commandable over **MCP Streamable HTTP**. MCP already standardizes discovery (`tools/list`) and invocation (`tools/call`) once a client can speak MCP over HTTP.
+- **What to provide for framework users**:
+  - A stable **HTTP endpoint** (and auth story) for MCP Streamable HTTP
+  - A short **integration guide** showing how to connect common frameworks (or a tiny adapter library)
+  - Optionally, a **compatibility layer** (e.g. “OpenAI tool schema + invoke endpoint”) for frameworks that don’t speak MCP yet
+- **Design principle**: keep MCP as the canonical tool contract (names, descriptions, JSON Schemas). Translate at the edge when needed rather than inventing a parallel tool spec.
+
 ## What should the experience feel like?
 
 ### First run
