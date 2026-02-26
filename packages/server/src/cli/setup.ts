@@ -95,24 +95,22 @@ async function promptCredentialsForIntegration(type: string): Promise<Record<str
     log.info(picocolors.dim(`No setup hint found for ${type}.`))
   }
 
-  log.info(picocolors.dim('Tip: you can enter env:VARNAME to read from your environment at runtime.'))
-
   const creds: Record<string, string> = {}
   for (const key of keys) {
     const isReq = required.includes(key)
     const def = props[key] || {}
     const title = isTruthyString(def?.title) ? def.title : key
-    const description = isTruthyString(def?.description) ? def.description : null
+    const description = (hint == null && isTruthyString(def?.description)) ? def.description : null
 
     const label = `${title}${isReq ? ' (required)' : ' (optional)'}`
-
-    if (description)
-      log.info(picocolors.dim(description))
+    const message = description
+      ? `${label} ${picocolors.dim(`— ${description}`)}`
+      : label
 
     while (true) {
       const result = isProbablySecretKeyName(key)
-        ? await password({ message: label })
-        : await text({ message: label })
+        ? await password({ message })
+        : await text({ message })
 
       if (isCancel(result))
         return null
