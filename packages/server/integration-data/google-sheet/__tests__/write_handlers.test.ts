@@ -1,13 +1,12 @@
-import { $fetch } from 'ofetch'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/services/integrationProxy'
-import { loadIntegrationTools } from '../../../../server/utils/integrationDataLoader'
+import { IntegrationProxy } from '../../../src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 
-// LIVE Google Sheets write tests using Nango
+// LIVE Google Sheets write tests using managed OAuth
 // Required env vars:
-// - NUXT_PUBLIC_NANGO_API_BASE_URL
-// - NUXT_NANGO_SECRET_KEY
-// - GSHEETS_TEST_CONNECTION_ID (Nango connection for provider 'google-sheet')
+// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
+// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
+// - GSHEETS_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-sheet')
 // - GSHEETS_TEST_SPREADSHEET_ID (target spreadsheet ID with write access)
 
 interface Ctx {
@@ -21,18 +20,18 @@ describe('google-sheet write handlers (live)', () => {
   let sheetTitle: string | undefined
 
   beforeAll(async () => {
-    const { NUXT_PUBLIC_NANGO_API_BASE_URL, NUXT_NANGO_SECRET_KEY, GSHEETS_TEST_CONNECTION_ID, GSHEETS_TEST_SPREADSHEET_ID } = env
+    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSHEETS_TEST_CONNECTION_ID, GSHEETS_TEST_SPREADSHEET_ID } = env
 
-    if (!NUXT_PUBLIC_NANGO_API_BASE_URL || !NUXT_NANGO_SECRET_KEY || !GSHEETS_TEST_CONNECTION_ID) {
+    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !GSHEETS_TEST_CONNECTION_ID) {
       console.warn('Skipping live Google Sheets write tests: missing required env vars')
       expect(false).toBe(true)
       return
     }
 
-    ;(global as any).$fetch = $fetch
-    ;(global as any).useRuntimeConfig = () => ({ public: { nangoApiBaseUrl: NUXT_PUBLIC_NANGO_API_BASE_URL } })
-
-    const proxy = new IntegrationProxy(NUXT_NANGO_SECRET_KEY)
+    const proxy = new IntegrationProxy({
+      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
+      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
+    })
     const integrationNode = { id: 'node-gsheets', type: 'google-sheet', label: 'Google Sheets', connectionId: GSHEETS_TEST_CONNECTION_ID } as any
 
     const tools = loadIntegrationTools('google-sheet')
@@ -50,7 +49,10 @@ describe('google-sheet write handlers (live)', () => {
 
     // Try to detect a default sheet title
     if (ctx.spreadsheetId) {
-      const proxy2 = new IntegrationProxy(NUXT_NANGO_SECRET_KEY)
+      const proxy2 = new IntegrationProxy({
+        managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
+        managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
+      })
       const node2 = { id: 'node-gsheets', type: 'google-sheet', label: 'Google Sheets', connectionId: GSHEETS_TEST_CONNECTION_ID } as any
       const tools2 = loadIntegrationTools('google-sheet')!
       const tool = tools2.read.find(t => t.name === 'get_spreadsheet')!

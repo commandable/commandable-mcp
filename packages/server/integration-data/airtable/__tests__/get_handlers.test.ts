@@ -1,13 +1,12 @@
-import { $fetch } from 'ofetch'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/services/integrationProxy'
-import { loadIntegrationTools } from '../../../../server/utils/integrationDataLoader'
+import { IntegrationProxy } from '../../../src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 
-// LIVE Airtable integration tests using Nango
+// LIVE Airtable integration tests using managed OAuth
 // Required env vars:
-// - NUXT_PUBLIC_NANGO_API_BASE_URL
-// - NUXT_NANGO_SECRET_KEY
-// - AIRTABLE_TEST_CONNECTION_ID (Nango connection for provider 'airtable')
+// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
+// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
+// - AIRTABLE_TEST_CONNECTION_ID (managed OAuth connection for provider 'airtable')
 
 interface Ctx {
   baseId?: string
@@ -21,18 +20,18 @@ describe('airtable read handlers (live)', () => {
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { NUXT_PUBLIC_NANGO_API_BASE_URL, NUXT_NANGO_SECRET_KEY, AIRTABLE_TEST_CONNECTION_ID } = env
+    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, AIRTABLE_TEST_CONNECTION_ID } = env
 
-    if (!NUXT_PUBLIC_NANGO_API_BASE_URL || !NUXT_NANGO_SECRET_KEY || !AIRTABLE_TEST_CONNECTION_ID) {
+    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !AIRTABLE_TEST_CONNECTION_ID) {
       console.warn('Skipping live Airtable tests: missing required env vars')
       expect(false).toBe(true)
       return
     }
 
-    ;(global as any).$fetch = $fetch
-    ;(global as any).useRuntimeConfig = () => ({ public: { nangoApiBaseUrl: NUXT_PUBLIC_NANGO_API_BASE_URL } })
-
-    const proxy = new IntegrationProxy(NUXT_NANGO_SECRET_KEY)
+    const proxy = new IntegrationProxy({
+      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
+      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
+    })
     const integrationNode = { id: 'node-airtable', type: 'airtable', label: 'Airtable', connectionId: AIRTABLE_TEST_CONNECTION_ID } as any
 
     const tools = loadIntegrationTools('airtable')

@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { loadIntegrationManifest } from '../../../../server/utils/integrationDataLoader'
+import { loadIntegrationManifest } from '../../../src/integrations/dataLoader.js'
 
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -12,7 +13,7 @@ describe('airtable static usage parity', () => {
     const manifest = loadIntegrationManifest('airtable')!
     const toolNames = (manifest.tools as any[]).map(t => t.name)
 
-    const testsDir = resolve(process.cwd(), 'lib', 'integration-data', 'airtable', '__tests__')
+    const testsDir = fileURLToPath(new URL('.', import.meta.url))
     expect(existsSync(testsDir)).toBe(true)
     const testFiles = readdirSync(testsDir)
       .filter(f => /\.test\.(t|j)s$/.test(f) && !f.includes('usage_parity.test'))

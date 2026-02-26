@@ -1,7 +1,6 @@
-import { $fetch } from 'ofetch'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/services/integrationProxy'
-import { loadIntegrationTools } from '../../../../server/utils/integrationDataLoader'
+import { IntegrationProxy } from '../../../src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 
 interface Ctx {
   createdPageId?: string
@@ -16,17 +15,17 @@ describe('notion write handlers (live)', () => {
   let buildRead: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { NUXT_PUBLIC_NANGO_API_BASE_URL, NUXT_NANGO_SECRET_KEY, NOTION_TEST_CONNECTION_ID } = env
-    if (!NUXT_PUBLIC_NANGO_API_BASE_URL || !NUXT_NANGO_SECRET_KEY || !NOTION_TEST_CONNECTION_ID) {
+    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, NOTION_TEST_CONNECTION_ID } = env
+    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !NOTION_TEST_CONNECTION_ID) {
       console.warn('Skipping live Notion write tests: missing required env vars')
       expect(false).toBe(true)
       return
     }
 
-    ;(global as any).$fetch = $fetch
-    ;(global as any).useRuntimeConfig = () => ({ public: { nangoApiBaseUrl: NUXT_PUBLIC_NANGO_API_BASE_URL } })
-
-    const proxy = new IntegrationProxy(NUXT_NANGO_SECRET_KEY)
+    const proxy = new IntegrationProxy({
+      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
+      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
+    })
     const integrationNode = { id: 'node-notion', type: 'notion', label: 'Notion', connectionId: NOTION_TEST_CONNECTION_ID } as any
 
     const tools = loadIntegrationTools('notion')

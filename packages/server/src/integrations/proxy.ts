@@ -9,9 +9,9 @@ export interface CredentialStore {
 }
 
 export interface IntegrationProxyOptions {
-  // Optional: managed OAuth support (future). For v1 BYO creds, you can omit these.
-  nangoSecretKey?: string
-  nangoApiBaseUrl?: string
+  // Optional: managed OAuth support. For self-hosted BYO creds, you can omit these.
+  managedOAuthSecretKey?: string
+  managedOAuthBaseUrl?: string
 
   trelloApiKey?: string
   credentialStore?: CredentialStore
@@ -236,30 +236,30 @@ export class IntegrationProxy {
       return response
     }
 
-    // Managed OAuth (Nango) branch: not required for v1 self-hosted, but kept for later.
+    // Managed OAuth branch: used by hosted deployments / CI.
     if (!connectionId)
       throw new HttpError(400, 'connectionId is required for non-http providers.')
-    if (!this.opts.nangoApiBaseUrl || !this.opts.nangoSecretKey)
+    if (!this.opts.managedOAuthBaseUrl || !this.opts.managedOAuthSecretKey)
       throw new HttpError(501, 'Managed OAuth is not configured for this server.')
 
-    let nangoConnection: any
+    let managedConnection: any
     try {
-      const nangoUrl = `${this.opts.nangoApiBaseUrl}/connection/${encodeURIComponent(connectionId)}?provider_config_key=${encodeURIComponent(provider)}`
-      const resp = await fetch(nangoUrl, {
-        headers: { Authorization: `Bearer ${this.opts.nangoSecretKey}` },
+      const managedUrl = `${this.opts.managedOAuthBaseUrl}/connection/${encodeURIComponent(connectionId)}?provider_config_key=${encodeURIComponent(provider)}`
+      const resp = await fetch(managedUrl, {
+        headers: { Authorization: `Bearer ${this.opts.managedOAuthSecretKey}` },
       })
       if (!resp.ok)
-        throw new Error(`Nango connection lookup failed (${resp.status})`)
-      nangoConnection = await resp.json()
+        throw new Error(`Managed OAuth connection lookup failed (${resp.status})`)
+      managedConnection = await resp.json()
     }
     catch (error) {
-      console.error('Failed to fetch connection details from Nango:', error)
-      throw new HttpError(502, 'Failed to retrieve connection details from Nango.')
+      console.error('Failed to fetch connection details from managed OAuth gateway:', error)
+      throw new HttpError(502, 'Failed to retrieve connection details from managed OAuth gateway.')
     }
 
     const providerId = provider
     const providerCfg = PROVIDERS[providerId]
-    const creds = nangoConnection.credentials || {}
+    const creds = managedConnection.credentials || {}
     const userAccessToken = creds.access_token || creds.oauth_token || creds.token
 
     if (!providerCfg)

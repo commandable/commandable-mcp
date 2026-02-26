@@ -1,14 +1,13 @@
-import { $fetch } from 'ofetch'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/services/integrationProxy'
-import { loadIntegrationTools } from '../../../../server/utils/integrationDataLoader'
+import { IntegrationProxy } from '../../../src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
 
-// This is a LIVE integration test suite that hits Trello using a Nango connection.
+// This is a LIVE integration test suite that hits Trello using managed OAuth.
 // Required env vars:
-// - NUXT_PUBLIC_NANGO_API_BASE_URL (e.g. https://nango.commandable.ai)
-// - NUXT_NANGO_SECRET_KEY
-// - NUXT_TRELLO_API_KEY
-// - TRELLO_TEST_CONNECTION_ID (an existing Nango connectionId for provider 'trello')
+// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
+// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
+// - TRELLO_API_KEY
+// - TRELLO_TEST_CONNECTION_ID (an existing managed OAuth connectionId for provider 'trello')
 
 interface Ids {
   boardId?: string
@@ -24,19 +23,20 @@ describe('trello read handlers (live)', () => {
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { NUXT_PUBLIC_NANGO_API_BASE_URL, NUXT_NANGO_SECRET_KEY, NUXT_TRELLO_API_KEY, TRELLO_TEST_CONNECTION_ID } = env
+    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, TRELLO_API_KEY, TRELLO_TEST_CONNECTION_ID } = env
 
-    if (!NUXT_PUBLIC_NANGO_API_BASE_URL || !NUXT_NANGO_SECRET_KEY || !NUXT_TRELLO_API_KEY || !TRELLO_TEST_CONNECTION_ID) {
+    if (!COMMANDABLE_MANAGED_OAUTH_BASE_URL || !COMMANDABLE_MANAGED_OAUTH_SECRET_KEY || !TRELLO_API_KEY || !TRELLO_TEST_CONNECTION_ID) {
       // Skip entire suite by throwing a skip-like error via expect
       console.warn('Skipping live Trello tests: missing required env vars')
       expect(false).toBe(true)
       return
     }
 
-    ;(global as any).$fetch = $fetch
-    ;(global as any).useRuntimeConfig = () => ({ public: { nangoApiBaseUrl: NUXT_PUBLIC_NANGO_API_BASE_URL } })
-
-    const proxy = new IntegrationProxy(NUXT_NANGO_SECRET_KEY, NUXT_TRELLO_API_KEY)
+    const proxy = new IntegrationProxy({
+      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
+      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
+      trelloApiKey: TRELLO_API_KEY,
+    })
     const integrationNode = { id: 'node-trello', type: 'trello', label: 'Trello', connectionId: TRELLO_TEST_CONNECTION_ID } as any
 
     const tools = loadIntegrationTools('trello')
