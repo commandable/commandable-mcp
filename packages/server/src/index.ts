@@ -23,6 +23,5 @@ export * from './mcp/toolAdapter.js'
 export * from './mcp/server.js'
 
 export * from './cli/index.js'
-
-export * from './config/loader.js'
+export * from './cli/credentialManager.js'
 

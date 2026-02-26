@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
-import { createDb } from '../db/client.js'
+import { createDb, type DbClient } from '../db/client.js'
 import { ensureSchema } from '../db/migrate.js'
 import { SqlCredentialStore } from '../db/credentialStore.js'
 
@@ -25,7 +25,7 @@ export function getCommandableDir(): string {
 }
 
 export function getOrCreateEncryptionSecret(): string {
-  const envSecret = process.env.COMMANDABLE_ENCRYPTION_SECRET
+  const envSecret = process.env.COMMANDABLE_ENCRYPTION_SECRET || process.env.COMMANDABLE_MCP_ENCRYPTION_SECRET
   if (envSecret && envSecret.trim().length)
     return envSecret.trim()
 
@@ -44,15 +44,13 @@ export function getOrCreateEncryptionSecret(): string {
   return secret
 }
 
-export async function openCredentialStore(): Promise<{ store: SqlCredentialStore, close: () => Promise<void> }> {
+export async function openLocalDb(): Promise<{ db: DbClient, close: () => Promise<void> }> {
   const dir = getCommandableDir()
   const sqlitePath = resolve(dir, 'credentials.sqlite')
   const client = createDb({ sqlitePath })
   await ensureSchema(client)
-  const secret = getOrCreateEncryptionSecret()
-  const store = new SqlCredentialStore(client, secret)
   return {
-    store,
+    db: client,
     close: async () => {
       if (client.dialect === 'sqlite')
         client.close()
@@ -60,6 +58,18 @@ export async function openCredentialStore(): Promise<{ store: SqlCredentialStore
         await client.close()
     },
   }
+}
+
+export async function openLocalState(): Promise<{ db: DbClient, credentialStore: SqlCredentialStore, close: () => Promise<void> }> {
+  const { db, close } = await openLocalDb()
+  const secret = getOrCreateEncryptionSecret()
+  const credentialStore = new SqlCredentialStore(db, secret)
+  return { db, credentialStore, close }
+}
+
+export async function openCredentialStore(): Promise<{ store: SqlCredentialStore, close: () => Promise<void> }> {
+  const { credentialStore, close } = await openLocalState()
+  return { store: credentialStore, close }
 }
 
 export async function saveIntegrationCredentials(spaceId: string, credentialId: string, creds: Record<string, string>): Promise<void> {

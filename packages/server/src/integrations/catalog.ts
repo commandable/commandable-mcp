@@ -1,5 +1,6 @@
 import { readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { distance as levenshtein } from 'fastest-levenshtein'
 import { loadIntegrationManifest } from './dataLoader.js'
 
@@ -9,9 +10,10 @@ export interface IntegrationCatalogItem {
 }
 
 function integrationsRoot(): string {
-  return process.env.COMMANDABLE_INTEGRATION_DATA_DIR
-    ? resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
-    : resolve(process.cwd(), 'integration-data')
+  if (process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
+    return resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
+
+  return resolve(fileURLToPath(new URL('../../integration-data/', import.meta.url)))
 }
 
 export function listIntegrationCatalog(): IntegrationCatalogItem[] {

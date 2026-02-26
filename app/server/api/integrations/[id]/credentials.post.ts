@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { SqlCredentialStore, upsertIntegration, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import { SqlCredentialStore, getOrCreateEncryptionSecret, upsertIntegration, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
 import type { IntegrationData } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
@@ -9,9 +9,7 @@ export default defineEventHandler(async (event) => {
   if (!id)
     throw createError({ statusCode: 400, statusMessage: 'id is required' })
 
-  const encryptionSecret = process.env.COMMANDABLE_MCP_ENCRYPTION_SECRET
-  if (!encryptionSecret)
-    throw createError({ statusCode: 500, statusMessage: 'COMMANDABLE_MCP_ENCRYPTION_SECRET is not set' })
+  const encryptionSecret = getOrCreateEncryptionSecret()
 
   const body = await readBody(event)
   if (!body || typeof body !== 'object')

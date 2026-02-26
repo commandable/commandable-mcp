@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import picocolors from 'picocolors'
 import {
-  confirm,
   intro,
   isCancel,
   log,
@@ -14,13 +14,9 @@ import {
 } from '@clack/prompts'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
 import { loadIntegrationCredentialConfig } from '../integrations/dataLoader.js'
-import type { CommandableConfig } from '../config/loader.js'
-import { getCommandableDir, saveIntegrationCredentials } from './credentialManager.js'
-
-function parseJsonFile(path: string): any {
-  const raw = readFileSync(path, 'utf8')
-  return JSON.parse(raw)
-}
+import { getCommandableDir, openLocalState } from './credentialManager.js'
+import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
+import type { IntegrationData } from '../types.js'
 
 function isTruthyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0
@@ -38,7 +34,9 @@ function formatIntegrationOption(type: string, name?: string): string {
 }
 
 function getIntegrationHintMarkdown(type: string): string | null {
-  const root = process.env.COMMANDABLE_INTEGRATION_DATA_DIR || resolve(process.cwd(), 'integration-data')
+  const root = process.env.COMMANDABLE_INTEGRATION_DATA_DIR
+    ? resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
+    : resolve(fileURLToPath(new URL('../../integration-data/', import.meta.url)))
   const hintPath = resolve(root, type, 'credentials_hint.md')
   if (!existsSync(hintPath))
     return null
@@ -55,11 +53,12 @@ async function selectIntegrations(args: { title: string, excludeTypes?: Set<stri
   const catalog = listIntegrationCatalog()
   const options = catalog
     .filter(it => !args.excludeTypes?.has(it.type))
+    .filter(it => !!loadIntegrationCredentialConfig(it.type))
     .map(it => ({ value: it.type, label: formatIntegrationOption(it.type, it.name) }))
     .sort((a, b) => a.value.localeCompare(b.value))
 
   if (!options.length) {
-    log.info('No integrations available to select.')
+    log.info('No locally-configurable integrations available yet.')
     return []
   }
 
@@ -134,42 +133,31 @@ async function promptCredentialsForIntegration(type: string): Promise<Record<str
   return creds
 }
 
-function writeConfigFile(path: string, cfg: CommandableConfig) {
-  const absOut = resolve(process.cwd(), path)
-  mkdirSync(dirname(absOut), { recursive: true })
-  writeFileSync(absOut, `${JSON.stringify(cfg, null, 2)}\n`)
-  return absOut
-}
-
-function makeClaudeDesktopSnippet(absConfigPath: string) {
+function makeClaudeDesktopSnippet() {
   return {
     mcpServers: {
       commandable: {
         command: 'npx',
-        args: ['@commandable/mcp', '--config', absConfigPath],
+        args: ['@commandable/mcp'],
       },
     },
   }
 }
 
-export async function runInitInteractive(outPath: string) {
-  intro('Commandable MCP')
-
-  const absOut = resolve(process.cwd(), outPath)
-  if (existsSync(absOut)) {
-    const overwrite = await confirm({
-      message: `Config already exists at ${picocolors.dim(absOut)}. Overwrite?`,
-      initialValue: false,
-    })
-    if (isCancel(overwrite)) {
-      outro('Cancelled.')
-      return
-    }
-    if (!overwrite) {
-      outro(`No changes made. Tip: run ${picocolors.cyan('commandable-mcp add --config')} to add integrations.`)
-      return
-    }
+function makeIntegrationRecord(type: string): IntegrationData {
+  return {
+    spaceId: 'local',
+    id: type,
+    type,
+    referenceId: type,
+    label: type,
+    connectionMethod: 'credentials',
+    credentialId: `${type}-creds`,
   }
+}
+
+export async function runInitInteractive() {
+  intro('Commandable MCP')
 
   const types = await selectIntegrations({
     title: 'Which integrations do you want to connect?',
@@ -179,96 +167,74 @@ export async function runInitInteractive(outPath: string) {
     return
   }
 
-  const integrations: CommandableConfig['integrations'] = []
-  for (const type of types) {
-    log.info(`Configuring ${picocolors.cyan(type)}`)
-    const credentials = await promptCredentialsForIntegration(type)
-    if (credentials === null) {
-      outro('Cancelled.')
-      return
+  const { db, credentialStore, close } = await openLocalState()
+  try {
+    for (const type of types) {
+      log.info(`Configuring ${picocolors.cyan(type)}`)
+      const credentials = await promptCredentialsForIntegration(type)
+      if (credentials === null) {
+        outro('Cancelled.')
+        return
+      }
+
+      const integration = makeIntegrationRecord(type)
+      await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
+      await upsertIntegration(db, integration)
     }
-    if (Object.keys(credentials).length) {
-      const spaceId = 'local'
-      const credentialId = `${type}-creds`
-      await saveIntegrationCredentials(spaceId, credentialId, credentials)
-    }
 
-    integrations.push({ type })
+    log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
+    note(
+      JSON.stringify(makeClaudeDesktopSnippet(), null, 2),
+      'Claude Desktop config snippet',
+    )
   }
-
-  const cfg: CommandableConfig = {
-    integrationDataDir: './integration-data',
-    spaceId: 'local',
-    integrations,
+  finally {
+    await close()
   }
-
-  const writtenAbs = writeConfigFile(outPath, cfg)
-
-  log.success(`Config saved to ${picocolors.dim(writtenAbs)}`)
-  log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
-
-  note(
-    JSON.stringify(makeClaudeDesktopSnippet(writtenAbs), null, 2),
-    'Claude Desktop config snippet',
-  )
 
   outro('You’re all set. Restart your MCP client and try a tool call.')
 }
 
-export async function runAddInteractive(configPath: string) {
+export async function runAddInteractive() {
   intro('Commandable MCP')
 
-  const absCfg = resolve(process.cwd(), configPath)
-  if (!existsSync(absCfg)) {
-    outro(`Config not found at ${picocolors.dim(absCfg)}. Run ${picocolors.cyan('commandable-mcp init')} first.`)
-    return
-  }
-
-  let cfg: CommandableConfig
+  const { db, credentialStore, close } = await openLocalState()
   try {
-    cfg = parseJsonFile(absCfg) as CommandableConfig
-  }
-  catch (err) {
-    outro(`Failed to read config JSON at ${picocolors.dim(absCfg)}.`)
-    throw err
-  }
+    const existing = await listIntegrations(db, 'local')
+    const existingTypes = new Set(existing.map(i => i.type).filter(Boolean))
 
-  cfg.integrations = Array.isArray(cfg.integrations) ? cfg.integrations : []
-  const existingTypes = new Set(cfg.integrations.map(i => i.type).filter(Boolean))
-
-  const types = await selectIntegrations({
-    title: 'Which integrations do you want to add?',
-    excludeTypes: existingTypes,
-  })
-  if (types === null) {
-    outro('Cancelled.')
-    return
-  }
-
-  const added: string[] = []
-  for (const type of types) {
-    log.info(`Configuring ${picocolors.cyan(type)}`)
-    const credentials = await promptCredentialsForIntegration(type)
-    if (credentials === null) {
+    const types = await selectIntegrations({
+      title: 'Which integrations do you want to add?',
+      excludeTypes: existingTypes,
+    })
+    if (types === null) {
       outro('Cancelled.')
       return
     }
-    if (Object.keys(credentials).length) {
-      const spaceId = cfg.spaceId || 'local'
-      const credentialId = `${type}-creds`
-      await saveIntegrationCredentials(spaceId, credentialId, credentials)
+
+    const added: string[] = []
+    for (const type of types) {
+      log.info(`Configuring ${picocolors.cyan(type)}`)
+      const credentials = await promptCredentialsForIntegration(type)
+      if (credentials === null) {
+        outro('Cancelled.')
+        return
+      }
+
+      const integration = makeIntegrationRecord(type)
+      await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
+      await upsertIntegration(db, integration)
+      added.push(type)
     }
 
-    cfg.integrations.push({ type })
-    added.push(type)
+    if (added.length)
+      log.success(`Added: ${added.map(t => picocolors.cyan(t)).join(', ')}`)
+    else
+      log.info('Nothing to add.')
   }
-
-  writeFileSync(absCfg, `${JSON.stringify(cfg, null, 2)}\n`)
-
-  if (added.length)
-    log.success(`Added: ${added.map(t => picocolors.cyan(t)).join(', ')}`)
-  else
-    log.info('Nothing to add.')
+  finally {
+    await close()
+  }
 
   outro('Done.')
 }

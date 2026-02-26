@@ -23,14 +23,18 @@
     <UCard>
       <template #header>
         <div class="font-medium">
-          Required environment variables
+          Optional environment variables
         </div>
       </template>
 
       <div class="space-y-3 text-sm">
         <div>
-          <div class="font-mono">COMMANDABLE_MCP_ENCRYPTION_SECRET</div>
-          <div class="text-muted">Used to encrypt/decrypt credentials in the database.</div>
+          <div class="font-mono">COMMANDABLE_ENCRYPTION_SECRET</div>
+          <div class="text-muted">Provide an encryption secret via env instead of using the local key file.</div>
+        </div>
+        <div>
+          <div class="font-mono">COMMANDABLE_DATA_DIR</div>
+          <div class="text-muted">Override where local data is stored (default: ~/.commandable/).</div>
         </div>
         <div>
           <div class="font-mono">DATABASE_URL</div>
@@ -38,11 +42,11 @@
         </div>
         <div>
           <div class="font-mono">COMMANDABLE_MCP_SQLITE_PATH</div>
-          <div class="text-muted">Optional path for SQLite file (default: ./commandable-mcp.sqlite).</div>
+          <div class="text-muted">Optional SQLite file path override (default: ~/.commandable/credentials.sqlite).</div>
         </div>
         <div>
           <div class="font-mono">COMMANDABLE_INTEGRATION_DATA_DIR</div>
-          <div class="text-muted">Optional override for integration-data directory.</div>
+          <div class="text-muted">Optional override for integration manifests/handlers directory.</div>
         </div>
       </div>
     </UCard>

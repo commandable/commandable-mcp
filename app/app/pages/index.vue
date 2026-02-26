@@ -57,13 +57,13 @@
     <UCard>
       <template #header>
         <div class="font-medium">
-          Next step: run the stdio MCP server
+          Next step: connect your MCP client
         </div>
       </template>
       <div class="text-sm text-muted space-y-2">
-        <div>Use the CLI with a config file (recommended for Claude Desktop / Cursor stdio).</div>
-        <pre class="text-xs bg-muted/40 p-3 rounded overflow-auto">npx @commandable/mcp init --output ./commandable.json
-npx @commandable/mcp --config ./commandable.json</pre>
+        <div>Run the setup wizard, then paste the printed snippet into Claude Desktop / Cursor.</div>
+        <pre class="text-xs bg-muted/40 p-3 rounded overflow-auto">npx @commandable/mcp init</pre>
+        <div class="text-xs">To run the server manually (rare): <span class="font-mono">npx @commandable/mcp</span></div>
       </div>
     </UCard>
   </UContainer>

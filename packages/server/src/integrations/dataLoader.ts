@@ -2,6 +2,7 @@ import type { JSONSchema7 } from 'json-schema'
 import type { ToolData } from '../types.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export interface IntegrationCredentialConfig {
   schema: JSONSchema7
@@ -45,9 +46,12 @@ interface Manifest {
 
 function integrationDataRoot(): string {
   // Allow overriding for consumers (tests, packaged CLI, etc.)
-  return process.env.COMMANDABLE_INTEGRATION_DATA_DIR
-    ? resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
-    : resolve(process.cwd(), 'integration-data')
+  if (process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
+    return resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
+
+  // Default: packaged integration-data bundled alongside dist/
+  // dist/integrations/*.js -> ../../integration-data
+  return resolve(fileURLToPath(new URL('../../integration-data/', import.meta.url)))
 }
 
 function integrationDir(type: string): string {

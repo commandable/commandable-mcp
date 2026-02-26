@@ -17,9 +17,13 @@ export interface CreateDbOptions {
 }
 
 export function createDbFromEnv(): DbClient {
+  const dataDir = process.env.COMMANDABLE_DATA_DIR
+  const sqliteFromDataDir = dataDir && dataDir.trim().length
+    ? resolve(dataDir, 'credentials.sqlite')
+    : undefined
   return createDb({
     databaseUrl: process.env.DATABASE_URL,
-    sqlitePath: process.env.COMMANDABLE_MCP_SQLITE_PATH,
+    sqlitePath: process.env.COMMANDABLE_MCP_SQLITE_PATH || sqliteFromDataDir,
   })
 }
 
