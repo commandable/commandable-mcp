@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "The account owner of the repository" },
+    "repo": { "type": "string", "description": "The name of the repository" },
+    "branch": { "type": "string", "description": "The branch to commit to" },
+    "message": { "type": "string", "description": "The commit message" },
+    "files": {
+      "type": "array",
+      "description": "Array of files to add/update/delete in this commit",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "File path in the repository" },
+          "content": { "type": "string", "description": "Plain text file content (omit to delete). Do NOT base64; encoding handled internally." },
+          "mode": { "type": "string", "enum": ["100644", "100755", "040000", "160000", "120000"], "description": "File mode (100644 for regular files, 100755 for executable)" }
+        },
+        "required": ["path"]
+      }
+    }
+  },
+  "required": ["owner", "repo", "branch", "message", "files"],
+  "additionalProperties": false
+}
+

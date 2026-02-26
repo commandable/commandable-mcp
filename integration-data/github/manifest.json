@@ -1,0 +1,26 @@
+{
+  "name": "github",
+  "version": "0.1.0",
+  "tools": [
+    { "name": "list_repos", "description": "List repositories for the authenticated user.", "inputSchema": "schemas/empty.json", "handler": "handlers/list_repos_user.js", "scope": "read" },
+    { "name": "get_repo", "description": "Get a repository by owner and name.", "inputSchema": "schemas/get_repo.json", "handler": "handlers/get_repo.js", "scope": "read" },
+    { "name": "list_issues", "description": "List issues for a repository.", "inputSchema": "schemas/list_issues.json", "handler": "handlers/list_issues.js", "scope": "read" },
+    { "name": "get_issue", "description": "Get a specific issue by number.", "inputSchema": "schemas/get_issue.json", "handler": "handlers/get_issue.js", "scope": "read" },
+    { "name": "list_pull_requests", "description": "List pull requests for a repository.", "inputSchema": "schemas/list_pull_requests.json", "handler": "handlers/list_pull_requests.js", "scope": "read" },
+    { "name": "list_branches", "description": "List branches for a repository.", "inputSchema": "schemas/owner_repo.json", "handler": "handlers/list_branches.js", "scope": "read" },
+    { "name": "list_commits", "description": "List commits for a repository.", "inputSchema": "schemas/list_commits.json", "handler": "handlers/list_commits.js", "scope": "read" },
+
+    { "name": "create_repo", "description": "Create a new repository.", "inputSchema": "schemas/create_repo.json", "handler": "handlers/create_repo.js", "scope": "write" },
+    { "name": "delete_repo", "description": "Delete a repository (requires delete_repo scope).", "inputSchema": "schemas/delete_repo.json", "handler": "handlers/delete_repo.js", "scope": "write" },
+    { "name": "create_branch", "description": "Create a new branch in a repository.", "inputSchema": "schemas/create_branch.json", "handler": "handlers/create_branch.js", "scope": "write" },
+    { "name": "create_or_update_file", "description": "Create or update a single file (content must be plain text; base64 handled internally).", "inputSchema": "schemas/create_or_update_file.json", "handler": "handlers/create_or_update_file.js", "scope": "write" },
+    { "name": "create_commit", "description": "Create a commit with multiple files (content must be plain text; base64 handled internally).", "inputSchema": "schemas/create_commit.json", "handler": "handlers/create_commit.js", "scope": "write" },
+    { "name": "create_pull_request", "description": "Create a pull request.", "inputSchema": "schemas/create_pull_request.json", "handler": "handlers/create_pull_request.js", "scope": "write" },
+    { "name": "merge_pull_request", "description": "Merge a pull request.", "inputSchema": "schemas/merge_pull_request.json", "handler": "handlers/merge_pull_request.js", "scope": "write" },
+    { "name": "create_issue", "description": "Create an issue in a repository.", "inputSchema": "schemas/create_issue.json", "handler": "handlers/create_issue.js", "scope": "write" },
+    { "name": "update_issue", "description": "Update fields on an issue.", "inputSchema": "schemas/update_issue.json", "handler": "handlers/update_issue.js", "scope": "write" },
+    { "name": "comment_on_issue", "description": "Add a comment to an issue.", "inputSchema": "schemas/comment_on_issue.json", "handler": "handlers/comment_on_issue.js", "scope": "write" },
+    { "name": "add_labels_to_issue", "description": "Add labels to an issue or pull request.", "inputSchema": "schemas/add_labels_to_issue.json", "handler": "handlers/add_labels_to_issue.js", "scope": "write" },
+    { "name": "close_issue", "description": "Close an issue.", "inputSchema": "schemas/close_issue.json", "handler": "handlers/close_issue.js", "scope": "write" }
+  ]
+}

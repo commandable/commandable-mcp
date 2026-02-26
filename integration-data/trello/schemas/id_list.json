@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "listId": { "type": "string" }
+  },
+  "required": ["listId"],
+  "additionalProperties": false
+}

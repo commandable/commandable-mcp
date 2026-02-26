@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "cardId": { "type": "string" }
+  },
+  "required": ["cardId"],
+  "additionalProperties": false
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "block_id": { "type": "string" },
+    "discussion_id": { "type": "string" },
+    "start_cursor": { "type": "string" },
+    "page_size": { "type": "number", "minimum": 1, "maximum": 100 }
+  },
+  "anyOf": [
+    { "required": ["block_id"] },
+    { "required": ["discussion_id"] }
+  ],
+  "additionalProperties": false
+}

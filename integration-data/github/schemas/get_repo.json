@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string" },
+    "repo": { "type": "string" }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}

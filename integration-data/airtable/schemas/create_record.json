@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "baseId": { "type": "string", "description": "Airtable base ID" },
+    "tableId": { "type": "string", "description": "Airtable table ID or name" },
+    "fields": { "type": "object", "description": "Field values for the new record" },
+    "typecast": { "type": "boolean", "description": "Coerce values to field types" }
+  },
+  "required": ["baseId", "tableId", "fields"],
+  "additionalProperties": false
+}

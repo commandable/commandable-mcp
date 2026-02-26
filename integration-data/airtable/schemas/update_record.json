@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "baseId": { "type": "string" },
+    "tableId": { "type": "string" },
+    "recordId": { "type": "string" },
+    "fields": { "type": "object" },
+    "typecast": { "type": "boolean" }
+  },
+  "required": ["baseId", "tableId", "recordId", "fields"],
+  "additionalProperties": false
+}

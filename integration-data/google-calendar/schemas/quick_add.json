@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "text": { "type": "string", "description": "Natural language event text" }
+  },
+  "required": ["calendarId", "text"],
+  "additionalProperties": false
+}

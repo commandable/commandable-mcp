@@ -1,0 +1,15 @@
+{
+  "name": "commandable-mcp",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "app"
+  ],
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "dev": "yarn workspace commandable-mcp-app dev",
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspaces run test"
+  }
+}
+

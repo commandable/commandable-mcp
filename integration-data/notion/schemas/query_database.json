@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["database_id"],
+  "properties": {
+    "database_id": { "type": "string" },
+    "filter": { "type": ["object", "null"] },
+    "sorts": { "type": ["array", "null"], "items": { "type": "object" } },
+    "start_cursor": { "type": "string" },
+    "page_size": { "type": "number", "minimum": 1, "maximum": 100 }
+  },
+  "additionalProperties": false
+}

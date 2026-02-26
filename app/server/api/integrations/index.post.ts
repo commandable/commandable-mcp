@@ -1,0 +1,30 @@
+import { randomUUID } from 'node:crypto'
+import { createError, defineEventHandler, readBody } from 'h3'
+import type { IntegrationData } from '@commandable/mcp'
+import { upsertIntegration } from '@commandable/mcp'
+import { getDb } from '../../utils/db'
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event)
+  const id = body?.id || randomUUID()
+
+  const integration: IntegrationData = {
+    spaceId: 'local',
+    id,
+    type: body?.type,
+    referenceId: body?.referenceId || body?.type,
+    label: body?.label || body?.type,
+    config: body?.config || undefined,
+    connectionMethod: body?.connectionMethod || undefined,
+    connectionId: body?.connectionId || undefined,
+    credentialId: body?.credentialId || undefined,
+  }
+
+  if (!integration.type)
+    throw createError({ statusCode: 400, statusMessage: 'type is required' })
+
+  const db = await getDb()
+  await upsertIntegration(db, integration)
+  return integration
+})
+

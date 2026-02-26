@@ -1,0 +1,13 @@
+{
+  "integrationDataDir": "./integration-data",
+  "spaceId": "local",
+  "integrations": [
+    {
+      "type": "trello",
+      "credentials": {
+        "apiKey": "env:TRELLO_API_KEY",
+        "apiToken": "env:TRELLO_API_TOKEN"
+      }
+    }
+  ]
+}

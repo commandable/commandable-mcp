@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["idList", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "idList": { "type": "string" },
+    "name": { "type": "string" },
+    "desc": { "type": "string" },
+    "due": { "type": ["string", "null"], "description": "ISO 8601 due date" },
+    "pos": { "type": ["string", "number"], "description": "Position (top,bottom or float)" }
+  }
+}

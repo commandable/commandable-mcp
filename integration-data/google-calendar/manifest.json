@@ -1,0 +1,26 @@
+{
+  "name": "google-calendar",
+  "version": "0.1.0",
+  "tools": [
+    { "name": "list_calendars", "description": "List calendars for the authenticated user.", "inputSchema": "schemas/empty.json", "handler": "handlers/list_calendars.js", "scope": "read" },
+    { "name": "get_calendar", "description": "Get a calendar by ID.", "inputSchema": "schemas/id_calendar.json", "handler": "handlers/get_calendar.js", "scope": "read" },
+    { "name": "list_events", "description": "List events in a calendar with optional time range and query.", "inputSchema": "schemas/list_events.json", "handler": "handlers/list_events.js", "scope": "read" },
+    { "name": "get_event", "description": "Get a specific event by ID from a calendar.", "inputSchema": "schemas/id_calendar_event.json", "handler": "handlers/get_event.js", "scope": "read" },
+    { "name": "list_colors", "description": "Get the color definitions for calendars and events.", "inputSchema": "schemas/empty.json", "handler": "handlers/list_colors.js", "scope": "read" },
+    { "name": "freebusy_query", "description": "Query free/busy information for calendars.", "inputSchema": "schemas/freebusy_query.json", "handler": "handlers/freebusy_query.js", "scope": "read" },
+    { "name": "list_settings", "description": "List user settings.", "inputSchema": "schemas/empty.json", "handler": "handlers/list_settings.js", "scope": "read" },
+
+    { "name": "create_event", "description": "Create an event in a calendar.", "inputSchema": "schemas/create_event.json", "handler": "handlers/create_event.js", "scope": "write" },
+    { "name": "update_event", "description": "Update an event in a calendar (full update).", "inputSchema": "schemas/update_event.json", "handler": "handlers/update_event.js", "scope": "write" },
+    { "name": "patch_event", "description": "Patch fields on an event in a calendar.", "inputSchema": "schemas/patch_event.json", "handler": "handlers/patch_event.js", "scope": "write" },
+    { "name": "delete_event", "description": "Delete an event from a calendar.", "inputSchema": "schemas/id_calendar_event.json", "handler": "handlers/delete_event.js", "scope": "write" },
+    { "name": "move_event", "description": "Move an event to another calendar.", "inputSchema": "schemas/move_event.json", "handler": "handlers/move_event.js", "scope": "write" },
+    { "name": "quick_add", "description": "Create an event using natural language text.", "inputSchema": "schemas/quick_add.json", "handler": "handlers/quick_add.js", "scope": "write" },
+
+    { "name": "list_acl", "description": "List ACL rules for a calendar.", "inputSchema": "schemas/id_calendar.json", "handler": "handlers/list_acl.js", "scope": "admin" },
+    { "name": "get_acl", "description": "Get a specific ACL rule by ID for a calendar.", "inputSchema": "schemas/get_acl.json", "handler": "handlers/get_acl.js", "scope": "admin" },
+    { "name": "insert_acl", "description": "Insert a new ACL rule for a calendar.", "inputSchema": "schemas/insert_acl.json", "handler": "handlers/insert_acl.js", "scope": "admin" },
+    { "name": "update_acl", "description": "Update an ACL rule for a calendar.", "inputSchema": "schemas/update_acl.json", "handler": "handlers/update_acl.js", "scope": "admin" },
+    { "name": "delete_acl", "description": "Delete an ACL rule from a calendar.", "inputSchema": "schemas/delete_acl.json", "handler": "handlers/delete_acl.js", "scope": "admin" }
+  ]
+}

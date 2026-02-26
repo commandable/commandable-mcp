@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "eventId": { "type": "string" },
+    "destination": { "type": "string", "description": "Destination calendarId" }
+  },
+  "required": ["calendarId", "eventId", "destination"],
+  "additionalProperties": false
+}

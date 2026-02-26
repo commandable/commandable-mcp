@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["cardId"],
+  "additionalProperties": false,
+  "properties": {
+    "cardId": { "type": "string" },
+    "name": { "type": ["string", "null"] },
+    "desc": { "type": ["string", "null"] },
+    "due": { "type": ["string", "null"] },
+    "dueComplete": { "type": ["boolean", "null"] },
+    "closed": { "type": ["boolean", "null"] },
+    "idList": { "type": ["string", "null"] },
+    "pos": { "type": ["string", "number", "null"] }
+  }
+}

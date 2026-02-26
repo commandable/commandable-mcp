@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "timeMin": { "type": "string" },
+    "timeMax": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": { "type": "object", "properties": { "id": { "type": "string" } }, "required": ["id"], "additionalProperties": false }
+    }
+  },
+  "required": ["timeMin", "timeMax", "items"],
+  "additionalProperties": false
+}

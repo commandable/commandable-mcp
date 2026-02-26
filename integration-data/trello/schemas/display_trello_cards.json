@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "cards": {
+      "type": "array",
+      "description": "The Trello cards to display",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "desc": { "type": "string" },
+          "url": { "type": "string" },
+          "due": { "type": "string" },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "color": {
+                  "type": "string",
+                  "description": "Trello label color token, e.g. green_light / green_dark, yellow_light / yellow_dark, purple_light / purple_dark, blue_light / blue_dark, sky_light / sky_dark, lime_light / lime_dark, pink_light / pink_dark, black_light / black_dark."
+                }
+              }
+            }
+          },
+          "listName": { "type": "string" },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fullName": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["id", "name"]
+      }
+    }
+  },
+  "required": ["cards"],
+  "additionalProperties": false
+}

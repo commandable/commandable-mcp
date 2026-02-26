@@ -1,0 +1,21 @@
+async (input) => {
+  const params = new URLSearchParams()
+  if (input.timeMin)
+    params.set('timeMin', input.timeMin)
+  if (input.timeMax)
+    params.set('timeMax', input.timeMax)
+  if (input.q)
+    params.set('q', input.q)
+  if (input.maxResults)
+    params.set('maxResults', String(input.maxResults))
+  if (input.pageToken)
+    params.set('pageToken', input.pageToken)
+  if (input.singleEvents !== undefined)
+    params.set('singleEvents', String(input.singleEvents))
+  if (input.orderBy)
+    params.set('orderBy', input.orderBy)
+  const qs = params.toString()
+  const path = `/calendars/${encodeURIComponent(input.calendarId)}/events${qs ? `?${qs}` : ''}`
+  const res = await integration.fetch(path)
+  return await res.json()
+}

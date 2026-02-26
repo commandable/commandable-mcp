@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "The name of the repository" },
+    "description": { "type": "string", "description": "A short description of the repository" },
+    "private": { "type": "boolean", "description": "Whether the repository is private", "default": false },
+    "auto_init": { "type": "boolean", "description": "Pass true to create an initial commit with empty README", "default": false }
+  },
+  "required": ["name"],
+  "additionalProperties": false
+}
+

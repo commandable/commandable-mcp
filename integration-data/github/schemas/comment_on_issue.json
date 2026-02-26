@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string" },
+    "repo": { "type": "string" },
+    "issue_number": { "type": "integer", "minimum": 1 },
+    "body": { "type": "string" }
+  },
+  "required": ["owner", "repo", "issue_number", "body"],
+  "additionalProperties": false
+}

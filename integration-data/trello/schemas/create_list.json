@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["idBoard", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "idBoard": { "type": "string" },
+    "name": { "type": "string" },
+    "pos": { "type": ["string", "number"], "description": "Position (top,bottom or float)" }
+  }
+}

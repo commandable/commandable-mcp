@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["baseId", "tableId", "field", "value"],
+  "properties": {
+    "baseId": { "type": "string" },
+    "tableId": { "type": "string" },
+    "field": { "type": "string", "description": "Field name to match" },
+    "value": { "type": "string", "description": "Value to search for" }
+  },
+  "additionalProperties": false
+}

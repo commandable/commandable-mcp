@@ -1,0 +1,83 @@
+{
+  "name": "airtable",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "list_bases",
+      "description": "List bases available to the authenticated user.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/list_bases.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_tables",
+      "description": "List tables in a base (metadata).",
+      "inputSchema": "schemas/id_base.json",
+      "handler": "handlers/list_tables.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_table_schema",
+      "description": "Fetch a table's schema (fields, views) by tableId via metadata.",
+      "inputSchema": "schemas/id_base_table.json",
+      "handler": "handlers/get_table_schema.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_table_fields",
+      "description": "List fields for a table (metadata).",
+      "inputSchema": "schemas/id_base_table.json",
+      "handler": "handlers/list_table_fields.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_views",
+      "description": "List views for a table (metadata).",
+      "inputSchema": "schemas/id_base_table.json",
+      "handler": "handlers/list_views.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_records",
+      "description": "List records from a table with optional filters.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_records.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_record",
+      "description": "Fetch a single record by recordId.",
+      "inputSchema": "schemas/get_record.json",
+      "handler": "handlers/get_record.js",
+      "scope": "read"
+    },
+    {
+      "name": "search_records",
+      "description": "Search records in a table using a field and value (filterByFormula).",
+      "inputSchema": "schemas/search_records.json",
+      "handler": "handlers/search_records.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_record",
+      "description": "Create a record in a table.",
+      "inputSchema": "schemas/create_record.json",
+      "handler": "handlers/create_record.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_record",
+      "description": "Update a record in a table.",
+      "inputSchema": "schemas/update_record.json",
+      "handler": "handlers/update_record.js",
+      "scope": "write"
+    },
+    {
+      "name": "delete_record",
+      "description": "Delete a record from a table.",
+      "inputSchema": "schemas/delete_record.json",
+      "handler": "handlers/delete_record.js",
+      "scope": "write"
+    }
+  ]
+}

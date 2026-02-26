@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["listId"],
+  "additionalProperties": false,
+  "properties": {
+    "listId": { "type": "string" },
+    "name": { "type": ["string", "null"] },
+    "closed": { "type": ["boolean", "null"] },
+    "pos": { "type": ["string", "number", "null"] }
+  }
+}

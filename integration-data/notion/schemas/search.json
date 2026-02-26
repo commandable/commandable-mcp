@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["query"],
+  "properties": {
+    "query": { "type": "string" },
+    "filter": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "string", "enum": ["page", "database"] },
+        "property": { "type": "string", "enum": ["object"] }
+      },
+      "additionalProperties": false
+    },
+    "sort": {
+      "type": "object",
+      "properties": {
+        "direction": { "type": "string", "enum": ["ascending", "descending"] },
+        "timestamp": { "type": "string", "enum": ["last_edited_time"] }
+      },
+      "additionalProperties": false
+    },
+    "start_cursor": { "type": "string" },
+    "page_size": { "type": "number", "minimum": 1, "maximum": 100 }
+  },
+  "additionalProperties": false
+}

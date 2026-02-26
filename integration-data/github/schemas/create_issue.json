@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string" },
+    "repo": { "type": "string" },
+    "title": { "type": "string" },
+    "body": { "type": "string" },
+    "assignees": { "type": "array", "items": { "type": "string" } },
+    "labels": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["owner", "repo", "title"],
+  "additionalProperties": false
+}

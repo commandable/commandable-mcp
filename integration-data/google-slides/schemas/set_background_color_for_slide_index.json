@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "presentationId": { "type": "string" },
+    "slideIndex": { "type": "number", "minimum": 0 },
+    "rgbColor": { "type": "object", "properties": { "red": { "type": "number" }, "green": { "type": "number" }, "blue": { "type": "number" } }, "required": ["red", "green", "blue"] }
+  },
+  "required": ["presentationId", "slideIndex", "rgbColor"],
+  "additionalProperties": false
+}

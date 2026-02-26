@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "role": { "type": "string", "enum": ["none", "freeBusyReader", "reader", "writer", "owner"] },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["default", "user", "group", "domain"] },
+        "value": { "type": "string" }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["calendarId", "role", "scope"],
+  "additionalProperties": false
+}

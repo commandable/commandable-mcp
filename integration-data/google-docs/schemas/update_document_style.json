@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "documentId": { "type": "string" },
+    "documentStyle": { "type": "object", "description": "Docs API DocumentStyle object" },
+    "fields": { "type": "string" }
+  },
+  "required": ["documentId", "documentStyle"],
+  "additionalProperties": false
+}

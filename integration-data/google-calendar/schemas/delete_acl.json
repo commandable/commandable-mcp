@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "ruleId": { "type": "string" }
+  },
+  "required": ["calendarId", "ruleId"],
+  "additionalProperties": false
+}

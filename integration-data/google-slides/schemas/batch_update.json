@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["presentationId", "requests"],
+  "properties": {
+    "presentationId": { "type": "string", "description": "ID of the presentation." },
+    "requests": { "type": "array", "items": { "type": "object" }, "description": "Array of Slides API requests." },
+    "writeControl": { "type": "object", "description": "Optional write control object." },
+    "includePresentationInResponse": { "type": "boolean" },
+    "responsePageObjectIds": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

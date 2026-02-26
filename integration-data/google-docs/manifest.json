@@ -1,0 +1,58 @@
+{
+  "name": "google-docs",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "get_document",
+      "description": "Retrieve Google Doc content and metadata.",
+      "inputSchema": "schemas/get_document.json",
+      "handler": "handlers/get_document.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_document_text",
+      "description": "Retrieve the document's plain text content.",
+      "inputSchema": "schemas/get_document_text.json",
+      "handler": "handlers/get_document_text.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_document_structured",
+      "description": "Retrieve the structured body JSON (body.content).",
+      "inputSchema": "schemas/get_document_structured.json",
+      "handler": "handlers/get_document_structured.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_document",
+      "description": "Create a new Google Doc.",
+      "inputSchema": "schemas/create_document.json",
+      "handler": "handlers/create_document.js",
+      "scope": "write"
+    },
+    {
+      "name": "batch_update",
+      "description": "Send a documents.batchUpdate request to modify a Doc (insertText, replaceAllText, structural updates, etc).",
+      "inputSchema": "schemas/batch_update.json",
+      "handler": "handlers/batch_update.js",
+      "scope": "write"
+    },
+    { "name": "append_text", "description": "Append plain text to the end of the document.", "inputSchema": "schemas/append_text.json", "handler": "handlers/append_text.js", "scope": "write" },
+    { "name": "replace_all_text", "description": "Replace all occurrences of text matching a query.", "inputSchema": "schemas/replace_all_text.json", "handler": "handlers/replace_all_text.js", "scope": "write" },
+
+    { "name": "style_first_match", "description": "Find the first occurrence of text and apply a TextStyle to it.", "inputSchema": "schemas/style_first_match.json", "handler": "handlers/style_first_match.js", "scope": "write" },
+    { "name": "insert_text_after_first_match", "description": "Find the first occurrence of text and insert new text after or before it.", "inputSchema": "schemas/insert_text_after_first_match.json", "handler": "handlers/insert_text_after_first_match.js", "scope": "write" },
+    { "name": "insert_table_after_first_match", "description": "Find the first occurrence of text and insert a table nearby.", "inputSchema": "schemas/insert_table_after_first_match.json", "handler": "handlers/insert_table_after_first_match.js", "scope": "write" },
+    { "name": "insert_page_break_after_first_match", "description": "Find the first occurrence of text and insert a page break nearby.", "inputSchema": "schemas/insert_page_break_after_first_match.json", "handler": "handlers/insert_page_break_after_first_match.js", "scope": "write" },
+    { "name": "insert_inline_image_after_first_match", "description": "Find the first occurrence of text and insert an inline image nearby.", "inputSchema": "schemas/insert_inline_image_after_first_match.json", "handler": "handlers/insert_inline_image_after_first_match.js", "scope": "write" },
+    { "name": "delete_first_match", "description": "Find the first occurrence of text and delete it.", "inputSchema": "schemas/delete_first_match.json", "handler": "handlers/delete_first_match.js", "scope": "write" },
+    { "name": "update_paragraph_style_for_first_match", "description": "Find the first occurrence of text and update the paragraph style for that paragraph.", "inputSchema": "schemas/update_paragraph_style_for_first_match.json", "handler": "handlers/update_paragraph_style_for_first_match.js", "scope": "write" },
+    {
+      "name": "update_document_style",
+      "description": "Update the document style (e.g., page size, margins).",
+      "inputSchema": "schemas/update_document_style.json",
+      "handler": "handlers/update_document_style.js",
+      "scope": "write"
+    }
+  ]
+}

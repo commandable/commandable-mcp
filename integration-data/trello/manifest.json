@@ -1,0 +1,231 @@
+{
+  "name": "trello",
+  "version": "0.1.0",
+  "displayCards": [
+    {
+      "name": "display_trello_cards",
+      "description": "Display one or more Trello cards as rich visual cards in the chat. Use this whenever you have fetched Trello card data and want to present it visually to the user instead of as plain text.",
+      "inputSchema": "schemas/display_trello_cards.json",
+      "component": "TrelloCard"
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_member",
+      "description": "Fetch the current member profile.",
+      "inputSchema": "schemas/get_member.json",
+      "handler": "handlers/get_member.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_member_boards",
+      "description": "List boards for the current member.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/get_member_boards.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_member_organizations",
+      "description": "List organizations (workspaces) for the current member.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/get_member_organizations.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board",
+      "description": "Fetch a board by id.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board_lists",
+      "description": "List lists on a board.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board_lists.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board_cards",
+      "description": "List cards on a board.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board_cards.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board_members",
+      "description": "List members on a board.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board_members.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board_labels",
+      "description": "List labels on a board.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board_labels.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board_custom_fields",
+      "description": "List custom fields on a board.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board_custom_fields.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_board_memberships",
+      "description": "List memberships for a board.",
+      "inputSchema": "schemas/id_board.json",
+      "handler": "handlers/get_board_memberships.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_list",
+      "description": "Fetch a list by id.",
+      "inputSchema": "schemas/id_list.json",
+      "handler": "handlers/get_list.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_list_cards",
+      "description": "List cards in a list.",
+      "inputSchema": "schemas/id_list.json",
+      "handler": "handlers/get_list_cards.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card",
+      "description": "Fetch a card by id.",
+      "inputSchema": "schemas/id_card.json",
+      "handler": "handlers/get_card.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_members",
+      "description": "List members assigned to a card.",
+      "inputSchema": "schemas/id_card.json",
+      "handler": "handlers/get_card_members.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_attachments",
+      "description": "List attachments on a card.",
+      "inputSchema": "schemas/id_card.json",
+      "handler": "handlers/get_card_attachments.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_actions",
+      "description": "List actions (activity) on a card.",
+      "inputSchema": "schemas/id_card.json",
+      "handler": "handlers/get_card_actions.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_checklists",
+      "description": "List checklists on a card.",
+      "inputSchema": "schemas/id_card.json",
+      "handler": "handlers/get_card_checklists.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_custom_field_items",
+      "description": "Get custom field items on a card.",
+      "inputSchema": "schemas/id_card.json",
+      "handler": "handlers/get_card_custom_field_items.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_organization",
+      "description": "Fetch an organization (workspace) by id.",
+      "inputSchema": "schemas/id_org.json",
+      "handler": "handlers/get_organization.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_organization_boards",
+      "description": "List boards in an organization (workspace).",
+      "inputSchema": "schemas/id_org.json",
+      "handler": "handlers/get_organization_boards.js",
+      "scope": "read"
+    },
+    {
+      "name": "search",
+      "description": "Search across boards, cards, and members.",
+      "inputSchema": "schemas/search.json",
+      "handler": "handlers/search.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_card",
+      "description": "Create a new card in a list.",
+      "inputSchema": "schemas/create_card.json",
+      "handler": "handlers/create_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_card",
+      "description": "Update a card's fields (name, desc, due, list, etc).",
+      "inputSchema": "schemas/update_card.json",
+      "handler": "handlers/update_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "delete_card",
+      "description": "Delete a card.",
+      "inputSchema": "schemas/delete_card.json",
+      "handler": "handlers/delete_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "move_card_to_list",
+      "description": "Move a card to another list.",
+      "inputSchema": "schemas/move_card_to_list.json",
+      "handler": "handlers/move_card_to_list.js",
+      "scope": "write"
+    },
+    {
+      "name": "add_member_to_card",
+      "description": "Add a member to a card.",
+      "inputSchema": "schemas/add_member_to_card.json",
+      "handler": "handlers/add_member_to_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "remove_member_from_card",
+      "description": "Remove a member from a card.",
+      "inputSchema": "schemas/remove_member_from_card.json",
+      "handler": "handlers/remove_member_from_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "add_checklist_to_card",
+      "description": "Create a checklist on a card.",
+      "inputSchema": "schemas/add_checklist_to_card.json",
+      "handler": "handlers/add_checklist_to_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "create_list",
+      "description": "Create a new list on a board.",
+      "inputSchema": "schemas/create_list.json",
+      "handler": "handlers/create_list.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_list",
+      "description": "Update a list (name, pos, closed).",
+      "inputSchema": "schemas/update_list.json",
+      "handler": "handlers/update_list.js",
+      "scope": "write"
+    },
+    {
+      "name": "archive_list",
+      "description": "Archive a list (set closed=true).",
+      "inputSchema": "schemas/archive_list.json",
+      "handler": "handlers/archive_list.js",
+      "scope": "write"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "orgId": { "type": "string" }
+  },
+  "required": ["orgId"],
+  "additionalProperties": false
+}

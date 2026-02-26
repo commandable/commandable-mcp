@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["parent", "properties"],
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "type": "object",
+      "description": "Parent object specifying database_id or page_id.",
+      "additionalProperties": false,
+      "properties": {
+        "database_id": { "type": "string" },
+        "page_id": { "type": "string" },
+        "type": { "type": "string" }
+      }
+    },
+    "properties": { "type": "object", "description": "Page properties map per Notion API." },
+    "children": { "type": "array", "items": { "type": "object" } },
+    "icon": { "type": ["object", "null"] },
+    "cover": { "type": ["object", "null"] }
+  }
+}

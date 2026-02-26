@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "summary": { "type": "string" },
+    "description": { "type": "string" },
+    "location": { "type": "string" },
+    "start": {
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "dateTime": { "type": "string" },
+        "timeZone": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "end": {
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "dateTime": { "type": "string" },
+        "timeZone": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "attendees": {
+      "type": "array",
+      "items": { "type": "object", "properties": { "email": { "type": "string" } }, "additionalProperties": true }
+    },
+    "conferenceData": { "type": "object" }
+  },
+  "required": ["calendarId", "start", "end"],
+  "additionalProperties": true
+}

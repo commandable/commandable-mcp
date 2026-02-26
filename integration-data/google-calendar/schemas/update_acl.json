@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "ruleId": { "type": "string" },
+    "role": { "type": "string", "enum": ["none", "freeBusyReader", "reader", "writer", "owner"] }
+  },
+  "required": ["calendarId", "ruleId", "role"],
+  "additionalProperties": false
+}

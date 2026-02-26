@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["spreadsheetId"],
+  "properties": {
+    "spreadsheetId": { "type": "string" },
+    "dataFilters": { "type": "array", "items": { "type": "object" } },
+    "includeGridData": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

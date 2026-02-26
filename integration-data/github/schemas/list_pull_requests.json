@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string" },
+    "repo": { "type": "string" },
+    "state": { "type": "string", "enum": ["open", "closed", "all"], "default": "open" }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}

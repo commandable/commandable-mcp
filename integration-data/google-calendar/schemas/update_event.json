@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string" },
+    "eventId": { "type": "string" },
+    "body": { "type": "object" }
+  },
+  "required": ["calendarId", "eventId", "body"],
+  "additionalProperties": false
+}

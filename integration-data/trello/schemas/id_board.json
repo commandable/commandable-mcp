@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "boardId": { "type": "string" }
+  },
+  "required": ["boardId"],
+  "additionalProperties": false
+}

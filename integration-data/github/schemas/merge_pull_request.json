@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "The account owner of the repository" },
+    "repo": { "type": "string", "description": "The name of the repository" },
+    "pull_number": { "type": "number", "description": "The number of the pull request" },
+    "commit_title": { "type": "string", "description": "Title for the automatic commit message" },
+    "commit_message": { "type": "string", "description": "Extra detail to append to automatic commit message" },
+    "merge_method": { "type": "string", "enum": ["merge", "squash", "rebase"], "description": "Merge method to use. Default is 'merge'" }
+  },
+  "required": ["owner", "repo", "pull_number"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "The account owner of the repository" },
+    "repo": { "type": "string", "description": "The name of the repository" }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}
+

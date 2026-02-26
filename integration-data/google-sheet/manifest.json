@@ -1,0 +1,125 @@
+{
+  "name": "google-sheet",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "get_spreadsheet",
+      "description": "Retrieve spreadsheet metadata and optionally grid data.",
+      "inputSchema": "schemas/get_spreadsheet.json",
+      "handler": "handlers/get_spreadsheet.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_spreadsheet_by_data_filter",
+      "description": "Retrieve spreadsheet metadata using DataFilters.",
+      "inputSchema": "schemas/get_spreadsheet_by_data_filter.json",
+      "handler": "handlers/get_spreadsheet_by_data_filter.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_values",
+      "description": "Get values from a single A1 range.",
+      "inputSchema": "schemas/get_values.json",
+      "handler": "handlers/get_values.js",
+      "scope": "read"
+    },
+    {
+      "name": "batch_get_values",
+      "description": "Batch get values for multiple A1 ranges.",
+      "inputSchema": "schemas/batch_get_values.json",
+      "handler": "handlers/batch_get_values.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_values_by_data_filter",
+      "description": "Batch get values using DataFilters.",
+      "inputSchema": "schemas/get_values_by_data_filter.json",
+      "handler": "handlers/get_values_by_data_filter.js",
+      "scope": "read"
+    },
+    {
+      "name": "search_developer_metadata",
+      "description": "Search developer metadata in a spreadsheet.",
+      "inputSchema": "schemas/search_developer_metadata.json",
+      "handler": "handlers/search_developer_metadata.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_developer_metadata",
+      "description": "Get a developer metadata entry by ID.",
+      "inputSchema": "schemas/get_developer_metadata.json",
+      "handler": "handlers/get_developer_metadata.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_spreadsheet",
+      "description": "Create a new spreadsheet.",
+      "inputSchema": "schemas/create_spreadsheet.json",
+      "handler": "handlers/create_spreadsheet.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_values",
+      "description": "Update values in a range (PUT).",
+      "inputSchema": "schemas/update_values.json",
+      "handler": "handlers/update_values.js",
+      "scope": "write"
+    },
+    {
+      "name": "append_values",
+      "description": "Append values after the last row of a range.",
+      "inputSchema": "schemas/append_values.json",
+      "handler": "handlers/append_values.js",
+      "scope": "write"
+    },
+    {
+      "name": "batch_update_values",
+      "description": "Batch update values across multiple ranges.",
+      "inputSchema": "schemas/batch_update_values.json",
+      "handler": "handlers/batch_update_values.js",
+      "scope": "write"
+    },
+    {
+      "name": "batch_update_values_by_data_filter",
+      "description": "Batch update values using DataFilters.",
+      "inputSchema": "schemas/batch_update_values_by_data_filter.json",
+      "handler": "handlers/batch_update_values_by_data_filter.js",
+      "scope": "write"
+    },
+    {
+      "name": "clear_values",
+      "description": "Clear values in the specified range.",
+      "inputSchema": "schemas/clear_values.json",
+      "handler": "handlers/clear_values.js",
+      "scope": "write"
+    },
+    {
+      "name": "batch_clear_values",
+      "description": "Batch clear values across multiple ranges.",
+      "inputSchema": "schemas/batch_clear_values.json",
+      "handler": "handlers/batch_clear_values.js",
+      "scope": "write"
+    },
+    {
+      "name": "batch_clear_values_by_data_filter",
+      "description": "Batch clear values using DataFilters.",
+      "inputSchema": "schemas/batch_clear_values_by_data_filter.json",
+      "handler": "handlers/batch_clear_values_by_data_filter.js",
+      "scope": "write"
+    },
+    {
+      "name": "batch_update",
+      "description": "Send a batchUpdate request (addSheet, deleteSheet, etc).",
+      "inputSchema": "schemas/batch_update.json",
+      "handler": "handlers/batch_update.js",
+      "scope": "write"
+    },
+    {
+      "name": "copy_to_spreadsheet",
+      "description": "Copy a sheet to another spreadsheet.",
+      "inputSchema": "schemas/copy_to_spreadsheet.json",
+      "handler": "handlers/copy_to_spreadsheet.js",
+      "scope": "write"
+    }
+  ]
+}

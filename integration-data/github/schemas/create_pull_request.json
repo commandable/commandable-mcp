@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "The account owner of the repository" },
+    "repo": { "type": "string", "description": "The name of the repository" },
+    "title": { "type": "string", "description": "The title of the pull request" },
+    "body": { "type": "string", "description": "The contents of the pull request" },
+    "head": { "type": "string", "description": "The name of the branch where your changes are implemented" },
+    "base": { "type": "string", "description": "The name of the branch you want the changes pulled into" },
+    "draft": { "type": "boolean", "description": "Whether to create the pull request as a draft" }
+  },
+  "required": ["owner", "repo", "title", "head", "base"],
+  "additionalProperties": false
+}
+

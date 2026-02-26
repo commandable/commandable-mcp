@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "documentId": { "type": "string" },
+    "findText": { "type": "string" },
+    "textStyle": { "type": "object" },
+    "fields": { "type": "string" }
+  },
+  "required": ["documentId", "findText", "textStyle"],
+  "additionalProperties": false
+}

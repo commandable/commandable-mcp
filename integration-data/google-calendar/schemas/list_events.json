@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "calendarId": { "type": "string", "description": "Calendar ID (use 'primary' for primary)." },
+    "timeMin": { "type": "string", "description": "RFC3339 start time" },
+    "timeMax": { "type": "string", "description": "RFC3339 end time" },
+    "q": { "type": "string", "description": "Free-text search query" },
+    "maxResults": { "type": "integer", "minimum": 1, "maximum": 2500 },
+    "pageToken": { "type": "string" },
+    "singleEvents": { "type": "boolean", "description": "Expand recurring events" },
+    "orderBy": { "type": "string", "enum": ["startTime", "updated"] }
+  },
+  "required": ["calendarId"],
+  "additionalProperties": false
+}

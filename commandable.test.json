@@ -1,0 +1,13 @@
+{
+  "integrationDataDir": "./integration-data",
+  "spaceId": "local",
+  "integrations": [
+    {
+      "type": "github",
+      "credentials": {
+        "token": "env:GITHUB_TOKEN"
+      }
+    }
+  ]
+}
+
