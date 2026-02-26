@@ -97,6 +97,35 @@ Nothing is sent to Commandable, or anyone else. Your keys go from your terminal 
 
 ---
 
+## CI (credentials smoke tests)
+
+The `@commandable/mcp` server package includes a small live smoke suite (`packages/server/src/__tests__/credentialsSmoke.test.ts`) that verifies the **credentials-based** auth path works end-to-end for:
+
+- GitHub (`GET /user`) (optional; skipped if no token)
+- Trello (`GET /members/me`)
+- Google Sheets (`GET /spreadsheets/{id}`) using a **service account**
+
+### GitHub Actions secrets to add
+
+Add these repository secrets:
+
+- **TRELLO_API_KEY**: Trello API key
+- **TRELLO_API_TOKEN**: Trello API token
+- **GOOGLE_SERVICE_ACCOUNT_JSON**: full service account key JSON (paste the entire JSON file content)
+- **GOOGLE_SHEETS_TEST_SPREADSHEET_ID**: a spreadsheet ID that is shared with the service account `client_email`
+
+GitHub is optional: the workflow uses the default Actions token (`secrets.GITHUB_TOKEN`). If you want the smoke test to hit GitHub as a real user, add a PAT as a secret and map it to `GITHUB_TOKEN` in the workflow.
+
+### Google service account setup (Sheets)
+
+- Create a service account in Google Cloud and download a JSON key.
+- Share your test spreadsheet with the service account email (`client_email`) with viewer/editor access as needed.
+- Store the key JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` and the spreadsheet ID in `GOOGLE_SHEETS_TEST_SPREADSHEET_ID`.
+
+The CI workflow is `.github/workflows/commandable-mcp-ci.yml`.
+
+---
+
 ## Repo structure
 
 ```

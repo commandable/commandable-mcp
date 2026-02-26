@@ -1,4 +1,9 @@
-Paste a Google OAuth access token (Bearer token) here.
+Recommended: use a Google service account.
 
-This token is typically short-lived. For automated environments, prefer a service account and mint access tokens as needed.
+- Create a service account in Google Cloud
+- Download a JSON key
+- Paste the JSON into `serviceAccountJson` (or use `env:GOOGLE_SERVICE_ACCOUNT_JSON`)
+
+Note: Calendar often needs Google Workspace domain-wide delegation if you want to impersonate a user (`subject`).
+For simple setups, use a short-lived OAuth access token in `token`.
 

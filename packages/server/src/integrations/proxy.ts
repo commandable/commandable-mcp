@@ -3,6 +3,7 @@ import { HttpError } from '../errors/httpError.js'
 import type { IntegrationData } from '../types.js'
 import { PROVIDERS } from './providerRegistry.js'
 import { loadIntegrationCredentialConfig } from './dataLoader.js'
+import { getGoogleAccessToken } from './googleServiceAccount.js'
 
 export interface CredentialStore {
   getCredentials: (spaceId: string, credentialId: string) => Promise<Record<string, string> | null>
@@ -163,6 +164,42 @@ export class IntegrationProxy {
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
       if (!creds)
         throw new HttpError(400, 'No credentials are configured for this integration.')
+
+      if (provider.startsWith('google-')) {
+        const maybeToken = (creds as any).token
+        const serviceAccountJson = (creds as any).serviceAccountJson
+
+        if (!maybeToken && !serviceAccountJson) {
+          throw new HttpError(
+            400,
+            `Google integration '${provider}' requires either a 'token' or 'serviceAccountJson' credential.`,
+          )
+        }
+
+        if (!maybeToken && serviceAccountJson) {
+          const subject = typeof (creds as any).subject === 'string' ? (creds as any).subject : undefined
+
+          const rawScopes = (creds as any).scopes
+          const scopesFromCreds = Array.isArray(rawScopes)
+            ? rawScopes.map((s: any) => String(s)).filter(Boolean)
+            : (typeof rawScopes === 'string'
+                ? rawScopes.split(/[,\s]+/g).map(s => s.trim()).filter(Boolean)
+                : [])
+
+          const defaultScopes: Record<string, string[]> = {
+            'google-sheet': ['https://www.googleapis.com/auth/spreadsheets'],
+            'google-docs': ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive'],
+            'google-slides': ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive'],
+            'google-calendar': ['https://www.googleapis.com/auth/calendar'],
+          }
+          const scopes = scopesFromCreds.length ? scopesFromCreds : (defaultScopes[provider] || [])
+          if (!scopes.length)
+            throw new HttpError(400, `Missing OAuth scopes for Google integration '${provider}'.`)
+
+          const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
+          ;(creds as any).token = token
+        }
+      }
 
       const resolveTemplate = (template: string): string => {
         return String(template).replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key) => {
