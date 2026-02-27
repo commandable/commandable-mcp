@@ -1,45 +1,25 @@
 # Commandable MCP
 
-Connect your everyday apps to any AI assistant that supports the [Model Context Protocol](https://modelcontextprotocol.io). Set up once, and every MCP-compatible client — Claude Desktop, Cursor, Cline, and others — gets access to all your tools through a single encrypted, self-hosted server.
+Connect your everyday apps to any AI assistant that supports the [Model Context Protocol](https://modelcontextprotocol.io).
 
+**One tool, two ways to use it:**
 
-## Supported integrations
-
-| Integration | Tools |
-|-------------|-------|
-| GitHub | repos, issues, pull requests, commits |
-| Notion | pages, databases, blocks |
-| Trello | boards, lists, cards |
-| Airtable | bases, tables, records |
-| Google Calendar | events, calendars |
-| Google Docs | documents, content |
-| Google Sheets | spreadsheets, rows, cells |
-| Google Slides | presentations, slides |
+- **Desktop mode (stdio)**: run a local MCP server that Claude Desktop / Cursor spawns for you. Great for personal use and “set it and forget it”.
+- **Server mode (HTTP + UI)**: run a single Node process that serves **(1)** a management UI and **(2)** an MCP Streamable HTTP endpoint. Great for agent frameworks, shared environments, and CI-friendly config-as-code.
 
 ---
 
-## Quick start
+## Quick start: Desktop mode (Claude Desktop / Cursor)
 
-### 1. Run the setup wizard
+### 1) Run the setup wizard
 
 ```bash
 npx @commandable/mcp init
 ```
 
-This walks you through selecting integrations and entering your API credentials. Credentials are never stored in plain text — they're saved to an encrypted local store on your machine. It then prints a snippet to paste into your MCP client.
+This walks you through selecting integrations and entering credentials. Credentials are encrypted immediately and stored outside your project (default: `~/.commandable/`).
 
-### 1b. (Optional) Run as an HTTP tool gateway (agent frameworks)
-
-If you want to connect an agent framework to Commandable by URL (instead of spawning a local stdio server), run the MCP server over **Streamable HTTP**:
-
-```bash
-npx @commandable/mcp create-api-key my-app
-npx @commandable/mcp serve --port 3000
-```
-
-This exposes MCP at `http://localhost:3000/mcp` and requires `Authorization: Bearer <api-key>` on requests.
-
-### 2. Add the snippet to your MCP client
+### 2) Add the snippet to your MCP client
 
 **Claude Desktop** — edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -56,17 +36,66 @@ This exposes MCP at `http://localhost:3000/mcp` and requires `Authorization: Bea
 
 **Cursor** — open Settings → MCP → Add server, then paste the same JSON block.
 
-**Other MCP clients** — use the same `npx @commandable/mcp` command.
+### 3) Restart your MCP client
 
-### 3. Restart your MCP client
+Restart Claude Desktop or reload the Cursor window. Your assistant can now use the tools you configured.
 
-After saving the config, restart Claude Desktop or reload the Cursor window. Your AI assistant can now use all the tools you configured.
+---
+
+## Quick start: Server mode (Management UI + MCP over HTTP)
+
+Server mode is for when you want to connect by URL (agent frameworks) and/or manage integrations in a browser.
+
+### 1) Create a config file (config-as-code)
+
+Create `commandable.config.yaml`:
+
+```yaml
+integrations:
+  - type: github
+    credentials:
+      token: ${GITHUB_TOKEN}
+
+  - type: trello
+    credentials:
+      apiKey: ${TRELLO_API_KEY}
+      apiToken: ${TRELLO_API_TOKEN}
+```
+
+`${VAR_NAME}` values are resolved from your environment at startup.
+
+### 2) Run the server (Docker)
+
+```bash
+docker build -t commandable-mcp .
+docker run --rm -p 3000:3000 \
+  -e COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
+  -e DATABASE_URL="$DATABASE_URL" \
+  -e COMMANDABLE_CONFIG_FILE=/app/commandable.config.yaml \
+  -v "$PWD/commandable.config.yaml:/app/commandable.config.yaml:ro" \
+  commandable-mcp
+```
+
+This starts a app that serves:
+
+- **Management UI**: `http://localhost:3000/`
+- **MCP Streamable HTTP**: `http://localhost:3000/mcp`
+- **Health check**: `http://localhost:3000/health`
+
+### 3) Create an API key for `/mcp`
+
+`/mcp` requires `Authorization: Bearer <api-key>`. Create a key against the same DB:
+
+```bash
+DATABASE_URL="$DATABASE_URL" COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
+  npx @commandable/mcp create-api-key my-app
+```
+
+Store the printed key somewhere safe (it is only shown once).
 
 ---
 
 ## Using with OpenAI Agents SDK (HTTP)
-
-OpenAI Agents SDK can connect directly to MCP Streamable HTTP endpoints.
 
 ```python
 from agents.mcp import MCPServerStreamableHttp
@@ -82,38 +111,71 @@ mcp = MCPServerStreamableHttp(
 
 ---
 
-## Adding integrations later
+## Declarative / headless setup (CI-friendly)
+
+Apply config without interactive prompts:
 
 ```bash
-npx @commandable/mcp add
+npx @commandable/mcp apply --config ./commandable.config.yaml
 ```
 
-Or, if your config is in a non-default location:
+You can also make `init` headless by passing `--config`:
 
 ```bash
-npx @commandable/mcp add
+npx @commandable/mcp init --config ./commandable.config.yaml
 ```
-
-This shows only integrations you haven't set up yet and prompts for credentials. No need to touch your MCP client config — it picks up the changes automatically on next restart.
 
 ---
 
-## After a computer restart
+## Supported integrations
 
-Nothing to do. Your MCP client reads its config at startup and launches the server automatically. Commandable MCP loads your enabled integrations and is ready.
+| Integration | Tools |
+|-------------|-------|
+| GitHub | repos, issues, pull requests, commits |
+| Notion | pages, databases, blocks |
+| Trello | boards, lists, cards |
+| Airtable | bases, tables, records |
+| Google Calendar | events, calendars |
+| Google Docs | documents, content |
+| Google Sheets | spreadsheets, rows, cells |
+| Google Slides | presentations, slides |
+
+---
+
+## Configuration
+
+### Config file discovery
+
+Commandable looks for config in this order:
+
+1. `--config <path>`
+2. `COMMANDABLE_CONFIG_FILE`
+3. `./commandable.config.yaml`, `./commandable.config.yml`, `./commandable.config.json`
+
+### Environment variables
+
+See `.env.example` for a full list. The most important ones:
+
+- **`COMMANDABLE_ENCRYPTION_SECRET`**: stable secret used to encrypt credentials
+- **`DATABASE_URL`**: if set, uses Postgres; otherwise uses SQLite
+- **`COMMANDABLE_CONFIG_FILE`**: path to `commandable.config.yaml` (optional)
+- **`COMMANDABLE_DATA_DIR`**: where local state lives (default: `~/.commandable/`)
+- **`COMMANDABLE_INTEGRATION_DATA_DIR`**: override the integration-data directory
 
 ---
 
 ## CLI reference
 
 | Command | What it does |
-|---------|-------------|
-| `commandable-mcp init` | First-time setup: pick integrations, enter credentials |
-| `commandable-mcp add` | Add more integrations later |
-| `commandable-mcp status` | Show which integrations are enabled |
-| `commandable-mcp create-api-key [name]` | Create an API key for HTTP access |
-| `commandable-mcp serve [--port 3000]` | Run MCP server over Streamable HTTP |
-| `commandable-mcp` | Start the MCP server (used by MCP clients, not humans) |
+|---------|--------------|
+| `commandable-mcp init` | Interactive setup wizard (desktop mode) |
+| `commandable-mcp init --config <file>` | Headless apply (alias of `apply`) |
+| `commandable-mcp apply [--config <file>]` | Apply config-as-code idempotently (CI-friendly) |
+| `commandable-mcp add` | Add more integrations interactively |
+| `commandable-mcp status` | Show enabled integrations |
+| `commandable-mcp create-api-key [name]` | Create an API key for HTTP `/mcp` |
+| `commandable-mcp serve [--port 3000] [--config <file>]` | Run a standalone Streamable HTTP MCP server (Express) |
+| `commandable-mcp` | Start stdio MCP server (spawned by MCP clients) |
 | `commandable-mcp --help` | Show usage |
 
 ---
@@ -122,38 +184,17 @@ Nothing to do. Your MCP client reads its config at startup and launches the serv
 
 Most MCP setups ask you to put API keys directly in a config file — which then lives in your project folder, gets committed to git, and ends up in backups, logs, and teammates' laptops.
 
-Commandable MCP doesn't work that way. When you enter a credential, it's encrypted immediately and stored in your home directory, outside any project. No secrets files. No “oops I committed a key.” Just secure-by-default.
+Commandable MCP doesn't work that way in desktop mode. When you enter a credential, it's encrypted immediately and stored in your home directory, outside any project. No secrets files. No “oops I committed a key.” Just secure-by-default.
 
-Nothing is sent to Commandable, or anyone else. Your keys go from your terminal to your machine's encrypted store, and from there directly to the integration API when you use a tool. That's it.
+In server mode, use `commandable.config.yaml` with `${ENV_VAR}` references and inject secrets via your deployment environment.
 
 ---
 
-## CI (credentials smoke tests)
+## Deploying
 
-The `@commandable/mcp` server package includes a small live smoke suite (`packages/server/src/__tests__/credentialsSmoke.test.ts`) that verifies the **credentials-based** auth path works end-to-end for:
-
-- GitHub (`GET /user`) (optional; skipped if no token)
-- Trello (`GET /members/me`)
-- Google Sheets (`GET /spreadsheets/{id}`) using a **service account**
-
-### GitHub Actions secrets to add
-
-Add these repository secrets:
-
-- **TRELLO_API_KEY**: Trello API key
-- **TRELLO_API_TOKEN**: Trello API token
-- **GOOGLE_SERVICE_ACCOUNT_JSON**: full service account key JSON (paste the entire JSON file content)
-- **GOOGLE_SHEETS_TEST_SPREADSHEET_ID**: a spreadsheet ID that is shared with the service account `client_email`
-
-GitHub is optional: the workflow uses the default Actions token (`secrets.GITHUB_TOKEN`). If you want the smoke test to hit GitHub as a real user, add a PAT as a secret and map it to `GITHUB_TOKEN` in the workflow.
-
-### Google service account setup (Sheets)
-
-- Create a service account in Google Cloud and download a JSON key.
-- Share your test spreadsheet with the service account email (`client_email`) with viewer/editor access as needed.
-- Store the key JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` and the spreadsheet ID in `GOOGLE_SHEETS_TEST_SPREADSHEET_ID`.
-
-The CI workflow is `.github/workflows/commandable-mcp-ci.yml`.
+- **Docker**: use the root `Dockerfile` and mount `commandable.config.yaml` (see Quick start)
+- **docker-compose**: see `docker-compose.yml` for a Postgres + Commandable example
+- **CI**: run `commandable-mcp apply --config ...` to reconcile integration + credential state
 
 ---
 
@@ -161,9 +202,9 @@ The CI workflow is `.github/workflows/commandable-mcp-ci.yml`.
 
 ```
 commandable-mcp/
-├── packages/server/        # @commandable/mcp — the MCP server and CLI
-├── packages/server/integration-data/  # Tool manifests, schemas, and handlers per integration
-└── app/                    # Local management web UI (Nuxt)
+├── packages/server/                  # @commandable/mcp — core server + CLI
+├── packages/server/integration-data/ # tool manifests/schemas/handlers per integration
+└── app/                              # server mode UI + MCP endpoint (Nuxt/Nitro)
 ```
 
 ---

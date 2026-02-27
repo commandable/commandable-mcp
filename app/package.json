@@ -9,6 +9,7 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
+    "test": "echo \"(no tests)\"",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {

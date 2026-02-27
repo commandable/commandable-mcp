@@ -25,6 +25,10 @@ export * from './mcp/auth.js'
 export * from './mcp/httpServer.js'
 export * from './mcp/server.js'
 
+export * from './config/configSchema.js'
+export * from './config/configLoader.js'
+export * from './config/configApply.js'
+
 export * from './cli/index.js'
 export * from './cli/credentialManager.js'
 

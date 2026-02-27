@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: commandable
+      POSTGRES_USER: commandable
+      POSTGRES_PASSWORD: commandable
+    ports:
+      - "5432:5432"
+    volumes:
+      - commandable_pg:/var/lib/postgresql/data
+
+  commandable:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgres://commandable:commandable@postgres:5432/commandable
+      COMMANDABLE_ENCRYPTION_SECRET: ${COMMANDABLE_ENCRYPTION_SECRET}
+      COMMANDABLE_CONFIG_FILE: /app/commandable.config.yaml
+    volumes:
+      - ./commandable.config.yaml:/app/commandable.config.yaml:ro
+
+volumes:
+  commandable_pg:
+

@@ -11,6 +11,8 @@ import { listIntegrations } from '../db/integrationStore.js'
 import { createDbFromEnv } from '../db/client.js'
 import { ensureSchema } from '../db/migrate.js'
 import { SqlCredentialStore } from '../db/credentialStore.js'
+import { applyConfig } from '../config/configApply.js'
+import { loadConfig } from '../config/configLoader.js'
 
 function hasFlag(...flags: string[]): boolean {
   return flags.some(f => process.argv.includes(f))
@@ -33,10 +35,12 @@ function help(exitCode: number = 0): never {
     '',
     picocolors.bold('Usage'),
     `  ${picocolors.cyan('commandable-mcp init')}`,
+    `  ${picocolors.cyan('commandable-mcp init')} ${picocolors.dim('--config ./commandable.config.yaml')}`,
     `  ${picocolors.cyan('commandable-mcp add')}`,
     `  ${picocolors.cyan('commandable-mcp status')}`,
+    `  ${picocolors.cyan('commandable-mcp apply')} ${picocolors.dim('[--config ./commandable.config.yaml]')}`,
     `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
-    `  ${picocolors.cyan('commandable-mcp serve')} ${picocolors.dim('[--port 3000]')}`,
+    `  ${picocolors.cyan('commandable-mcp serve')} ${picocolors.dim('[--port 3000] [--config ./commandable.config.yaml]')}`,
     `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server)')}`,
     '',
     picocolors.bold('Notes'),
@@ -88,6 +92,26 @@ async function openEnvState(): Promise<{ db: any, credentialStore: SqlCredential
   }
 }
 
+async function runApplyHeadless() {
+  const cfgPath = getFlagValue('--config') || process.env.COMMANDABLE_CONFIG_FILE || null
+  const { config, path } = loadConfig(cfgPath || undefined)
+
+  const spaceId = process.env.COMMANDABLE_SPACE_ID || config.spaceId || 'local'
+  const { db, credentialStore, close } = await openEnvState()
+  try {
+    const res = await applyConfig({ config, db, credentialStore, defaultSpaceId: spaceId })
+    console.error(`${picocolors.green('Config applied.')}`)
+    console.error(`${picocolors.dim('File:')} ${path}`)
+    console.error(`${picocolors.dim('Space:')} ${res.spaceId}`)
+    console.error(`${picocolors.dim('Integrations upserted:')} ${res.integrationsUpserted}`)
+    console.error(`${picocolors.dim('Credentials written:')} ${res.credentialsWritten}`)
+    console.error(`${picocolors.dim('Credentials unchanged:')} ${res.credentialsUnchanged}`)
+  }
+  finally {
+    await close()
+  }
+}
+
 async function runHttpServe() {
   const portRaw = getFlagValue('--port') || process.env.PORT || '3000'
   const port = Number(portRaw)
@@ -99,6 +123,12 @@ async function runHttpServe() {
   const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
   const { db, credentialStore, close } = await openEnvState()
   try {
+    const cfgPath = getFlagValue('--config') || process.env.COMMANDABLE_CONFIG_FILE || null
+    if (cfgPath) {
+      const { config } = loadConfig(cfgPath || undefined)
+      await applyConfig({ config, db, credentialStore, defaultSpaceId: spaceId })
+    }
+
     const integrations = await listIntegrations(db, spaceId)
     if (!integrations.length) {
       console.error(`No integrations configured yet. Run ${picocolors.cyan('commandable-mcp init')}.`)
@@ -149,8 +179,12 @@ export async function main() {
   if (hasFlag('--help', '-h'))
     help(0)
 
-  if (cmd === 'init')
+  if (cmd === 'init') {
+    const cfgPath = getFlagValue('--config') || process.env.COMMANDABLE_CONFIG_FILE || null
+    if (cfgPath)
+      return await runApplyHeadless()
     return await runInitInteractive()
+  }
 
   if (cmd === 'add')
     return await runAddInteractive()
@@ -175,6 +209,9 @@ export async function main() {
 
   if (cmd === 'serve')
     return await runHttpServe()
+
+  if (cmd === 'apply')
+    return await runApplyHeadless()
 
   if (cmd === 'create-api-key')
     return await runCreateApiKey()
