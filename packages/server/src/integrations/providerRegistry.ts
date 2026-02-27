@@ -7,10 +7,10 @@ export const PROVIDERS: Record<string, any> = {
     baseUrl: 'https://api.trello.com/1',
     makeAuth: (token: string, apiKey: string) => ({ key: apiKey, token }),
   },
-  'slack': {
-    baseUrl: 'https://slack.com/api',
-    makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
-  },
+  // 'slack': {
+  //   baseUrl: 'https://slack.com/api',
+  //   makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  // },
   'airtable': {
     baseUrl: 'https://api.airtable.com/v0',
     makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
@@ -42,9 +42,9 @@ export const PROVIDERS: Record<string, any> = {
     baseUrl: 'https://slides.googleapis.com/v1',
     makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
   },
-  'jira': {
-    baseUrl: (sub: string) => `https://api.atlassian.com/ex/jira/${sub}`,
-    makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
-  },
+  // 'jira': {
+  //   baseUrl: (sub: string) => `https://api.atlassian.com/ex/jira/${sub}`,
+  //   makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  // },
 }
 
