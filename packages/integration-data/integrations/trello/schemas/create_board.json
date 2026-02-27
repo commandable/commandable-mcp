@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string" },
+    "defaultLists": { "type": "boolean", "description": "Create the default lists on the board (default: true)" },
+    "desc": { "type": "string" }
+  }
+}
+

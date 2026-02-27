@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
@@ -59,22 +59,40 @@ suite('trello write handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
-    // Discover a board and list for tests
-    const get_member_boards = buildRead('get_member_boards')
-    const boards = await get_member_boards({})
-    ctx.boardId = boards?.[0]?.id
-    if (ctx.boardId) {
-      const get_board_lists = buildRead('get_board_lists')
-      const lists = await get_board_lists({ boardId: ctx.boardId })
-      ctx.listId = lists?.[0]?.id
-      ctx.listId2 = lists?.[1]?.id || ctx.listId
-    }
+    // Create an isolated board + two lists for this test run
+    const create_board = buildWrite('create_board')
+    const board = await create_board({ name: `CmdTest Trello ${Date.now()}`, defaultLists: false })
+    ctx.boardId = board?.id
+    expect(ctx.boardId).toBeTruthy()
+
+    const create_list = buildWrite('create_list')
+    const list1 = await create_list({ idBoard: ctx.boardId, name: 'CmdTest List A' })
+    const list2 = await create_list({ idBoard: ctx.boardId, name: 'CmdTest List B' })
+    ctx.listId = list1?.id
+    ctx.listId2 = list2?.id
+    expect(ctx.listId).toBeTruthy()
+    expect(ctx.listId2).toBeTruthy()
 
     // Discover a member to add to card (self)
     const get_member = buildRead('get_member')
     const me = await get_member({})
     ctx.memberId = me?.id
   }, 60000)
+
+  afterAll(async () => {
+    if (!ctx.boardId)
+      return
+    try {
+      const close_board = buildWrite('close_board')
+      await close_board({ boardId: ctx.boardId })
+    }
+    catch {}
+    try {
+      const delete_board = buildWrite('delete_board')
+      await delete_board({ boardId: ctx.boardId })
+    }
+    catch {}
+  }, 60_000)
 
   it('create_card -> get_card -> update_card -> move_card_to_list -> delete_card', async () => {
     if (!ctx.boardId || !ctx.listId || !ctx.memberId)

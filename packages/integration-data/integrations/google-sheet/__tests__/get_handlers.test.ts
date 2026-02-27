@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
@@ -15,7 +15,11 @@ const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
 
 suite('google-sheet read handlers (live)', () => {
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
+  let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
+  let buildDriveWrite: (name: string) => ((input: any) => Promise<any>)
   let sheetTitle: string | undefined
+  let folderId: string | undefined
+  let spreadsheetId: string | undefined
 
   beforeAll(async () => {
     const credentialStore = {
@@ -26,7 +30,7 @@ suite('google-sheet read handlers (live)', () => {
     }
 
     const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
+    const sheetsNode = {
       spaceId: 'ci',
       id: 'node-gsheets',
       referenceId: 'node-gsheets',
@@ -35,32 +39,86 @@ suite('google-sheet read handlers (live)', () => {
       connectionMethod: 'credentials',
       credentialId: 'google-sheet-creds',
     } as any
+    const driveNode = {
+      spaceId: 'ci',
+      id: 'node-gdrive',
+      referenceId: 'node-gdrive',
+      type: 'google-drive',
+      label: 'Google Drive',
+      connectionMethod: 'credentials',
+      credentialId: 'google-drive-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-sheet')
     expect(tools).toBeTruthy()
 
+    const driveTools = loadIntegrationTools('google-drive')
+    expect(driveTools).toBeTruthy()
+
     buildReadHandler = (name: string) => {
       const tool = tools!.read.find(t => t.name === name)
       expect(tool, `read tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
+      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(sheetsNode, path, init) }
       const build = new Function('integration', `return (${tool!.handlerCode});`)
       return build(integration) as (input: any) => Promise<any>
     }
 
-    // Try to detect a default sheet title
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
-    if (spreadsheetId) {
-      try {
-        const get_spreadsheet = buildReadHandler('get_spreadsheet')
-        const meta = await get_spreadsheet({ spreadsheetId })
-        sheetTitle = meta?.sheets?.[0]?.properties?.title
-      }
-      catch {}
+    buildWriteHandler = (name: string) => {
+      const tool = tools!.write.find(t => t.name === name)
+      expect(tool, `write tool ${name} exists`).toBeTruthy()
+      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(sheetsNode, path, init) }
+      const build = new Function('integration', `return (${tool!.handlerCode});`)
+      return build(integration) as (input: any) => Promise<any>
     }
+
+    buildDriveWrite = (name: string) => {
+      const tool = driveTools!.write.find(t => t.name === name)
+      expect(tool, `drive tool ${name} exists`).toBeTruthy()
+      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(driveNode, path, init) }
+      const build = new Function('integration', `return (${tool!.handlerCode});`)
+      return build(integration) as (input: any) => Promise<any>
+    }
+
+    // Create dedicated folder + spreadsheet for this run
+    const create_folder = buildDriveWrite('create_folder')
+    const folder = await create_folder({ name: `CmdTest Sheets ${Date.now()}` })
+    folderId = folder?.id
+    expect(folderId).toBeTruthy()
+
+    const create_spreadsheet = buildWriteHandler('create_spreadsheet')
+    const created = await create_spreadsheet({ properties: { title: `CmdTest Sheet ${Date.now()}` } })
+    spreadsheetId = created?.spreadsheetId
+    expect(spreadsheetId).toBeTruthy()
+
+    const move_file = buildDriveWrite('move_file')
+    await move_file({ fileId: spreadsheetId, addParents: folderId })
+
+    try {
+      const get_spreadsheet = buildReadHandler('get_spreadsheet')
+      const meta = await get_spreadsheet({ spreadsheetId })
+      sheetTitle = meta?.sheets?.[0]?.properties?.title
+    }
+    catch {}
+  }, 60000)
+
+  afterAll(async () => {
+    if (!folderId)
+      return
+    try {
+      if (spreadsheetId) {
+        const delete_file = buildDriveWrite('delete_file')
+        await delete_file({ fileId: spreadsheetId })
+      }
+    }
+    catch {}
+    try {
+      const delete_file = buildDriveWrite('delete_file')
+      await delete_file({ fileId: folderId })
+    }
+    catch {}
   }, 60000)
 
   it('get_spreadsheet returns metadata', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_spreadsheet')
@@ -69,7 +127,6 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_values returns a value range', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_values')
@@ -79,7 +136,6 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('batch_get_values returns multiple ranges', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('batch_get_values')
@@ -89,7 +145,6 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_spreadsheet_by_data_filter returns metadata', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_spreadsheet_by_data_filter')
@@ -99,7 +154,6 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_values_by_data_filter returns values', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_values_by_data_filter')
@@ -109,7 +163,6 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('search_developer_metadata returns results or empty', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('search_developer_metadata')
@@ -118,7 +171,6 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_developer_metadata retrieves by id when available', async () => {
-    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const search = buildReadHandler('search_developer_metadata')

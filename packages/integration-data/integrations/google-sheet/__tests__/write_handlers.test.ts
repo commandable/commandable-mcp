@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
@@ -9,25 +9,23 @@ import { loadIntegrationTools } from '../../../../server/src/integrations/dataLo
 
 interface Ctx {
   spreadsheetId?: string
+  folderId?: string
+  destSpreadsheetId?: string
 }
 
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv(
-  'GOOGLE_SHEETS_TEST_SPREADSHEET_ID',
-)
-  && (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
+const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
 suite('google-sheet write handlers (live)', () => {
   const ctx: Ctx = {}
   let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
+  let buildDriveWrite: (name: string) => ((input: any) => Promise<any>)
   let sheetTitle: string | undefined
 
   beforeAll(async () => {
-    const { GOOGLE_SHEETS_TEST_SPREADSHEET_ID } = env
-
     const credentialStore = {
       getCredentials: async () => ({
         token: env.GOOGLE_TOKEN || '',
@@ -36,7 +34,7 @@ suite('google-sheet write handlers (live)', () => {
     }
 
     const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
+    const sheetsNode = {
       spaceId: 'ci',
       id: 'node-gsheets',
       referenceId: 'node-gsheets',
@@ -45,24 +43,60 @@ suite('google-sheet write handlers (live)', () => {
       connectionMethod: 'credentials',
       credentialId: 'google-sheet-creds',
     } as any
+    const driveNode = {
+      spaceId: 'ci',
+      id: 'node-gdrive',
+      referenceId: 'node-gdrive',
+      type: 'google-drive',
+      label: 'Google Drive',
+      connectionMethod: 'credentials',
+      credentialId: 'google-drive-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-sheet')
     expect(tools).toBeTruthy()
 
+    const driveTools = loadIntegrationTools('google-drive')
+    expect(driveTools).toBeTruthy()
+
     buildWriteHandler = (name: string) => {
       const tool = tools!.write.find(t => t.name === name)
       expect(tool, `write tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
+      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(sheetsNode, path, init) }
       const build = new Function('integration', `return (${tool!.handlerCode});`)
       return build(integration) as (input: any) => Promise<any>
     }
 
-    ctx.spreadsheetId = GOOGLE_SHEETS_TEST_SPREADSHEET_ID
+    buildDriveWrite = (name: string) => {
+      const tool = driveTools!.write.find(t => t.name === name)
+      expect(tool, `drive tool ${name} exists`).toBeTruthy()
+      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(driveNode, path, init) }
+      const build = new Function('integration', `return (${tool!.handlerCode});`)
+      return build(integration) as (input: any) => Promise<any>
+    }
+
+    const create_folder = buildDriveWrite('create_folder')
+    const folder = await create_folder({ name: `CmdTest Sheets Write ${Date.now()}` })
+    ctx.folderId = folder?.id
+    expect(ctx.folderId).toBeTruthy()
+
+    const create_spreadsheet = buildWriteHandler('create_spreadsheet')
+    const created = await create_spreadsheet({ properties: { title: `CmdTest Sheet ${Date.now()}` } })
+    ctx.spreadsheetId = created?.spreadsheetId
+    expect(ctx.spreadsheetId).toBeTruthy()
+
+    const createdDest = await create_spreadsheet({ properties: { title: `CmdTest Sheet Dest ${Date.now()}` } })
+    ctx.destSpreadsheetId = createdDest?.spreadsheetId
+    expect(ctx.destSpreadsheetId).toBeTruthy()
+
+    const move_file = buildDriveWrite('move_file')
+    await move_file({ fileId: ctx.spreadsheetId, addParents: ctx.folderId })
+    await move_file({ fileId: ctx.destSpreadsheetId, addParents: ctx.folderId })
 
     // Try to detect a default sheet title
     if (ctx.spreadsheetId) {
       const proxy2 = new IntegrationProxy({ credentialStore })
-      const node2 = integrationNode
+      const node2 = sheetsNode
       const tools2 = loadIntegrationTools('google-sheet')!
       const tool = tools2.read.find(t => t.name === 'get_spreadsheet')!
       const build = new Function('integration', `return (${tool.handlerCode});`)
@@ -75,6 +109,24 @@ suite('google-sheet write handlers (live)', () => {
       catch {}
     }
   }, 60000)
+
+  afterAll(async () => {
+    try {
+      const delete_file = buildDriveWrite('delete_file')
+      if (ctx.spreadsheetId)
+        await delete_file({ fileId: ctx.spreadsheetId })
+      if (ctx.destSpreadsheetId)
+        await delete_file({ fileId: ctx.destSpreadsheetId })
+    }
+    catch {}
+    try {
+      if (ctx.folderId) {
+        const delete_file = buildDriveWrite('delete_file')
+        await delete_file({ fileId: ctx.folderId })
+      }
+    }
+    catch {}
+  }, 60_000)
 
   it('append_values appends then clear_values clears', async () => {
     if (!ctx.spreadsheetId)
@@ -152,25 +204,16 @@ suite('google-sheet write handlers (live)', () => {
   }, 60000)
 
   it('copy_to_spreadsheet copies a sheet when destination provided', async () => {
-    if (!ctx.spreadsheetId || !env.GSHEETS_TEST_DEST_SPREADSHEET_ID)
+    if (!ctx.spreadsheetId || !ctx.destSpreadsheetId)
       return expect(true).toBe(true)
     const copy_to_spreadsheet = buildWriteHandler('copy_to_spreadsheet')
     // Attempt to copy sheet with id 0 (typical for first sheet). If it fails, skip.
     try {
-      const res = await copy_to_spreadsheet({ spreadsheetId: ctx.spreadsheetId, sheetId: 0, destinationSpreadsheetId: env.GSHEETS_TEST_DEST_SPREADSHEET_ID })
+      const res = await copy_to_spreadsheet({ spreadsheetId: ctx.spreadsheetId, sheetId: 0, destinationSpreadsheetId: ctx.destSpreadsheetId })
       expect(res?.sheetId !== undefined || res?.spreadsheetId).toBeTruthy()
     }
     catch {
       expect(true).toBe(true)
     }
-  }, 60000)
-
-  it('create_spreadsheet creates a spreadsheet when allowed', async () => {
-    if (!env.GSHEETS_ALLOW_CREATE)
-      return expect(true).toBe(true)
-    const create_spreadsheet = buildWriteHandler('create_spreadsheet')
-    const res = await create_spreadsheet({ properties: { title: `CmdTest ${Date.now()}` } })
-    expect(res?.spreadsheetId).toBeTruthy()
-    // Note: No delete here to avoid Drive scope; test leaves an artifact when enabled.
   }, 60000)
 })

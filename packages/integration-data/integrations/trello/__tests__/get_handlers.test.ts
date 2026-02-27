@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
@@ -25,6 +25,8 @@ const suite = hasEnv(
 
 suite('trello read handlers (live)', () => {
   const ids: Ids = {}
+  let boardId: string | undefined
+  let listId: string | undefined
 
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
@@ -57,26 +59,43 @@ suite('trello read handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
-    // Discover a board, list, card, and org for subsequent tests
-    const get_member_boards = buildHandler('get_member_boards')
-    const boards = await get_member_boards({})
-    expect(Array.isArray(boards)).toBe(true)
-    ids.boardId = boards[0]?.id
+    // Create an isolated board/list/card for this run so tests don’t touch random user boards.
+    const create_board = buildHandler('create_board') as any
+    const board = await create_board({ name: `CmdTest Trello Read ${Date.now()}`, defaultLists: false })
+    boardId = board?.id
+    ids.boardId = boardId
+    expect(ids.boardId).toBeTruthy()
 
-    if (ids.boardId) {
-      const get_board_lists = buildHandler('get_board_lists')
-      const lists = await get_board_lists({ boardId: ids.boardId })
-      ids.listId = lists[0]?.id
+    const create_list = buildHandler('create_list') as any
+    const list = await create_list({ idBoard: boardId, name: 'CmdTest List' })
+    listId = list?.id
+    ids.listId = listId
+    expect(ids.listId).toBeTruthy()
 
-      const get_board_cards = buildHandler('get_board_cards')
-      const cards = await get_board_cards({ boardId: ids.boardId })
-      ids.cardId = cards[0]?.id
-    }
+    const create_card = buildHandler('create_card') as any
+    const card = await create_card({ idList: listId, name: `CmdTest Card ${Date.now()}` })
+    ids.cardId = card?.id
+    expect(ids.cardId).toBeTruthy()
 
     const get_member_organizations = buildHandler('get_member_organizations')
     const orgs = await get_member_organizations({})
     ids.orgId = orgs[0]?.id
   }, 60000)
+
+  afterAll(async () => {
+    if (!boardId)
+      return
+    try {
+      const close_board = buildHandler('close_board') as any
+      await close_board({ boardId })
+    }
+    catch {}
+    try {
+      const delete_board = buildHandler('delete_board') as any
+      await delete_board({ boardId })
+    }
+    catch {}
+  }, 60_000)
 
   it('get_member returns current member', async () => {
     const handler = buildHandler('get_member')

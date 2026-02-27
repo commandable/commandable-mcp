@@ -1,10 +1,10 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
 interface Ctx {
   createdPageId?: string
-  parentDatabaseId?: string
+  testDatabaseId?: string
   createdDatabaseId?: string
 }
 
@@ -12,6 +12,7 @@ const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
   'NOTION_TOKEN',
+  'NOTION_TEST_PARENT_PAGE_ID',
 )
   ? describe
   : describe.skip
@@ -56,23 +57,48 @@ suite('notion write handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
-    // Try to find a database to create a page in by searching
-    try {
-      const search = buildRead('search')
-      const res = await search({ query: '', filter: { value: 'database', property: 'object' }, page_size: 1 })
-      ctx.parentDatabaseId = res?.results?.[0]?.id
-    }
-    catch {}
+    // Create a dedicated database under a known parent page for this run
+    const create_database = buildWrite('create_database')
+    const createdDb = await create_database({
+      parent: { page_id: env.NOTION_TEST_PARENT_PAGE_ID },
+      title: [{ type: 'text', text: { content: `CmdTest DB ${Date.now()}` } }],
+      properties: {
+        Name: { title: {} },
+        Status: { select: { options: [{ name: 'Open' }, { name: 'Done' }] } },
+      },
+    })
+    ctx.testDatabaseId = createdDb?.id
+    expect(ctx.testDatabaseId).toBeTruthy()
   }, 60000)
 
+  afterAll(async () => {
+    // Archive any created page + any created databases from this run
+    try {
+      if (ctx.createdPageId) {
+        const update_page_properties = buildWrite('update_page_properties')
+        await update_page_properties({ page_id: ctx.createdPageId, properties: {}, archived: true })
+      }
+    }
+    catch {}
+
+    try {
+      const update_database = buildWrite('update_database')
+      if (ctx.createdDatabaseId)
+        await update_database({ database_id: ctx.createdDatabaseId, archived: true })
+      if (ctx.testDatabaseId)
+        await update_database({ database_id: ctx.testDatabaseId, archived: true })
+    }
+    catch {}
+  }, 60_000)
+
   it('create_page -> retrieve_page -> update_page_properties', async () => {
-    if (!ctx.parentDatabaseId)
+    if (!ctx.testDatabaseId)
       return expect(true).toBe(true)
 
     const create_page = buildWrite('create_page')
     const titleText = `CmdTest ${Date.now()}`
     const created = await create_page({
-      parent: { database_id: ctx.parentDatabaseId },
+      parent: { database_id: ctx.testDatabaseId },
       properties: {
         Name: { title: [{ type: 'text', text: { content: titleText } }] },
       },

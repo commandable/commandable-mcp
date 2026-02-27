@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["fileId", "addParents"],
+  "additionalProperties": false,
+  "properties": {
+    "fileId": { "type": "string" },
+    "addParents": { "type": "string", "description": "Comma-separated parent IDs to add" },
+    "removeParents": { "type": "string", "description": "Comma-separated parent IDs to remove (optional)" }
+  }
+}
+

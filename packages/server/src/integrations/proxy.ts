@@ -191,6 +191,7 @@ export class IntegrationProxy {
             'google-docs': ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive'],
             'google-slides': ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive'],
             'google-calendar': ['https://www.googleapis.com/auth/calendar'],
+            'google-drive': ['https://www.googleapis.com/auth/drive'],
           }
           const scopes = scopesFromCreds.length ? scopesFromCreds : (defaultScopes[provider] || [])
           if (!scopes.length)

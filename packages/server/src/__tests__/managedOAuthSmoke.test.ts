@@ -77,7 +77,7 @@ suite('managed OAuth smoke (hosted-only)', () => {
   }, 30_000)
 
   it('Google Calendar list calendars works via managed OAuth', async () => {
-    if (!has('GCAL_TEST_CONNECTION_ID'))
+    if (!has('GOOGLE_CALENDAR_TEST_CONNECTION_ID'))
       return expect(true).toBe(true)
 
     const resp = await proxy.call({
@@ -85,55 +85,55 @@ suite('managed OAuth smoke (hosted-only)', () => {
       referenceId: 'google-calendar',
       type: 'google-calendar',
       label: 'Google Calendar',
-      connectionId: env.GCAL_TEST_CONNECTION_ID!,
+      connectionId: env.GOOGLE_CALENDAR_TEST_CONNECTION_ID!,
     } as any, '/users/me/calendarList')
 
     expect(resp.ok).toBe(true)
   }, 30_000)
 
   it('Google Sheets get spreadsheet works via managed OAuth (optional)', async () => {
-    if (!has('GSHEETS_TEST_CONNECTION_ID', 'GSHEETS_TEST_SPREADSHEET_ID'))
+    if (!has('GOOGLE_SHEETS_TEST_CONNECTION_ID', 'GOOGLE_SHEETS_TEST_SPREADSHEET_ID'))
       return expect(true).toBe(true)
 
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID!
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID!
     const resp = await proxy.call({
       id: 'google-sheet',
       referenceId: 'google-sheet',
       type: 'google-sheet',
       label: 'Google Sheets',
-      connectionId: env.GSHEETS_TEST_CONNECTION_ID!,
+      connectionId: env.GOOGLE_SHEETS_TEST_CONNECTION_ID!,
     } as any, `/spreadsheets/${encodeURIComponent(spreadsheetId)}`)
 
     expect(resp.ok).toBe(true)
   }, 30_000)
 
   it('Google Docs get document works via managed OAuth (optional)', async () => {
-    if (!has('GDOCS_TEST_CONNECTION_ID', 'GDOCS_TEST_DOCUMENT_ID'))
+    if (!has('GOOGLE_DOCS_TEST_CONNECTION_ID', 'GOOGLE_DOCS_TEST_DOCUMENT_ID'))
       return expect(true).toBe(true)
 
-    const documentId = env.GDOCS_TEST_DOCUMENT_ID!
+    const documentId = env.GOOGLE_DOCS_TEST_DOCUMENT_ID!
     const resp = await proxy.call({
       id: 'google-docs',
       referenceId: 'google-docs',
       type: 'google-docs',
       label: 'Google Docs',
-      connectionId: env.GDOCS_TEST_CONNECTION_ID!,
+      connectionId: env.GOOGLE_DOCS_TEST_CONNECTION_ID!,
     } as any, `/documents/${encodeURIComponent(documentId)}`)
 
     expect(resp.ok).toBe(true)
   }, 30_000)
 
   it('Google Slides get presentation works via managed OAuth (optional)', async () => {
-    if (!has('GSLIDES_TEST_CONNECTION_ID', 'GSLIDES_TEST_PRESENTATION_ID'))
+    if (!has('GOOGLE_SLIDES_TEST_CONNECTION_ID', 'GOOGLE_SLIDES_TEST_PRESENTATION_ID'))
       return expect(true).toBe(true)
 
-    const presentationId = env.GSLIDES_TEST_PRESENTATION_ID!
+    const presentationId = env.GOOGLE_SLIDES_TEST_PRESENTATION_ID!
     const resp = await proxy.call({
       id: 'google-slides',
       referenceId: 'google-slides',
       type: 'google-slides',
       label: 'Google Slides',
-      connectionId: env.GSLIDES_TEST_CONNECTION_ID!,
+      connectionId: env.GOOGLE_SLIDES_TEST_CONNECTION_ID!,
     } as any, `/presentations/${encodeURIComponent(presentationId)}`)
 
     expect(resp.ok).toBe(true)
