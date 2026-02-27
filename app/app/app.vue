@@ -11,17 +11,15 @@ useHead({
   }
 })
 
-const title = 'Nuxt Starter Template'
-const description = 'A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours.'
+const title = 'Commandable MCP'
+const description = 'One MCP server for all your apps. Connect GitHub, Notion, Google, Trello and more to any AI assistant — Claude Desktop, Cursor, Cline — in under 5 minutes.'
 
 useSeoMeta({
   title,
   description,
   ogTitle: title,
   ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  twitterCard: 'summary_large_image'
+  twitterCard: 'summary'
 })
 </script>
 
@@ -32,15 +30,13 @@ useSeoMeta({
         <NuxtLink to="/">
           <AppLogo class="w-auto h-6 shrink-0" />
         </NuxtLink>
-
-        <TemplateMenu />
       </template>
 
       <template #right>
         <UColorModeButton />
 
         <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
+          to="https://github.com/commandablehq/commandable-mcp"
           target="_blank"
           icon="i-simple-icons-github"
           aria-label="GitHub"
@@ -54,18 +50,16 @@ useSeoMeta({
       <NuxtPage />
     </UMain>
 
-    <USeparator icon="i-simple-icons-nuxtdotjs" />
-
     <UFooter>
       <template #left>
         <p class="text-sm text-muted">
-          Built with Nuxt UI • © {{ new Date().getFullYear() }}
+          © {{ new Date().getFullYear() }} Commandable
         </p>
       </template>
 
       <template #right>
         <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
+          to="https://github.com/commandablehq/commandable-mcp"
           target="_blank"
           icon="i-simple-icons-github"
           aria-label="GitHub"
