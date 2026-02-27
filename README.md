@@ -206,6 +206,12 @@ In server mode, use `commandable.config.yaml` with `${ENV_VAR}` references and i
 
 ---
 
+## Testing
+
+See [`TESTING.md`](./TESTING.md).
+
+---
+
 ## Repo structure
 
 ```

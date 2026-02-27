@@ -1,13 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE Google Sheets write tests using managed OAuth
+// LIVE Google Sheets write tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GSHEETS_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-sheet')
-// - GSHEETS_TEST_SPREADSHEET_ID (target spreadsheet ID with write access)
+// - Either GOOGLE_TOKEN, OR GOOGLE_SERVICE_ACCOUNT_JSON
+// - GOOGLE_SHEETS_TEST_SPREADSHEET_ID (target spreadsheet ID with write access)
 
 interface Ctx {
   spreadsheetId?: string
@@ -16,11 +14,9 @@ interface Ctx {
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GSHEETS_TEST_CONNECTION_ID',
-  'GSHEETS_TEST_SPREADSHEET_ID',
+  'GOOGLE_SHEETS_TEST_SPREADSHEET_ID',
 )
+  && (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
@@ -30,13 +26,25 @@ suite('google-sheet write handlers (live)', () => {
   let sheetTitle: string | undefined
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSHEETS_TEST_CONNECTION_ID, GSHEETS_TEST_SPREADSHEET_ID } = env
+    const { GOOGLE_SHEETS_TEST_SPREADSHEET_ID } = env
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-gsheets', type: 'google-sheet', label: 'Google Sheets', connectionId: GSHEETS_TEST_CONNECTION_ID } as any
+    const credentialStore = {
+      getCredentials: async () => ({
+        token: env.GOOGLE_TOKEN || '',
+        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      }),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-gsheets',
+      referenceId: 'node-gsheets',
+      type: 'google-sheet',
+      label: 'Google Sheets',
+      connectionMethod: 'credentials',
+      credentialId: 'google-sheet-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-sheet')
     expect(tools).toBeTruthy()
@@ -49,15 +57,12 @@ suite('google-sheet write handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
-    ctx.spreadsheetId = GSHEETS_TEST_SPREADSHEET_ID
+    ctx.spreadsheetId = GOOGLE_SHEETS_TEST_SPREADSHEET_ID
 
     // Try to detect a default sheet title
     if (ctx.spreadsheetId) {
-      const proxy2 = new IntegrationProxy({
-        managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-        managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-      })
-      const node2 = { id: 'node-gsheets', type: 'google-sheet', label: 'Google Sheets', connectionId: GSHEETS_TEST_CONNECTION_ID } as any
+      const proxy2 = new IntegrationProxy({ credentialStore })
+      const node2 = integrationNode
       const tools2 = loadIntegrationTools('google-sheet')!
       const tool = tools2.read.find(t => t.name === 'get_spreadsheet')!
       const build = new Function('integration', `return (${tool.handlerCode});`)

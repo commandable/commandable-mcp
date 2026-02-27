@@ -1,13 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE Google Docs write tests using managed OAuth
+// LIVE Google Docs write tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GDOCS_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-docs')
-// - GDOCS_TEST_DOCUMENT_ID (target document ID with write access) OR GDOCS_ALLOW_CREATE to create
+// - Either GOOGLE_TOKEN, OR GOOGLE_SERVICE_ACCOUNT_JSON
+// - GOOGLE_DOCS_TEST_DOCUMENT_ID (target document ID with write access) OR GDOCS_ALLOW_CREATE to create
 
 interface Ctx {
   documentId?: string
@@ -15,11 +13,7 @@ interface Ctx {
 
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GDOCS_TEST_CONNECTION_ID',
-)
+const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
@@ -29,13 +23,25 @@ suite('google-docs write handlers (live)', () => {
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GDOCS_TEST_CONNECTION_ID, GDOCS_TEST_DOCUMENT_ID } = env
+    const { GDOCS_TEST_DOCUMENT_ID } = env
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-gdocs', type: 'google-docs', label: 'Google Docs', connectionId: GDOCS_TEST_CONNECTION_ID } as any
+    const credentialStore = {
+      getCredentials: async () => ({
+        token: env.GOOGLE_TOKEN || '',
+        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      }),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-gdocs',
+      referenceId: 'node-gdocs',
+      type: 'google-docs',
+      label: 'Google Docs',
+      connectionMethod: 'credentials',
+      credentialId: 'google-docs-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-docs')
     expect(tools).toBeTruthy()
@@ -56,7 +62,7 @@ suite('google-docs write handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
-    ctx.documentId = GDOCS_TEST_DOCUMENT_ID
+    ctx.documentId = env.GOOGLE_DOCS_TEST_DOCUMENT_ID || GDOCS_TEST_DOCUMENT_ID
   }, 60000)
 
   it('create_document creates a document when allowed', async () => {
@@ -68,7 +74,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('batch_update can perform a trivial replaceAllText no-op', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const batch_update = buildWriteHandler('batch_update')
@@ -79,7 +85,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('append_text appends content', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const append_text = buildWriteHandler('append_text')
@@ -92,7 +98,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('insert_text_after_first_match inserts text near target', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const insert_text_after_first_match = buildWriteHandler('insert_text_after_first_match')
@@ -113,7 +119,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('replace_all_text replaces occurrences', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const replace_all_text = buildWriteHandler('replace_all_text')
@@ -122,7 +128,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('style_first_match applies style to first match', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const style_first_match = buildWriteHandler('style_first_match')
@@ -138,7 +144,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('insert_table_after_first_match inserts a table near target', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const insert_table_after_first_match = buildWriteHandler('insert_table_after_first_match')
@@ -157,7 +163,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('insert_page_break_after_first_match inserts a break near target', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const insert_page_break_after_first_match = buildWriteHandler('insert_page_break_after_first_match')
@@ -176,9 +182,9 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('insert_inline_image_after_first_match inserts an image when allowed', async () => {
-    if (!process.env.GDOCS_TEST_DOCUMENT_ID || !process.env.GDOCS_TEST_IMAGE_URI)
+    if (!(process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID) || !process.env.GDOCS_TEST_IMAGE_URI)
       return expect(true).toBe(true)
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     const insert_inline_image_after_first_match = buildWriteHandler('insert_inline_image_after_first_match')
     const anchor = `ANCHOR_${Date.now()}`
     const appended = buildWriteHandler('append_text')
@@ -191,7 +197,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('delete_first_match deletes a small span (no-op ok)', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const delete_first_match = buildWriteHandler('delete_first_match')
@@ -208,7 +214,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('update_paragraph_style_for_first_match updates paragraph style near target', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const update_paragraph_style_for_first_match = buildWriteHandler('update_paragraph_style_for_first_match')
@@ -239,7 +245,7 @@ suite('google-docs write handlers (live)', () => {
   }, 60000)
 
   it('update_document_style updates doc style with no-op', async () => {
-    const documentId = process.env.GDOCS_TEST_DOCUMENT_ID
+    const documentId = process.env.GOOGLE_DOCS_TEST_DOCUMENT_ID || process.env.GDOCS_TEST_DOCUMENT_ID
     if (!documentId)
       return expect(true).toBe(true)
     const update_document_style = buildWriteHandler('update_document_style')

@@ -1,14 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE GitHub write tests using managed OAuth
-// Required env vars for write tests:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GITHUB_TEST_CONNECTION_ID (managed OAuth connection for provider 'github')
-// - GITHUB_TEST_OWNER (owner to use for write tests)
-// - GITHUB_TEST_REPO (repo to use for write tests)
+// LIVE GitHub write tests using credentials (personal access token)
+// Required env vars:
+// - GITHUB_TOKEN
+// - GITHUB_TEST_OWNER
+// - GITHUB_TEST_REPO
 
 interface Ctx {
   owner?: string
@@ -19,9 +17,7 @@ interface Ctx {
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GITHUB_TEST_CONNECTION_ID',
+  'GITHUB_TOKEN',
   'GITHUB_TEST_OWNER',
   'GITHUB_TEST_REPO',
 )
@@ -35,18 +31,24 @@ suite('github write handlers (live)', () => {
 
   beforeAll(async () => {
     const {
-      COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-      GITHUB_TEST_CONNECTION_ID,
       GITHUB_TEST_OWNER,
       GITHUB_TEST_REPO,
     } = env
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-github', type: 'github', label: 'GitHub', connectionId: GITHUB_TEST_CONNECTION_ID } as any
+    const credentialStore = {
+      getCredentials: async () => ({ token: env.GITHUB_TOKEN || '' }),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-github',
+      referenceId: 'node-github',
+      type: 'github',
+      label: 'GitHub',
+      connectionMethod: 'credentials',
+      credentialId: 'github-creds',
+    } as any
 
     const tools = loadIntegrationTools('github')
     expect(tools).toBeTruthy()

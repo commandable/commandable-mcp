@@ -1,21 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE Google Slides read tests using managed OAuth
+// LIVE Google Slides read tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GSLIDES_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-slides')
-// - GSLIDES_TEST_PRESENTATION_ID (an accessible presentation ID)
+// - Either GOOGLE_TOKEN, OR GOOGLE_SERVICE_ACCOUNT_JSON
+// - GOOGLE_SLIDES_TEST_PRESENTATION_ID (an accessible presentation ID)
 
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GSLIDES_TEST_CONNECTION_ID',
-)
+const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
@@ -23,13 +17,23 @@ suite('google-slides read handlers (live)', () => {
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSLIDES_TEST_CONNECTION_ID } = env
+    const credentialStore = {
+      getCredentials: async () => ({
+        token: env.GOOGLE_TOKEN || '',
+        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      }),
+    }
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-gslides', type: 'google-slides', label: 'Google Slides', connectionId: GSLIDES_TEST_CONNECTION_ID } as any
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-gslides',
+      referenceId: 'node-gslides',
+      type: 'google-slides',
+      label: 'Google Slides',
+      connectionMethod: 'credentials',
+      credentialId: 'google-slides-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-slides')
     expect(tools).toBeTruthy()
@@ -44,7 +48,7 @@ suite('google-slides read handlers (live)', () => {
   }, 60000)
 
   it('get_presentation returns metadata', async () => {
-    const presentationId = env.GSLIDES_TEST_PRESENTATION_ID
+    const presentationId = env.GOOGLE_SLIDES_TEST_PRESENTATION_ID || env.GSLIDES_TEST_PRESENTATION_ID
     if (!presentationId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_presentation')
@@ -53,7 +57,7 @@ suite('google-slides read handlers (live)', () => {
   }, 30000)
 
   it('get_page_thumbnail returns URL data', async () => {
-    const presentationId = env.GSLIDES_TEST_PRESENTATION_ID
+    const presentationId = env.GOOGLE_SLIDES_TEST_PRESENTATION_ID || env.GSLIDES_TEST_PRESENTATION_ID
     if (!presentationId)
       return expect(true).toBe(true)
     // First query the presentation to discover a page id

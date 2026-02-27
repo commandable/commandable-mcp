@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
 interface Ctx {
   boardId?: string
@@ -13,10 +13,8 @@ interface Ctx {
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
   'TRELLO_API_KEY',
-  'TRELLO_TEST_CONNECTION_ID',
+  'TRELLO_API_TOKEN',
 )
   ? describe
   : describe.skip
@@ -27,14 +25,20 @@ suite('trello write handlers (live)', () => {
   let buildRead: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, TRELLO_API_KEY, TRELLO_TEST_CONNECTION_ID } = env
+    const credentialStore = {
+      getCredentials: async () => ({ apiKey: env.TRELLO_API_KEY || '', apiToken: env.TRELLO_API_TOKEN || '' }),
+    }
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-      trelloApiKey: TRELLO_API_KEY,
-    })
-    const integrationNode = { id: 'node-trello', type: 'trello', label: 'Trello', connectionId: TRELLO_TEST_CONNECTION_ID } as any
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-trello',
+      referenceId: 'node-trello',
+      type: 'trello',
+      label: 'Trello',
+      connectionMethod: 'credentials',
+      credentialId: 'trello-creds',
+    } as any
 
     const tools = loadIntegrationTools('trello')
     expect(tools).toBeTruthy()

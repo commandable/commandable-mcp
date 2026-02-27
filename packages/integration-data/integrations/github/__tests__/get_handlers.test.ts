@@ -1,12 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE GitHub integration tests using managed OAuth
+// LIVE GitHub integration tests using credentials (personal access token)
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GITHUB_TEST_CONNECTION_ID (managed OAuth connection for provider 'github')
+// - GITHUB_TOKEN
 
 interface Ctx {
   owner?: string
@@ -16,7 +14,7 @@ interface Ctx {
 
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv('COMMANDABLE_MANAGED_OAUTH_BASE_URL', 'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY', 'GITHUB_TEST_CONNECTION_ID')
+const suite = hasEnv('GITHUB_TOKEN')
   ? describe
   : describe.skip
 
@@ -25,13 +23,20 @@ suite('github read handlers (live)', () => {
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GITHUB_TEST_CONNECTION_ID } = env
+    const credentialStore = {
+      getCredentials: async () => ({ token: env.GITHUB_TOKEN || '' }),
+    }
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-github', type: 'github', label: 'GitHub', connectionId: GITHUB_TEST_CONNECTION_ID } as any
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-github',
+      referenceId: 'node-github',
+      type: 'github',
+      label: 'GitHub',
+      connectionMethod: 'credentials',
+      credentialId: 'github-creds',
+    } as any
 
     const tools = loadIntegrationTools('github')
     expect(tools).toBeTruthy()

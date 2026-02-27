@@ -1,12 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE Google Calendar write/admin tests using managed OAuth
+// LIVE Google Calendar write/admin tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GCAL_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-calendar')
+// - Either GOOGLE_TOKEN, OR (GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_IMPERSONATE_SUBJECT)
 // Optional:
 // - GCAL_TEST_CALENDAR_ID (defaults to 'primary')
 
@@ -18,11 +16,7 @@ interface Ctx {
 
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GCAL_TEST_CONNECTION_ID',
-)
+const suite = hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON', 'GOOGLE_IMPERSONATE_SUBJECT')
   ? describe
   : describe.skip
 
@@ -33,15 +27,28 @@ suite('google-calendar write & admin handlers (live)', () => {
   let buildAdmin: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GCAL_TEST_CONNECTION_ID, GCAL_TEST_CALENDAR_ID } = env
+    const { GCAL_TEST_CALENDAR_ID } = env
 
     ctx.calendarId = GCAL_TEST_CALENDAR_ID || 'primary'
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-gcal', type: 'google-calendar', label: 'Google Calendar', connectionId: GCAL_TEST_CONNECTION_ID } as any
+    const credentialStore = {
+      getCredentials: async () => ({
+        token: env.GOOGLE_TOKEN || '',
+        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+        subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
+      }),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-gcal',
+      referenceId: 'node-gcal',
+      type: 'google-calendar',
+      label: 'Google Calendar',
+      connectionMethod: 'credentials',
+      credentialId: 'google-calendar-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-calendar')
     expect(tools).toBeTruthy()

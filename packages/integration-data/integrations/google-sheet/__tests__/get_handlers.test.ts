@@ -1,21 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE Google Sheets read tests using managed OAuth
+// LIVE Google Sheets read tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GSHEETS_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-sheet')
-// - GSHEETS_TEST_SPREADSHEET_ID (an accessible spreadsheet ID)
+// - Either GOOGLE_TOKEN, OR GOOGLE_SERVICE_ACCOUNT_JSON
+// - GOOGLE_SHEETS_TEST_SPREADSHEET_ID (an accessible spreadsheet ID)
 
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GSHEETS_TEST_CONNECTION_ID',
-)
+const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
@@ -24,13 +18,23 @@ suite('google-sheet read handlers (live)', () => {
   let sheetTitle: string | undefined
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSHEETS_TEST_CONNECTION_ID } = env
+    const credentialStore = {
+      getCredentials: async () => ({
+        token: env.GOOGLE_TOKEN || '',
+        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      }),
+    }
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-gsheets', type: 'google-sheet', label: 'Google Sheets', connectionId: GSHEETS_TEST_CONNECTION_ID } as any
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-gsheets',
+      referenceId: 'node-gsheets',
+      type: 'google-sheet',
+      label: 'Google Sheets',
+      connectionMethod: 'credentials',
+      credentialId: 'google-sheet-creds',
+    } as any
 
     const tools = loadIntegrationTools('google-sheet')
     expect(tools).toBeTruthy()
@@ -44,7 +48,7 @@ suite('google-sheet read handlers (live)', () => {
     }
 
     // Try to detect a default sheet title
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (spreadsheetId) {
       try {
         const get_spreadsheet = buildReadHandler('get_spreadsheet')
@@ -56,7 +60,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 60000)
 
   it('get_spreadsheet returns metadata', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_spreadsheet')
@@ -65,7 +69,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_values returns a value range', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_values')
@@ -75,7 +79,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('batch_get_values returns multiple ranges', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('batch_get_values')
@@ -85,7 +89,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_spreadsheet_by_data_filter returns metadata', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_spreadsheet_by_data_filter')
@@ -95,7 +99,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_values_by_data_filter returns values', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('get_values_by_data_filter')
@@ -105,7 +109,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('search_developer_metadata returns results or empty', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const handler = buildReadHandler('search_developer_metadata')
@@ -114,7 +118,7 @@ suite('google-sheet read handlers (live)', () => {
   }, 30000)
 
   it('get_developer_metadata retrieves by id when available', async () => {
-    const spreadsheetId = env.GSHEETS_TEST_SPREADSHEET_ID
+    const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID || env.GSHEETS_TEST_SPREADSHEET_ID
     if (!spreadsheetId)
       return expect(true).toBe(true)
     const search = buildReadHandler('search_developer_metadata')

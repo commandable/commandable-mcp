@@ -1,12 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
-// LIVE Airtable integration tests using managed OAuth
+// LIVE Airtable integration tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - AIRTABLE_TEST_CONNECTION_ID (managed OAuth connection for provider 'airtable')
+// - AIRTABLE_TOKEN
 
 interface Ctx {
   baseId?: string
@@ -17,9 +15,7 @@ interface Ctx {
 const env = process.env as Record<string, string>
 const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'AIRTABLE_TEST_CONNECTION_ID',
+  'AIRTABLE_TOKEN',
 )
   ? describe
   : describe.skip
@@ -29,13 +25,20 @@ suite('airtable read handlers (live)', () => {
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, AIRTABLE_TEST_CONNECTION_ID } = env
+    const credentialStore = {
+      getCredentials: async () => ({ token: env.AIRTABLE_TOKEN || '' }),
+    }
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
-    })
-    const integrationNode = { id: 'node-airtable', type: 'airtable', label: 'Airtable', connectionId: AIRTABLE_TEST_CONNECTION_ID } as any
+    const proxy = new IntegrationProxy({ credentialStore })
+    const integrationNode = {
+      spaceId: 'ci',
+      id: 'node-airtable',
+      referenceId: 'node-airtable',
+      type: 'airtable',
+      label: 'Airtable',
+      connectionMethod: 'credentials',
+      credentialId: 'airtable-creds',
+    } as any
 
     const tools = loadIntegrationTools('airtable')
     expect(tools).toBeTruthy()
