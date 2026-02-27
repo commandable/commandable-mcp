@@ -30,9 +30,13 @@ yarn test
 Notes:
 - Many suites perform **write operations** (create/update/delete/archive). Use a dedicated test account/workspace if possible.
 - Trello tests create a board per run and attempt to close + delete it in `afterAll`.
-- Google Docs/Sheets/Slides tests create a Drive folder + files per run and delete them in `afterAll`.
+- Google Docs/Sheets/Slides tests create a Drive folder + files per run and delete them in `afterAll` (files are created via Drive, inside the folder).
 - Notion write tests create a database under `NOTION_TEST_PARENT_PAGE_ID` and archive it in `afterAll`.
 - Google integrations support either `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_TOKEN` (and optionally `GOOGLE_IMPERSONATE_SUBJECT` for Calendar with domain-wide delegation).
+
+Optional env vars used by some suites:
+- `GDOCS_TEST_IMAGE_URI` (Docs inline image test)
+- `GSLIDES_TEST_IMAGE_URI` (Slides image test)
 
 ## Hosted-only managed OAuth smoke (optional)
 

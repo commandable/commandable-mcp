@@ -1,124 +1,58 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
+import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
 
 // LIVE Google Docs write tests using credentials
 // Required env vars:
 // - Either GOOGLE_TOKEN, OR GOOGLE_SERVICE_ACCOUNT_JSON
-// - GOOGLE_DOCS_TEST_DOCUMENT_ID (target document ID with write access) OR GDOCS_ALLOW_CREATE to create
 
 interface Ctx {
   documentId?: string
   folderId?: string
 }
 
-const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
 suite('google-docs write handlers (live)', () => {
   const ctx: Ctx = {}
-  let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
-  let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
-  let buildDriveWrite: (name: string) => ((input: any) => Promise<any>)
+  let docs: ReturnType<typeof createToolbox>
+  let drive: ReturnType<typeof createToolbox>
 
   beforeAll(async () => {
-    const credentialStore = {
-      getCredentials: async () => ({
-        token: env.GOOGLE_TOKEN || '',
-        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
-      }),
-    }
-
-    const proxy = new IntegrationProxy({ credentialStore })
-    const docsNode = {
-      spaceId: 'ci',
-      id: 'node-gdocs',
-      referenceId: 'node-gdocs',
-      type: 'google-docs',
-      label: 'Google Docs',
-      connectionMethod: 'credentials',
-      credentialId: 'google-docs-creds',
-    } as any
-    const driveNode = {
-      spaceId: 'ci',
-      id: 'node-gdrive',
-      referenceId: 'node-gdrive',
-      type: 'google-drive',
-      label: 'Google Drive',
-      connectionMethod: 'credentials',
-      credentialId: 'google-drive-creds',
-    } as any
-
-    const tools = loadIntegrationTools('google-docs')
-    expect(tools).toBeTruthy()
-
-    const driveTools = loadIntegrationTools('google-drive')
-    expect(driveTools).toBeTruthy()
-
-    buildWriteHandler = (name: string) => {
-      const tool = tools!.write.find(t => t.name === name)
-      expect(tool, `write tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(docsNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    buildReadHandler = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `read tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(docsNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    buildDriveWrite = (name: string) => {
-      const tool = driveTools!.write.find(t => t.name === name)
-      expect(tool, `drive tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(driveNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+    const env = process.env as Record<string, string | undefined>
+    const credentialStore = createCredentialStore(async () => ({
+      token: env.GOOGLE_TOKEN || '',
+      serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+    }))
+    const proxy = createProxy(credentialStore)
+    docs = createToolbox('google-docs', proxy, createIntegrationNode('google-docs', { label: 'Google Docs', credentialId: 'google-docs-creds' }))
+    drive = createToolbox('google-drive', proxy, createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds' }))
 
     // Create dedicated folder + doc for this run
-    const create_folder = buildDriveWrite('create_folder')
-    const folder = await create_folder({ name: `CmdTest Docs Write ${Date.now()}` })
+    const folder = await drive.write('create_folder')({ name: `CmdTest Docs Write ${Date.now()}` })
     ctx.folderId = folder?.id
     expect(ctx.folderId).toBeTruthy()
 
-    const create_document = buildWriteHandler('create_document')
-    const doc = await create_document({ title: `CmdTest Doc ${Date.now()}` })
-    ctx.documentId = doc?.documentId
+    const doc = await drive.write('create_file')({
+      name: `CmdTest Doc ${Date.now()}`,
+      mimeType: 'application/vnd.google-apps.document',
+      parentId: ctx.folderId,
+    })
+    ctx.documentId = doc?.id
     expect(ctx.documentId).toBeTruthy()
-
-    const move_file = buildDriveWrite('move_file')
-    await move_file({ fileId: ctx.documentId, addParents: ctx.folderId })
   }, 60000)
 
   afterAll(async () => {
-    try {
-      if (ctx.documentId) {
-        const delete_file = buildDriveWrite('delete_file')
-        await delete_file({ fileId: ctx.documentId })
-      }
-    }
-    catch {}
-    try {
-      if (ctx.folderId) {
-        const delete_file = buildDriveWrite('delete_file')
-        await delete_file({ fileId: ctx.folderId })
-      }
-    }
-    catch {}
+    await safeCleanup(async () => ctx.documentId ? drive.write('delete_file')({ fileId: ctx.documentId }) : Promise.resolve())
+    await safeCleanup(async () => ctx.folderId ? drive.write('delete_file')({ fileId: ctx.folderId }) : Promise.resolve())
   }, 60000)
 
   it('batch_update can perform a trivial replaceAllText no-op', async () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const batch_update = buildWriteHandler('batch_update')
+    const batch_update = docs.write('batch_update')
     const res = await batch_update({ documentId, requests: [
       { replaceAllText: { containsText: { text: '___unlikely___', matchCase: true }, replaceText: '___unlikely___' } },
     ] })
@@ -129,11 +63,11 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const append_text = buildWriteHandler('append_text')
+    const append_text = docs.write('append_text')
     const marker = `CmdTest ${Date.now()}`
     const res = await append_text({ documentId, text: marker })
     expect(res?.documentId || Array.isArray(res?.replies)).toBeTruthy()
-    const get_text = buildReadHandler('get_document_text')
+    const get_text = docs.read('get_document_text')
     const after = await get_text({ documentId })
     expect(String(after?.text || '')).toContain(marker)
   }, 60000)
@@ -142,10 +76,10 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const insert_text_after_first_match = buildWriteHandler('insert_text_after_first_match')
-    const get_text = buildReadHandler('get_document_text')
+    const insert_text_after_first_match = docs.write('insert_text_after_first_match')
+    const get_text = docs.read('get_document_text')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
+    const appended = docs.write('append_text')
     const before = await get_text({ documentId })
     if (!String(before?.text || '').includes(anchor)) {
       await appended({ documentId, text: `\n${anchor}\n` })
@@ -163,7 +97,7 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const replace_all_text = buildWriteHandler('replace_all_text')
+    const replace_all_text = docs.write('replace_all_text')
     const res = await replace_all_text({ documentId, findText: '___unlikely___', replaceText: '___unlikely___', matchCase: true })
     expect(res?.documentId || Array.isArray(res?.replies)).toBeTruthy()
   }, 60000)
@@ -172,10 +106,10 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const style_first_match = buildWriteHandler('style_first_match')
-    const get_struct = buildReadHandler('get_document_structured')
+    const style_first_match = docs.write('style_first_match')
+    const get_struct = docs.read('get_document_structured')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
+    const appended = docs.write('append_text')
     const before = await get_struct({ documentId })
     const hasAnchorBefore = JSON.stringify(before?.body || {}).includes(anchor)
     if (!hasAnchorBefore)
@@ -188,10 +122,10 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const insert_table_after_first_match = buildWriteHandler('insert_table_after_first_match')
-    const get_struct = buildReadHandler('get_document_structured')
+    const insert_table_after_first_match = docs.write('insert_table_after_first_match')
+    const get_struct = docs.read('get_document_structured')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
+    const appended = docs.write('append_text')
     const before = await get_struct({ documentId })
     const hasAnchorBefore = JSON.stringify(before?.body || {}).includes(anchor)
     if (!hasAnchorBefore)
@@ -207,10 +141,10 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const insert_page_break_after_first_match = buildWriteHandler('insert_page_break_after_first_match')
-    const get_struct = buildReadHandler('get_document_structured')
+    const insert_page_break_after_first_match = docs.write('insert_page_break_after_first_match')
+    const get_struct = docs.read('get_document_structured')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
+    const appended = docs.write('append_text')
     const before = await get_struct({ documentId })
     const hasAnchorBefore = JSON.stringify(before?.body || {}).includes(anchor)
     if (!hasAnchorBefore)
@@ -226,10 +160,10 @@ suite('google-docs write handlers (live)', () => {
     if (!ctx.documentId || !process.env.GDOCS_TEST_IMAGE_URI)
       return expect(true).toBe(true)
     const documentId = ctx.documentId
-    const insert_inline_image_after_first_match = buildWriteHandler('insert_inline_image_after_first_match')
+    const insert_inline_image_after_first_match = docs.write('insert_inline_image_after_first_match')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
-    const get_text = buildReadHandler('get_document_text')
+    const appended = docs.write('append_text')
+    const get_text = docs.read('get_document_text')
     const before = await get_text({ documentId })
     if (!String(before?.text || '').includes(anchor))
       await appended({ documentId, text: `\n${anchor}\n` })
@@ -241,10 +175,10 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const delete_first_match = buildWriteHandler('delete_first_match')
-    const get_text = buildReadHandler('get_document_text')
+    const delete_first_match = docs.write('delete_first_match')
+    const get_text = docs.read('get_document_text')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
+    const appended = docs.write('append_text')
     const before = await get_text({ documentId })
     if (!String(before?.text || '').includes(anchor))
       await appended({ documentId, text: `\n${anchor}\n` })
@@ -258,10 +192,10 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const update_paragraph_style_for_first_match = buildWriteHandler('update_paragraph_style_for_first_match')
-    const get_struct = buildReadHandler('get_document_structured')
+    const update_paragraph_style_for_first_match = docs.write('update_paragraph_style_for_first_match')
+    const get_struct = docs.read('get_document_structured')
     const anchor = `ANCHOR_${Date.now()}`
-    const appended = buildWriteHandler('append_text')
+    const appended = docs.write('append_text')
     const before = await get_struct({ documentId })
     const hasAnchorBefore = JSON.stringify(before?.body || {}).includes(anchor)
     if (!hasAnchorBefore)
@@ -289,8 +223,15 @@ suite('google-docs write handlers (live)', () => {
     const documentId = ctx.documentId
     if (!documentId)
       return expect(true).toBe(true)
-    const update_document_style = buildWriteHandler('update_document_style')
+    const update_document_style = docs.write('update_document_style')
     const res = await update_document_style({ documentId, documentStyle: { useFirstPageHeaderFooter: false } })
     expect(res?.documentId || Array.isArray(res?.replies)).toBeTruthy()
+  }, 60000)
+
+  it('create_document creates a document (self-cleaning)', async () => {
+    const created = await docs.write('create_document')({ title: `CmdTest Doc Tool ${Date.now()}` })
+    const id = created?.documentId
+    expect(typeof id).toBe('string')
+    await safeCleanup(async () => id ? drive.write('delete_file')({ fileId: id }) : Promise.resolve())
   }, 60000)
 })

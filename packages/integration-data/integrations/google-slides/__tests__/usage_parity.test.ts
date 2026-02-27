@@ -9,7 +9,7 @@ function escapeRegExp(str: string): string {
 }
 
 describe('google-slides static usage parity', () => {
-  it('every manifest tool is referenced in tests via build*(name)', () => {
+  it('every manifest tool is referenced in tests', () => {
     const manifest = loadIntegrationManifest('google-slides')!
     const toolNames = (manifest.tools as any[]).map(t => t.name)
 
@@ -23,7 +23,10 @@ describe('google-slides static usage parity', () => {
 
     const missing: string[] = []
     for (const name of toolNames) {
-      const nameRe = new RegExp(`build(?:Read|Write|Admin)?(?:Handler)?\\(\\s*['\"\`]${escapeRegExp(name)}['\"\`]\\s*\\)`, 'm')
+      const nameRe = new RegExp(
+        `(?:build(?:Read|Write|Admin)?(?:Handler)?|\\.(?:read|write|admin))\\(\\s*['\"\`]${escapeRegExp(name)}['\"\`]\\s*\\)`,
+        'm',
+      )
       const found = fileContents.some(src => nameRe.test(src))
       if (!found)
         missing.push(name)

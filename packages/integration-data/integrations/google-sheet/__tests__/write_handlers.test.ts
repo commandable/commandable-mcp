@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
+import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
 
 // LIVE Google Sheets write tests using credentials
 // Required env vars:
@@ -13,96 +12,50 @@ interface Ctx {
   destSpreadsheetId?: string
 }
 
-const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
 suite('google-sheet write handlers (live)', () => {
   const ctx: Ctx = {}
-  let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
-  let buildDriveWrite: (name: string) => ((input: any) => Promise<any>)
+  let sheets: ReturnType<typeof createToolbox>
+  let drive: ReturnType<typeof createToolbox>
   let sheetTitle: string | undefined
 
   beforeAll(async () => {
-    const credentialStore = {
-      getCredentials: async () => ({
-        token: env.GOOGLE_TOKEN || '',
-        serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
-      }),
-    }
+    const env = process.env as Record<string, string | undefined>
+    const credentialStore = createCredentialStore(async () => ({
+      token: env.GOOGLE_TOKEN || '',
+      serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+    }))
+    const proxy = createProxy(credentialStore)
+    sheets = createToolbox('google-sheet', proxy, createIntegrationNode('google-sheet', { label: 'Google Sheets', credentialId: 'google-sheet-creds' }))
+    drive = createToolbox('google-drive', proxy, createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds' }))
 
-    const proxy = new IntegrationProxy({ credentialStore })
-    const sheetsNode = {
-      spaceId: 'ci',
-      id: 'node-gsheets',
-      referenceId: 'node-gsheets',
-      type: 'google-sheet',
-      label: 'Google Sheets',
-      connectionMethod: 'credentials',
-      credentialId: 'google-sheet-creds',
-    } as any
-    const driveNode = {
-      spaceId: 'ci',
-      id: 'node-gdrive',
-      referenceId: 'node-gdrive',
-      type: 'google-drive',
-      label: 'Google Drive',
-      connectionMethod: 'credentials',
-      credentialId: 'google-drive-creds',
-    } as any
-
-    const tools = loadIntegrationTools('google-sheet')
-    expect(tools).toBeTruthy()
-
-    const driveTools = loadIntegrationTools('google-drive')
-    expect(driveTools).toBeTruthy()
-
-    buildWriteHandler = (name: string) => {
-      const tool = tools!.write.find(t => t.name === name)
-      expect(tool, `write tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(sheetsNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    buildDriveWrite = (name: string) => {
-      const tool = driveTools!.write.find(t => t.name === name)
-      expect(tool, `drive tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(driveNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    const create_folder = buildDriveWrite('create_folder')
-    const folder = await create_folder({ name: `CmdTest Sheets Write ${Date.now()}` })
+    const folder = await drive.write('create_folder')({ name: `CmdTest Sheets Write ${Date.now()}` })
     ctx.folderId = folder?.id
     expect(ctx.folderId).toBeTruthy()
 
-    const create_spreadsheet = buildWriteHandler('create_spreadsheet')
-    const created = await create_spreadsheet({ properties: { title: `CmdTest Sheet ${Date.now()}` } })
-    ctx.spreadsheetId = created?.spreadsheetId
+    const created = await drive.write('create_file')({
+      name: `CmdTest Sheet ${Date.now()}`,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+      parentId: ctx.folderId,
+    })
+    ctx.spreadsheetId = created?.id
     expect(ctx.spreadsheetId).toBeTruthy()
 
-    const createdDest = await create_spreadsheet({ properties: { title: `CmdTest Sheet Dest ${Date.now()}` } })
-    ctx.destSpreadsheetId = createdDest?.spreadsheetId
+    const createdDest = await drive.write('create_file')({
+      name: `CmdTest Sheet Dest ${Date.now()}`,
+      mimeType: 'application/vnd.google-apps.spreadsheet',
+      parentId: ctx.folderId,
+    })
+    ctx.destSpreadsheetId = createdDest?.id
     expect(ctx.destSpreadsheetId).toBeTruthy()
-
-    const move_file = buildDriveWrite('move_file')
-    await move_file({ fileId: ctx.spreadsheetId, addParents: ctx.folderId })
-    await move_file({ fileId: ctx.destSpreadsheetId, addParents: ctx.folderId })
 
     // Try to detect a default sheet title
     if (ctx.spreadsheetId) {
-      const proxy2 = new IntegrationProxy({ credentialStore })
-      const node2 = sheetsNode
-      const tools2 = loadIntegrationTools('google-sheet')!
-      const tool = tools2.read.find(t => t.name === 'get_spreadsheet')!
-      const build = new Function('integration', `return (${tool.handlerCode});`)
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy2.call(node2, path, init) }
       try {
-        const get_spreadsheet = build(integration) as (input: any) => Promise<any>
+        const get_spreadsheet = sheets.read('get_spreadsheet')
         const meta = await get_spreadsheet({ spreadsheetId: ctx.spreadsheetId })
         sheetTitle = meta?.sheets?.[0]?.properties?.title
       }
@@ -111,33 +64,26 @@ suite('google-sheet write handlers (live)', () => {
   }, 60000)
 
   afterAll(async () => {
-    try {
-      const delete_file = buildDriveWrite('delete_file')
+    await safeCleanup(async () => {
+      const delete_file = drive.write('delete_file')
       if (ctx.spreadsheetId)
         await delete_file({ fileId: ctx.spreadsheetId })
       if (ctx.destSpreadsheetId)
         await delete_file({ fileId: ctx.destSpreadsheetId })
-    }
-    catch {}
-    try {
-      if (ctx.folderId) {
-        const delete_file = buildDriveWrite('delete_file')
-        await delete_file({ fileId: ctx.folderId })
-      }
-    }
-    catch {}
+    })
+    await safeCleanup(async () => ctx.folderId ? drive.write('delete_file')({ fileId: ctx.folderId }) : Promise.resolve())
   }, 60_000)
 
   it('append_values appends then clear_values clears', async () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
 
-    const append_values = buildWriteHandler('append_values')
+    const append_values = sheets.write('append_values')
     const aTitle = sheetTitle || 'Sheet1'
     const appendRes = await append_values({ spreadsheetId: ctx.spreadsheetId, range: `${aTitle}!A1`, values: [[`CmdTest ${Date.now()}`]], valueInputOption: 'USER_ENTERED' })
     expect(appendRes?.updates || appendRes?.tableRange || appendRes?.spreadsheetId).toBeTruthy()
 
-    const clear_values = buildWriteHandler('clear_values')
+    const clear_values = sheets.write('clear_values')
     const clearRes = await clear_values({ spreadsheetId: ctx.spreadsheetId, range: `${aTitle}!A1:A10` })
     expect(clearRes?.clearedRange || clearRes?.spreadsheetId).toBeTruthy()
   }, 60000)
@@ -146,7 +92,7 @@ suite('google-sheet write handlers (live)', () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
-    const update_values = buildWriteHandler('update_values')
+    const update_values = sheets.write('update_values')
     const res = await update_values({ spreadsheetId: ctx.spreadsheetId, range: `${aTitle}!B1:B1`, values: [[`CmdTestU ${Date.now()}`]], valueInputOption: 'USER_ENTERED' })
     expect(res?.updatedRange || res?.spreadsheetId).toBeTruthy()
   }, 60000)
@@ -155,7 +101,7 @@ suite('google-sheet write handlers (live)', () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
-    const batch_update_values = buildWriteHandler('batch_update_values')
+    const batch_update_values = sheets.write('batch_update_values')
     const res = await batch_update_values({ spreadsheetId: ctx.spreadsheetId, data: [
       { range: `${aTitle}!C1:C1`, values: [[`CmdTestB1 ${Date.now()}`]] },
       { range: `${aTitle}!C2:C2`, values: [[`CmdTestB2 ${Date.now()}`]] },
@@ -167,7 +113,7 @@ suite('google-sheet write handlers (live)', () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
-    const batch_update_values_by_data_filter = buildWriteHandler('batch_update_values_by_data_filter')
+    const batch_update_values_by_data_filter = sheets.write('batch_update_values_by_data_filter')
     const res = await batch_update_values_by_data_filter({ spreadsheetId: ctx.spreadsheetId, data: [
       { dataFilter: { a1Range: `${aTitle}!D1:D1` }, values: [[`CmdTestDF ${Date.now()}`]] },
     ], valueInputOption: 'USER_ENTERED' })
@@ -178,7 +124,7 @@ suite('google-sheet write handlers (live)', () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
-    const batch_clear_values = buildWriteHandler('batch_clear_values')
+    const batch_clear_values = sheets.write('batch_clear_values')
     const res = await batch_clear_values({ spreadsheetId: ctx.spreadsheetId, ranges: [`${aTitle}!A1:A2`, `${aTitle}!B1:B2`] })
     expect(Boolean(res?.spreadsheetId) || Array.isArray(res?.clearedRanges)).toBe(true)
   }, 60000)
@@ -187,7 +133,7 @@ suite('google-sheet write handlers (live)', () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
-    const batch_clear_values_by_data_filter = buildWriteHandler('batch_clear_values_by_data_filter')
+    const batch_clear_values_by_data_filter = sheets.write('batch_clear_values_by_data_filter')
     const res = await batch_clear_values_by_data_filter({ spreadsheetId: ctx.spreadsheetId, dataFilters: [{ a1Range: `${aTitle}!E1:E2` }] })
     expect(Boolean(res?.spreadsheetId) || Array.isArray(res?.clearedRanges)).toBe(true)
   }, 60000)
@@ -196,7 +142,7 @@ suite('google-sheet write handlers (live)', () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
-    const batch_update = buildWriteHandler('batch_update')
+    const batch_update = sheets.write('batch_update')
     const res = await batch_update({ spreadsheetId: ctx.spreadsheetId, requests: [
       { findReplace: { find: '___unlikely___', replacement: '___unlikely___', matchCase: true, searchByRegex: false, includeFormulas: false, range: { sheetId: 0 } } },
     ], includeSpreadsheetInResponse: false })
@@ -206,7 +152,7 @@ suite('google-sheet write handlers (live)', () => {
   it('copy_to_spreadsheet copies a sheet when destination provided', async () => {
     if (!ctx.spreadsheetId || !ctx.destSpreadsheetId)
       return expect(true).toBe(true)
-    const copy_to_spreadsheet = buildWriteHandler('copy_to_spreadsheet')
+    const copy_to_spreadsheet = sheets.write('copy_to_spreadsheet')
     // Attempt to copy sheet with id 0 (typical for first sheet). If it fails, skip.
     try {
       const res = await copy_to_spreadsheet({ spreadsheetId: ctx.spreadsheetId, sheetId: 0, destinationSpreadsheetId: ctx.destSpreadsheetId })
@@ -215,5 +161,12 @@ suite('google-sheet write handlers (live)', () => {
     catch {
       expect(true).toBe(true)
     }
+  }, 60000)
+
+  it('create_spreadsheet creates a spreadsheet (self-cleaning)', async () => {
+    const created = await sheets.write('create_spreadsheet')({ properties: { title: `CmdTest Sheet Tool ${Date.now()}` } })
+    const id = created?.spreadsheetId
+    expect(typeof id).toBe('string')
+    await safeCleanup(async () => id ? drive.write('delete_file')({ fileId: id }) : Promise.resolve())
   }, 60000)
 })
