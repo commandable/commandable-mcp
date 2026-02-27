@@ -28,6 +28,17 @@ npx @commandable/mcp init
 
 This walks you through selecting integrations and entering your API credentials. Credentials are never stored in plain text — they're saved to an encrypted local store on your machine. It then prints a snippet to paste into your MCP client.
 
+### 1b. (Optional) Run as an HTTP tool gateway (agent frameworks)
+
+If you want to connect an agent framework to Commandable by URL (instead of spawning a local stdio server), run the MCP server over **Streamable HTTP**:
+
+```bash
+npx @commandable/mcp create-api-key my-app
+npx @commandable/mcp serve --port 3000
+```
+
+This exposes MCP at `http://localhost:3000/mcp` and requires `Authorization: Bearer <api-key>` on requests.
+
 ### 2. Add the snippet to your MCP client
 
 **Claude Desktop** — edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -50,6 +61,24 @@ This walks you through selecting integrations and entering your API credentials.
 ### 3. Restart your MCP client
 
 After saving the config, restart Claude Desktop or reload the Cursor window. Your AI assistant can now use all the tools you configured.
+
+---
+
+## Using with OpenAI Agents SDK (HTTP)
+
+OpenAI Agents SDK can connect directly to MCP Streamable HTTP endpoints.
+
+```python
+from agents.mcp import MCPServerStreamableHttp
+
+mcp = MCPServerStreamableHttp(
+    name="commandable",
+    params={
+        "url": "http://localhost:3000/mcp",
+        "headers": {"Authorization": "Bearer <your-api-key>"},
+    },
+)
+```
 
 ---
 
@@ -82,6 +111,8 @@ Nothing to do. Your MCP client reads its config at startup and launches the serv
 | `commandable-mcp init` | First-time setup: pick integrations, enter credentials |
 | `commandable-mcp add` | Add more integrations later |
 | `commandable-mcp status` | Show which integrations are enabled |
+| `commandable-mcp create-api-key [name]` | Create an API key for HTTP access |
+| `commandable-mcp serve [--port 3000]` | Run MCP server over Streamable HTTP |
 | `commandable-mcp` | Start the MCP server (used by MCP clients, not humans) |
 | `commandable-mcp --help` | Show usage |
 

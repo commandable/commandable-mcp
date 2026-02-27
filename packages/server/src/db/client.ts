@@ -1,4 +1,5 @@
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import Database from 'better-sqlite3'
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3'
@@ -45,6 +46,13 @@ export function createDb(opts: CreateDbOptions = {}): DbClient {
   const sqlitePath = opts.sqlitePath
     ? resolve(opts.sqlitePath)
     : resolve(homedir(), '.commandable', 'credentials.sqlite')
+
+  // Ensure parent directory exists so SQLite can create the file.
+  // (better-sqlite3 does not create directories automatically)
+  try {
+    mkdirSync(dirname(sqlitePath), { recursive: true, mode: 0o700 })
+  }
+  catch {}
 
   const sqlite = new Database(sqlitePath)
   const db = drizzleSqlite(sqlite)

@@ -1,13 +1,29 @@
 import picocolors from 'picocolors'
+import crypto from 'node:crypto'
 import { IntegrationProxy } from '../integrations/proxy.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { runStdioMcpServer } from '../mcp/server.js'
+import { runHttpMcpServer } from '../mcp/httpServer.js'
+import { createBearerAuthMiddleware, createApiKey, generateApiKey } from '../mcp/auth.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
-import { openLocalState } from './credentialManager.js'
+import { getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
+import { createDbFromEnv } from '../db/client.js'
+import { ensureSchema } from '../db/migrate.js'
+import { SqlCredentialStore } from '../db/credentialStore.js'
 
 function hasFlag(...flags: string[]): boolean {
   return flags.some(f => process.argv.includes(f))
+}
+
+function getFlagValue(flag: string): string | null {
+  const idx = process.argv.indexOf(flag)
+  if (idx === -1)
+    return null
+  const val = process.argv[idx + 1]
+  if (!val || val.startsWith('-'))
+    return null
+  return val
 }
 
 function help(exitCode: number = 0): never {
@@ -19,6 +35,8 @@ function help(exitCode: number = 0): never {
     `  ${picocolors.cyan('commandable-mcp init')}`,
     `  ${picocolors.cyan('commandable-mcp add')}`,
     `  ${picocolors.cyan('commandable-mcp status')}`,
+    `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
+    `  ${picocolors.cyan('commandable-mcp serve')} ${picocolors.dim('[--port 3000]')}`,
     `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server)')}`,
     '',
     picocolors.bold('Notes'),
@@ -31,7 +49,7 @@ function help(exitCode: number = 0): never {
 }
 
 async function runStdioFromDb() {
-  const spaceId = 'local'
+  const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
   const { db, credentialStore } = await openLocalState()
   const integrations = await listIntegrations(db, spaceId)
 
@@ -51,6 +69,78 @@ async function runStdioFromDb() {
     serverInfo: { name: 'commandable', version: '0.0.1' },
     tools: { list: index.tools, byName: index.byName },
   })
+}
+
+async function openEnvState(): Promise<{ db: any, credentialStore: SqlCredentialStore, close: () => Promise<void> }> {
+  const db = createDbFromEnv()
+  await ensureSchema(db)
+  const secret = getOrCreateEncryptionSecret()
+  const credentialStore = new SqlCredentialStore(db, secret)
+  return {
+    db,
+    credentialStore,
+    close: async () => {
+      if (db.dialect === 'sqlite')
+        db.close()
+      else
+        await db.close()
+    },
+  }
+}
+
+async function runHttpServe() {
+  const portRaw = getFlagValue('--port') || process.env.PORT || '3000'
+  const port = Number(portRaw)
+  if (!Number.isFinite(port) || port <= 0) {
+    console.error(`Invalid port: ${portRaw}`)
+    process.exit(1)
+  }
+
+  const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
+  const { db, credentialStore, close } = await openEnvState()
+  try {
+    const integrations = await listIntegrations(db, spaceId)
+    if (!integrations.length) {
+      console.error(`No integrations configured yet. Run ${picocolors.cyan('commandable-mcp init')}.`)
+      process.exit(0)
+    }
+
+    const proxy = new IntegrationProxy({
+      credentialStore,
+      trelloApiKey: process.env.TRELLO_API_KEY,
+    })
+
+    const index = buildMcpToolIndex({ spaceId, integrations, proxy })
+    const auth = createBearerAuthMiddleware({ db })
+
+    await runHttpMcpServer({
+      serverInfo: { name: 'commandable', version: '0.0.1' },
+      tools: { list: index.tools, byName: index.byName },
+      port,
+      authMiddleware: auth,
+    })
+  }
+  finally {
+    await close()
+  }
+}
+
+async function runCreateApiKey() {
+  const name = process.argv[3] && !process.argv[3].startsWith('-') ? String(process.argv[3]) : 'default'
+  const rawKey = generateApiKey()
+  const id = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
+
+  const { db, close } = await openEnvState()
+  try {
+    await createApiKey(db, { id, name, rawKey })
+    console.error(`${picocolors.green('API key created.')}`)
+    console.error(`${picocolors.dim('Name:')} ${name}`)
+    console.error(`${picocolors.dim('ID:')} ${id}`)
+    console.error(`${picocolors.dim('Key (store this now):')} ${rawKey}`)
+  }
+  finally {
+    await close()
+  }
 }
 
 export async function main() {
@@ -82,6 +172,12 @@ export async function main() {
       await close()
     }
   }
+
+  if (cmd === 'serve')
+    return await runHttpServe()
+
+  if (cmd === 'create-api-key')
+    return await runCreateApiKey()
 
   if (cmd && !cmd.startsWith('-'))
     help(1)

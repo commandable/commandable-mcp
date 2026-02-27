@@ -104,12 +104,12 @@ The open-source project exists to:
 - Local web UI for managing integrations and credentials
 - SQLite storage (zero external dependencies for self-hosting)
 - Encrypted credential storage
-- Streamable HTTP transport (planned — needed for remote/hosted access)
+- Streamable HTTP transport (shipped — needed for remote/hosted access)
+- Docker packaging for the HTTP server (shipped — enterprise/hosted distribution path)
 
 ## What's explicitly NOT in v1?
 
 - Managed OAuth (planned for hosted version)
 - Ability mode / lazy tool loading (planned — important when tool count gets large)
-- Docker packaging
 - Multi-user / multi-tenant
 - Billing / usage limits
