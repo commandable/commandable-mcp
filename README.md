@@ -76,7 +76,7 @@ docker run --rm -p 3000:3000 \
   commandable-mcp
 ```
 
-This starts a app that serves:
+This starts an app that serves:
 
 - **Management UI**: `http://localhost:3000/`
 - **MCP Streamable HTTP**: `http://localhost:3000/mcp`
@@ -174,7 +174,6 @@ See `.env.example` for a full list. The most important ones:
 | `commandable-mcp add` | Add more integrations interactively |
 | `commandable-mcp status` | Show enabled integrations |
 | `commandable-mcp create-api-key [name]` | Create an API key for HTTP `/mcp` |
-| `commandable-mcp serve [--port 3000] [--config <file>]` | Run a standalone Streamable HTTP MCP server (Express) |
 | `commandable-mcp` | Start stdio MCP server (spawned by MCP clients) |
 | `commandable-mcp --help` | Show usage |
 
