@@ -181,10 +181,8 @@ export async function runInitInteractive() {
     }
 
     log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
-    note(
-      JSON.stringify(makeClaudeDesktopSnippet(), null, 2),
-      'Claude Desktop config snippet',
-    )
+    log.info('Claude Desktop config snippet (plain JSON):')
+    process.stdout.write(`${JSON.stringify(makeClaudeDesktopSnippet(), null, 2)}\n`)
   }
   finally {
     await close()

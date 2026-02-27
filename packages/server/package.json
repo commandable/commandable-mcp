@@ -1,7 +1,20 @@
 {
   "name": "@commandable/mcp",
   "version": "0.0.1",
-  "private": true,
+  "description": "Encrypted, self-hosted MCP server + setup CLI for connecting everyday apps to any MCP-compatible AI client.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mynt-ai/commandable-app.git",
+    "directory": "commandable-mcp/packages/server"
+  },
+  "homepage": "https://github.com/mynt-ai/commandable-app#readme",
+  "bugs": {
+    "url": "https://github.com/mynt-ai/commandable-app/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,6 +26,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
@@ -34,8 +50,11 @@
     "vitest": "^3.2.4"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "postbuild": "node -e \"require('node:fs').chmodSync('dist/cli/bin.js', 0o755)\"",
     "dev": "tsc -p tsconfig.json --watch",
+    "prepack": "npm run build",
     "test": "vitest run"
   }
 }
