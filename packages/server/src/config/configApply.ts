@@ -47,7 +47,7 @@ function toIntegrationData(spaceId: string, it: IntegrationConfig): IntegrationD
     type: it.type,
     referenceId,
     label,
-    config: it.config ?? undefined,
+    config: it.config,
     connectionMethod: it.credentials ? 'credentials' : undefined,
     connectionId: null,
     credentialId: it.credentials ? credentialId : (it.credentialId ?? undefined),

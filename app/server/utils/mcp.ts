@@ -13,13 +13,9 @@ import {
 } from '@commandable/mcp'
 import { getDb } from './db'
 
-type McpSession = {
-  transport: StreamableHTTPServerTransport
-  server: Server
-}
-
 type McpState = {
-  sessions: Map<string, McpSession>
+  server: Server
+  transports: Map<string, StreamableHTTPServerTransport>
 }
 
 declare global {
@@ -35,11 +31,45 @@ function getServerInfo(): Implementation {
   return { name: 'commandable', version: '0.0.1' }
 }
 
-function getOrCreateState(): McpState {
-  globalThis.__commandableMcpHttpState ||= {
-    sessions: new Map<string, McpSession>(),
+async function getOrCreateState(): Promise<McpState> {
+  if (globalThis.__commandableMcpHttpState)
+    return globalThis.__commandableMcpHttpState
+
+  const db = await getDb()
+  const secret = getOrCreateEncryptionSecret()
+  const credentialStore = new SqlCredentialStore(db, secret)
+  const spaceId = getSpaceId()
+  const integrations = await listIntegrations(db, spaceId)
+
+  const proxy = new IntegrationProxy({
+    credentialStore,
+    trelloApiKey: process.env.TRELLO_API_KEY,
+  })
+
+  const index = buildMcpToolIndex({ spaceId, integrations, proxy })
+
+  const server = new Server(getServerInfo(), {
+    capabilities: { tools: {} },
+  })
+
+  registerToolHandlers(server, { list: index.tools, byName: index.byName })
+
+  const state: McpState = {
+    server,
+    transports: new Map(),
   }
-  return globalThis.__commandableMcpHttpState
+
+  globalThis.__commandableMcpHttpState = state
+  return state
+}
+
+/** Tear down the singleton so the next request re-builds tools and Server. */
+export async function refreshMcpState(): Promise<void> {
+  const prev = globalThis.__commandableMcpHttpState
+  if (prev) {
+    await prev.server.close()
+    globalThis.__commandableMcpHttpState = undefined
+  }
 }
 
 function getHeader(req: any, name: string): string | undefined {
@@ -61,17 +91,16 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   | { kind: 'handled' }
   | { kind: 'error', statusCode: number, message: string }
 > {
-  const state = getOrCreateState()
+  const state = await getOrCreateState()
   const req = args.nodeReq
   const res = args.nodeRes
   const method = String(req?.method || 'GET').toUpperCase()
 
   const sessionId = getHeader(req, 'mcp-session-id')
-
-  const existing = sessionId ? state.sessions.get(sessionId) : undefined
+  const existing = sessionId ? state.transports.get(sessionId) : undefined
 
   if (existing) {
-    await existing.transport.handleRequest(req, res, args.body)
+    await existing.handleRequest(req, res, args.body)
     return { kind: 'handled' }
   }
 
@@ -86,25 +115,6 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
     }
   }
 
-  const db = await getDb()
-  const secret = getOrCreateEncryptionSecret()
-  const credentialStore = new SqlCredentialStore(db, secret)
-  const spaceId = getSpaceId()
-  const integrations = await listIntegrations(db, spaceId)
-
-  const proxy = new IntegrationProxy({
-    credentialStore,
-    trelloApiKey: process.env.TRELLO_API_KEY,
-  })
-
-  const index = buildMcpToolIndex({ spaceId, integrations, proxy })
-
-  const server = new Server(getServerInfo(), {
-    capabilities: { tools: {} },
-  })
-
-  registerToolHandlers(server, { list: index.tools, byName: index.byName })
-
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
     enableJsonResponse: true,
@@ -113,15 +123,14 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   transport.onclose = () => {
     const sid = transport.sessionId
     if (sid)
-      state.sessions.delete(sid)
+      state.transports.delete(sid)
   }
 
-  await server.connect(transport)
+  await state.server.connect(transport)
   const sid = transport.sessionId
   if (sid)
-    state.sessions.set(sid, { transport, server })
+    state.transports.set(sid, transport)
 
   await transport.handleRequest(req, res, args.body)
   return { kind: 'handled' }
 }
-

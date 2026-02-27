@@ -57,39 +57,3 @@ export async function createApiKey(db: DbClient, params: { id: string, name: str
     })
 }
 
-export function createBearerAuthMiddleware(opts: { db: DbClient }) {
-  return async (req: any, res: any, next: any) => {
-    try {
-      const header = req?.headers?.authorization
-      const value = typeof header === 'string' ? header : Array.isArray(header) ? header[0] : ''
-      const m = value.match(/^Bearer\s+(.+)\s*$/i)
-      const token = m?.[1]?.trim()
-      if (!token) {
-        res.status(401).json({ error: 'Missing bearer token' })
-        return
-      }
-
-      const keyHash = hashApiKey(token)
-      const row = await lookupApiKeyByHash(opts.db, keyHash)
-      if (!row) {
-        res.status(401).json({ error: 'Invalid API key' })
-        return
-      }
-
-      req.auth = {
-        type: 'bearer',
-        apiKeyId: row.id,
-        name: row.name,
-        scopes: row.scopesJson ?? null,
-      }
-
-      next()
-    }
-    catch (err) {
-      res.status(500).json({ error: 'Auth error' })
-      // eslint-disable-next-line no-console
-      console.error(err)
-    }
-  }
-}
-

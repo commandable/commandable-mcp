@@ -3,8 +3,7 @@ import crypto from 'node:crypto'
 import { IntegrationProxy } from '../integrations/proxy.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { runStdioMcpServer } from '../mcp/server.js'
-import { runHttpMcpServer } from '../mcp/httpServer.js'
-import { createBearerAuthMiddleware, createApiKey, generateApiKey } from '../mcp/auth.js'
+import { createApiKey, generateApiKey } from '../mcp/auth.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
@@ -40,8 +39,7 @@ function help(exitCode: number = 0): never {
     `  ${picocolors.cyan('commandable-mcp status')}`,
     `  ${picocolors.cyan('commandable-mcp apply')} ${picocolors.dim('[--config ./commandable.config.yaml]')}`,
     `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
-    `  ${picocolors.cyan('commandable-mcp serve')} ${picocolors.dim('[--port 3000] [--config ./commandable.config.yaml]')}`,
-    `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server)')}`,
+    `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server via stdio)')}`,
     '',
     picocolors.bold('Notes'),
     `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
@@ -112,49 +110,6 @@ async function runApplyHeadless() {
   }
 }
 
-async function runHttpServe() {
-  const portRaw = getFlagValue('--port') || process.env.PORT || '3000'
-  const port = Number(portRaw)
-  if (!Number.isFinite(port) || port <= 0) {
-    console.error(`Invalid port: ${portRaw}`)
-    process.exit(1)
-  }
-
-  const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
-  const { db, credentialStore, close } = await openEnvState()
-  try {
-    const cfgPath = getFlagValue('--config') || process.env.COMMANDABLE_CONFIG_FILE || null
-    if (cfgPath) {
-      const { config } = loadConfig(cfgPath || undefined)
-      await applyConfig({ config, db, credentialStore, defaultSpaceId: spaceId })
-    }
-
-    const integrations = await listIntegrations(db, spaceId)
-    if (!integrations.length) {
-      console.error(`No integrations configured yet. Run ${picocolors.cyan('commandable-mcp init')}.`)
-      process.exit(0)
-    }
-
-    const proxy = new IntegrationProxy({
-      credentialStore,
-      trelloApiKey: process.env.TRELLO_API_KEY,
-    })
-
-    const index = buildMcpToolIndex({ spaceId, integrations, proxy })
-    const auth = createBearerAuthMiddleware({ db })
-
-    await runHttpMcpServer({
-      serverInfo: { name: 'commandable', version: '0.0.1' },
-      tools: { list: index.tools, byName: index.byName },
-      port,
-      authMiddleware: auth,
-    })
-  }
-  finally {
-    await close()
-  }
-}
-
 async function runCreateApiKey() {
   const name = process.argv[3] && !process.argv[3].startsWith('-') ? String(process.argv[3]) : 'default'
   const rawKey = generateApiKey()
@@ -206,9 +161,6 @@ export async function main() {
       await close()
     }
   }
-
-  if (cmd === 'serve')
-    return await runHttpServe()
 
   if (cmd === 'apply')
     return await runApplyHeadless()

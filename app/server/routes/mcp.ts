@@ -11,11 +11,15 @@ export default defineEventHandler(async (event) => {
     body,
   })
 
-  if (result.kind === 'error') {
-    setResponseStatus(event, result.statusCode)
-    return result.message
+  if (result.kind === 'handled') {
+    event._handled = true
+    return
   }
 
-  return undefined
+  setResponseStatus(event, result.statusCode)
+  return {
+    jsonrpc: '2.0',
+    error: { code: -32000, message: result.message },
+    id: null,
+  }
 })
-
