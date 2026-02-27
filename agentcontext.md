@@ -113,3 +113,27 @@ The open-source project exists to:
 - Ability mode / lazy tool loading (planned — important when tool count gets large)
 - Multi-user / multi-tenant
 - Billing / usage limits
+
+## Future plans
+
+### Document processing sidecar
+
+Many integrations (SharePoint, Google Drive, Slack file uploads, Jira attachments, email) need to make file contents — PDFs, Excel spreadsheets, Word docs, slides — consumable by LLMs. Rather than duplicating extraction logic in every integration, we plan to add a **shared document processing sidecar** that any integration handler can call.
+
+**Architecture:**
+- A stateless HTTP service (separate process or container) that handles the heavy/native dependencies (PDF rendering, OCR, table extraction, etc.). The core MCP server stays lightweight — no native deps.
+- The sidecar exposes a simple API: give it a URL or raw bytes + MIME type, get back an LLM-ready result (extracted text, page images, structured tables, metadata).
+- **Likely powered by `docling-serve`** (IBM's open-source document extraction toolkit, MIT license, ships as Docker images, already battle-tested at 53k+ GitHub stars) rather than building our own extraction engine.
+
+**How it integrates with Commandable:**
+
+1. **Standalone MCP tools** — generic, integration-agnostic tools like `doc_read_pdf`, `doc_read_excel`, `doc_convert` that work on any URL. The LLM can call these directly.
+2. **Available inside integration handlers** — a `docproc` client is injected into the sandbox context (like `getIntegration` is today), so any integration handler can call `docproc.extract(url, opts)` without needing native deps or special imports. SharePoint, Google Drive, Slack, etc. all use the same pipeline.
+3. **MCP-native output** — results come back as standard MCP content blocks: `"text"` for extracted text, `"image"` (base64) for rendered page images (vision-capable models), `"resource_link"` for large payloads. Handlers choose text-only, vision, or auto based on the caller's needs.
+
+**Deployment options:**
+- `mode: local` — Commandable auto-starts a local docling-serve process
+- `mode: external` — point at a self-hosted or remote docproc endpoint
+- `mode: disabled` — doc processing tools don't appear; integrations that need them gracefully degrade to returning raw metadata
+
+**Why this matters:** Commandable becomes the only MCP server where every integration automatically understands documents. No other open-source MCP project does this — existing doc processing MCP servers are all standalone (user must configure separately, LLM must coordinate across servers). The unified approach is the whole point of Commandable.
