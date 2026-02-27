@@ -136,7 +136,7 @@ function makeClaudeDesktopSnippet() {
     mcpServers: {
       commandable: {
         command: 'npx',
-        args: ['@commandable/mcp'],
+        args: ['-y', '@commandable/mcp'],
       },
     },
   }

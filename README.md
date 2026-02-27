@@ -14,10 +14,17 @@ Connect your everyday apps to any AI assistant that supports the [Model Context 
 ### 1) Run the setup wizard
 
 ```bash
-npx @commandable/mcp init
+npx -y @commandable/mcp init
 ```
 
 This walks you through selecting integrations and entering credentials. Credentials are encrypted immediately and stored outside your project (default: `~/.commandable/`).
+
+If you prefer a global install (no `npx`), you can also do:
+
+```bash
+npm install -g @commandable/mcp
+commandable-mcp init
+```
 
 ### 2) Add the snippet to your MCP client
 
@@ -28,11 +35,13 @@ This walks you through selecting integrations and entering credentials. Credenti
   "mcpServers": {
     "commandable": {
       "command": "npx",
-      "args": ["@commandable/mcp"]
+      "args": ["-y", "@commandable/mcp"]
     }
   }
 }
 ```
+
+If your setup wizard prints a snippet without `-y`, add it — it avoids interactive install prompts on first run.
 
 **Cursor** — open Settings → MCP → Add server, then paste the same JSON block.
 
@@ -88,7 +97,7 @@ This starts an app that serves:
 
 ```bash
 DATABASE_URL="$DATABASE_URL" COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
-  npx @commandable/mcp create-api-key my-app
+  npx -y @commandable/mcp create-api-key my-app
 ```
 
 Store the printed key somewhere safe (it is only shown once).
@@ -116,13 +125,13 @@ mcp = MCPServerStreamableHttp(
 Apply config without interactive prompts:
 
 ```bash
-npx @commandable/mcp apply --config ./commandable.config.yaml
+npx -y @commandable/mcp apply --config ./commandable.config.yaml
 ```
 
 You can also make `init` headless by passing `--config`:
 
 ```bash
-npx @commandable/mcp init --config ./commandable.config.yaml
+npx -y @commandable/mcp init --config ./commandable.config.yaml
 ```
 
 ---

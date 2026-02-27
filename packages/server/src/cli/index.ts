@@ -43,7 +43,7 @@ function help(exitCode: number = 0): never {
     '',
     picocolors.bold('Notes'),
     `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
-    `- MCP clients (Claude Desktop, Cursor) spawn this server process automatically via: ${picocolors.cyan('npx @commandable/mcp')}`,
+    `- MCP clients (Claude Desktop, Cursor) spawn this server process automatically via: ${picocolors.cyan('npx -y @commandable/mcp')}`,
     '',
   ]
   console.error(lines.join('\n'))

@@ -7,7 +7,7 @@ Connect your everyday apps to any AI assistant that supports the Model Context P
 ### 1) Run the setup wizard
 
 ```bash
-npx @commandable/mcp init
+npx -y @commandable/mcp init
 ```
 
 This walks you through selecting integrations and entering API credentials. Credentials are encrypted immediately and stored locally on your machine (not in your project).
@@ -18,17 +18,32 @@ The wizard prints a JSON snippet to paste into your MCP client config.
 
 For Claude Desktop, edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add the `mcpServers.commandable` block.
 
+Example:
+
+```json
+{
+  "mcpServers": {
+    "commandable": {
+      "command": "npx",
+      "args": ["-y", "@commandable/mcp"]
+    }
+  }
+}
+```
+
 ### 3) Restart your MCP client
 
 Restart Claude Desktop (or reload the Cursor window) so it picks up the new MCP server.
 
 ## CLI
 
-- `npx @commandable/mcp init`: first-time setup
-- `npx @commandable/mcp add`: add more integrations later
-- `npx @commandable/mcp status`: show enabled integrations
-- `npx @commandable/mcp apply [--config <file>]`: apply config-as-code idempotently (CI-friendly)
-- `npx @commandable/mcp create-api-key [name]`: create an API key for authenticating to the hosted `/mcp` endpoint in server mode
+- `npx -y @commandable/mcp init`: first-time setup
+- `npx -y @commandable/mcp add`: add more integrations later
+- `npx -y @commandable/mcp status`: show enabled integrations
+- `npx -y @commandable/mcp apply [--config <file>]`: apply config-as-code idempotently (CI-friendly)
+- `npx -y @commandable/mcp create-api-key [name]`: create an API key for authenticating to the hosted `/mcp` endpoint in server mode
+ 
+Tip: in non-interactive contexts (and in MCP client configs), prefer `npx -y @commandable/mcp ...` to avoid install prompts on first run.
 
 ## Repository
 
