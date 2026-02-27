@@ -2,7 +2,8 @@ export type {
   IntegrationCredentialConfig,
   DisplayCardData,
   ToolData,
-} from '@commandable/integration-data'
+  IntegrationCatalogItem,
+} from './loader.js'
 
 export {
   integrationDataRoot,
@@ -11,4 +12,6 @@ export {
   loadIntegrationTools,
   loadIntegrationDisplayCards,
   loadIntegrationCredentialConfig,
-} from '@commandable/integration-data'
+  listIntegrationTypes,
+  listIntegrationCatalog,
+} from './loader.js'

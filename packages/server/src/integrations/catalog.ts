@@ -1,52 +1,11 @@
-import { readdirSync, statSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { distance as levenshtein } from 'fastest-levenshtein'
-import { loadIntegrationManifest } from './dataLoader.js'
+import { listIntegrationCatalog } from '@commandable/integration-data'
 
-export interface IntegrationCatalogItem {
-  type: string
-  name: string
-}
+export type { IntegrationCatalogItem } from '@commandable/integration-data'
 
-function integrationsRoot(): string {
-  if (process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
-    return resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
+export { listIntegrationCatalog } from '@commandable/integration-data'
 
-  return resolve(fileURLToPath(new URL('../../integration-data/', import.meta.url)))
-}
-
-export function listIntegrationCatalog(): IntegrationCatalogItem[] {
-  const root = integrationsRoot()
-  let entries: string[] = []
-  try {
-    entries = readdirSync(root)
-  }
-  catch {
-    return []
-  }
-
-  const items: IntegrationCatalogItem[] = []
-  for (const entry of entries) {
-    const dir = resolve(root, entry)
-    try {
-      const st = statSync(dir)
-      if (!st.isDirectory())
-        continue
-      const manifest = loadIntegrationManifest(entry)
-      if (!manifest)
-        continue
-      const name = manifest.name || entry
-      items.push({ type: entry, name })
-    }
-    catch {
-      // ignore
-    }
-  }
-  return items
-}
-
-export function searchIntegrationCatalog(query: string, limit: number = 10): Array<IntegrationCatalogItem & { score: number }> {
+export function searchIntegrationCatalog(query: string, limit: number = 10): Array<{ type: string, name: string, score: number }> {
   const items = listIntegrationCatalog()
   const q = (query || '').toLowerCase().trim()
   if (!q)
@@ -54,7 +13,7 @@ export function searchIntegrationCatalog(query: string, limit: number = 10): Arr
 
   const qTokens = q.split(/\s+/g)
 
-  const scored: Array<IntegrationCatalogItem & { score: number }> = []
+  const scored: Array<{ type: string, name: string, score: number }> = []
   for (const it of items) {
     let score = 0
     const name = it.name.toLowerCase()
@@ -84,4 +43,3 @@ export function searchIntegrationCatalog(query: string, limit: number = 10): Arr
   scored.sort((a, b) => b.score - a.score)
   return scored.slice(0, limit)
 }
-

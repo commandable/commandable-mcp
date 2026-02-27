@@ -1,13 +1,5 @@
 import type { JSONSchema7 } from 'json-schema'
 
-export interface ToolData {
-  name: string
-  description: string
-  inputSchema: JSONSchema7
-  handlerCode: string
-  displayName?: string
-}
-
 export type IntegrationType =
   | 'jira'
   | 'airtable'

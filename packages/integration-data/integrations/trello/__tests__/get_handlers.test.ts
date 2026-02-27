@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
 // This is a LIVE integration test suite that hits Trello using managed OAuth.
 // Required env vars:
