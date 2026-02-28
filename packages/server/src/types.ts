@@ -24,6 +24,7 @@ export interface IntegrationData {
   connectionId?: string | null
   connectionMethod?: 'managed' | 'credentials'
   credentialId?: string | null
+  credentialVariant?: string | null
 }
 
 export interface ExecutableTool {

@@ -7,12 +7,27 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-export function getMissingToolUsages(opts: { integrationName: string, importMetaUrl: string }): string[] {
+/**
+ * Returns tool names from the manifest that are not exercised in any test file,
+ * excluding tools that are restricted to specific credential variants (those are
+ * covered by their own variant-specific test suites).
+ */
+export function getMissingToolUsages(opts: { integrationName: string, importMetaUrl: string, credentialVariant?: string }): string[] {
   const manifest = loadIntegrationManifest(opts.integrationName)
   if (!manifest)
     throw new Error(`Missing integration manifest for '${opts.integrationName}'`)
 
-  const toolNames = (manifest.tools as any[]).map(t => t.name)
+  const tools = manifest.tools as any[]
+
+  const relevantTools = tools.filter((t) => {
+    if (!t.credentialVariants || !Array.isArray(t.credentialVariants) || t.credentialVariants.length === 0)
+      return true
+    if (opts.credentialVariant)
+      return t.credentialVariants.includes(opts.credentialVariant)
+    return false
+  })
+
+  const toolNames = relevantTools.map(t => t.name)
 
   const testsDir = fileURLToPath(new URL('.', opts.importMetaUrl))
   if (!existsSync(testsDir))
@@ -37,4 +52,3 @@ export function getMissingToolUsages(opts: { integrationName: string, importMeta
 
   return missing
 }
-

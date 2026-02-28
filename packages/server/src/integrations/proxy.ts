@@ -157,7 +157,7 @@ export class IntegrationProxy {
       if (!credentialId)
         throw new HttpError(400, 'credentialId is required for credentials-based integrations.')
 
-      const credCfg = loadIntegrationCredentialConfig(provider)
+      const credCfg = loadIntegrationCredentialConfig(provider, integration.credentialVariant)
       if (!credCfg)
         throw new HttpError(501, `Provider '${provider}' does not support credentials-based auth yet.`)
 
@@ -165,41 +165,33 @@ export class IntegrationProxy {
       if (!creds)
         throw new HttpError(400, 'No credentials are configured for this integration.')
 
-      if (provider.startsWith('google-')) {
-        const maybeToken = (creds as any).token
+      if (credCfg.preprocess === 'google_service_account') {
         const serviceAccountJson = (creds as any).serviceAccountJson
+        if (!serviceAccountJson)
+          throw new HttpError(400, `Integration '${provider}' requires a 'serviceAccountJson' credential for the service_account variant.`)
 
-        if (!maybeToken && !serviceAccountJson) {
-          throw new HttpError(
-            400,
-            `Google integration '${provider}' requires either a 'token' or 'serviceAccountJson' credential.`,
-          )
+        const subject = typeof (creds as any).subject === 'string' ? (creds as any).subject : undefined
+
+        const rawScopes = (creds as any).scopes
+        const scopesFromCreds = Array.isArray(rawScopes)
+          ? rawScopes.map((s: any) => String(s)).filter(Boolean)
+          : (typeof rawScopes === 'string'
+              ? rawScopes.split(/[,\s]+/g).map(s => s.trim()).filter(Boolean)
+              : [])
+
+        const defaultScopes: Record<string, string[]> = {
+          'google-sheet': ['https://www.googleapis.com/auth/spreadsheets'],
+          'google-docs': ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive'],
+          'google-slides': ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive'],
+          'google-calendar': ['https://www.googleapis.com/auth/calendar'],
+          'google-drive': ['https://www.googleapis.com/auth/drive'],
         }
+        const scopes = scopesFromCreds.length ? scopesFromCreds : (defaultScopes[provider] || [])
+        if (!scopes.length)
+          throw new HttpError(400, `Missing OAuth scopes for Google integration '${provider}'.`)
 
-        if (!maybeToken && serviceAccountJson) {
-          const subject = typeof (creds as any).subject === 'string' ? (creds as any).subject : undefined
-
-          const rawScopes = (creds as any).scopes
-          const scopesFromCreds = Array.isArray(rawScopes)
-            ? rawScopes.map((s: any) => String(s)).filter(Boolean)
-            : (typeof rawScopes === 'string'
-                ? rawScopes.split(/[,\s]+/g).map(s => s.trim()).filter(Boolean)
-                : [])
-
-          const defaultScopes: Record<string, string[]> = {
-            'google-sheet': ['https://www.googleapis.com/auth/spreadsheets'],
-            'google-docs': ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive'],
-            'google-slides': ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive'],
-            'google-calendar': ['https://www.googleapis.com/auth/calendar'],
-            'google-drive': ['https://www.googleapis.com/auth/drive'],
-          }
-          const scopes = scopesFromCreds.length ? scopesFromCreds : (defaultScopes[provider] || [])
-          if (!scopes.length)
-            throw new HttpError(400, `Missing OAuth scopes for Google integration '${provider}'.`)
-
-          const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
-          ;(creds as any).token = token
-        }
+        const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
+        ;(creds as any).token = token
       }
 
       const resolveTemplate = (template: string): string => {

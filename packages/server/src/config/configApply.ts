@@ -51,6 +51,7 @@ function toIntegrationData(spaceId: string, it: IntegrationConfig): IntegrationD
     connectionMethod: it.credentials ? 'credentials' : undefined,
     connectionId: null,
     credentialId: it.credentials ? credentialId : (it.credentialId ?? undefined),
+    credentialVariant: (it.credentialVariant && it.credentialVariant.trim().length) ? it.credentialVariant.trim() : undefined,
   }
 }
 

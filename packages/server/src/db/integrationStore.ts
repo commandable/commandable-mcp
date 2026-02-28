@@ -30,6 +30,7 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
       connectionMethod: r.connectionMethod ?? undefined,
       connectionId: r.connectionId ?? undefined,
       credentialId: r.credentialId ?? undefined,
+      credentialVariant: r.credentialVariant ?? undefined,
       config: cfg,
     }
     return integ
@@ -54,6 +55,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
       connectionMethod: integration.connectionMethod ?? null,
       connectionId: integration.connectionId ?? null,
       credentialId: integration.credentialId ?? null,
+      credentialVariant: integration.credentialVariant ?? null,
       configJson: configValue,
       createdAt: client.dialect === 'sqlite' ? now : now,
     })
@@ -67,6 +69,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
         connectionMethod: integration.connectionMethod ?? null,
         connectionId: integration.connectionId ?? null,
         credentialId: integration.credentialId ?? null,
+        credentialVariant: integration.credentialVariant ?? null,
         configJson: configValue,
       },
     })

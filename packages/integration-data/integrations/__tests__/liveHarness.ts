@@ -22,7 +22,7 @@ export function createCredentialStore(getCredentials: () => Promise<any>) {
   return { getCredentials }
 }
 
-export function createIntegrationNode(type: string, opts?: { id?: string, label?: string, credentialId?: string }) {
+export function createIntegrationNode(type: string, opts?: { id?: string, label?: string, credentialId?: string, credentialVariant?: string }) {
   const id = opts?.id || `node-${type}`
   return {
     spaceId: 'ci',
@@ -32,6 +32,7 @@ export function createIntegrationNode(type: string, opts?: { id?: string, label?
     label: opts?.label || type,
     connectionMethod: 'credentials',
     credentialId: opts?.credentialId || `${type}-creds`,
+    credentialVariant: opts?.credentialVariant,
   } as any
 }
 
@@ -39,8 +40,8 @@ export function createProxy(credentialStore: { getCredentials: () => Promise<any
   return new IntegrationProxy({ credentialStore })
 }
 
-function getTools(type: string): ToolSet {
-  const tools = loadIntegrationTools(type)
+function getTools(type: string, credentialVariant?: string): ToolSet {
+  const tools = loadIntegrationTools(type, { credentialVariant })
   if (!tools)
     throw new Error(`Missing integration tools for '${type}'`)
   return tools as any
@@ -52,30 +53,32 @@ function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   return build(integration) as (input: any) => Promise<any>
 }
 
-export function createToolbox(type: string, proxy: IntegrationProxy, node: any) {
-  const tools = getTools(type)
+export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string) {
+  const tools = getTools(type, credentialVariant)
 
   const findTool = (scope: keyof ToolSet, name: string) => tools[scope].find(t => t.name === name)
 
   return {
+    /** Returns true if the tool exists in this variant's toolset. */
+    hasTool: (scope: keyof ToolSet, name: string) => !!findTool(scope, name),
+
     read: (name: string) => {
       const tool = findTool('read', name)
       if (!tool)
-        throw new Error(`Missing read tool '${name}' for '${type}'`)
+        throw new Error(`Missing read tool '${name}' for '${type}' (variant: ${credentialVariant ?? 'default'})`)
       return compileTool(proxy, node, tool)
     },
     write: (name: string) => {
       const tool = findTool('write', name)
       if (!tool)
-        throw new Error(`Missing write tool '${name}' for '${type}'`)
+        throw new Error(`Missing write tool '${name}' for '${type}' (variant: ${credentialVariant ?? 'default'})`)
       return compileTool(proxy, node, tool)
     },
     admin: (name: string) => {
       const tool = findTool('admin', name) || findTool('write', name) || findTool('read', name)
       if (!tool)
-        throw new Error(`Missing admin tool '${name}' for '${type}'`)
+        throw new Error(`Missing admin tool '${name}' for '${type}' (variant: ${credentialVariant ?? 'default'})`)
       return compileTool(proxy, node, tool)
     },
   }
 }
-

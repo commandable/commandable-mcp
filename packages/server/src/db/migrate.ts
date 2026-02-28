@@ -12,6 +12,7 @@ export async function ensureSchema(client: DbClient): Promise<void> {
         connection_method TEXT,
         connection_id TEXT,
         credential_id TEXT,
+        credential_variant TEXT,
         config_json TEXT,
         created_at INTEGER NOT NULL
       );
@@ -60,6 +61,7 @@ export async function ensureSchema(client: DbClient): Promise<void> {
       connection_method TEXT,
       connection_id TEXT,
       credential_id TEXT,
+      credential_variant TEXT,
       config_json JSONB,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
