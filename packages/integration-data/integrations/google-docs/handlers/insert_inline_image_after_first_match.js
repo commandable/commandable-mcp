@@ -34,7 +34,7 @@ async (input) => {
     return { ok: true }
 
   const requests = []
-  requests.push({ insertInlineImage: { location: { index: baseIndex }, uri, altTextTitle: altText } })
+  requests.push({ insertInlineImage: { location: { index: baseIndex }, uri } })
   requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })
   const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })
   return await res.json()

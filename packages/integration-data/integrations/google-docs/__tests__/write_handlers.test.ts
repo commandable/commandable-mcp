@@ -174,9 +174,10 @@ suiteOrSkip('google-docs write handlers (live)', () => {
       }, 60000)
 
       it('insert_inline_image_after_first_match inserts an image when allowed', async () => {
-        if (!ctx.documentId || !process.env.GDOCS_TEST_IMAGE_URI)
+        if (!ctx.documentId)
           return expect(true).toBe(true)
         const documentId = ctx.documentId
+        const imageUri = 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
         const insert_inline_image_after_first_match = docs.write('insert_inline_image_after_first_match')
         const anchor = `ANCHOR_${Date.now()}`
         const appended = docs.write('append_text')
@@ -184,7 +185,7 @@ suiteOrSkip('google-docs write handlers (live)', () => {
         const before = await get_text({ documentId })
         if (!String(before?.text || '').includes(anchor))
           await appended({ documentId, text: `\n${anchor}\n` })
-        const res = await insert_inline_image_after_first_match({ documentId, findText: anchor, uri: process.env.GDOCS_TEST_IMAGE_URI!, altText: 'CmdTest' })
+        const res = await insert_inline_image_after_first_match({ documentId, findText: anchor, uri: imageUri })
         expect(res?.applied === true || Array.isArray(res?.replies)).toBeTruthy()
       }, 60000)
 

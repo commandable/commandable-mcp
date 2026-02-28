@@ -96,13 +96,11 @@ suite('google-slides write handlers (live)', () => {
   }, 60000)
 
   it('insert_image_after_first_match inserts an image when allowed', async () => {
-    const env = process.env as Record<string, string | undefined>
-    if (!ctx.presentationId || !env.GSLIDES_TEST_IMAGE_URI)
+    if (!ctx.presentationId || !ctx.anchorText)
       return expect(true).toBe(true)
-    if (!ctx.anchorText)
-      return expect(true).toBe(true)
+    const imageUri = 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
     const handler = slides.write('insert_image_after_first_match')
-    const res = await handler({ presentationId: ctx.presentationId, findText: ctx.anchorText, uri: env.GSLIDES_TEST_IMAGE_URI })
+    const res = await handler({ presentationId: ctx.presentationId, findText: ctx.anchorText, uri: imageUri })
     expect(res?.presentationId || Array.isArray(res?.replies)).toBeTruthy()
   }, 60000)
 
