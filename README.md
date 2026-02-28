@@ -1,8 +1,8 @@
 # Commandable MCP
 
-Connect your everyday apps to any AI assistant that supports the [Model Context Protocol](https://modelcontextprotocol.io).
+Connect your all of apps to any AI assistant with 1 secure, encrypted server.
 
-**One tool, two ways to use it:**
+**One app, two ways to use it:**
 
 - **Desktop mode (stdio)**: run a local MCP server that Claude Desktop / Cursor spawns for you. Great for personal use and “set it and forget it”.
 - **Server mode (HTTP + UI)**: run a single Node process that serves **(1)** a management UI and **(2)** an MCP Streamable HTTP endpoint. Great for agent frameworks, shared environments, and CI-friendly config-as-code.
