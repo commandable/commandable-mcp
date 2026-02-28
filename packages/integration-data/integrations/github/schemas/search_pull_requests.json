@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "GitHub search query for PRs. Use 'is:pr' to scope to PRs (e.g. 'is:pr is:open author:octocat label:bug repo:owner/repo'). Supports all GitHub issue search qualifiers." },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}

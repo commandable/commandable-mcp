@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "pull_number": { "type": "integer", "description": "Pull request number" },
+    "event": {
+      "type": "string",
+      "enum": ["APPROVE", "REQUEST_CHANGES", "COMMENT"],
+      "description": "Review action: APPROVE to approve, REQUEST_CHANGES to request changes, COMMENT to leave a comment only"
+    },
+    "body": { "type": "string", "description": "Review summary comment (required when event is REQUEST_CHANGES or COMMENT)" },
+    "commit_id": { "type": "string", "description": "SHA of the commit to review. Defaults to the latest commit on the PR." }
+  },
+  "required": ["owner", "repo", "pull_number", "event"],
+  "additionalProperties": false
+}

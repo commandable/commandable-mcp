@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "sha": { "type": "string", "description": "Commit SHA, branch name, or tag name" },
+    "page": { "type": "integer", "default": 1, "description": "Page for paginating large diffs (when a commit touches many files)" },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["owner", "repo", "sha"],
+  "additionalProperties": false
+}

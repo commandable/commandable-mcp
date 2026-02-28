@@ -1,9 +1,8 @@
 async (input) => {
   const params = new URLSearchParams()
-  if (input.protected !== undefined) params.set('protected', String(input.protected))
   if (input.page) params.set('page', String(input.page))
   if (input.per_page) params.set('per_page', String(input.per_page))
   const query = params.toString() ? `?${params.toString()}` : ''
-  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/branches${query}`)
+  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/commits/${input.sha}${query}`)
   return await res.json()
 }

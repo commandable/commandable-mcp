@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner to fork from" },
+    "repo": { "type": "string", "description": "Repository name to fork" },
+    "organization": { "type": "string", "description": "Organization to fork into (defaults to the authenticated user's account)" },
+    "name": { "type": "string", "description": "New name for the forked repository (defaults to the original name)" }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}

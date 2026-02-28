@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "issue_number": { "type": "integer", "description": "Issue number" },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["owner", "repo", "issue_number"],
+  "additionalProperties": false
+}

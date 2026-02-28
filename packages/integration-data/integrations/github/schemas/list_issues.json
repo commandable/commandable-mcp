@@ -4,8 +4,10 @@
     "owner": { "type": "string" },
     "repo": { "type": "string" },
     "state": { "type": "string", "enum": ["open", "closed", "all"], "default": "open" },
-    "labels": { "type": "string" },
-    "assignee": { "type": "string" }
+    "labels": { "type": "string", "description": "Comma-separated list of label names to filter by" },
+    "assignee": { "type": "string", "description": "Filter by assignee username, or 'none' for unassigned, '*' for any" },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
   },
   "required": ["owner", "repo"],
   "additionalProperties": false

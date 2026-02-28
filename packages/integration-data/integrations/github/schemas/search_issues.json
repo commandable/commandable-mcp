@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "GitHub issue search query (e.g. 'is:open is:issue label:bug repo:owner/repo', 'is:open assignee:@me', 'is:issue no:assignee'). Supports all GitHub search qualifiers." },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}

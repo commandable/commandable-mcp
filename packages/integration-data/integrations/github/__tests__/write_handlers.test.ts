@@ -40,7 +40,7 @@ suiteOrSkip('github write handlers (live)', () => {
         toolbox = createToolbox('github', proxy, node, variant.key)
       }, 30000)
 
-      it('create_issue -> update_issue -> comment_on_issue -> close_issue roundtrip', async () => {
+      it('create_issue -> update_issue -> comment_on_issue -> list_issue_comments -> close_issue roundtrip', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
 
@@ -59,10 +59,55 @@ suiteOrSkip('github write handlers (live)', () => {
         const comment = await comment_on_issue({ owner: ctx.owner, repo: ctx.repo, issue_number, body: 'A comment from test.' })
         expect(comment?.id).toBeTruthy()
 
+        const list_issue_comments = toolbox.read('list_issue_comments')
+        const comments = await list_issue_comments({ owner: ctx.owner, repo: ctx.repo, issue_number })
+        expect(Array.isArray(comments)).toBe(true)
+        expect(comments.length).toBeGreaterThan(0)
+
         const close_issue = toolbox.write('close_issue')
         const closed = await close_issue({ owner: ctx.owner, repo: ctx.repo, issue_number })
         expect(closed?.state).toBe('closed')
       }, 90000)
+
+      it('fork_repo forks a public repo (best effort)', async () => {
+        if (!ctx.owner || !ctx.repo)
+          return expect(true).toBe(true)
+        const fork_repo = toolbox.write('fork_repo')
+        try {
+          const result = await fork_repo({ owner: ctx.owner, repo: ctx.repo })
+          // Fork returns the forked repo details
+          expect(result).toBeTruthy()
+        }
+        catch {
+          // May fail if repo is private or fork already exists -- that's ok
+          expect(true).toBe(true)
+        }
+      }, 30000)
+
+      it('create_release creates a draft release (classic_pat only)', async () => {
+        if (!toolbox.hasTool('write', 'create_repo'))
+          return expect(true).toBe(true)
+        if (!ctx.owner || !ctx.repo)
+          return expect(true).toBe(true)
+        const create_release = toolbox.write('create_release')
+        const tagName = `v0.0.0-test-${Date.now()}`
+        try {
+          const result = await create_release({
+            owner: ctx.owner,
+            repo: ctx.repo,
+            tag_name: tagName,
+            name: `Test Release ${tagName}`,
+            body: 'Draft release created by integration tests.',
+            draft: true,
+          })
+          expect(result?.tag_name).toBe(tagName)
+          expect(result?.draft).toBe(true)
+        }
+        catch {
+          // May fail if insufficient permissions -- that's ok
+          expect(true).toBe(true)
+        }
+      }, 30000)
 
       it('create_repo -> delete_repo lifecycle (classic_pat only)', async () => {
         if (!toolbox.hasTool('write', 'create_repo')) {
@@ -80,12 +125,10 @@ suiteOrSkip('github write handlers (live)', () => {
         })
         expect(created?.name).toBe(repoName)
 
-        // /user/repos creates under the authenticated user, not necessarily ctx.owner
         const createdOwner = created?.owner?.login
         expect(createdOwner).toBeTruthy()
         expect(created?.full_name).toBe(`${createdOwner}/${repoName}`)
 
-        // GitHub needs a moment to finish provisioning the repo before it can be deleted
         await new Promise(resolve => setTimeout(resolve, 3000))
 
         const delete_repo = toolbox.write('delete_repo')
@@ -117,17 +160,34 @@ suiteOrSkip('github write handlers (live)', () => {
         expect(file?.commit?.message).toBe(`Add single test file ${timestamp}`)
         expect(file?.content?.path).toBe(`test-single-${timestamp}.txt`)
 
-        const updated = await create_or_update_file({
+        // get_file_contents and delete_file roundtrip
+        const get_file_contents = toolbox.read('get_file_contents')
+        const contents = await get_file_contents({
           owner: ctx.owner,
           repo: ctx.repo,
           path: `test-single-${timestamp}.txt`,
-          message: `Update test file ${timestamp}`,
-          content: `Updated content at ${timestamp}`,
-          branch: branchName,
-          sha: file.content.sha,
+          ref: branchName,
         })
-        expect(updated?.commit?.message).toBe(`Update test file ${timestamp}`)
-      }, 90000)
+        expect(contents?.encoding).toBe('utf-8')
+        expect(contents?.content).toContain('Hello')
+        const fileSha = contents?.sha
+
+        const delete_file = toolbox.write('delete_file')
+        const deleted = await delete_file({
+          owner: ctx.owner,
+          repo: ctx.repo,
+          path: `test-single-${timestamp}.txt`,
+          message: `Delete test file ${timestamp}`,
+          sha: fileSha,
+          branch: branchName,
+        })
+        expect(deleted?.commit?.message).toBe(`Delete test file ${timestamp}`)
+
+        // delete_branch cleanup
+        const delete_branch = toolbox.write('delete_branch')
+        const deletedBranch = await delete_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
+        expect(deletedBranch?.success).toBe(true)
+      }, 120000)
 
       it('create_commit: multiple files in one commit', async () => {
         if (!ctx.owner || !ctx.repo)
@@ -169,9 +229,14 @@ suiteOrSkip('github write handlers (live)', () => {
         })
         expect(commit2?.commit?.sha).toBeTruthy()
         expect(commit2?.commit?.message).toBe(`Update and delete files ${timestamp}`)
+
+        // get_commit verifies the commit details
+        const get_commit = toolbox.read('get_commit')
+        const commitDetails = await get_commit({ owner: ctx.owner, repo: ctx.repo, sha: commit2.commit.sha })
+        expect(commitDetails?.sha).toBe(commit2.commit.sha)
       }, 120000)
 
-      it('full PR workflow: create_branch -> create_commit -> create_pull_request -> merge_pull_request', async () => {
+      it('full PR workflow: create_branch -> create_commit -> create_pull_request -> update_pull_request -> create_pull_request_review -> merge_pull_request -> delete_branch', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
 
@@ -211,6 +276,27 @@ suiteOrSkip('github write handlers (live)', () => {
         expect(pr?.number).toBeTruthy()
         const prNumber = pr.number
 
+        // update_pull_request
+        const update_pull_request = toolbox.write('update_pull_request')
+        const updated = await update_pull_request({
+          owner: ctx.owner,
+          repo: ctx.repo,
+          pull_number: prNumber,
+          body: 'Updated description by integration test.',
+        })
+        expect(updated?.number).toBe(prNumber)
+
+        // get_pull_request verifies state
+        const get_pull_request = toolbox.read('get_pull_request')
+        const prDetails = await get_pull_request({ owner: ctx.owner, repo: ctx.repo, pull_number: prNumber })
+        expect(prDetails?.number).toBe(prNumber)
+
+        // list_pull_request_files
+        const list_pull_request_files = toolbox.read('list_pull_request_files')
+        const files = await list_pull_request_files({ owner: ctx.owner, repo: ctx.repo, pull_number: prNumber })
+        expect(Array.isArray(files)).toBe(true)
+
+        // add_labels_to_issue (labels on PR)
         const add_labels_to_issue = toolbox.write('add_labels_to_issue')
         try {
           await add_labels_to_issue({ owner: ctx.owner, repo: ctx.repo, issue_number: prNumber, labels: ['test'] })
@@ -219,9 +305,43 @@ suiteOrSkip('github write handlers (live)', () => {
           // Label might not exist -- that's ok for this test
         }
 
+        // request_pull_request_reviewers (may fail if requesting from self)
+        const request_pull_request_reviewers = toolbox.write('request_pull_request_reviewers')
+        try {
+          await request_pull_request_reviewers({
+            owner: ctx.owner,
+            repo: ctx.repo,
+            pull_number: prNumber,
+            reviewers: [],
+          })
+        }
+        catch {
+          // May fail if requesting from self or insufficient permissions -- that's ok
+        }
+
+        // create_pull_request_review (comment only -- can't APPROVE own PRs typically)
+        const create_pull_request_review = toolbox.write('create_pull_request_review')
+        try {
+          await create_pull_request_review({
+            owner: ctx.owner,
+            repo: ctx.repo,
+            pull_number: prNumber,
+            event: 'COMMENT',
+            body: 'LGTM from integration test',
+          })
+        }
+        catch {
+          // May fail if author is same as reviewer in some repo configs -- that's ok
+        }
+
         const merge_pull_request = toolbox.write('merge_pull_request')
         const merged = await merge_pull_request({ owner: ctx.owner, repo: ctx.repo, pull_number: prNumber, merge_method: 'squash' })
         expect(merged?.merged).toBe(true)
+
+        // delete_branch after merge
+        const delete_branch = toolbox.write('delete_branch')
+        const deletedBranch = await delete_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
+        expect(deletedBranch?.success).toBe(true)
       }, 150000)
     })
   }

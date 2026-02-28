@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "GitHub repository search query. Examples: 'machine learning language:python stars:>1000', 'topic:react', 'user:facebook is:public'. Supports stars, forks, language, topic, and many other qualifiers." },
+    "sort": { "type": "string", "enum": ["stars", "forks", "help-wanted-issues", "updated"], "description": "Sort repos by this field" },
+    "order": { "type": "string", "enum": ["asc", "desc"], "default": "desc" },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}

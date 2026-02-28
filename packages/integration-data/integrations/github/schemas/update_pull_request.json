@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "pull_number": { "type": "integer", "description": "Pull request number to update" },
+    "title": { "type": "string", "description": "New title for the PR" },
+    "body": { "type": "string", "description": "New description for the PR (markdown)" },
+    "state": { "type": "string", "enum": ["open", "closed"], "description": "Set to 'closed' to close the PR without merging" },
+    "base": { "type": "string", "description": "New base branch to merge into" },
+    "draft": { "type": "boolean", "description": "Set to true to convert to draft, false to mark ready for review" }
+  },
+  "required": ["owner", "repo", "pull_number"],
+  "additionalProperties": false
+}

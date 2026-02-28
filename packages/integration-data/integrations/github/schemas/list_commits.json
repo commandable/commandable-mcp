@@ -3,9 +3,11 @@
   "properties": {
     "owner": { "type": "string" },
     "repo": { "type": "string" },
-    "sha": { "type": "string" },
-    "path": { "type": "string" },
-    "author": { "type": "string" }
+    "sha": { "type": "string", "description": "Branch name, tag, or commit SHA to start listing from (defaults to default branch)" },
+    "path": { "type": "string", "description": "Filter commits that touch this file path" },
+    "author": { "type": "string", "description": "Filter by GitHub username or email address" },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
   },
   "required": ["owner", "repo"],
   "additionalProperties": false

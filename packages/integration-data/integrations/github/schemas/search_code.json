@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "GitHub code search query. Examples: 'useState repo:facebook/react language:typescript', 'console.log path:src/ language:javascript org:my-org'. Supports language, path, repo, org, and extension filters." },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}

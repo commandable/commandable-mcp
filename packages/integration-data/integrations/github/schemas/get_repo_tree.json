@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner (user or org)" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "ref": { "type": "string", "description": "Branch name, tag, or commit SHA (defaults to HEAD)" },
+    "recursive": { "type": "boolean", "description": "Return the full recursive tree (all nested files). Default true.", "default": true },
+    "path_filter": { "type": "string", "description": "Optional path prefix to filter results (e.g. 'src/')" }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}

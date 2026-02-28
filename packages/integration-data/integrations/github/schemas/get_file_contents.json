@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner (user or org)" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "path": { "type": "string", "description": "File path within the repository (e.g. 'src/index.js')" },
+    "ref": { "type": "string", "description": "Branch name, tag, or commit SHA (defaults to the repo's default branch)" }
+  },
+  "required": ["owner", "repo", "path"],
+  "additionalProperties": false
+}

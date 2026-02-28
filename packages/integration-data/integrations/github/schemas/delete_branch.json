@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "branch": { "type": "string", "description": "Branch name to delete (e.g. 'feature/my-feature')" }
+  },
+  "required": ["owner", "repo", "branch"],
+  "additionalProperties": false
+}

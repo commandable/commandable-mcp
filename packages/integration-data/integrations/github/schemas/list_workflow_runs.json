@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "branch": { "type": "string", "description": "Filter runs by branch name" },
+    "status": {
+      "type": "string",
+      "enum": ["queued", "in_progress", "completed", "action_required", "cancelled", "failure", "neutral", "skipped", "stale", "success", "timed_out", "waiting"],
+      "description": "Filter by run status or conclusion"
+    },
+    "event": { "type": "string", "description": "Filter by triggering event (e.g. 'push', 'pull_request', 'schedule', 'workflow_dispatch')" },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 30, "maximum": 100 }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}

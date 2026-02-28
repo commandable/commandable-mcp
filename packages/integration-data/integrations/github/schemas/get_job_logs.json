@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "job_id": { "type": "integer", "description": "Workflow job ID. Get this from the 'jobs' field of get_workflow_run, or from the GitHub Actions UI URL." }
+  },
+  "required": ["owner", "repo", "job_id"],
+  "additionalProperties": false
+}

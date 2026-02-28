@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "run_id": { "type": "integer", "description": "Workflow run ID (obtain from list_workflow_runs)" }
+  },
+  "required": ["owner", "repo", "run_id"],
+  "additionalProperties": false
+}

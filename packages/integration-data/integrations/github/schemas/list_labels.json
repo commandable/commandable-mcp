@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "page": { "type": "integer", "default": 1 },
+    "per_page": { "type": "integer", "default": 100, "maximum": 100 }
+  },
+  "required": ["owner", "repo"],
+  "additionalProperties": false
+}

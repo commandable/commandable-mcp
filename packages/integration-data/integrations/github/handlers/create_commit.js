@@ -11,17 +11,25 @@ async (input) => {
   const commitData = await commitRes.json()
   const currentTreeSha = commitData.tree.sha
   
-  // 3. Build tree entries — use inline content for creates/updates, sha null for deletions
+  // 3. Build tree entries.
+  // Always create blobs explicitly rather than using inline tree content, because mixing inline
+  // content with sha:null deletion entries in the same tree request causes GitRPC::BadObjectState.
   const tree = []
   for (const file of files) {
     if (file.content !== undefined && file.content !== null) {
+      const blobRes = await integration.fetch(`/repos/${owner}/${repo}/git/blobs`, {
+        method: 'POST',
+        body: { content: file.content, encoding: 'utf-8' },
+      })
+      const blobData = await blobRes.json()
       tree.push({
         path: file.path,
         mode: file.mode || '100644',
         type: 'blob',
-        content: file.content,
+        sha: blobData.sha,
       })
     } else {
+      // sha: null removes the file from the tree
       tree.push({
         path: file.path,
         mode: '100644',

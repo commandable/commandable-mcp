@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "path": { "type": "string", "description": "Path of the file to delete (e.g. 'src/old-file.js')" },
+    "message": { "type": "string", "description": "Commit message" },
+    "sha": { "type": "string", "description": "The blob SHA of the file to delete. Obtain this from get_file_contents (the 'sha' field on the response)." },
+    "branch": { "type": "string", "description": "Branch to delete the file from (defaults to the repo's default branch)" }
+  },
+  "required": ["owner", "repo", "path", "message", "sha"],
+  "additionalProperties": false
+}
