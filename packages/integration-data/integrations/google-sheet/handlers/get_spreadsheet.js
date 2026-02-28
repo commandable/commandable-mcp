@@ -5,6 +5,8 @@ async (input) => {
     params.set('includeGridData', String(includeGridData))
   if (Array.isArray(ranges))
     ranges.forEach(r => params.append('ranges', String(r)))
+  if (input.fields)
+    params.set('fields', input.fields)
   const qs = params.toString()
   const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path)

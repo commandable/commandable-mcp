@@ -8,23 +8,27 @@
     },
     "q": {
       "type": "string",
-      "description": "Gmail search query syntax."
+      "description": "Gmail search query. Supported operators: 'is:unread', 'from:user@example.com', 'to:user@example.com', 'subject:keyword', 'has:attachment', 'after:2024/01/01', 'newer_than:7d', 'label:INBOX'. Same syntax as list_messages."
     },
     "labelIds": {
       "type": "array",
-      "description": "Optional list of label IDs to filter by.",
+      "description": "Filter to threads where all messages have these label IDs. Common IDs: 'INBOX', 'UNREAD', 'STARRED', 'SENT'. Use list_labels for custom label IDs.",
       "items": { "type": "string" }
     },
     "maxResults": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 500
+      "maximum": 500,
+      "default": 20,
+      "description": "Maximum number of threads to return. Defaults to 20. Use pageToken from the response for the next page of results."
     },
     "pageToken": {
-      "type": "string"
+      "type": "string",
+      "description": "Page token from a previous list_threads response. Pass this to retrieve the next page."
     },
     "includeSpamTrash": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Include threads from SPAM and TRASH in results. Defaults to false."
     }
   },
   "additionalProperties": false

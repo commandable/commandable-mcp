@@ -123,6 +123,18 @@ suiteOrSkip('google-gmail write/admin handlers (live)', () => {
         expect(deleted?.success === true || deleted === '').toBe(true)
       }, 60000)
 
+      it('send_email sends mail when GMAIL_TEST_SEND_TO is set', async () => {
+        const to = env.GMAIL_TEST_SEND_TO
+        if (!to)
+          return expect(true).toBe(true)
+        const sent = await gmail.write('send_email')({
+          to,
+          subject: `CmdTest Gmail send_email ${Date.now()}`,
+          body: 'Message sent by integration live test via send_email.',
+        })
+        expect(sent?.id).toBeTruthy()
+      }, 60000)
+
       it('send_message sends mail when GMAIL_TEST_SEND_TO is set', async () => {
         const to = env.GMAIL_TEST_SEND_TO
         if (!to)

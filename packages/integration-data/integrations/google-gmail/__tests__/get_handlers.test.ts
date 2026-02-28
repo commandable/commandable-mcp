@@ -126,6 +126,19 @@ suiteOrSkip('google-gmail read handlers (live)', () => {
         const result = await gmail.read('get_draft')({ draftId: ctx.draftId })
         expect(result?.id).toBe(ctx.draftId)
       }, 30000)
+
+      it('read_email returns flat decoded message when a message is available', async () => {
+        if (!ctx.messageId)
+          return expect(true).toBe(true)
+        const result = await gmail.read('read_email')({ messageId: ctx.messageId })
+        expect(result?.id).toBe(ctx.messageId)
+        expect(typeof result?.subject).toBe('string')
+        expect(typeof result?.from).toBe('string')
+        expect(typeof result?.date).toBe('string')
+        expect(typeof result?.snippet).toBe('string')
+        expect(typeof result?.body).toBe('string')
+        expect(Array.isArray(result?.labelIds)).toBe(true)
+      }, 30000)
     })
   }
 })

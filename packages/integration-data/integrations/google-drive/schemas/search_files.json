@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "Raw Drive query string using the Drive search syntax. Examples: \"name contains 'budget' and mimeType = 'application/vnd.google-apps.spreadsheet'\", \"modifiedTime > '2024-01-01'\", \"'folderId' in parents\". Combined with name/mimeType shorthand via AND." },
+    "name": { "type": "string", "description": "Shorthand for name-based search. Translates to \"name contains 'value'\". Combined with query and mimeType via AND." },
+    "mimeType": { "type": "string", "description": "Filter by MIME type. Common values: 'application/vnd.google-apps.document' (Docs), 'application/vnd.google-apps.spreadsheet' (Sheets), 'application/vnd.google-apps.presentation' (Slides), 'application/vnd.google-apps.folder' (folders), 'application/pdf', 'text/plain'." },
+    "includeTrashed": { "type": "boolean", "description": "Include trashed files in results. Defaults to false (trashed files excluded)." },
+    "pageSize": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 20, "description": "Maximum results per page. Defaults to 20. Use pageToken from the response for the next page." },
+    "pageToken": { "type": "string", "description": "Page token from a previous search_files response to retrieve the next page of results." },
+    "fields": { "type": "string", "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'." }
+  },
+  "additionalProperties": false
+}

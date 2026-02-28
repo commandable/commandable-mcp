@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["to", "subject", "body"],
+  "properties": {
+    "userId": { "type": "string", "description": "User email or 'me'. Defaults to 'me'." },
+    "to": { "type": "string", "description": "Recipient email address. Use comma-separated values for multiple recipients (e.g. 'alice@example.com, bob@example.com')." },
+    "cc": { "type": "string", "description": "CC recipients, comma-separated." },
+    "bcc": { "type": "string", "description": "BCC recipients, comma-separated." },
+    "subject": { "type": "string", "description": "Email subject line." },
+    "body": { "type": "string", "description": "Plain text email body. Required unless htmlBody is provided." },
+    "htmlBody": { "type": "string", "description": "HTML email body. If provided, takes precedence over body and the email is sent as text/html." },
+    "replyToMessageId": { "type": "string", "description": "Message ID of the email being replied to. Sets the In-Reply-To header for proper threading. Use with threadId." },
+    "threadId": { "type": "string", "description": "Thread ID to add this message to. Required when replying so the reply appears in the same conversation." }
+  },
+  "additionalProperties": false
+}

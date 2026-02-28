@@ -8,23 +8,27 @@
     },
     "q": {
       "type": "string",
-      "description": "Gmail search query syntax, e.g. from:alice has:attachment newer_than:7d."
+      "description": "Gmail search query. Supported operators: 'is:unread', 'is:read', 'from:user@example.com', 'to:user@example.com', 'subject:keyword', 'has:attachment', 'label:INBOX', 'after:2024/01/01', 'before:2024/12/31', 'newer_than:7d', 'older_than:1y', 'in:sent', 'in:drafts'. Combine operators with spaces (implicit AND) or use OR/NOT."
     },
     "labelIds": {
       "type": "array",
-      "description": "Optional list of label IDs to filter by.",
+      "description": "Filter to messages with all of these label IDs applied. Common IDs: 'INBOX', 'UNREAD', 'STARRED', 'SENT', 'DRAFT', 'SPAM', 'TRASH'. Use list_labels for custom label IDs.",
       "items": { "type": "string" }
     },
     "maxResults": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 500
+      "maximum": 500,
+      "default": 20,
+      "description": "Maximum number of messages to return. Defaults to 20. Use pageToken from the response for the next page of results."
     },
     "pageToken": {
-      "type": "string"
+      "type": "string",
+      "description": "Page token from a previous list_messages response. Pass this to retrieve the next page."
     },
     "includeSpamTrash": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Include messages from SPAM and TRASH in results. Defaults to false."
     }
   },
   "additionalProperties": false

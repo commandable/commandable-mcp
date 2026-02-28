@@ -1,7 +1,5 @@
 async (input) => {
-  const res = await integration.fetch(`/files/${encodeURIComponent(input.fileId)}?fields=id,name,mimeType,parents,trashed`, {
-    method: 'GET',
-  })
+  const fields = input.fields || 'id,name,mimeType,modifiedTime,createdTime,size,parents,trashed,webViewLink'
+  const res = await integration.fetch(`/files/${encodeURIComponent(input.fileId)}?fields=${encodeURIComponent(fields)}`)
   return await res.json()
 }
-

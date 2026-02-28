@@ -14,6 +14,8 @@ async (input) => {
     params.set('singleEvents', String(input.singleEvents))
   if (input.orderBy)
     params.set('orderBy', input.orderBy)
+  if (input.fields)
+    params.set('fields', input.fields)
   const qs = params.toString()
   const path = `/calendars/${encodeURIComponent(input.calendarId)}/events${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path)

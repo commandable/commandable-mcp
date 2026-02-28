@@ -4,119 +4,119 @@
   "tools": [
     {
       "name": "get_spreadsheet",
-      "description": "Retrieve spreadsheet metadata and optionally grid data.",
+      "description": "Retrieve spreadsheet metadata including all sheet names, IDs, and properties. Set includeGridData=false (the default) to get only metadata without cell values -- use get_values or batch_get_values for reading cell data. Use the 'fields' parameter to limit the response (e.g. fields='sheets.properties' to get only sheet names and IDs). The spreadsheetId appears in the URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/.",
       "inputSchema": "schemas/get_spreadsheet.json",
       "handler": "handlers/get_spreadsheet.js",
       "scope": "read"
     },
     {
       "name": "get_spreadsheet_by_data_filter",
-      "description": "Retrieve spreadsheet metadata using DataFilters.",
+      "description": "Retrieve spreadsheet metadata and cell data using DataFilters instead of A1 ranges. Supports GridRange filters, developer metadata filters, and A1Range filters. Use get_spreadsheet and get_values for simpler cases.",
       "inputSchema": "schemas/get_spreadsheet_by_data_filter.json",
       "handler": "handlers/get_spreadsheet_by_data_filter.js",
       "scope": "read"
     },
     {
       "name": "get_values",
-      "description": "Get values from a single A1 range.",
+      "description": "Read cell values from a single A1 notation range (e.g. 'Sheet1!A1:D10', 'Sheet1!A:A', 'Sheet1!1:5'). Returns a 2D array of values. Use get_spreadsheet first to discover sheet names. Specify 'Sheet1!A1:Z1000' for a wide range or just 'Sheet1' to read the entire sheet. Use batch_get_values for multiple ranges in one call.",
       "inputSchema": "schemas/get_values.json",
       "handler": "handlers/get_values.js",
       "scope": "read"
     },
     {
       "name": "batch_get_values",
-      "description": "Batch get values for multiple A1 ranges.",
+      "description": "Read cell values from multiple A1 notation ranges in a single API call. More efficient than calling get_values multiple times. Returns an array of valueRanges, each with range and values. Use when reading from multiple sheets or discontiguous ranges.",
       "inputSchema": "schemas/batch_get_values.json",
       "handler": "handlers/batch_get_values.js",
       "scope": "read"
     },
     {
       "name": "get_values_by_data_filter",
-      "description": "Batch get values using DataFilters.",
+      "description": "Retrieve cell values using DataFilters instead of A1 notation. Useful for filtering by developer metadata or GridRange objects. For standard range reads, use get_values or batch_get_values.",
       "inputSchema": "schemas/get_values_by_data_filter.json",
       "handler": "handlers/get_values_by_data_filter.js",
       "scope": "read"
     },
     {
       "name": "search_developer_metadata",
-      "description": "Search developer metadata in a spreadsheet.",
+      "description": "Search for developer metadata entries in a spreadsheet using metadata key, value, visibility, or location filters. Developer metadata is custom key-value data attached to spreadsheet elements.",
       "inputSchema": "schemas/search_developer_metadata.json",
       "handler": "handlers/search_developer_metadata.js",
       "scope": "read"
     },
     {
       "name": "get_developer_metadata",
-      "description": "Get a developer metadata entry by ID.",
+      "description": "Get a specific developer metadata entry by its integer metadata ID. Use search_developer_metadata to find metadata IDs.",
       "inputSchema": "schemas/get_developer_metadata.json",
       "handler": "handlers/get_developer_metadata.js",
       "scope": "read"
     },
     {
       "name": "create_spreadsheet",
-      "description": "Create a new spreadsheet.",
+      "description": "Create a new Google Spreadsheet. Accepts a full spreadsheet resource body, allowing you to specify the title, initial sheets, and cell data. Minimum: provide {title: 'My Spreadsheet'}. Returns the created spreadsheet including its spreadsheetId.",
       "inputSchema": "schemas/create_spreadsheet.json",
       "handler": "handlers/create_spreadsheet.js",
       "scope": "write"
     },
     {
       "name": "update_values",
-      "description": "Update values in a range (PUT).",
+      "description": "Write values to a specific A1 range, replacing existing content. Use valueInputOption='USER_ENTERED' to parse values as the user would type them (supports formulas, dates, currency). Use 'RAW' to store values as literal strings. Provide values as a 2D array (rows of columns).",
       "inputSchema": "schemas/update_values.json",
       "handler": "handlers/update_values.js",
       "scope": "write"
     },
     {
       "name": "append_values",
-      "description": "Append values after the last row of a range.",
+      "description": "Append rows of values after the last row of existing data in a range. Useful for adding new rows to a table without knowing the exact next row number. Uses USER_ENTERED valueInputOption by default. The range determines which sheet to append to.",
       "inputSchema": "schemas/append_values.json",
       "handler": "handlers/append_values.js",
       "scope": "write"
     },
     {
       "name": "batch_update_values",
-      "description": "Batch update values across multiple ranges.",
+      "description": "Write values to multiple A1 ranges in a single API call. More efficient than calling update_values multiple times. Provide a data array where each item has range and values. Use valueInputOption='USER_ENTERED' for formulas and dates.",
       "inputSchema": "schemas/batch_update_values.json",
       "handler": "handlers/batch_update_values.js",
       "scope": "write"
     },
     {
       "name": "batch_update_values_by_data_filter",
-      "description": "Batch update values using DataFilters.",
+      "description": "Write values to ranges identified by DataFilters instead of A1 notation. Supports GridRange and developer metadata filters. For standard range writes, use update_values or batch_update_values.",
       "inputSchema": "schemas/batch_update_values_by_data_filter.json",
       "handler": "handlers/batch_update_values_by_data_filter.js",
       "scope": "write"
     },
     {
       "name": "clear_values",
-      "description": "Clear values in the specified range.",
+      "description": "Clear all values (but not formatting) in the specified A1 range. The cells remain but their content is removed. To clear formatting as well, use batch_update with a repeatCell request.",
       "inputSchema": "schemas/clear_values.json",
       "handler": "handlers/clear_values.js",
       "scope": "write"
     },
     {
       "name": "batch_clear_values",
-      "description": "Batch clear values across multiple ranges.",
+      "description": "Clear values from multiple A1 ranges in a single API call. More efficient than calling clear_values multiple times.",
       "inputSchema": "schemas/batch_clear_values.json",
       "handler": "handlers/batch_clear_values.js",
       "scope": "write"
     },
     {
       "name": "batch_clear_values_by_data_filter",
-      "description": "Batch clear values using DataFilters.",
+      "description": "Clear values from ranges identified by DataFilters. For standard range clears, use clear_values or batch_clear_values.",
       "inputSchema": "schemas/batch_clear_values_by_data_filter.json",
       "handler": "handlers/batch_clear_values_by_data_filter.js",
       "scope": "write"
     },
     {
       "name": "batch_update",
-      "description": "Send a batchUpdate request (addSheet, deleteSheet, etc).",
+      "description": "Send a spreadsheets.batchUpdate request for structural changes such as addSheet, deleteSheet, duplicateSheet, insertDimension, deleteDimension, mergeCells, sortRange, addConditionalFormatRule, and more. Accepts a requests array. Use update_values or batch_update_values for writing cell data.",
       "inputSchema": "schemas/batch_update.json",
       "handler": "handlers/batch_update.js",
       "scope": "write"
     },
     {
       "name": "copy_to_spreadsheet",
-      "description": "Copy a sheet to another spreadsheet.",
+      "description": "Copy a specific sheet (tab) from one spreadsheet to another. Provide the source spreadsheetId, the sheetId (integer, from get_spreadsheet), and the destination spreadsheetId. Returns the copied sheet's properties in the destination spreadsheet.",
       "inputSchema": "schemas/copy_to_spreadsheet.json",
       "handler": "handlers/copy_to_spreadsheet.js",
       "scope": "write"

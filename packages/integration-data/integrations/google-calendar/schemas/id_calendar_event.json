@@ -1,8 +1,10 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
-    "calendarId": { "type": "string", "description": "Calendar ID (use 'primary' for primary)." },
-    "eventId": { "type": "string", "description": "Event ID." }
+    "calendarId": { "type": "string", "description": "Calendar ID. Use 'primary' for the user's main calendar." },
+    "eventId": { "type": "string", "description": "Event ID. Obtained from list_events results." },
+    "fields": { "type": "string", "description": "Partial response fields selector to reduce response size. Example: 'id,summary,start,end,attendees'." }
   },
   "required": ["calendarId", "eventId"],
   "additionalProperties": false

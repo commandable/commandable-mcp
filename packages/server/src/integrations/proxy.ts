@@ -18,6 +18,34 @@ export interface IntegrationProxyOptions {
   credentialStore?: CredentialStore
 }
 
+function getErrorHint(status: number, provider: string, bodyText: string): string {
+  if (status === 401)
+    return 'Authentication failed. Check that the credential token is valid and not expired. For service accounts, verify the service account has been granted access to the resource.'
+  if (status === 403)
+    return 'Permission denied. The credential does not have sufficient scopes or access to this resource. For Google integrations, ensure the required API scopes are enabled and the service account has been shared access to the resource.'
+  if (status === 404) {
+    if (provider.startsWith('google-'))
+      return 'Resource not found. The ID may be invalid or the resource may have been deleted. Use the appropriate list or search tool to find valid IDs. For Google Drive, ensure the service account has been granted access to the file or folder.'
+    return 'Resource not found. Verify the ID is correct and the resource exists.'
+  }
+  if (status === 409)
+    return 'Conflict. The resource already exists or there is a version conflict. Try fetching the current state before retrying.'
+  if (status === 429)
+    return 'Rate limit exceeded. The API quota has been reached. Wait a moment before retrying the request.'
+  if (status === 400) {
+    if (bodyText.includes('invalidQuery') || bodyText.includes('Invalid query'))
+      return 'Invalid query syntax. Check the query parameter format for this API.'
+    if (bodyText.includes('Invalid value') || bodyText.includes('invalid value'))
+      return 'A parameter value is invalid. Check enum values, required fields, and data formats (e.g. RFC3339 for dates).'
+    if (bodyText.includes('required'))
+      return 'A required parameter is missing. Check that all required fields are provided.'
+    return 'Bad request. Check that all required parameters are provided, values are in the correct format, and the request body matches the expected schema.'
+  }
+  if (status === 500 || status === 503)
+    return 'The upstream API returned a server error. This is likely a temporary issue -- retry the request after a short delay.'
+  return ''
+}
+
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 
@@ -257,7 +285,9 @@ export class IntegrationProxy {
           bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
         }
         catch {}
-        throw new HttpError(response.status, `Failed to proxy request to ${provider} (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.`, {
+        const hint = getErrorHint(response.status, provider, bodyText)
+        const hintSuffix = hint ? ` ${hint}` : ''
+        throw new HttpError(response.status, `Failed to proxy request to ${provider} (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.${hintSuffix}`, {
           status: response.status,
           url: redact(finalUrl),
           contentType,
@@ -327,7 +357,9 @@ export class IntegrationProxy {
             bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
           }
           catch {}
-          throw new HttpError(response.status, `Failed to proxy request to ${providerId}.`, {
+          const hint = getErrorHint(response.status, providerId, bodyText)
+          const hintSuffix = hint ? ` ${hint}` : ''
+          throw new HttpError(response.status, `Failed to proxy request to ${providerId}.${hintSuffix}`, {
             status: response.status,
             url: urlWithAuth,
             contentType,
@@ -352,7 +384,9 @@ export class IntegrationProxy {
           bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
         }
         catch {}
-        throw new HttpError(response.status, `Failed to proxy request to ${providerId}.`, {
+        const hint = getErrorHint(response.status, providerId, bodyText)
+        const hintSuffix = hint ? ` ${hint}` : ''
+        throw new HttpError(response.status, `Failed to proxy request to ${providerId}.${hintSuffix}`, {
           status: response.status,
           url: finalUrl,
           contentType,

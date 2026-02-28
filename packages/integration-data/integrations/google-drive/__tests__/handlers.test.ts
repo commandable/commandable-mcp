@@ -65,6 +65,25 @@ suiteOrSkip('google-drive handlers (live)', () => {
         await safeCleanup(async () => ctx.destFolderId ? drive.write('delete_file')({ fileId: ctx.destFolderId }) : Promise.resolve())
       }, 60000)
 
+      it('list_files returns files in folder', async () => {
+        if (!ctx.folderId)
+          return expect(true).toBe(true)
+        const result = await drive.read('list_files')({ folderId: ctx.folderId })
+        expect(Array.isArray(result?.files)).toBe(true)
+        expect(result?.files.some((f: any) => f?.id === ctx.fileId)).toBe(true)
+      }, 30000)
+
+      it('search_files finds file by name', async () => {
+        if (!ctx.fileId)
+          return expect(true).toBe(true)
+        const meta = await drive.read('get_file')({ fileId: ctx.fileId })
+        const name = meta?.name
+        if (!name)
+          return expect(true).toBe(true)
+        const result = await drive.read('search_files')({ name: name.slice(0, 10) })
+        expect(Array.isArray(result?.files)).toBe(true)
+      }, 30000)
+
       it('get_file returns file metadata', async () => {
         if (!ctx.fileId)
           return expect(true).toBe(true)
@@ -72,6 +91,30 @@ suiteOrSkip('google-drive handlers (live)', () => {
         expect(result?.id).toBe(ctx.fileId)
         expect(typeof result?.name).toBe('string')
         expect(typeof result?.mimeType).toBe('string')
+      }, 30000)
+
+      it('get_file_content exports a Google Doc as text', async () => {
+        if (!ctx.fileId)
+          return expect(true).toBe(true)
+        const result = await drive.read('get_file_content')({
+          fileId: ctx.fileId,
+          mimeType: 'application/vnd.google-apps.document',
+        })
+        expect(result?.fileId).toBe(ctx.fileId)
+        // A newly created empty doc may have empty content -- just verify the shape
+        expect(result?.content !== undefined || result?.message !== undefined).toBe(true)
+      }, 30000)
+
+      it('share_file shares a file with anyone reader', async () => {
+        if (!ctx.fileId)
+          return expect(true).toBe(true)
+        const result = await drive.write('share_file')({
+          fileId: ctx.fileId,
+          role: 'reader',
+          type: 'anyone',
+          sendNotificationEmail: false,
+        })
+        expect(result?.id || result?.role).toBeTruthy()
       }, 30000)
 
       it('move_file moves the file to a different folder', async () => {

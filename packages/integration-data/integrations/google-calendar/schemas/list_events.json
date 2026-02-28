@@ -1,14 +1,16 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
-    "calendarId": { "type": "string", "description": "Calendar ID (use 'primary' for primary)." },
-    "timeMin": { "type": "string", "description": "RFC3339 start time" },
-    "timeMax": { "type": "string", "description": "RFC3339 end time" },
-    "q": { "type": "string", "description": "Free-text search query" },
-    "maxResults": { "type": "integer", "minimum": 1, "maximum": 2500 },
-    "pageToken": { "type": "string" },
-    "singleEvents": { "type": "boolean", "description": "Expand recurring events" },
-    "orderBy": { "type": "string", "enum": ["startTime", "updated"] }
+    "calendarId": { "type": "string", "description": "Calendar ID. Use 'primary' for the user's main calendar. Find other calendar IDs via list_calendars." },
+    "timeMin": { "type": "string", "description": "Start of the time range (RFC3339 format, e.g. '2024-01-15T00:00:00Z' or '2024-01-15T09:00:00-05:00'). Only events ending after this time are returned." },
+    "timeMax": { "type": "string", "description": "End of the time range (RFC3339 format). Only events starting before this time are returned." },
+    "q": { "type": "string", "description": "Free-text search query matching event summary, description, location, and attendee details." },
+    "maxResults": { "type": "integer", "minimum": 1, "maximum": 2500, "default": 25, "description": "Maximum number of events to return. Defaults to 25. Use pageToken from the response for the next page." },
+    "pageToken": { "type": "string", "description": "Page token from a previous list_events response to retrieve the next page of results." },
+    "singleEvents": { "type": "boolean", "description": "Expand recurring events into individual instances. Set to true with orderBy='startTime' to get events in chronological order." },
+    "orderBy": { "type": "string", "enum": ["startTime", "updated"], "description": "Sort order. 'startTime' requires singleEvents=true. 'updated' sorts by last modification time." },
+    "fields": { "type": "string", "description": "Partial response fields selector to reduce response size. Example: 'items(id,summary,start,end,attendees)'. See Calendar API fields reference." }
   },
   "required": ["calendarId"],
   "additionalProperties": false
