@@ -21,6 +21,7 @@ suite('google-sheet read handlers (live)', () => {
     const credentialStore = createCredentialStore(async () => ({
       token: env.GOOGLE_TOKEN || '',
       serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
     }))
     const proxy = createProxy(credentialStore)
     sheets = createToolbox('google-sheet', proxy, createIntegrationNode('google-sheet', { label: 'Google Sheets', credentialId: 'google-sheet-creds' }))

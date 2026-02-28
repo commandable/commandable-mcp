@@ -16,7 +16,7 @@ interface VariantConfig {
 const variants: VariantConfig[] = [
   {
     key: 'service_account',
-    credentials: () => ({ serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '' }),
+    credentials: () => ({ serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '', subject: env.GOOGLE_IMPERSONATE_SUBJECT || '' }),
   },
   {
     key: 'oauth_token',
@@ -49,7 +49,9 @@ suiteOrSkip('google-docs write handlers (live)', () => {
           variant.key,
         )
 
-        const folder = await drive.write('create_folder')({ name: `CmdTest Docs Write ${Date.now()}` })
+        const folder = await drive.write('create_folder')({
+          name: `CmdTest Docs Write ${Date.now()}`,
+        })
         ctx.folderId = folder?.id
         expect(ctx.folderId).toBeTruthy()
 

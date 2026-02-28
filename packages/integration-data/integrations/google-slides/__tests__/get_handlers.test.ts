@@ -20,6 +20,7 @@ suite('google-slides read handlers (live)', () => {
     const credentialStore = createCredentialStore(async () => ({
       token: env.GOOGLE_TOKEN || '',
       serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
     }))
     const proxy = createProxy(credentialStore)
     slides = createToolbox('google-slides', proxy, createIntegrationNode('google-slides', { label: 'Google Slides', credentialId: 'google-slides-creds' }))
