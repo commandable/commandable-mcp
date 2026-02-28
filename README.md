@@ -212,6 +212,7 @@ See [`TESTING.md`](./TESTING.md).
 
 ---
 
+
 ## Repo structure
 
 ```
@@ -219,6 +220,23 @@ commandable-mcp/
 ├── packages/server/                  # @commandable/mcp — core server + CLI
 ├── packages/server/integration-data/ # tool manifests/schemas/handlers per integration
 └── app/                              # server mode UI + MCP endpoint (Nuxt/Nitro)
+```
+
+---
+
+## Publishing to npm
+
+Packages must be published in dependency order. `@commandable/mcp` depends on `@commandable/integration-data`, so publish integration-data first.
+
+```bash
+# Authenticate (opens browser)
+yarn npm login
+
+# 1. Publish integration-data
+yarn workspace @commandable/integration-data npm publish
+
+# 2. Publish the server
+yarn workspace @commandable/mcp npm publish
 ```
 
 ---
