@@ -1,6 +1,8 @@
 # Commandable MCP
 
-Commandable MCP is a secure, enteprise ready, open source mcp router supporting 50+ integrations and 1000+ tools in one server.
+1 MCP server for all of your apps.
+
+Commandable MCP is a secure, enteprise ready, open source mcp server supporting 50+ integrations and 1000+ tools. 
 
 **Ways to use:** 
 - **Desktop mode (stdio)**: run a local MCP server that Claude Desktop / Cursor spawns for you. Great for personal use and “set it and forget it”.
