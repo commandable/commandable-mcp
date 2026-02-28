@@ -264,7 +264,7 @@ export class IntegrationProxy {
           bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
         }
         catch {}
-        throw new HttpError(response.status, `Failed to proxy request to ${provider}.`, {
+        throw new HttpError(response.status, `Failed to proxy request to ${provider} (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.`, {
           status: response.status,
           url: redact(finalUrl),
           contentType,
