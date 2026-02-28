@@ -1,6 +1,6 @@
 # Commandable MCP
 
-1 MCP server for all of your apps.
+One MCP server for all of your apps.
 
 Commandable MCP is a secure, enteprise ready, open source mcp server supporting 50+ integrations and 1000+ tools. 
 
