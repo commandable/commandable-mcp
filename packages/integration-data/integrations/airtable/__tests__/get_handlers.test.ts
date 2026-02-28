@@ -5,6 +5,9 @@ import { loadIntegrationTools } from '../../../../server/src/integrations/dataLo
 // LIVE Airtable integration tests using credentials
 // Required env vars:
 // - AIRTABLE_TOKEN
+// Optional (pins read tests to a specific base/table instead of auto-discovering):
+// - AIRTABLE_TEST_WRITE_BASE_ID
+// - AIRTABLE_TEST_WRITE_TABLE_ID
 
 interface Ctx {
   baseId?: string
@@ -53,23 +56,29 @@ suite('airtable read handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
-    // Discover base -> table -> record for tests
-    const list_bases = buildHandler('list_bases')
-    const bases = await list_bases({})
-    ctx.baseId = bases?.bases?.[0]?.id || bases?.[0]?.id
+    // Use explicit test base/table if provided, otherwise auto-discover from first base
+    if (env.AIRTABLE_TEST_WRITE_BASE_ID && env.AIRTABLE_TEST_WRITE_TABLE_ID) {
+      ctx.baseId = env.AIRTABLE_TEST_WRITE_BASE_ID
+      ctx.tableId = env.AIRTABLE_TEST_WRITE_TABLE_ID
+    }
+    else {
+      const list_bases = buildHandler('list_bases')
+      const bases = await list_bases({})
+      ctx.baseId = bases?.bases?.[0]?.id || bases?.[0]?.id
 
-    if (ctx.baseId) {
-      const list_tables = buildHandler('list_tables')
-      const tablesResp = await list_tables({ baseId: ctx.baseId })
-      const tables = tablesResp?.tables || tablesResp
-      ctx.tableId = tables?.[0]?.id
-
-      if (ctx.tableId) {
-        const list_records = buildHandler('list_records')
-        const recs = await list_records({ baseId: ctx.baseId, tableId: ctx.tableId, pageSize: 1 })
-        const records = recs?.records || recs
-        ctx.recordId = records?.[0]?.id
+      if (ctx.baseId) {
+        const list_tables = buildHandler('list_tables')
+        const tablesResp = await list_tables({ baseId: ctx.baseId })
+        const tables = tablesResp?.tables || tablesResp
+        ctx.tableId = tables?.[0]?.id
       }
+    }
+
+    if (ctx.baseId && ctx.tableId) {
+      const list_records = buildHandler('list_records')
+      const recs = await list_records({ baseId: ctx.baseId, tableId: ctx.tableId, pageSize: 1 })
+      const records = recs?.records || recs
+      ctx.recordId = records?.[0]?.id
     }
   }, 60000)
 

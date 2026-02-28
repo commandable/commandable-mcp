@@ -66,11 +66,8 @@ suiteOrSkip('github write handlers (live)', () => {
 
       it('create_repo -> delete_repo lifecycle (classic_pat only)', async () => {
         if (!toolbox.hasTool('write', 'create_repo')) {
-          // This tool is not available for fine_grained_pat -- expected.
           return expect(true).toBe(true)
         }
-        if (!ctx.owner)
-          return expect(true).toBe(true)
 
         const repoName = `cmdtest-repo-${Date.now()}`
 
@@ -82,10 +79,17 @@ suiteOrSkip('github write handlers (live)', () => {
           auto_init: true,
         })
         expect(created?.name).toBe(repoName)
-        expect(created?.full_name).toBe(`${ctx.owner}/${repoName}`)
+
+        // /user/repos creates under the authenticated user, not necessarily ctx.owner
+        const createdOwner = created?.owner?.login
+        expect(createdOwner).toBeTruthy()
+        expect(created?.full_name).toBe(`${createdOwner}/${repoName}`)
+
+        // GitHub needs a moment to finish provisioning the repo before it can be deleted
+        await new Promise(resolve => setTimeout(resolve, 3000))
 
         const delete_repo = toolbox.write('delete_repo')
-        const deleted = await delete_repo({ owner: ctx.owner, repo: repoName })
+        const deleted = await delete_repo({ owner: createdOwner, repo: repoName })
         expect(deleted?.success).toBe(true)
         expect(deleted?.status).toBe(204)
       }, 90000)
