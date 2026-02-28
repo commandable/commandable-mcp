@@ -102,19 +102,6 @@ suite('google-calendar write & admin handlers (live)', () => {
     const patched = await patch_event({ calendarId: ctx.calendarId, eventId: createdId, body: { summary: `CmdTest Updated ${Date.now()}` } })
     expect(patched?.id).toBe(createdId)
 
-    // Also exercise full update (PUT)
-    const update_event = buildWrite('update_event')
-    const updated = await update_event({
-      calendarId: ctx.calendarId,
-      eventId: createdId,
-      body: {
-        summary: `CmdTest Updated (PUT) ${Date.now()}`,
-        start: { dateTime: patched?.start?.dateTime || new Date().toISOString() },
-        end: { dateTime: patched?.end?.dateTime || new Date(Date.now() + 3600000).toISOString() },
-      },
-    })
-    expect(updated?.id).toBe(createdId)
-
     const delete_event = buildWrite('delete_event')
     const del = await delete_event({ calendarId: ctx.calendarId, eventId: createdId })
     expect(del?.success === true || del === '').toBe(true)

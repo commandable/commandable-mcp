@@ -21,7 +21,7 @@ Controls how input values are interpreted in `update_values`, `append_values`, a
 
 ## valueRenderOption
 
-Controls how values are returned in `get_values` and `batch_get_values`:
+Controls how values are returned in `read_sheet`:
 
 - `FORMATTED_VALUE` *(default)* — returns values as displayed in the UI (e.g. `"$1,234.56"`, `"50%"`)
 - `UNFORMATTED_VALUE` — returns raw numbers (e.g. `1234.56`, `0.5`)
@@ -30,8 +30,8 @@ Controls how values are returned in `get_values` and `batch_get_values`:
 ## Recommended workflow
 
 1. Call `get_spreadsheet` with `fields='sheets.properties'` to get sheet names and sheetIds
-2. Use `get_values` with the appropriate A1 range to read cell data
-3. Use `update_values` or `append_values` to write data back
+2. Use `read_sheet` with an A1 range to read data as markdown plus explicit row/column coordinates
+3. Use the coordinates from `read_sheet` output (e.g. `B3`) with `update_values` or `append_values` for writes
 
 ## Structural changes
 
@@ -45,5 +45,5 @@ For adding/removing sheets, inserting/deleting rows or columns, or formatting ce
 ## Large spreadsheets
 
 Avoid calling `get_spreadsheet` with `includeGridData=true` on large spreadsheets -- it can return megabytes of data. Instead:
-- Use `get_values` or `batch_get_values` with specific ranges
+- Use `read_sheet` with specific ranges
 - Use `get_spreadsheet` with `fields='sheets.properties'` to get sheet metadata only

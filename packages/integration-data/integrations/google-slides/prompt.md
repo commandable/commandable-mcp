@@ -3,7 +3,7 @@
 The presentationId appears in the Google Slides URL:
 `https://docs.google.com/presentation/d/{presentationId}/edit`
 
-Each slide has an `objectId` (a string like `p` or `g12345abcde`). Get presentation first to discover all slide objectIds and the elements on each slide.
+Each slide has an `objectId` (a string like `p` or `g12345abcde`). Use `read_presentation` first to discover slide objectIds and extracted text content by slide.
 
 ## Slide addressing
 
@@ -11,11 +11,8 @@ The higher-level tools use `slideIndex` (0-based integer):
 - `slideIndex=0` — first slide
 - `slideIndex=1` — second slide
 
-The lower-level `batch_update` requires `objectId` strings. Use `get_presentation` to map index to objectId:
-```javascript
-const slides = presentation.slides
-const slideObjectId = slides[slideIndex].objectId
-```
+The lower-level `batch_update` requires `objectId` strings. Use `read_presentation` output to map slide order and IDs before editing.
+If you need raw structure details, call `batch_update` only for the operation you are performing.
 
 ## First-match tools
 

@@ -110,32 +110,12 @@ suite('google-sheet write handlers (live)', () => {
     expect(res?.totalUpdatedCells >= 0 || res?.spreadsheetId).toBeTruthy()
   }, 60000)
 
-  it('batch_update_values_by_data_filter updates via filters', async () => {
-    if (!ctx.spreadsheetId)
-      return expect(true).toBe(true)
-    const aTitle = sheetTitle || 'Sheet1'
-    const batch_update_values_by_data_filter = sheets.write('batch_update_values_by_data_filter')
-    const res = await batch_update_values_by_data_filter({ spreadsheetId: ctx.spreadsheetId, data: [
-      { dataFilter: { a1Range: `${aTitle}!D1:D1` }, values: [[`CmdTestDF ${Date.now()}`]] },
-    ], valueInputOption: 'USER_ENTERED' })
-    expect(res?.totalUpdatedCells >= 0 || res?.spreadsheetId).toBeTruthy()
-  }, 60000)
-
   it('batch_clear_values clears multiple ranges', async () => {
     if (!ctx.spreadsheetId)
       return expect(true).toBe(true)
     const aTitle = sheetTitle || 'Sheet1'
     const batch_clear_values = sheets.write('batch_clear_values')
     const res = await batch_clear_values({ spreadsheetId: ctx.spreadsheetId, ranges: [`${aTitle}!A1:A2`, `${aTitle}!B1:B2`] })
-    expect(Boolean(res?.spreadsheetId) || Array.isArray(res?.clearedRanges)).toBe(true)
-  }, 60000)
-
-  it('batch_clear_values_by_data_filter clears via filters', async () => {
-    if (!ctx.spreadsheetId)
-      return expect(true).toBe(true)
-    const aTitle = sheetTitle || 'Sheet1'
-    const batch_clear_values_by_data_filter = sheets.write('batch_clear_values_by_data_filter')
-    const res = await batch_clear_values_by_data_filter({ spreadsheetId: ctx.spreadsheetId, dataFilters: [{ a1Range: `${aTitle}!E1:E2` }] })
     expect(Boolean(res?.spreadsheetId) || Array.isArray(res?.clearedRanges)).toBe(true)
   }, 60000)
 

@@ -4,51 +4,16 @@
   "tools": [
     {
       "name": "get_spreadsheet",
-      "description": "Retrieve spreadsheet metadata including all sheet names, IDs, and properties. Set includeGridData=false (the default) to get only metadata without cell values -- use get_values or batch_get_values for reading cell data. Use the 'fields' parameter to limit the response (e.g. fields='sheets.properties' to get only sheet names and IDs). The spreadsheetId appears in the URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/.",
+      "description": "Retrieve spreadsheet metadata including all sheet names, IDs, and properties. Set includeGridData=false (the default) to get only metadata without cell values. Use read_sheet for cell content. Use the 'fields' parameter to limit the response (e.g. fields='sheets.properties' to get only sheet names and IDs). The spreadsheetId appears in the URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/.",
       "inputSchema": "schemas/get_spreadsheet.json",
       "handler": "handlers/get_spreadsheet.js",
       "scope": "read"
     },
     {
-      "name": "get_spreadsheet_by_data_filter",
-      "description": "Retrieve spreadsheet metadata and cell data using DataFilters instead of A1 ranges. Supports GridRange filters, developer metadata filters, and A1Range filters. Use get_spreadsheet and get_values for simpler cases.",
-      "inputSchema": "schemas/get_spreadsheet_by_data_filter.json",
-      "handler": "handlers/get_spreadsheet_by_data_filter.js",
-      "scope": "read"
-    },
-    {
-      "name": "get_values",
-      "description": "Read cell values from a single A1 notation range (e.g. 'Sheet1!A1:D10', 'Sheet1!A:A', 'Sheet1!1:5'). Returns a 2D array of values. Use get_spreadsheet first to discover sheet names. Specify 'Sheet1!A1:Z1000' for a wide range or just 'Sheet1' to read the entire sheet. Use batch_get_values for multiple ranges in one call.",
-      "inputSchema": "schemas/get_values.json",
-      "handler": "handlers/get_values.js",
-      "scope": "read"
-    },
-    {
-      "name": "batch_get_values",
-      "description": "Read cell values from multiple A1 notation ranges in a single API call. More efficient than calling get_values multiple times. Returns an array of valueRanges, each with range and values. Use when reading from multiple sheets or discontiguous ranges.",
-      "inputSchema": "schemas/batch_get_values.json",
-      "handler": "handlers/batch_get_values.js",
-      "scope": "read"
-    },
-    {
-      "name": "get_values_by_data_filter",
-      "description": "Retrieve cell values using DataFilters instead of A1 notation. Useful for filtering by developer metadata or GridRange objects. For standard range reads, use get_values or batch_get_values.",
-      "inputSchema": "schemas/get_values_by_data_filter.json",
-      "handler": "handlers/get_values_by_data_filter.js",
-      "scope": "read"
-    },
-    {
-      "name": "search_developer_metadata",
-      "description": "Search for developer metadata entries in a spreadsheet using metadata key, value, visibility, or location filters. Developer metadata is custom key-value data attached to spreadsheet elements.",
-      "inputSchema": "schemas/search_developer_metadata.json",
-      "handler": "handlers/search_developer_metadata.js",
-      "scope": "read"
-    },
-    {
-      "name": "get_developer_metadata",
-      "description": "Get a specific developer metadata entry by its integer metadata ID. Use search_developer_metadata to find metadata IDs.",
-      "inputSchema": "schemas/get_developer_metadata.json",
-      "handler": "handlers/get_developer_metadata.js",
+      "name": "read_sheet",
+      "description": "Read cell values from a sheet range and return as a Markdown table with A1 column headers and row numbers. Use this to read and understand spreadsheet data -- the coordinates in the output can be used directly with update_values and append_values for writes. Supports optional valueRenderOption for formulas or raw numbers. Use get_spreadsheet first to discover sheet names.",
+      "inputSchema": "schemas/read_sheet.json",
+      "handler": "handlers/read_sheet.js",
       "scope": "read"
     },
     {
@@ -80,13 +45,6 @@
       "scope": "write"
     },
     {
-      "name": "batch_update_values_by_data_filter",
-      "description": "Write values to ranges identified by DataFilters instead of A1 notation. Supports GridRange and developer metadata filters. For standard range writes, use update_values or batch_update_values.",
-      "inputSchema": "schemas/batch_update_values_by_data_filter.json",
-      "handler": "handlers/batch_update_values_by_data_filter.js",
-      "scope": "write"
-    },
-    {
       "name": "clear_values",
       "description": "Clear all values (but not formatting) in the specified A1 range. The cells remain but their content is removed. To clear formatting as well, use batch_update with a repeatCell request.",
       "inputSchema": "schemas/clear_values.json",
@@ -98,13 +56,6 @@
       "description": "Clear values from multiple A1 ranges in a single API call. More efficient than calling clear_values multiple times.",
       "inputSchema": "schemas/batch_clear_values.json",
       "handler": "handlers/batch_clear_values.js",
-      "scope": "write"
-    },
-    {
-      "name": "batch_clear_values_by_data_filter",
-      "description": "Clear values from ranges identified by DataFilters. For standard range clears, use clear_values or batch_clear_values.",
-      "inputSchema": "schemas/batch_clear_values_by_data_filter.json",
-      "handler": "handlers/batch_clear_values_by_data_filter.js",
       "scope": "write"
     },
     {

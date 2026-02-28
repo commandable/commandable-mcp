@@ -47,25 +47,28 @@ suite('google-slides read handlers (live)', () => {
     await safeCleanup(async () => drive.write('delete_file')({ fileId: folderId }))
   }, 60000)
 
-  it('get_presentation returns metadata', async () => {
+  it('read_presentation returns human-readable content', async () => {
     if (!presentationId)
       return expect(true).toBe(true)
-    const handler = slides.read('get_presentation')
+    const handler = slides.read('read_presentation')
     const result = await handler({ presentationId })
-    expect(result?.presentationId || Array.isArray(result?.slides)).toBeTruthy()
+    expect(typeof result).toBe('string')
+    expect(String(result)).toContain('Presentation:')
   }, 30000)
 
   it('get_page_thumbnail returns URL data', async () => {
     if (!presentationId)
       return expect(true).toBe(true)
-    // First query the presentation to discover a page id
-    const getPresentation = slides.read('get_presentation')
-    const meta = await getPresentation({ presentationId })
-    const firstSlide = meta?.slides?.[0]
-    if (!firstSlide?.objectId)
+    // Query the readable summary and parse "Slide 1: ID <objectId>, ..."
+    const readPresentation = slides.read('read_presentation')
+    const summary = await readPresentation({ presentationId })
+    const text = String(summary || '')
+    const match = text.match(/Slide 1: ID ([^,\n]+)/)
+    const firstSlideObjectId = match?.[1]
+    if (!firstSlideObjectId)
       return expect(true).toBe(true)
     const handler = slides.read('get_page_thumbnail')
-    const result = await handler({ presentationId, 'pageObjectId': firstSlide.objectId, 'thumbnailProperties.thumbnailSize': 'MEDIUM', 'thumbnailProperties.mimeType': 'PNG' })
+    const result = await handler({ presentationId, 'pageObjectId': firstSlideObjectId, 'thumbnailProperties.thumbnailSize': 'MEDIUM', 'thumbnailProperties.mimeType': 'PNG' })
     expect(typeof result?.contentUrl === 'string' || typeof result?.thumbnailUrl === 'string').toBe(true)
   }, 30000)
 })

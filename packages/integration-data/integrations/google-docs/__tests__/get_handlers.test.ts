@@ -70,28 +70,13 @@ suiteOrSkip('google-docs read handlers (live)', () => {
         await safeCleanup(async () => drive.write('delete_file')({ fileId: folderId }))
       }, 60000)
 
-      it('get_document returns metadata/content', async () => {
+      it('read_document returns markdown content', async () => {
         if (!documentId)
           return expect(true).toBe(true)
-        const handler = docs.read('get_document')
+        const handler = docs.read('read_document')
         const result = await handler({ documentId })
-        expect(result?.documentId || result?.body?.content || result?.title).toBeTruthy()
-      }, 30000)
-
-      it('get_document_text returns plain text', async () => {
-        if (!documentId)
-          return expect(true).toBe(true)
-        const handler = docs.read('get_document_text')
-        const result = await handler({ documentId })
-        expect(typeof result?.text === 'string').toBe(true)
-      }, 30000)
-
-      it('get_document_structured returns body JSON', async () => {
-        if (!documentId)
-          return expect(true).toBe(true)
-        const handler = docs.read('get_document_structured')
-        const result = await handler({ documentId })
-        expect(result?.body || result?.documentId).toBeTruthy()
+        expect(result?.documentId || result?.title).toBeTruthy()
+        expect(typeof result?.markdown).toBe('string')
       }, 30000)
     })
   }

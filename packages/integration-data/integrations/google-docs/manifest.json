@@ -3,24 +3,10 @@
   "version": "0.1.0",
   "tools": [
     {
-      "name": "get_document",
-      "description": "Retrieve full Google Doc metadata including the document title, body content structure, inline objects, named ranges, and document style. Returns the raw Docs API resource. For reading plain text, use get_document_text instead. For structured body content only, use get_document_structured.",
-      "inputSchema": "schemas/get_document.json",
-      "handler": "handlers/get_document.js",
-      "scope": "read"
-    },
-    {
-      "name": "get_document_text",
-      "description": "Extract the plain text content of a Google Doc as a single string. Returns {documentId, text}. Use this for reading document content -- it handles the nested Docs API structure automatically. For editing, follow up with replace_all_text, append_text, or the first-match tools.",
-      "inputSchema": "schemas/get_document_text.json",
-      "handler": "handlers/get_document_text.js",
-      "scope": "read"
-    },
-    {
-      "name": "get_document_structured",
-      "description": "Retrieve the structured body content of a Google Doc as a JSON array (body.content). Use this when you need the document structure with formatting, paragraphs, tables, and element positions -- for example before using batch_update with specific index ranges.",
-      "inputSchema": "schemas/get_document_structured.json",
-      "handler": "handlers/get_document_structured.js",
+      "name": "read_document",
+      "description": "Read a Google Doc and return its content as clean Markdown. Preserves headings, bold, italic, strikethrough, links, code spans, ordered/unordered lists with nesting, and tables. This is the standard way to read document content. For editing, use append_text, replace_all_text, first-match tools, or batch_update.",
+      "inputSchema": "schemas/read_document.json",
+      "handler": "handlers/read_document.js",
       "scope": "read"
     },
     {

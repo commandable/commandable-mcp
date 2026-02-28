@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "userId": { "type": "string", "description": "User email or 'me'. Defaults to 'me'." },
+    "to": { "type": "string", "description": "Recipient email address. Optional for drafts." },
+    "cc": { "type": "string", "description": "CC recipients, comma-separated." },
+    "bcc": { "type": "string", "description": "BCC recipients, comma-separated." },
+    "subject": { "type": "string", "description": "Draft subject line." },
+    "body": { "type": "string", "description": "Plain text draft body. Used when htmlBody is not provided." },
+    "htmlBody": { "type": "string", "description": "HTML draft body. If provided, takes precedence over body." },
+    "replyToMessageId": { "type": "string", "description": "Message ID being replied to. Sets In-Reply-To header." },
+    "threadId": { "type": "string", "description": "Thread ID to place the draft in an existing conversation." }
+  },
+  "additionalProperties": false
+}

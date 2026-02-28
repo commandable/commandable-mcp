@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "tools": [
     {
-      "name": "get_presentation",
-      "description": "Retrieve full presentation metadata including all slides, their page elements (shapes, text boxes, images), and slide IDs. Returns the raw Slides API resource. The presentation has a 'slides' array where each item has a 'objectId' (the slide ID) and a 'pageElements' array. Use slideIndex (0-based) to reference slides positionally in the higher-level tools.",
+      "name": "read_presentation",
+      "description": "Read a Google Slides presentation and return a human-readable summary including the title, slide count, and text content extracted from each slide. Returns the text found in all shapes on each slide with slide IDs for reference. Use this to understand what is in a presentation before editing. For low-level modifications, use batch_update.",
       "inputSchema": "schemas/get_presentation.json",
-      "handler": "handlers/get_presentation.js",
+      "handler": "handlers/read_presentation.js",
       "scope": "read"
     },
     {
       "name": "get_page_thumbnail",
-      "description": "Generate a thumbnail image URL for a specific slide (page) in a presentation. Requires the presentation ID and the slide's objectId (page ID from get_presentation). Returns a contentUrl for the thumbnail image. Useful for previewing slides.",
+      "description": "Generate a thumbnail image URL for a specific slide (page) in a presentation. Requires the presentation ID and the slide's objectId (page ID from read_presentation). Returns a contentUrl for the thumbnail image. Useful for previewing slides.",
       "inputSchema": "schemas/get_page_thumbnail.json",
       "handler": "handlers/get_page_thumbnail.js",
       "scope": "read"

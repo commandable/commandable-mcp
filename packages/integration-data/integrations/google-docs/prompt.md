@@ -1,10 +1,10 @@
 ## Reading documents
 
-Use `get_document_text` for plain text extraction -- it handles the nested Docs API structure automatically and returns `{documentId, text}`.
+Use `read_document` as the standard read tool. It returns clean markdown with headings, lists, links, inline code, and tables preserved as much as possible.
 
-Use `get_document_structured` when you need the body content with formatting information (paragraph styles, text runs, tables). Returns the `body.content` array.
+`read_document` includes an escape hatch: if markdown conversion fails to produce useful content, it falls back to plain-text extraction so you still get readable output.
 
-Use `get_document` only when you need the full raw API resource including inline objects, named ranges, and document-level styles.
+For editing workflows, read with `read_document` first, then use `append_text`, `replace_all_text`, first-match tools, or `batch_update`.
 
 ## Editing documents
 

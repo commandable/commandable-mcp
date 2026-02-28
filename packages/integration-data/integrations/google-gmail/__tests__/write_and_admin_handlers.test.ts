@@ -64,11 +64,14 @@ suiteOrSkip('google-gmail write/admin handlers (live)', () => {
         }
       }, 60000)
 
-      it('create_draft -> get_draft -> delete_draft', async () => {
+      it('create_draft_email -> get_draft -> delete_draft', async () => {
         if (!ctx.email)
           return expect(true).toBe(true)
-        const raw = makeRawMessage(ctx.email, `CmdTest Gmail Draft ${Date.now()}`, 'Draft created by write tests.')
-        const created = await gmail.write('create_draft')({ raw })
+        const created = await gmail.write('create_draft_email')({
+          to: ctx.email,
+          subject: `CmdTest Gmail Draft ${Date.now()}`,
+          body: 'Draft created by write tests.',
+        })
         const draftId = created?.id
         expect(draftId).toBeTruthy()
         const got = await gmail.read('get_draft')({ draftId })
@@ -135,21 +138,15 @@ suiteOrSkip('google-gmail write/admin handlers (live)', () => {
         expect(sent?.id).toBeTruthy()
       }, 60000)
 
-      it('send_message sends mail when GMAIL_TEST_SEND_TO is set', async () => {
-        const to = env.GMAIL_TEST_SEND_TO
-        if (!to)
-          return expect(true).toBe(true)
-        const raw = makeRawMessage(to, `CmdTest Gmail send_message ${Date.now()}`, 'Message sent by integration live test.')
-        const sent = await gmail.write('send_message')({ raw })
-        expect(sent?.id).toBeTruthy()
-      }, 60000)
-
       it('send_draft sends mail when GMAIL_TEST_SEND_TO is set', async () => {
         const to = env.GMAIL_TEST_SEND_TO
         if (!to)
           return expect(true).toBe(true)
-        const raw = makeRawMessage(to, `CmdTest Gmail send_draft ${Date.now()}`, 'Draft sent by integration live test.')
-        const created = await gmail.write('create_draft')({ raw })
+        const created = await gmail.write('create_draft_email')({
+          to,
+          subject: `CmdTest Gmail send_draft ${Date.now()}`,
+          body: 'Draft sent by integration live test.',
+        })
         const draftId = created?.id
         expect(draftId).toBeTruthy()
         const sent = await gmail.write('send_draft')({ draftId })

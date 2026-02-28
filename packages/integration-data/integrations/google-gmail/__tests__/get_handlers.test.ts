@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
 
@@ -21,18 +20,6 @@ const variants: VariantConfig[] = [
 ].filter(v => Object.values(v.credentials()).some(val => val.trim().length > 0))
 
 const suiteOrSkip = variants.length > 0 ? describe : describe.skip
-
-function makeRawMessage(toEmail: string, subject: string, text: string): string {
-  const mime = [
-    `To: ${toEmail}`,
-    `Subject: ${subject}`,
-    'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=UTF-8',
-    '',
-    text,
-  ].join('\r\n')
-  return Buffer.from(mime, 'utf8').toString('base64url')
-}
 
 suiteOrSkip('google-gmail read handlers (live)', () => {
   for (const variant of variants) {
@@ -64,8 +51,11 @@ suiteOrSkip('google-gmail read handlers (live)', () => {
         }
 
         if (ctx.email) {
-          const raw = makeRawMessage(ctx.email, `CmdTest Gmail Draft ${Date.now()}`, 'Draft created by integration live tests.')
-          const draft = await gmail.write('create_draft')({ raw })
+          const draft = await gmail.write('create_draft_email')({
+            to: ctx.email,
+            subject: `CmdTest Gmail Draft ${Date.now()}`,
+            body: 'Draft created by integration live tests.',
+          })
           ctx.draftId = draft?.id
         }
       }, 60000)

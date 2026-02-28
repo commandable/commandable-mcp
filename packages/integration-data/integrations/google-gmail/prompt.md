@@ -30,8 +30,7 @@ Combine operators with spaces (implicit AND): `from:alice is:unread has:attachme
 
 **Sending email:**
 - Use `send_email` for the vast majority of cases -- it accepts plain `to`, `subject`, `body` fields
-- Use `send_message` only when you need to construct a custom MIME message (e.g. multipart with binary attachments)
-- Use `create_draft` + `send_draft` when you want to create a draft for review before sending
+- Use `create_draft_email` + `send_draft` when you want to create a draft for review before sending
 
 **Replying to an email:**
 1. Get the original message with `read_email` to obtain its `threadId` and `id`
