@@ -1,11 +1,10 @@
 # Commandable MCP
 
-Connect your all of apps to any AI assistant with 1 secure, encrypted server.
+Connect all of your apps to any AI assistant with 1 secure, enteprise ready, encrypted server. Supports 10+ apps, 100+ tools, growing every day.
 
-**One app, two ways to use it:**
-
+**Ways to use:** 
 - **Desktop mode (stdio)**: run a local MCP server that Claude Desktop / Cursor spawns for you. Great for personal use and “set it and forget it”.
-- **Server mode (HTTP + UI)**: run a single Node process that serves **(1)** a management UI and **(2)** an MCP Streamable HTTP endpoint. Great for agent frameworks, shared environments, and CI-friendly config-as-code.
+- **Server mode (HTTP + UI)**: a docker file that serves **(1)** a management UI and **(2)** an MCP Streamable HTTP endpoint. Great for agent frameworks, shared environments, and CI-friendly config-as-code.
 
 ---
 
