@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["labelId"],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "User email address or 'me'. Defaults to 'me'."
+    },
+    "labelId": {
+      "type": "string",
+      "description": "Gmail label ID."
+    }
+  },
+  "additionalProperties": false
+}

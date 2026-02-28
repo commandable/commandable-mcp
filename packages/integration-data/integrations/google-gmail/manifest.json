@@ -1,0 +1,32 @@
+{
+  "name": "google-gmail",
+  "version": "0.1.0",
+  "tools": [
+    { "name": "get_profile", "description": "Get mailbox profile details for the authenticated user.", "inputSchema": "schemas/get_profile.json", "handler": "handlers/get_profile.js", "scope": "read" },
+    { "name": "list_labels", "description": "List all labels in the user's mailbox.", "inputSchema": "schemas/list_labels.json", "handler": "handlers/list_labels.js", "scope": "read" },
+    { "name": "get_label", "description": "Get a label by label ID.", "inputSchema": "schemas/id_label.json", "handler": "handlers/get_label.js", "scope": "read" },
+    { "name": "list_messages", "description": "List message IDs in the mailbox with optional Gmail query and label filters.", "inputSchema": "schemas/list_messages.json", "handler": "handlers/list_messages.js", "scope": "read" },
+    { "name": "get_message", "description": "Get a full message resource by message ID.", "inputSchema": "schemas/get_message.json", "handler": "handlers/get_message.js", "scope": "read" },
+    { "name": "list_threads", "description": "List thread IDs in the mailbox with optional Gmail query and label filters.", "inputSchema": "schemas/list_threads.json", "handler": "handlers/list_threads.js", "scope": "read" },
+    { "name": "get_thread", "description": "Get a full thread resource by thread ID.", "inputSchema": "schemas/get_thread.json", "handler": "handlers/get_thread.js", "scope": "read" },
+    { "name": "list_drafts", "description": "List drafts in the mailbox.", "inputSchema": "schemas/list_drafts.json", "handler": "handlers/list_drafts.js", "scope": "read" },
+    { "name": "get_draft", "description": "Get a draft by draft ID.", "inputSchema": "schemas/id_draft.json", "handler": "handlers/get_draft.js", "scope": "read" },
+
+    { "name": "send_message", "description": "Send a raw RFC822 message immediately.", "inputSchema": "schemas/send_message.json", "handler": "handlers/send_message.js", "scope": "write" },
+    { "name": "create_draft", "description": "Create a draft from a raw RFC822 message.", "inputSchema": "schemas/create_draft.json", "handler": "handlers/create_draft.js", "scope": "write" },
+    { "name": "delete_draft", "description": "Delete a draft by draft ID.", "inputSchema": "schemas/id_draft.json", "handler": "handlers/delete_draft.js", "scope": "write" },
+    { "name": "send_draft", "description": "Send an existing draft or send a one-off draft payload.", "inputSchema": "schemas/send_draft.json", "handler": "handlers/send_draft.js", "scope": "write" },
+    { "name": "modify_message", "description": "Add/remove labels on a message.", "inputSchema": "schemas/modify_message.json", "handler": "handlers/modify_message.js", "scope": "write" },
+    { "name": "trash_message", "description": "Move a message to trash.", "inputSchema": "schemas/id_message.json", "handler": "handlers/trash_message.js", "scope": "write" },
+    { "name": "untrash_message", "description": "Restore a message from trash.", "inputSchema": "schemas/id_message.json", "handler": "handlers/untrash_message.js", "scope": "write" },
+    { "name": "delete_message", "description": "Permanently delete a message.", "inputSchema": "schemas/id_message.json", "handler": "handlers/delete_message.js", "scope": "write" },
+    { "name": "modify_thread", "description": "Add/remove labels on a thread.", "inputSchema": "schemas/modify_thread.json", "handler": "handlers/modify_thread.js", "scope": "write" },
+    { "name": "trash_thread", "description": "Move a thread to trash.", "inputSchema": "schemas/id_thread.json", "handler": "handlers/trash_thread.js", "scope": "write" },
+    { "name": "untrash_thread", "description": "Restore a thread from trash.", "inputSchema": "schemas/id_thread.json", "handler": "handlers/untrash_thread.js", "scope": "write" },
+    { "name": "delete_thread", "description": "Permanently delete a thread.", "inputSchema": "schemas/id_thread.json", "handler": "handlers/delete_thread.js", "scope": "write" },
+
+    { "name": "create_label", "description": "Create a mailbox label.", "inputSchema": "schemas/create_label.json", "handler": "handlers/create_label.js", "scope": "admin" },
+    { "name": "update_label", "description": "Patch a mailbox label by label ID.", "inputSchema": "schemas/update_label.json", "handler": "handlers/update_label.js", "scope": "admin" },
+    { "name": "delete_label", "description": "Delete a mailbox label by label ID.", "inputSchema": "schemas/id_label.json", "handler": "handlers/delete_label.js", "scope": "admin" }
+  ]
+}

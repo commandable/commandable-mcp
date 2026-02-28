@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["raw"],
+  "properties": {
+    "userId": { "type": "string", "description": "User email address or 'me'. Defaults to 'me'." },
+    "raw": {
+      "type": "string",
+      "description": "Base64url encoded RFC822 message string."
+    },
+    "threadId": {
+      "type": "string",
+      "description": "Optional existing thread ID."
+    },
+    "labelIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional label IDs to attach to the draft message."
+    }
+  },
+  "additionalProperties": false
+}

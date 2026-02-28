@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "User email address or 'me'. Defaults to 'me'."
+    },
+    "q": {
+      "type": "string",
+      "description": "Gmail search query syntax."
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    },
+    "pageToken": {
+      "type": "string"
+    },
+    "includeSpamTrash": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "User email address or 'me'. Defaults to 'me'."
+    },
+    "q": {
+      "type": "string",
+      "description": "Gmail search query syntax, e.g. from:alice has:attachment newer_than:7d."
+    },
+    "labelIds": {
+      "type": "array",
+      "description": "Optional list of label IDs to filter by.",
+      "items": { "type": "string" }
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500
+    },
+    "pageToken": {
+      "type": "string"
+    },
+    "includeSpamTrash": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

@@ -46,6 +46,10 @@ export const PROVIDERS: Record<string, any> = {
     baseUrl: 'https://www.googleapis.com/drive/v3',
     makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
   },
+  'google-gmail': {
+    baseUrl: 'https://gmail.googleapis.com/gmail/v1',
+    makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  },
   // 'jira': {
   //   baseUrl: (sub: string) => `https://api.atlassian.com/ex/jira/${sub}`,
   //   makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),

@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["messageId"],
+  "properties": {
+    "userId": { "type": "string", "description": "User email address or 'me'. Defaults to 'me'." },
+    "messageId": { "type": "string", "description": "Gmail message ID." },
+    "format": {
+      "type": "string",
+      "enum": ["minimal", "full", "raw", "metadata"],
+      "description": "Message format. Defaults to full."
+    },
+    "metadataHeaders": {
+      "type": "array",
+      "description": "Headers to include when format is metadata.",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

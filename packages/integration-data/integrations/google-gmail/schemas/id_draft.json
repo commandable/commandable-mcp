@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["draftId"],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "User email address or 'me'. Defaults to 'me'."
+    },
+    "draftId": {
+      "type": "string",
+      "description": "Gmail draft ID."
+    }
+  },
+  "additionalProperties": false
+}

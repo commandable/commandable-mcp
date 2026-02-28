@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "userId": { "type": "string", "description": "User email address or 'me'. Defaults to 'me'." },
+    "draftId": {
+      "type": "string",
+      "description": "Draft ID to send."
+    },
+    "raw": {
+      "type": "string",
+      "description": "Optional base64url encoded RFC822 message string for one-off send."
+    },
+    "threadId": {
+      "type": "string",
+      "description": "Optional existing thread ID when sending a one-off draft payload."
+    },
+    "labelIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional label IDs when sending a one-off draft payload."
+    }
+  },
+  "anyOf": [
+    { "required": ["draftId"] },
+    { "required": ["raw"] }
+  ],
+  "additionalProperties": false
+}

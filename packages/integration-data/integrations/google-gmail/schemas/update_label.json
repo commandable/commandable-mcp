@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["labelId"],
+  "properties": {
+    "userId": { "type": "string", "description": "User email address or 'me'. Defaults to 'me'." },
+    "labelId": { "type": "string", "description": "Gmail label ID." },
+    "name": { "type": "string", "description": "Label display name." },
+    "messageListVisibility": {
+      "type": "string",
+      "enum": ["show", "hide"]
+    },
+    "labelListVisibility": {
+      "type": "string",
+      "enum": ["labelShow", "labelShowIfUnread", "labelHide"]
+    },
+    "color": {
+      "type": "object",
+      "properties": {
+        "textColor": { "type": "string", "description": "Hex color, e.g. #000000" },
+        "backgroundColor": { "type": "string", "description": "Hex color, e.g. #ffffff" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "anyOf": [
+    { "required": ["name"] },
+    { "required": ["messageListVisibility"] },
+    { "required": ["labelListVisibility"] },
+    { "required": ["color"] }
+  ],
+  "additionalProperties": false
+}

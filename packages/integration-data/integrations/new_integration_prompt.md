@@ -39,3 +39,7 @@ If an endpoint is already clean and self-contained, just proxy it.
 - `google-calendar/`: query param building + `read`/`write`/`admin` scopes
 - `trello/`: query-param credential injection + `displayCards`
 - `google-docs/`, `google-slides/`: higher-level write helpers over batchUpdate APIs
+
+
+
+IMPORTANT: Think through how an AI agent might use an integration and any tweaks to the rest api that might be needed to support actual agentic use cases

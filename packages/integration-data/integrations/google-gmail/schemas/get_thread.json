@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["threadId"],
+  "properties": {
+    "userId": { "type": "string", "description": "User email address or 'me'. Defaults to 'me'." },
+    "threadId": { "type": "string", "description": "Gmail thread ID." },
+    "format": {
+      "type": "string",
+      "enum": ["minimal", "full", "metadata"],
+      "description": "Thread message format. Defaults to full."
+    },
+    "metadataHeaders": {
+      "type": "array",
+      "description": "Headers to include when format is metadata.",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

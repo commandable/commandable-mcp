@@ -424,6 +424,71 @@ Note: OAuth access tokens expire (typically after 1 hour). Prefer Service Accoun
     },
   },
 
+  'google-gmail': {
+    variants: {
+      variants: {
+        service_account: {
+          label: 'Service Account (recommended)',
+          schema: {
+            type: 'object',
+            properties: {
+              serviceAccountJson: {
+                type: 'string',
+                title: 'Service Account JSON',
+                description: 'Full service account key JSON (contents of the downloaded JSON file from Google Cloud).',
+              },
+              subject: {
+                type: 'string',
+                title: 'Subject / impersonated user (optional)',
+                description: 'User email to impersonate via Google Workspace domain-wide delegation. Usually required for mailbox access.',
+              },
+              scopes: {
+                type: 'array',
+                title: 'OAuth scopes (optional)',
+                description: 'Optional override for OAuth scopes. Defaults to full Gmail access.',
+                items: { type: 'string' },
+              },
+            },
+            required: ['serviceAccountJson'],
+            additionalProperties: false,
+          },
+          injection: { headers: { Authorization: 'Bearer {{token}}' } },
+          preprocess: 'google_service_account',
+        },
+        oauth_token: {
+          label: 'OAuth Access Token (short-lived)',
+          schema: {
+            type: 'object',
+            properties: {
+              token: {
+                type: 'string',
+                title: 'OAuth Access Token',
+                description: 'Short-lived Google OAuth access token with Gmail scopes.',
+              },
+            },
+            required: ['token'],
+            additionalProperties: false,
+          },
+          injection: { headers: { Authorization: 'Bearer {{token}}' } },
+        },
+      },
+      default: 'service_account',
+    },
+    hints: {
+      service_account: `Set up a Google Cloud Service Account:
+
+1. Enable the Gmail API
+2. Go to IAM & Admin -> Service Accounts and create a new service account
+3. Download a JSON key and paste its full contents here
+4. For Google Workspace mailboxes, configure domain-wide delegation and set \`subject\` to the target user's email`,
+      oauth_token: `Obtain a short-lived Google OAuth access token with scopes such as:
+https://www.googleapis.com/auth/gmail.modify
+https://www.googleapis.com/auth/gmail.send
+
+Note: OAuth access tokens expire (typically after 1 hour). Prefer Service Account for long-running use.`,
+    },
+  },
+
   notion: {
     variants: {
       variants: {
