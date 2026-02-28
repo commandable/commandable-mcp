@@ -22,6 +22,9 @@ export default defineEventHandler(async (event) => {
   if (!row)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
+  // Extract credentialVariant from the payload (not part of the credential values themselves)
+  const { credentialVariant, ...credentialValues } = body
+
   const integration: IntegrationData = {
     spaceId: row.spaceId ?? 'local',
     id: row.id,
@@ -32,13 +35,13 @@ export default defineEventHandler(async (event) => {
     connectionMethod: 'credentials',
     connectionId: null,
     credentialId: row.credentialId || `${row.referenceId}-creds`,
+    credentialVariant: credentialVariant || row.credentialVariant || null,
   }
 
   const store = new SqlCredentialStore(db, encryptionSecret)
-  await store.saveCredentials('local', integration.credentialId!, body as any)
+  await store.saveCredentials('local', integration.credentialId!, credentialValues as any)
 
   await upsertIntegration(db, integration)
 
   return { ok: true, credentialId: integration.credentialId }
 })
-

@@ -388,7 +388,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@commandable/mcp@npm:0.0.1, @commandable/mcp@workspace:packages/server":
+"@commandable/mcp@npm:0.0.1":
+  version: 0.0.1
+  resolution: "@commandable/mcp@npm:0.0.1"
+  dependencies:
+    "@clack/prompts": "npm:^1.0.1"
+    "@modelcontextprotocol/sdk": "npm:^1.27.1"
+    better-sqlite3: "npm:^12.4.1"
+    drizzle-orm: "npm:^0.44.5"
+    fastest-levenshtein: "npm:^1.0.16"
+    google-auth-library: "npm:^10.3.0"
+    json-schema: "npm:^0.4.0"
+    pg: "npm:^8.16.3"
+    picocolors: "npm:^1.1.1"
+    zod: "npm:^4.1.5"
+  bin:
+    commandable-mcp: dist/cli/bin.js
+  checksum: 10c0/a24199536d368902dbcb95156aa748e569c278d377d11fc5f4aba7084220bb43109d8541323aa66539f821dc98270620fab96c35275b6ae136ea10ef78b81fe6
+  languageName: node
+  linkType: hard
+
+"@commandable/mcp@workspace:packages/server":
   version: 0.0.0-use.local
   resolution: "@commandable/mcp@workspace:packages/server"
   dependencies:
@@ -400,6 +420,7 @@ __metadata:
     "@types/node": "npm:^24.3.0"
     "@types/pg": "npm:^8.15.5"
     better-sqlite3: "npm:^12.4.1"
+    dotenv: "npm:^17.3.1"
     drizzle-orm: "npm:^0.44.5"
     fastest-levenshtein: "npm:^1.0.16"
     google-auth-library: "npm:^10.3.0"
@@ -5591,7 +5612,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^17.2.3":
+"dotenv@npm:^17.2.3, dotenv@npm:^17.3.1":
   version: 17.3.1
   resolution: "dotenv@npm:17.3.1"
   checksum: 10c0/c78e0c2d5a549c751e544cc60e2b95e7cb67e0c551f42e094d161c6b297aa44b630a3c2dcacf5569e529a6c2a6b84e2ab9be8d37b299d425df5a18b81ce4a35f

@@ -3,12 +3,31 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export interface IntegrationCredentialConfig {
+export interface CredentialVariantConfig {
+  label: string
   schema: JSONSchema7
   injection: {
     headers?: Record<string, string>
     query?: Record<string, string>
   }
+  preprocess?: string
+}
+
+export interface CredentialVariantsFile {
+  variants: Record<string, CredentialVariantConfig>
+  default: string
+}
+
+/** Resolved config for a single credential variant -- what the proxy actually uses. */
+export interface IntegrationCredentialConfig {
+  variantKey: string
+  label: string
+  schema: JSONSchema7
+  injection: {
+    headers?: Record<string, string>
+    query?: Record<string, string>
+  }
+  preprocess?: string
 }
 
 interface ToolRef {
@@ -17,6 +36,7 @@ interface ToolRef {
   inputSchema: string
   handler: string
   scope?: 'read' | 'write' | 'admin'
+  credentialVariants?: string[]
 }
 
 type FlatTools = ToolRef[]
@@ -140,29 +160,46 @@ export function loadIntegrationDisplayCards(type: string): DisplayCardData[] {
   })
 }
 
-export function loadIntegrationTools(type: string): { read: ToolData[], write: ToolData[], admin: ToolData[] } | null {
+/**
+ * Load tools for an integration, optionally filtered to only those compatible
+ * with the active credential variant. Tools without a `credentialVariants`
+ * whitelist are always included.
+ */
+export function loadIntegrationTools(
+  type: string,
+  opts?: { credentialVariant?: string },
+): { read: ToolData[], write: ToolData[], admin: ToolData[] } | null {
   const manifest = loadIntegrationManifest(type)
   if (!manifest)
     return null
+
+  const activeVariant = opts?.credentialVariant
 
   const flat = manifest.tools as FlatTools
   const readRefs: ToolRef[] = []
   const writeRefs: ToolRef[] = []
   const adminRefs: ToolRef[] = []
+
   for (const t of flat) {
+    if (activeVariant && t.credentialVariants && !t.credentialVariants.includes(activeVariant))
+      continue
+
     const scope = t.scope || 'read'
     if (scope === 'read') readRefs.push(t)
     else if (scope === 'write') writeRefs.push(t)
     else if (scope === 'admin') adminRefs.push(t)
     else readRefs.push(t)
   }
-  const read = readRefs.map(t => materializeTool(type, t))
-  const write = writeRefs.map(t => materializeTool(type, t))
-  const admin = adminRefs.map(t => materializeTool(type, t))
-  return { read, write, admin }
+
+  return {
+    read: readRefs.map(t => materializeTool(type, t)),
+    write: writeRefs.map(t => materializeTool(type, t)),
+    admin: adminRefs.map(t => materializeTool(type, t)),
+  }
 }
 
-export function loadIntegrationCredentialConfig(type: string): IntegrationCredentialConfig | null {
+/** Load the full variants file for an integration. */
+export function loadIntegrationVariants(type: string): CredentialVariantsFile | null {
   const dir = integrationDir(type)
   const path = resolve(dir, 'credentials.json')
   if (!existsSync(path))
@@ -170,16 +207,69 @@ export function loadIntegrationCredentialConfig(type: string): IntegrationCreden
 
   try {
     const raw = readJsonFile(path)
-    const schema = ensureSchemaObject(raw?.schema) as JSONSchema7
-    const injection = raw?.injection || {}
-    const cfg: IntegrationCredentialConfig = {
-      schema,
-      injection: {
-        headers: injection?.headers || undefined,
-        query: injection?.query || undefined,
-      },
+    if (!raw?.variants)
+      return null
+    return raw as CredentialVariantsFile
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * Load the resolved credential config for a specific variant (or the default
+ * variant if none is specified).
+ */
+export function loadIntegrationCredentialConfig(
+  type: string,
+  variantKey?: string | null,
+): IntegrationCredentialConfig | null {
+  const file = loadIntegrationVariants(type)
+  if (!file)
+    return null
+
+  const key = variantKey || file.default
+  const variant = file.variants[key]
+  if (!variant)
+    return null
+
+  return {
+    variantKey: key,
+    label: variant.label,
+    schema: ensureSchemaObject(variant.schema) as JSONSchema7,
+    injection: {
+      headers: variant.injection?.headers || undefined,
+      query: variant.injection?.query || undefined,
+    },
+    preprocess: variant.preprocess,
+  }
+}
+
+/**
+ * Resolve the hint markdown for a specific variant. Falls back to the
+ * generic credentials_hint.md if no variant-specific file exists.
+ */
+export function loadIntegrationHint(type: string, variantKey?: string | null): string | null {
+  const dir = integrationDir(type)
+
+  if (variantKey) {
+    const variantHintPath = resolve(dir, `credentials_hint_${variantKey}.md`)
+    if (existsSync(variantHintPath)) {
+      try {
+        const content = readFileSync(variantHintPath, 'utf8').trim()
+        if (content.length)
+          return content
+      }
+      catch {}
     }
-    return cfg
+  }
+
+  const fallbackPath = resolve(dir, 'credentials_hint.md')
+  if (!existsSync(fallbackPath))
+    return null
+  try {
+    const content = readFileSync(fallbackPath, 'utf8').trim()
+    return content.length ? content : null
   }
   catch {
     return null

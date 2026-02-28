@@ -1,5 +1,7 @@
 export type {
   IntegrationCredentialConfig,
+  CredentialVariantConfig,
+  CredentialVariantsFile,
   DisplayCardData,
   ToolData,
   IntegrationCatalogItem,
@@ -12,6 +14,8 @@ export {
   loadIntegrationTools,
   loadIntegrationDisplayCards,
   loadIntegrationCredentialConfig,
+  loadIntegrationVariants,
+  loadIntegrationHint,
   listIntegrationTypes,
   listIntegrationCatalog,
 } from './loader.js'

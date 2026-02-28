@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { loadIntegrationTools } from '../integrations/dataLoader.js'
 
-const integrationDataDir = fileURLToPath(new URL('../../integration-data', import.meta.url))
+const integrationDataDir = fileURLToPath(new URL('../../../integration-data/integrations', import.meta.url))
 
 describe('integration engine ports', () => {
   it('loads integration tools from integration-data', () => {

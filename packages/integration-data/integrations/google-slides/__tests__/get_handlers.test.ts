@@ -1,68 +1,70 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../src/integrations/dataLoader.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
 
-// LIVE Google Slides read tests using managed OAuth
+// LIVE Google Slides read tests using credentials
 // Required env vars:
-// - COMMANDABLE_MANAGED_OAUTH_BASE_URL
-// - COMMANDABLE_MANAGED_OAUTH_SECRET_KEY
-// - GSLIDES_TEST_CONNECTION_ID (managed OAuth connection for provider 'google-slides')
-// - GSLIDES_TEST_PRESENTATION_ID (an accessible presentation ID)
+// - Either GOOGLE_TOKEN, OR GOOGLE_SERVICE_ACCOUNT_JSON
 
-const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
-const suite = hasEnv(
-  'COMMANDABLE_MANAGED_OAUTH_BASE_URL',
-  'COMMANDABLE_MANAGED_OAUTH_SECRET_KEY',
-  'GSLIDES_TEST_CONNECTION_ID',
-)
+const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   ? describe
   : describe.skip
 
 suite('google-slides read handlers (live)', () => {
-  let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
+  let slides: ReturnType<typeof createToolbox>
+  let drive: ReturnType<typeof createToolbox>
+  let folderId: string | undefined
+  let presentationId: string | undefined
 
   beforeAll(async () => {
-    const { COMMANDABLE_MANAGED_OAUTH_BASE_URL, COMMANDABLE_MANAGED_OAUTH_SECRET_KEY, GSLIDES_TEST_CONNECTION_ID } = env
+    const env = process.env as Record<string, string | undefined>
+    const credentialStore = createCredentialStore(async () => ({
+      token: env.GOOGLE_TOKEN || '',
+      serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
+    }))
+    const proxy = createProxy(credentialStore)
+    slides = createToolbox('google-slides', proxy, createIntegrationNode('google-slides', { label: 'Google Slides', credentialId: 'google-slides-creds' }))
+    drive = createToolbox('google-drive', proxy, createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds' }))
 
-    const proxy = new IntegrationProxy({
-      managedOAuthBaseUrl: COMMANDABLE_MANAGED_OAUTH_BASE_URL,
-      managedOAuthSecretKey: COMMANDABLE_MANAGED_OAUTH_SECRET_KEY,
+    // Create dedicated folder + presentation for this run
+    const folder = await drive.write('create_folder')({ name: `CmdTest Slides ${Date.now()}` })
+    folderId = folder?.id
+    expect(folderId).toBeTruthy()
+
+    const created = await drive.write('create_file')({
+      name: `CmdTest Slides ${Date.now()}`,
+      mimeType: 'application/vnd.google-apps.presentation',
+      parentId: folderId,
     })
-    const integrationNode = { id: 'node-gslides', type: 'google-slides', label: 'Google Slides', connectionId: GSLIDES_TEST_CONNECTION_ID } as any
+    presentationId = created?.id
+    expect(presentationId).toBeTruthy()
+  }, 60000)
 
-    const tools = loadIntegrationTools('google-slides')
-    expect(tools).toBeTruthy()
-
-    buildReadHandler = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `read tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+  afterAll(async () => {
+    if (!folderId)
+      return
+    await safeCleanup(async () => presentationId ? drive.write('delete_file')({ fileId: presentationId }) : Promise.resolve())
+    await safeCleanup(async () => drive.write('delete_file')({ fileId: folderId }))
   }, 60000)
 
   it('get_presentation returns metadata', async () => {
-    const presentationId = env.GSLIDES_TEST_PRESENTATION_ID
     if (!presentationId)
       return expect(true).toBe(true)
-    const handler = buildReadHandler('get_presentation')
+    const handler = slides.read('get_presentation')
     const result = await handler({ presentationId })
     expect(result?.presentationId || Array.isArray(result?.slides)).toBeTruthy()
   }, 30000)
 
   it('get_page_thumbnail returns URL data', async () => {
-    const presentationId = env.GSLIDES_TEST_PRESENTATION_ID
     if (!presentationId)
       return expect(true).toBe(true)
     // First query the presentation to discover a page id
-    const getPresentation = buildReadHandler('get_presentation')
+    const getPresentation = slides.read('get_presentation')
     const meta = await getPresentation({ presentationId })
     const firstSlide = meta?.slides?.[0]
     if (!firstSlide?.objectId)
       return expect(true).toBe(true)
-    const handler = buildReadHandler('get_page_thumbnail')
+    const handler = slides.read('get_page_thumbnail')
     const result = await handler({ presentationId, 'pageObjectId': firstSlide.objectId, 'thumbnailProperties.thumbnailSize': 'MEDIUM', 'thumbnailProperties.mimeType': 'PNG' })
     expect(typeof result?.contentUrl === 'string' || typeof result?.thumbnailUrl === 'string').toBe(true)
   }, 30000)

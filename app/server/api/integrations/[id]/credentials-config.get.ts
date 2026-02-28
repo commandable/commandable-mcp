@@ -1,8 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { loadIntegrationCredentialConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import { loadIntegrationVariants, loadIntegrationHint, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -18,25 +16,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
   const type = integ.type as string
-  const cfg = loadIntegrationCredentialConfig(type)
-  if (!cfg) {
-    return { supportsCredentials: false, schema: null, hintMarkdown: null }
+  const variantsFile = loadIntegrationVariants(type)
+  if (!variantsFile) {
+    return { supportsCredentials: false, variants: [], defaultVariant: null }
   }
 
-  const root = process.env.COMMANDABLE_INTEGRATION_DATA_DIR
-  let hintMarkdown: string | null = null
-  if (root) {
-    const hintPath = resolve(root, type, 'credentials_hint.md')
-    if (existsSync(hintPath)) {
-      try { hintMarkdown = readFileSync(hintPath, 'utf8') }
-      catch { hintMarkdown = null }
-    }
-  }
+  const variants = Object.entries(variantsFile.variants).map(([key, variant]) => ({
+    key,
+    label: variant.label,
+    schema: variant.schema,
+    hintMarkdown: loadIntegrationHint(type, key),
+  }))
 
   return {
     supportsCredentials: true,
-    schema: cfg.schema,
-    hintMarkdown,
+    variants,
+    defaultVariant: variantsFile.default,
   }
 })
-

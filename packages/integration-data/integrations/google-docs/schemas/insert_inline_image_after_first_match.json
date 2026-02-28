@@ -5,7 +5,6 @@
     "documentId": { "type": "string" },
     "findText": { "type": "string" },
     "uri": { "type": "string" },
-    "altText": { "type": "string" },
     "position": { "type": "string", "enum": ["after", "before"], "default": "after" }
   },
   "required": ["documentId", "findText", "uri"],

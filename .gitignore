@@ -21,6 +21,8 @@ app/.output/
 .env
 .env.*
 !.env.example
+!.env.test.example
+!.env.test.managed.example
 
 # OS
 .DS_Store
@@ -33,3 +35,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+./commandable

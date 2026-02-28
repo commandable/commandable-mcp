@@ -1,6 +1,6 @@
 {
   "name": "@commandable/mcp",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Encrypted, self-hosted MCP server + setup CLI for connecting everyday apps to any MCP-compatible AI client.",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -49,6 +49,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.3.0",
     "@types/pg": "^8.15.5",
+    "dotenv": "^17.3.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },

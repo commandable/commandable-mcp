@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["name", "mimeType"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string" },
+    "mimeType": { "type": "string", "description": "Drive mimeType (e.g. application/vnd.google-apps.document)" },
+    "parentId": { "type": "string", "description": "Optional parent folder fileId" }
+  }
+}
+

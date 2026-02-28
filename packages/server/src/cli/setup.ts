@@ -1,6 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import picocolors from 'picocolors'
 import {
   intro,
@@ -10,10 +7,11 @@ import {
   note,
   outro,
   password,
+  select,
   text,
 } from '@clack/prompts'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
-import { loadIntegrationCredentialConfig } from '../integrations/dataLoader.js'
+import { loadIntegrationCredentialConfig, loadIntegrationHint, loadIntegrationVariants } from '../integrations/dataLoader.js'
 import { getCommandableDir, openLocalState } from './credentialManager.js'
 import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { IntegrationData } from '../types.js'
@@ -33,50 +31,45 @@ function formatIntegrationOption(type: string, name?: string): string {
   return `${type} ${picocolors.dim(`(${name})`)}`
 }
 
-function getIntegrationHintMarkdown(type: string): string | null {
-  const root = process.env.COMMANDABLE_INTEGRATION_DATA_DIR
-    ? resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
-    : resolve(fileURLToPath(new URL('../../integration-data/', import.meta.url)))
-  const hintPath = resolve(root, type, 'credentials_hint.md')
-  if (!existsSync(hintPath))
+/**
+ * Prompt the user to pick a credential variant for the given integration type.
+ * If there is only one variant, auto-selects it without prompting.
+ * Returns the selected variant key, or null if the user cancelled.
+ */
+async function selectCredentialVariant(type: string): Promise<string | null> {
+  const variantsFile = loadIntegrationVariants(type)
+  if (!variantsFile)
     return null
-  try {
-    const hint = readFileSync(hintPath, 'utf8').trim()
-    return hint.length ? hint : null
-  }
-  catch {
-    return null
-  }
-}
 
-async function selectIntegrations(args: { title: string, excludeTypes?: Set<string> }): Promise<string[] | null> {
-  const catalog = listIntegrationCatalog()
-  const options = catalog
-    .filter(it => !args.excludeTypes?.has(it.type))
-    .filter(it => !!loadIntegrationCredentialConfig(it.type))
-    .map(it => ({ value: it.type, label: formatIntegrationOption(it.type, it.name) }))
-    .sort((a, b) => a.value.localeCompare(b.value))
+  const variantKeys = Object.keys(variantsFile.variants)
 
-  if (!options.length) {
-    log.info('No locally-configurable integrations available yet.')
-    return []
+  if (variantKeys.length === 1) {
+    return variantKeys[0]!
   }
 
-  const selected = await multiselect({
-    message: args.title,
+  const options = variantKeys.map(key => ({
+    value: key,
+    label: variantsFile.variants[key]!.label,
+    hint: key === variantsFile.default ? 'recommended' : undefined,
+  }))
+
+  const result = await select({
+    message: `Select credential type for ${picocolors.cyan(type)}:`,
     options,
-    required: true,
+    initialValue: variantsFile.default,
   })
 
-  if (isCancel(selected))
+  if (isCancel(result))
     return null
 
-  const types = (selected as string[]).map(s => String(s)).filter(Boolean)
-  return types
+  return result as string
 }
 
-async function promptCredentialsForIntegration(type: string): Promise<Record<string, string> | null> {
-  const credCfg = loadIntegrationCredentialConfig(type)
+async function promptCredentialsForVariant(
+  type: string,
+  variantKey: string,
+): Promise<Record<string, string> | null> {
+  const credCfg = loadIntegrationCredentialConfig(type, variantKey)
   const schema = credCfg?.schema
   if (!schema || typeof schema !== 'object')
     return {}
@@ -87,12 +80,12 @@ async function promptCredentialsForIntegration(type: string): Promise<Record<str
   if (!keys.length)
     return {}
 
-  const hint = getIntegrationHintMarkdown(type)
+  const hint = loadIntegrationHint(type, variantKey)
   if (hint) {
-    note(hint, `${type}: setup hint`)
+    note(hint, `${type} (${variantKey}): setup hint`)
   }
   else {
-    log.info(picocolors.dim(`No setup hint found for ${type}.`))
+    log.info(picocolors.dim(`No setup hint found for ${type}/${variantKey}.`))
   }
 
   const creds: Record<string, string> = {}
@@ -131,6 +124,31 @@ async function promptCredentialsForIntegration(type: string): Promise<Record<str
   return creds
 }
 
+async function selectIntegrations(args: { title: string, excludeTypes?: Set<string> }): Promise<string[] | null> {
+  const catalog = listIntegrationCatalog()
+  const options = catalog
+    .filter(it => !args.excludeTypes?.has(it.type))
+    .filter(it => !!loadIntegrationVariants(it.type))
+    .map(it => ({ value: it.type, label: formatIntegrationOption(it.type, it.name) }))
+    .sort((a, b) => a.value.localeCompare(b.value))
+
+  if (!options.length) {
+    log.info('No locally-configurable integrations available yet.')
+    return []
+  }
+
+  const selected = await multiselect({
+    message: args.title,
+    options,
+    required: true,
+  })
+
+  if (isCancel(selected))
+    return null
+
+  return (selected as string[]).map(s => String(s)).filter(Boolean)
+}
+
 function makeClaudeDesktopSnippet() {
   return {
     mcpServers: {
@@ -142,7 +160,7 @@ function makeClaudeDesktopSnippet() {
   }
 }
 
-function makeIntegrationRecord(type: string): IntegrationData {
+function makeIntegrationRecord(type: string, variantKey: string): IntegrationData {
   return {
     spaceId: 'local',
     id: type,
@@ -151,7 +169,27 @@ function makeIntegrationRecord(type: string): IntegrationData {
     label: type,
     connectionMethod: 'credentials',
     credentialId: `${type}-creds`,
+    credentialVariant: variantKey,
   }
+}
+
+async function configureIntegration(type: string): Promise<{ variantKey: string, credentials: Record<string, string> } | null> {
+  log.info(`Configuring ${picocolors.cyan(type)}`)
+
+  const variantKey = await selectCredentialVariant(type)
+  if (variantKey === null)
+    return null
+
+  const variantsFile = loadIntegrationVariants(type)
+  if (variantsFile && Object.keys(variantsFile.variants).length > 1) {
+    log.info(`Using: ${picocolors.cyan(variantsFile.variants[variantKey]?.label ?? variantKey)}`)
+  }
+
+  const credentials = await promptCredentialsForVariant(type, variantKey)
+  if (credentials === null)
+    return null
+
+  return { variantKey, credentials }
 }
 
 export async function runInitInteractive() {
@@ -168,14 +206,14 @@ export async function runInitInteractive() {
   const { db, credentialStore, close } = await openLocalState()
   try {
     for (const type of types) {
-      log.info(`Configuring ${picocolors.cyan(type)}`)
-      const credentials = await promptCredentialsForIntegration(type)
-      if (credentials === null) {
+      const result = await configureIntegration(type)
+      if (result === null) {
         outro('Cancelled.')
         return
       }
 
-      const integration = makeIntegrationRecord(type)
+      const { variantKey, credentials } = result
+      const integration = makeIntegrationRecord(type, variantKey)
       await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
       await upsertIntegration(db, integration)
     }
@@ -188,7 +226,7 @@ export async function runInitInteractive() {
     await close()
   }
 
-  outro('You’re all set. Restart your MCP client and try a tool call.')
+  outro('You\'re all set. Restart your MCP client and try a tool call.')
 }
 
 export async function runAddInteractive() {
@@ -210,14 +248,14 @@ export async function runAddInteractive() {
 
     const added: string[] = []
     for (const type of types) {
-      log.info(`Configuring ${picocolors.cyan(type)}`)
-      const credentials = await promptCredentialsForIntegration(type)
-      if (credentials === null) {
+      const result = await configureIntegration(type)
+      if (result === null) {
         outro('Cancelled.')
         return
       }
 
-      const integration = makeIntegrationRecord(type)
+      const { variantKey, credentials } = result
+      const integration = makeIntegrationRecord(type, variantKey)
       await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
       await upsertIntegration(db, integration)
       added.push(type)
@@ -234,4 +272,3 @@ export async function runAddInteractive() {
 
   outro('Done.')
 }
-

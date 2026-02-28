@@ -6,10 +6,11 @@
     "app"
   ],
   "scripts": {
-    "build": "yarn workspaces run build",
+    "build": "yarn workspaces foreach -A run build",
     "dev": "yarn workspace commandable-mcp-app dev",
-    "lint": "yarn workspaces run lint",
-    "test": "yarn workspaces run test"
+    "lint": "yarn workspaces foreach -A run lint",
+    "test": "yarn workspace @commandable/mcp test",
+    "test:all": "yarn workspaces foreach -A run test"
   },
   "packageManager": "yarn@4.12.0"
 }

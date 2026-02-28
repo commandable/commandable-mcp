@@ -10,8 +10,8 @@
     { "name": "list_branches", "description": "List branches for a repository.", "inputSchema": "schemas/owner_repo.json", "handler": "handlers/list_branches.js", "scope": "read" },
     { "name": "list_commits", "description": "List commits for a repository.", "inputSchema": "schemas/list_commits.json", "handler": "handlers/list_commits.js", "scope": "read" },
 
-    { "name": "create_repo", "description": "Create a new repository.", "inputSchema": "schemas/create_repo.json", "handler": "handlers/create_repo.js", "scope": "write" },
-    { "name": "delete_repo", "description": "Delete a repository (requires delete_repo scope).", "inputSchema": "schemas/delete_repo.json", "handler": "handlers/delete_repo.js", "scope": "write" },
+    { "name": "create_repo", "description": "Create a new repository.", "inputSchema": "schemas/create_repo.json", "handler": "handlers/create_repo.js", "scope": "write", "credentialVariants": ["classic_pat"] },
+    { "name": "delete_repo", "description": "Delete a repository (requires delete_repo scope).", "inputSchema": "schemas/delete_repo.json", "handler": "handlers/delete_repo.js", "scope": "write", "credentialVariants": ["classic_pat"] },
     { "name": "create_branch", "description": "Create a new branch in a repository.", "inputSchema": "schemas/create_branch.json", "handler": "handlers/create_branch.js", "scope": "write" },
     { "name": "create_or_update_file", "description": "Create or update a single file (content must be plain text; base64 handled internally).", "inputSchema": "schemas/create_or_update_file.json", "handler": "handlers/create_or_update_file.js", "scope": "write" },
     { "name": "create_commit", "description": "Create a commit with multiple files (content must be plain text; base64 handled internally).", "inputSchema": "schemas/create_commit.json", "handler": "handlers/create_commit.js", "scope": "write" },

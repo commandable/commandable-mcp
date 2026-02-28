@@ -158,6 +158,27 @@
       "scope": "read"
     },
     {
+      "name": "create_board",
+      "description": "Create a new board.",
+      "inputSchema": "schemas/create_board.json",
+      "handler": "handlers/create_board.js",
+      "scope": "write"
+    },
+    {
+      "name": "close_board",
+      "description": "Close a board (set closed=true).",
+      "inputSchema": "schemas/close_board.json",
+      "handler": "handlers/close_board.js",
+      "scope": "write"
+    },
+    {
+      "name": "delete_board",
+      "description": "Permanently delete a closed board.",
+      "inputSchema": "schemas/delete_board.json",
+      "handler": "handlers/delete_board.js",
+      "scope": "write"
+    },
+    {
       "name": "create_card",
       "description": "Create a new card in a list.",
       "inputSchema": "schemas/create_card.json",

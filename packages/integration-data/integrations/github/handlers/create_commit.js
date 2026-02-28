@@ -11,32 +11,17 @@ async (input) => {
   const commitData = await commitRes.json()
   const currentTreeSha = commitData.tree.sha
   
-  // 3. Create blobs for each file with content
+  // 3. Build tree entries — use inline content for creates/updates, sha null for deletions
   const tree = []
   for (const file of files) {
     if (file.content !== undefined && file.content !== null) {
-      // Create a blob for this file
-      const contentBase64 = typeof Buffer !== 'undefined'
-        ? Buffer.from(file.content).toString('base64')
-        : btoa(unescape(encodeURIComponent(file.content)))
-      
-      const blobRes = await integration.fetch(`/repos/${owner}/${repo}/git/blobs`, {
-        method: 'POST',
-        body: {
-          content: contentBase64,
-          encoding: 'base64',
-        },
-      })
-      const blobData = await blobRes.json()
-      
       tree.push({
         path: file.path,
         mode: file.mode || '100644',
         type: 'blob',
-        sha: blobData.sha,
+        content: file.content,
       })
     } else {
-      // File deletion (null sha means delete)
       tree.push({
         path: file.path,
         mode: '100644',

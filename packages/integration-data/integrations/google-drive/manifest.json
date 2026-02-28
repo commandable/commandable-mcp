@@ -1,0 +1,42 @@
+{
+  "name": "google-drive",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "create_folder",
+      "description": "Create a folder in Google Drive.",
+      "inputSchema": "schemas/create_folder.json",
+      "handler": "handlers/create_folder.js",
+      "scope": "write"
+    },
+    {
+      "name": "create_file",
+      "description": "Create a Drive file (including Google Docs/Sheets/Slides) optionally inside a parent folder.",
+      "inputSchema": "schemas/create_file.json",
+      "handler": "handlers/create_file.js",
+      "scope": "write"
+    },
+    {
+      "name": "move_file",
+      "description": "Move a file to a different parent folder (add/remove parents).",
+      "inputSchema": "schemas/move_file.json",
+      "handler": "handlers/move_file.js",
+      "scope": "write"
+    },
+    {
+      "name": "get_file",
+      "description": "Get a Drive file’s metadata by fileId.",
+      "inputSchema": "schemas/get_file.json",
+      "handler": "handlers/get_file.js",
+      "scope": "read"
+    },
+    {
+      "name": "delete_file",
+      "description": "Permanently delete a Drive file or folder by fileId.",
+      "inputSchema": "schemas/delete_file.json",
+      "handler": "handlers/delete_file.js",
+      "scope": "write"
+    }
+  ]
+}
+
