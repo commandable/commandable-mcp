@@ -2,9 +2,15 @@ FROM node:22-slim
 
 WORKDIR /app
 
+# Native deps (better-sqlite3) need a build toolchain on slim images.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+
 # Install deps (workspace-aware)
-COPY package.json yarn.lock tsconfig.base.json ./
+COPY package.json yarn.lock tsconfig.base.json .yarnrc.yml ./
 COPY packages/server/package.json packages/server/package.json
+COPY packages/integration-data/package.json packages/integration-data/package.json
 COPY app/package.json app/package.json
 
 RUN corepack enable \
