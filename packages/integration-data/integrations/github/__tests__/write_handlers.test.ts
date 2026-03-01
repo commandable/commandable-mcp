@@ -3,11 +3,11 @@ import { createCredentialStore, createIntegrationNode, createProxy, createToolbo
 
 // LIVE GitHub write tests -- runs once per available credential variant.
 // Required env vars (at least one):
-// - GITHUB_CLASSIC_PAT    (tests all write tools including create_repo/delete_repo)
-// - GITHUB_FINE_GRAINED_PAT  (tests write tools; create_repo/delete_repo are excluded for this variant)
+// - _GITHUB_CLASSIC_PAT    (tests all write tools including create_repo/delete_repo)
+// - _GITHUB_FINE_GRAINED_PAT  (tests write tools; create_repo/delete_repo are excluded for this variant)
 // Plus:
-// - GITHUB_TEST_OWNER
-// - GITHUB_TEST_REPO
+// - _GITHUB_TEST_OWNER
+// - _GITHUB_TEST_REPO
 
 const env = process.env as Record<string, string | undefined>
 
@@ -17,11 +17,11 @@ interface VariantConfig {
 }
 
 const variants: VariantConfig[] = [
-  { key: 'classic_pat', token: env.GITHUB_CLASSIC_PAT || '' },
-  { key: 'fine_grained_pat', token: env.GITHUB_FINE_GRAINED_PAT || '' },
+  { key: 'classic_pat', token: env._GITHUB_CLASSIC_PAT || '' },
+  { key: 'fine_grained_pat', token: env._GITHUB_FINE_GRAINED_PAT || '' },
 ].filter(v => v.token.trim().length > 0)
 
-const hasWriteEnv = hasEnv('GITHUB_TEST_OWNER', 'GITHUB_TEST_REPO')
+const hasWriteEnv = hasEnv('_GITHUB_TEST_OWNER', '_GITHUB_TEST_REPO')
 const suiteOrSkip = (variants.length > 0 && hasWriteEnv) ? describe : describe.skip
 
 async function withRetry<T>(
@@ -49,8 +49,8 @@ suiteOrSkip('github write handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
       const ctx = {
-        owner: env.GITHUB_TEST_OWNER,
-        repo: env.GITHUB_TEST_REPO,
+        owner: env._GITHUB_TEST_OWNER,
+        repo: env._GITHUB_TEST_REPO,
       }
       let toolbox: ReturnType<typeof createToolbox>
 

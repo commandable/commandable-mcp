@@ -45,13 +45,13 @@ jobs:
           TRELLO_TEST_CONNECTION_ID: ${{ secrets.TRELLO_TEST_CONNECTION_ID }}
           NOTION_TEST_CONNECTION_ID: ${{ secrets.NOTION_TEST_CONNECTION_ID }}
           AIRTABLE_TEST_CONNECTION_ID: ${{ secrets.AIRTABLE_TEST_CONNECTION_ID }}
-          GITHUB_TEST_CONNECTION_ID: ${{ secrets.GITHUB_TEST_CONNECTION_ID }}
+          _GITHUB_TEST_CONNECTION_ID: ${{ secrets._GITHUB_TEST_CONNECTION_ID }}
           GOOGLE_CALENDAR_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_CALENDAR_TEST_CONNECTION_ID }}
           GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
           GOOGLE_DOCS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_DOCS_TEST_CONNECTION_ID }}
           GOOGLE_SLIDES_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_CONNECTION_ID }}
           # Resource IDs used by some write suites
-          GITHUB_TEST_OWNER: ${{ secrets.GITHUB_TEST_OWNER }}
-          GITHUB_TEST_REPO: ${{ secrets.GITHUB_TEST_REPO }}
+          _GITHUB_TEST_OWNER: ${{ secrets._GITHUB_TEST_OWNER }}
+          _GITHUB_TEST_REPO: ${{ secrets._GITHUB_TEST_REPO }}
           GCAL_TEST_CALENDAR_ID: ${{ secrets.GCAL_TEST_CALENDAR_ID }}
         run: yarn workspace @commandable/mcp test

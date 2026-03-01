@@ -3,19 +3,19 @@ import { createCredentialStore, createIntegrationNode, createProxy, createToolbo
 
 // LIVE GitHub read tests -- runs once per available credential variant.
 // Required env vars (at least one):
-// - GITHUB_CLASSIC_PAT
-// - GITHUB_FINE_GRAINED_PAT
+// - _GITHUB_CLASSIC_PAT
+// - _GITHUB_FINE_GRAINED_PAT
 
 const env = process.env as Record<string, string | undefined>
 
 interface VariantConfig {
-  key: string
+  key: string 
   token: string
 }
 
 const variants: VariantConfig[] = [
-  { key: 'classic_pat', token: env.GITHUB_CLASSIC_PAT || '' },
-  { key: 'fine_grained_pat', token: env.GITHUB_FINE_GRAINED_PAT || '' },
+  { key: 'classic_pat', token: env._GITHUB_CLASSIC_PAT || '' },
+  { key: 'fine_grained_pat', token: env._GITHUB_FINE_GRAINED_PAT || '' },
 ].filter(v => v.token.trim().length > 0)
 
 const suiteOrSkip = variants.length > 0 ? describe : describe.skip

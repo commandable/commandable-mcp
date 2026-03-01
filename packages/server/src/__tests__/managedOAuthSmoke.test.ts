@@ -17,7 +17,7 @@ suite('managed OAuth smoke (hosted-only)', () => {
   })
 
   it('GitHub /user works via managed OAuth', async () => {
-    if (!has('GITHUB_TEST_CONNECTION_ID'))
+    if (!has('_GITHUB_TEST_CONNECTION_ID'))
       return expect(true).toBe(true)
 
     const resp = await proxy.call({
@@ -25,7 +25,7 @@ suite('managed OAuth smoke (hosted-only)', () => {
       referenceId: 'github',
       type: 'github',
       label: 'GitHub',
-      connectionId: env.GITHUB_TEST_CONNECTION_ID!,
+      connectionId: env._GITHUB_TEST_CONNECTION_ID!,
     } as any, '/user')
 
     expect(resp.ok).toBe(true)
