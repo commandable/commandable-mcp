@@ -13,6 +13,7 @@ export const sqliteIntegrations = sqliteTable('integrations', {
   credentialId: text('credential_id'),
   credentialVariant: text('credential_variant'),
   configJson: text('config_json'),
+  enabledToolsets: text('enabled_toolsets'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
@@ -53,6 +54,7 @@ export const pgIntegrations = pgTable('integrations', {
   credentialId: pgText('credential_id'),
   credentialVariant: pgText('credential_variant'),
   configJson: jsonb('config_json'),
+  enabledToolsets: pgText('enabled_toolsets'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 })
 

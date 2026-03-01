@@ -21,6 +21,7 @@ export interface IntegrationData {
   type: IntegrationType
   label: string
   config?: Record<string, any>
+  enabledToolsets?: string[] | null
   connectionId?: string | null
   connectionMethod?: 'managed' | 'credentials'
   credentialId?: string | null

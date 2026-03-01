@@ -4,6 +4,15 @@ One MCP server for all of your apps.
 
 Commandable MCP is a secure, open-source MCP server supporting 10 integrations and 200+ tools. We aim to support many many more than this in the near future.
 
+## Warning: Rapidly Changing Project
+
+This repository is currently in flux and may include frequent breaking changes between versions until the first stable release.
+
+For now, please:
+
+- Save your keys somewhere safe outside this project.
+- Re-run `commandable-mcp init` after each new version update.
+
 **Ways to use:** 
 - **Desktop mode (stdio)**: run a local MCP server that Claude Desktop / Cursor spawns for you. Great for personal use and “set it and forget it”.
 - **Server mode (HTTP + UI)**: a docker file that serves **(1)** a management UI and **(2)** an MCP Streamable HTTP endpoint. Great for agent frameworks, shared environments, and CI-friendly config-as-code.
@@ -63,6 +72,7 @@ Create `commandable.config.yaml`:
 ```yaml
 integrations:
   - type: github
+    toolsets: [code, pull_requests, ci]
     credentials:
       token: ${GITHUB_TOKEN}
 
@@ -159,16 +169,16 @@ npx -y @commandable/mcp init --config ./commandable.config.yaml
 
 ## Supported integrations
 
-| Integration | Tools |
-|-------------|-------|
-| GitHub | repos, issues, pull requests, commits |
-| Notion | pages, databases, blocks |
-| Trello | boards, lists, cards |
-| Airtable | bases, tables, records |
-| Google Calendar | events, calendars |
-| Google Docs | documents, content |
-| Google Sheets | spreadsheets, rows, cells |
-| Google Slides | presentations, slides |
+| Integration | Tools | Toolsets |
+|-------------|-------|----------|
+| GitHub | repos, issues, pull requests, commits | `code`, `issues`, `pull_requests`, `ci`, `releases`, `repo_admin` |
+| Notion | pages, databases, blocks | all tools enabled |
+| Trello | boards, lists, cards | all tools enabled |
+| Airtable | bases, tables, records | all tools enabled |
+| Google Calendar | events, calendars | all tools enabled |
+| Google Docs | documents, content | all tools enabled |
+| Google Sheets | spreadsheets, rows, cells | all tools enabled |
+| Google Slides | presentations, slides | all tools enabled |
 
 ---
 
@@ -181,6 +191,20 @@ Commandable looks for config in this order:
 1. `--config <path>`
 2. `COMMANDABLE_CONFIG_FILE`
 3. `./commandable.config.yaml`, `./commandable.config.yml`, `./commandable.config.json`
+
+### Toolsets
+
+Toolsets let you expose only the tool groups you want for an integration. This keeps the MCP tool list focused and reduces context usage for coding agents.
+
+Example:
+
+```yaml
+integrations:
+  - type: github
+    toolsets: [code, pull_requests, ci]
+    credentials:
+      token: ${GITHUB_TOKEN}
+```
 
 ### Environment variables
 
@@ -198,10 +222,10 @@ See `.env.example` for a full list. The most important ones:
 
 | Command | What it does |
 |---------|--------------|
-| `commandable-mcp init` | Interactive setup wizard (desktop mode) |
+| `commandable-mcp init` | Interactive setup wizard (desktop mode), including toolset selection |
 | `commandable-mcp init --config <file>` | Headless apply (alias of `apply`) |
 | `commandable-mcp apply [--config <file>]` | Apply config-as-code idempotently (CI-friendly) |
-| `commandable-mcp add` | Add more integrations interactively |
+| `commandable-mcp add` | Add more integrations interactively, including toolset selection |
 | `commandable-mcp status` | Show enabled integrations |
 | `commandable-mcp create-api-key [name]` | Create an API key for HTTP `/mcp` |
 | `commandable-mcp` | Start stdio MCP server (spawned by MCP clients) |

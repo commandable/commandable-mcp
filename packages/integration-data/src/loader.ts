@@ -37,6 +37,7 @@ interface ToolRef {
   handler: string
   scope?: 'read' | 'write' | 'admin'
   credentialVariants?: string[]
+  toolset?: string
 }
 
 type FlatTools = ToolRef[]
@@ -46,6 +47,11 @@ interface DisplayCardRef {
   description: string
   inputSchema: string
   component: string
+}
+
+export interface ToolsetMeta {
+  label: string
+  description: string
 }
 
 export interface DisplayCardData {
@@ -67,6 +73,7 @@ interface Manifest {
   name: string
   version?: string
   baseUrl?: string
+  toolsets?: Record<string, ToolsetMeta>
   tools: FlatTools
   displayCards?: DisplayCardRef[]
 }
@@ -160,6 +167,11 @@ export function loadIntegrationDisplayCards(type: string): DisplayCardData[] {
   })
 }
 
+export function loadIntegrationToolsets(type: string): Record<string, ToolsetMeta> | null {
+  const manifest = loadIntegrationManifest(type)
+  return manifest?.toolsets ?? null
+}
+
 /**
  * Load tools for an integration, optionally filtered to only those compatible
  * with the active credential variant. Tools without a `credentialVariants`
@@ -167,13 +179,14 @@ export function loadIntegrationDisplayCards(type: string): DisplayCardData[] {
  */
 export function loadIntegrationTools(
   type: string,
-  opts?: { credentialVariant?: string },
+  opts?: { credentialVariant?: string, toolsets?: string[] },
 ): { read: ToolData[], write: ToolData[], admin: ToolData[] } | null {
   const manifest = loadIntegrationManifest(type)
   if (!manifest)
     return null
 
   const activeVariant = opts?.credentialVariant
+  const activeToolsets = opts?.toolsets
 
   const flat = manifest.tools as FlatTools
   const readRefs: ToolRef[] = []
@@ -182,6 +195,8 @@ export function loadIntegrationTools(
 
   for (const t of flat) {
     if (activeVariant && t.credentialVariants && !t.credentialVariants.includes(activeVariant))
+      continue
+    if (activeToolsets && t.toolset && !activeToolsets.includes(t.toolset))
       continue
 
     const scope = t.scope || 'read'

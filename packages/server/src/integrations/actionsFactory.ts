@@ -22,7 +22,10 @@ export function buildToolsByIntegration(
   const toolsByIntegration: Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> = {}
 
   for (const integ of integrations) {
-    const loaded = loadIntegrationTools(integ.type, { credentialVariant: integ.credentialVariant ?? undefined })
+    const loaded = loadIntegrationTools(integ.type, {
+      credentialVariant: integ.credentialVariant ?? undefined,
+      toolsets: integ.enabledToolsets ?? undefined,
+    })
     const read = loaded?.read || []
     const write = loaded?.write || []
     const admin = loaded?.admin || []

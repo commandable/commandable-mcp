@@ -8,6 +8,7 @@ export const IntegrationConfigSchema = z.object({
   spaceId: z.string().min(1).optional(),
   credentialId: z.string().min(1).optional(),
   credentialVariant: z.string().min(1).optional(),
+  toolsets: z.array(z.string()).optional(),
   config: z.record(z.string(), z.any()).optional(),
   credentials: z.record(z.string(), z.string()).optional(),
 })

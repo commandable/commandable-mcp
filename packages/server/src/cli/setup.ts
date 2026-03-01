@@ -11,7 +11,7 @@ import {
   text,
 } from '@clack/prompts'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
-import { loadIntegrationCredentialConfig, loadIntegrationHint, loadIntegrationVariants } from '../integrations/dataLoader.js'
+import { loadIntegrationCredentialConfig, loadIntegrationHint, loadIntegrationToolsets, loadIntegrationVariants } from '../integrations/dataLoader.js'
 import { getCommandableDir, openLocalState } from './credentialManager.js'
 import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { IntegrationData } from '../types.js'
@@ -149,6 +149,33 @@ async function selectIntegrations(args: { title: string, excludeTypes?: Set<stri
   return (selected as string[]).map(s => String(s)).filter(Boolean)
 }
 
+async function selectEnabledToolsets(type: string): Promise<string[] | undefined | null> {
+  const toolsets = loadIntegrationToolsets(type)
+  if (!toolsets)
+    return undefined
+
+  const entries = Object.entries(toolsets)
+  if (!entries.length)
+    return undefined
+
+  const options = entries
+    .map(([key, meta]) => ({
+      value: key,
+      label: meta.label,
+      hint: meta.description,
+    }))
+    .sort((a, b) => a.value.localeCompare(b.value))
+  const result = await multiselect({
+    message: `Which tool groups do you want to enable for ${picocolors.cyan(type)}?`,
+    options,
+    initialValues: options.map(o => o.value),
+    required: true,
+  })
+  if (isCancel(result))
+    return null
+  return (result as string[]).map(s => String(s)).filter(Boolean)
+}
+
 function makeClaudeDesktopSnippet() {
   return {
     mcpServers: {
@@ -160,7 +187,7 @@ function makeClaudeDesktopSnippet() {
   }
 }
 
-function makeIntegrationRecord(type: string, variantKey: string): IntegrationData {
+function makeIntegrationRecord(type: string, variantKey: string, enabledToolsets?: string[]): IntegrationData {
   return {
     spaceId: 'local',
     id: type,
@@ -170,10 +197,11 @@ function makeIntegrationRecord(type: string, variantKey: string): IntegrationDat
     connectionMethod: 'credentials',
     credentialId: `${type}-creds`,
     credentialVariant: variantKey,
+    enabledToolsets,
   }
 }
 
-async function configureIntegration(type: string): Promise<{ variantKey: string, credentials: Record<string, string> } | null> {
+async function configureIntegration(type: string): Promise<{ variantKey: string, credentials: Record<string, string>, enabledToolsets?: string[] } | null> {
   log.info(`Configuring ${picocolors.cyan(type)}`)
 
   const variantKey = await selectCredentialVariant(type)
@@ -185,11 +213,15 @@ async function configureIntegration(type: string): Promise<{ variantKey: string,
     log.info(`Using: ${picocolors.cyan(variantsFile.variants[variantKey]?.label ?? variantKey)}`)
   }
 
+  const enabledToolsets = await selectEnabledToolsets(type)
+  if (enabledToolsets === null)
+    return null
+
   const credentials = await promptCredentialsForVariant(type, variantKey)
   if (credentials === null)
     return null
 
-  return { variantKey, credentials }
+  return { variantKey, credentials, enabledToolsets: enabledToolsets ?? undefined }
 }
 
 export async function runInitInteractive() {
@@ -212,8 +244,8 @@ export async function runInitInteractive() {
         return
       }
 
-      const { variantKey, credentials } = result
-      const integration = makeIntegrationRecord(type, variantKey)
+      const { variantKey, credentials, enabledToolsets } = result
+      const integration = makeIntegrationRecord(type, variantKey, enabledToolsets)
       await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
       await upsertIntegration(db, integration)
     }
@@ -254,8 +286,8 @@ export async function runAddInteractive() {
         return
       }
 
-      const { variantKey, credentials } = result
-      const integration = makeIntegrationRecord(type, variantKey)
+      const { variantKey, credentials, enabledToolsets } = result
+      const integration = makeIntegrationRecord(type, variantKey, enabledToolsets)
       await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
       await upsertIntegration(db, integration)
       added.push(type)

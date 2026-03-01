@@ -14,6 +14,7 @@ export async function ensureSchema(client: DbClient): Promise<void> {
         credential_id TEXT,
         credential_variant TEXT,
         config_json TEXT,
+        enabled_toolsets TEXT,
         created_at INTEGER NOT NULL
       );
     `)
@@ -63,6 +64,7 @@ export async function ensureSchema(client: DbClient): Promise<void> {
       credential_id TEXT,
       credential_variant TEXT,
       config_json JSONB,
+      enabled_toolsets TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `)

@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
     connectionMethod: body?.connectionMethod || undefined,
     connectionId: body?.connectionId || undefined,
     credentialId: body?.credentialId || undefined,
+    enabledToolsets: Array.isArray(body?.enabledToolsets) ? body.enabledToolsets : undefined,
   }
 
   if (!integration.type)

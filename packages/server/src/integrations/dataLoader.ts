@@ -3,6 +3,7 @@ export type {
   CredentialVariantConfig,
   CredentialVariantsFile,
   DisplayCardData,
+  ToolsetMeta,
   ToolData,
 } from '@commandable/integration-data'
 
@@ -12,6 +13,7 @@ export {
   loadIntegrationPrompt,
   loadIntegrationTools,
   loadIntegrationDisplayCards,
+  loadIntegrationToolsets,
   loadIntegrationCredentialConfig,
   loadIntegrationVariants,
   loadIntegrationHint,

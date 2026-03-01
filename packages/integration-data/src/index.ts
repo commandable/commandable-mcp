@@ -3,6 +3,7 @@ export type {
   CredentialVariantConfig,
   CredentialVariantsFile,
   DisplayCardData,
+  ToolsetMeta,
   ToolData,
   IntegrationCatalogItem,
 } from './loader.js'
@@ -13,6 +14,7 @@ export {
   loadIntegrationPrompt,
   loadIntegrationTools,
   loadIntegrationDisplayCards,
+  loadIntegrationToolsets,
   loadIntegrationCredentialConfig,
   loadIntegrationVariants,
   loadIntegrationHint,

@@ -14,6 +14,7 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
     const cfg = client.dialect === 'sqlite'
       ? (r.configJson ? JSON.parse(r.configJson) : undefined)
       : (r.configJson ?? undefined)
+    const enabledToolsets = r.enabledToolsets ? JSON.parse(r.enabledToolsets) : undefined
 
     const createdAt = client.dialect === 'sqlite'
       ? (r.createdAt ? new Date(r.createdAt) : undefined)
@@ -32,6 +33,7 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
       credentialId: r.credentialId ?? undefined,
       credentialVariant: r.credentialVariant ?? undefined,
       config: cfg,
+      enabledToolsets,
     }
     return integ
   })
@@ -43,6 +45,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
   const configValue = client.dialect === 'sqlite'
     ? (integration.config ? JSON.stringify(integration.config) : null)
     : (integration.config ?? null)
+  const enabledToolsetsValue = integration.enabledToolsets ? JSON.stringify(integration.enabledToolsets) : null
 
   await (client.db as any)
     .insert(table)
@@ -57,6 +60,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
       credentialId: integration.credentialId ?? null,
       credentialVariant: integration.credentialVariant ?? null,
       configJson: configValue,
+      enabledToolsets: enabledToolsetsValue,
       createdAt: client.dialect === 'sqlite' ? now : now,
     })
     .onConflictDoUpdate({
@@ -71,6 +75,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
         credentialId: integration.credentialId ?? null,
         credentialVariant: integration.credentialVariant ?? null,
         configJson: configValue,
+        enabledToolsets: enabledToolsetsValue,
       },
     })
 }
