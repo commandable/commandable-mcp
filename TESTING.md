@@ -54,3 +54,22 @@ cp .env.test.managed.example .env.test.managed
 yarn test
 ```
 
+## Container smoke check (GHCR image)
+
+To verify a published image quickly:
+
+```bash
+docker pull ghcr.io/commandable/commandable-mcp:main
+docker run --rm -p 3000:3000 \
+  -e COMMANDABLE_ENCRYPTION_SECRET="replace-with-stable-secret" \
+  -e COMMANDABLE_CONFIG_FILE=/app/commandable.config.yaml \
+  -v "$PWD/commandable.config.yaml:/app/commandable.config.yaml:ro" \
+  ghcr.io/commandable/commandable-mcp:main
+```
+
+Then verify the server is up:
+
+```bash
+curl http://localhost:3000/health
+```
+

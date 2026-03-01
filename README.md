@@ -76,6 +76,20 @@ integrations:
 
 ### 2) Run the server (Docker)
 
+#### Option A: Use prebuilt Docker image (GHCR)
+
+```bash
+docker pull ghcr.io/commandable/commandable-mcp:latest
+docker run --rm -p 3000:3000 \
+  -e COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
+  -e DATABASE_URL="$DATABASE_URL" \
+  -e COMMANDABLE_CONFIG_FILE=/app/commandable.config.yaml \
+  -v "$PWD/commandable.config.yaml:/app/commandable.config.yaml:ro" \
+  ghcr.io/commandable/commandable-mcp:latest
+```
+
+#### Option B: Build locally
+
 ```bash
 docker build -t commandable-mcp .
 docker run --rm -p 3000:3000 \
@@ -85,6 +99,12 @@ docker run --rm -p 3000:3000 \
   -v "$PWD/commandable.config.yaml:/app/commandable.config.yaml:ro" \
   commandable-mcp
 ```
+
+#### Image tags
+
+- `latest`: most recent tagged release (`v*`)
+- `main`: latest build from the `main` branch
+- `vX.Y.Z`: exact release tag
 
 This starts an app that serves:
 
