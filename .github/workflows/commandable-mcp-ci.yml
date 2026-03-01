@@ -32,13 +32,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_TEST_PARENT_PAGE_ID: ${{ vars.NOTION_TEST_PARENT_PAGE_ID }}
           TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
           TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SHEETS_TEST_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_TEST_SPREADSHEET_ID }}
           GOOGLE_DOCS_TEST_DOCUMENT_ID: ${{ secrets.GOOGLE_DOCS_TEST_DOCUMENT_ID }}
           GOOGLE_SLIDES_TEST_PRESENTATION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_PRESENTATION_ID }}
-          GOOGLE_IMPERSONATE_SUBJECT: ${{ secrets.GOOGLE_IMPERSONATE_SUBJECT }}
+          GOOGLE_IMPERSONATE_SUBJECT: ${{ vars.GOOGLE_IMPERSONATE_SUBJECT }}
           # Managed OAuth live suites (integration-data/**/__tests__/*handlers.test.ts)
           COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
           COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
@@ -50,8 +51,11 @@ jobs:
           GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
           GOOGLE_DOCS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_DOCS_TEST_CONNECTION_ID }}
           GOOGLE_SLIDES_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_CONNECTION_ID }}
+          # Airtable write suite resource IDs (stored as GitHub Variables)
+          AIRTABLE_TEST_WRITE_BASE_ID: ${{ vars.AIRTABLE_TEST_WRITE_BASE_ID }}
+          AIRTABLE_TEST_WRITE_TABLE_ID: ${{ vars.AIRTABLE_TEST_WRITE_TABLE_ID }}
           # Resource IDs used by some write suites
-          _GITHUB_TEST_OWNER: ${{ secrets._GITHUB_TEST_OWNER }}
-          _GITHUB_TEST_REPO: ${{ secrets._GITHUB_TEST_REPO }}
+          _GITHUB_TEST_OWNER: ${{ vars._GITHUB_TEST_OWNER }}
+          _GITHUB_TEST_REPO: ${{ vars._GITHUB_TEST_REPO }}
           GCAL_TEST_CALENDAR_ID: ${{ secrets.GCAL_TEST_CALENDAR_ID }}
         run: yarn workspace @commandable/mcp test

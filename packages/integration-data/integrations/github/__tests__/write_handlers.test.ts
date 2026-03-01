@@ -198,14 +198,22 @@ suiteOrSkip('github write handlers (live)', () => {
         expect(overwritten?.commit?.sha).toBeTruthy()
         expect(overwritten?.file?.action).toBe('overwritten')
 
-        // Verify content
+        // Verify content -- retry until the Contents API reflects the overwrite
         const get_file_contents = toolbox.read('get_file_contents')
-        const contents = await get_file_contents({
-          owner: ctx.owner,
-          repo: ctx.repo,
-          path: filePath,
-          ref: branchName,
-        })
+        const contents = await withRetry(
+          async () => {
+            const c = await get_file_contents({
+              owner: ctx.owner,
+              repo: ctx.repo,
+              path: filePath,
+              ref: branchName,
+            })
+            if (!c?.content?.includes('Overwritten content'))
+              throw new Error('stale content: overwrite not yet visible')
+            return c
+          },
+          { maxAttempts: 5, delayMs: 1500 },
+        )
         expect(contents?.content).toContain('Overwritten content')
 
         // delete_file without SHA (auto-fetches it)
