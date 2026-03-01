@@ -43,3 +43,106 @@ If an endpoint is already clean and self-contained, just proxy it.
 
 
 IMPORTANT: Think through how an AI agent might use an integration and any tweaks to the rest api that might be needed to support actual agentic use cases
+
+---
+
+## Lessons from GSuite: what we changed and why
+
+We overhauled all six Google integrations (Gmail, Drive, Calendar, Docs, Sheets, Slides) after benchmarking against taylorwilsdon's [google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) and reviewing MCP agent-consumption best practices. The principles below should guide every new integration.
+
+### 1. `read_*` tools should return agent-friendly content, not raw API JSON
+
+Raw API responses (nested JSON, base64-encoded bodies, massive resource trees) waste context tokens and force agents to write parsing logic they hallucinate. Instead:
+
+- **Docs**: `read_document` converts the Docs API body into clean Markdown (headings, bold/italic/strikethrough, links, code spans, lists with nesting, tables). Falls back to plain text if conversion fails.
+- **Sheets**: `read_sheet` returns a Markdown table with A1 column headers (A, B, C…) and row numbers, so the agent can immediately construct cell references like `B3` for writes.
+- **Slides**: `read_presentation` extracts text from every slide's shapes and returns a human-readable summary with slide IDs, rather than the raw presentation resource.
+- **Gmail**: `read_email` decodes base64 body parts and flattens headers into `{ subject, from, to, date, body }` instead of returning the nested payload tree.
+
+**Pattern**: if the API returns structured data meant for programmatic consumption, build a `read_*` tool that converts it into the simplest text format an LLM can understand (usually Markdown). Reserve `get_*` tools for metadata that enables further API calls (e.g. `get_spreadsheet` for sheet names/IDs).
+
+### 2. Delete tools that agents cannot realistically use
+
+We deleted 14 tools that were either too programmatic, too verbose, or redundant:
+
+- **DataFilter-based tools** (Sheets): `get_spreadsheet_by_data_filter`, `get_values_by_data_filter`, `batch_update_values_by_data_filter`, `batch_clear_values_by_data_filter` -- DataFilter objects are structured JSON that agents cannot construct reliably.
+- **Developer metadata tools** (Sheets): `search_developer_metadata`, `get_developer_metadata` -- niche API that no agent workflow needs.
+- **Raw RFC822 tools** (Gmail): `send_message`, `create_draft` -- require manual MIME construction and base64url encoding. Replaced by `send_email` and `create_draft_email` which accept flat fields (to, subject, body).
+- **Redundant update tools** (Calendar): `update_event` (full PUT replace) removed in favour of `patch_event` (partial update), which is safer and more intuitive.
+- **Raw read tools** (Docs): `get_document`, `get_document_structured`, `get_document_text` all replaced by the single `read_document` markdown tool.
+- **Raw value tools** (Sheets): `get_values`, `batch_get_values` replaced by `read_sheet`.
+
+**Pattern**: if a tool requires the agent to construct complex structured input (MIME encoding, DataFilter objects, GridRange specs), either abstract it away with a high-level tool or delete it. If multiple tools serve the same purpose at different abstraction levels, keep only the one agents can use.
+
+### 3. Naming convention: `read_*` vs `get_*`
+
+- **`read_*`** tools return content in agent-friendly format (Markdown, extracted text). These are the primary tools agents should use for consuming content.
+- **`get_*`** tools return API metadata/resources for further programmatic calls (e.g. `get_spreadsheet` for sheet names/IDs, `get_file` for file metadata).
+
+This naming tells the agent which tool to reach for when it wants to understand content vs when it needs IDs/metadata for a follow-up call.
+
+### 4. Encode domain knowledge in Markdown table output (Sheets example)
+
+For Sheets, the `read_sheet` tool returns a Markdown table with A1 column letters as headers and row numbers as the first column:
+
+```
+|   | A       | B       | C    |
+|---|---------|---------|------|
+| 1 | Name    | Revenue | Cost |
+| 2 | Widget  | 1500    | 800  |
+```
+
+This means the agent sees "Widget's revenue is in B2" and can directly call `update_values` with range `Sheet1!B2`. The content and the addressing metadata are unified in a single output -- no need for a separate metadata call.
+
+### 5. Abstract away encoding/transport complexity
+
+The #1 anti-pattern in MCP tool design is exposing encoding details to the agent. Examples we fixed:
+
+- **Gmail send/draft**: agents were expected to construct RFC822 MIME messages and base64url-encode them. Now `send_email` and `create_draft_email` accept flat fields and handle encoding internally.
+- **Docs markdown**: agents were getting raw `body.content` JSON arrays. Now `read_document` walks the document tree and produces Markdown.
+
+**Pattern**: if the API requires a transform (base64, MIME, URL encoding, JSON tree walking), do it in the handler. The agent should only deal with human-readable strings and simple key-value inputs.
+
+### 6. Rich tool descriptions are critical
+
+Every tool description should include: what it does, when to use it (vs alternatives), key parameter hints, and cross-references to related tools. Examples:
+
+- `read_sheet`: "...the coordinates in the output can be used directly with update_values and append_values for writes. Use get_spreadsheet first to discover sheet names."
+- `send_email`: "...For replies, provide replyToMessageId and threadId to keep the reply in the same conversation thread."
+- `patch_event`: "...Use this as the standard event update method."
+
+### 7. `prompt.md` files should document non-obvious API patterns
+
+Each integration's `prompt.md` should cover workflow guidance agents need but can't infer from tool descriptions alone:
+
+- Gmail: search query syntax (`is:unread`, `from:`, `has:attachment`), threading pattern, system label IDs
+- Calendar: RFC3339 format, `singleEvents=true` + `orderBy=startTime`, all-day vs timed events
+- Sheets: A1 notation reference, `valueInputOption` (`USER_ENTERED` vs `RAW`), recommended read-then-write workflow
+- Docs: index-based editing abstracted by first-match tools, marker pattern explanation
+- Slides: EMU units, slide addressing (0-based index vs objectId), predefined layouts
+
+### 8. Future: tool tiering for selective loading
+
+taylorwilsdon uses a `tool_tiers.yaml` with `core`/`extended`/`complete` tiers so users can selectively enable subsets of tools. We plan to add a similar `tier` field to manifest entries. When building new integrations, think about which tools are core (used in >80% of workflows) vs extended (power-user or niche).
+
+### 9. Reference implementation comparison
+
+When building a new integration, check if an established open-source MCP server already exists for that API. Compare:
+- Which tools do they include vs exclude?
+- How do they format output for agent consumption?
+- Do they have any abstraction patterns we should adopt?
+
+taylorwilsdon's `google_workspace_mcp` was our reference. Key differences we adopted:
+- Markdown content extraction (Docs, Slides)
+- Flat-field email tools instead of raw MIME
+- A1-annotated sheet output
+- Removal of overly-programmatic tools (DataFilter, developer metadata)
+- Text extraction from presentation slides instead of raw JSON
+
+### 10. Escape hatches and plain-text fallbacks
+
+Complex conversion logic (like Docs-to-Markdown) can fail on edge cases. Always include a fallback path. Our `read_document` handler attempts full Markdown conversion but falls back to plain-text extraction if the result is empty. This ensures the agent always gets something useful.
+
+### 11. Future: native API format exports
+
+Google Drive's `files.export` API now supports `text/markdown` as an export MIME type for Docs. We currently use custom Docs API -> Markdown conversion to keep the integration self-contained (no cross-API dependency on Drive scopes). A `todo.md` in `google-docs/` tracks this for future investigation when we add cross-provider fetch support.
