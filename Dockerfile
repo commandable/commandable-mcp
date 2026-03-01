@@ -7,7 +7,9 @@ COPY package.json yarn.lock tsconfig.base.json ./
 COPY packages/server/package.json packages/server/package.json
 COPY app/package.json app/package.json
 
-RUN yarn install --frozen-lockfile
+RUN corepack enable \
+  && corepack prepare yarn@4.12.0 --activate \
+  && yarn install --frozen-lockfile
 
 # Copy source and build
 COPY . .
