@@ -81,31 +81,55 @@ suiteOrSkip('google-gmail write/admin handlers (live)', () => {
       }, 60000)
 
       it('modify_message -> trash_message -> untrash_message on an existing message', async () => {
-        if (!ctx.messageId)
-          return expect(true).toBe(true)
-        const modified = await gmail.write('modify_message')({
-          messageId: ctx.messageId,
-          addLabelIds: ctx.inboxLabelId ? [ctx.inboxLabelId] : undefined,
+        // Create a fresh draft so we own the message — avoids stale/trashed inbox IDs
+        const draft = await gmail.write('create_draft_email')({
+          to: ctx.email || 'noreply@example.com',
+          subject: `CmdTest Trash ${Date.now()}`,
+          body: 'Temporary message for trash/untrash test.',
         })
-        expect(modified?.id).toBe(ctx.messageId)
-        const trashed = await gmail.write('trash_message')({ messageId: ctx.messageId })
-        expect(trashed?.id).toBe(ctx.messageId)
-        const untrashed = await gmail.write('untrash_message')({ messageId: ctx.messageId })
-        expect(untrashed?.id).toBe(ctx.messageId)
+        const messageId = draft?.message?.id
+        const draftId = draft?.id
+        expect(messageId).toBeTruthy()
+        try {
+          const modified = await gmail.write('modify_message')({
+            messageId,
+            addLabelIds: ctx.inboxLabelId ? [ctx.inboxLabelId] : undefined,
+          })
+          expect(modified?.id).toBe(messageId)
+          const trashed = await gmail.write('trash_message')({ messageId })
+          expect(trashed?.id).toBe(messageId)
+          const untrashed = await gmail.write('untrash_message')({ messageId })
+          expect(untrashed?.id).toBe(messageId)
+        }
+        finally {
+          await safeCleanup(async () => draftId ? gmail.write('delete_draft')({ draftId }) : Promise.resolve())
+        }
       }, 60000)
 
       it('modify_thread -> trash_thread -> untrash_thread on an existing thread', async () => {
-        if (!ctx.threadId)
-          return expect(true).toBe(true)
-        const modified = await gmail.write('modify_thread')({
-          threadId: ctx.threadId,
-          addLabelIds: ctx.inboxLabelId ? [ctx.inboxLabelId] : undefined,
+        // Create a fresh draft so we own the thread — avoids stale inbox IDs
+        const draft = await gmail.write('create_draft_email')({
+          to: ctx.email || 'noreply@example.com',
+          subject: `CmdTest Thread Trash ${Date.now()}`,
+          body: 'Temporary message for thread trash/untrash test.',
         })
-        expect(modified?.id).toBe(ctx.threadId)
-        const trashed = await gmail.write('trash_thread')({ threadId: ctx.threadId })
-        expect(trashed?.id).toBe(ctx.threadId)
-        const untrashed = await gmail.write('untrash_thread')({ threadId: ctx.threadId })
-        expect(untrashed?.id).toBe(ctx.threadId)
+        const threadId = draft?.message?.threadId
+        const draftId = draft?.id
+        expect(threadId).toBeTruthy()
+        try {
+          const modified = await gmail.write('modify_thread')({
+            threadId,
+            addLabelIds: ctx.inboxLabelId ? [ctx.inboxLabelId] : undefined,
+          })
+          expect(modified?.id).toBe(threadId)
+          const trashed = await gmail.write('trash_thread')({ threadId })
+          expect(trashed?.id).toBe(threadId)
+          const untrashed = await gmail.write('untrash_thread')({ threadId })
+          expect(untrashed?.id).toBe(threadId)
+        }
+        finally {
+          await safeCleanup(async () => draftId ? gmail.write('delete_draft')({ draftId }) : Promise.resolve())
+        }
       }, 60000)
 
       it('create_label -> update_label -> delete_label', async () => {

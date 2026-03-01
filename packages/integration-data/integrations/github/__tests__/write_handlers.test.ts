@@ -24,6 +24,27 @@ const variants: VariantConfig[] = [
 const hasWriteEnv = hasEnv('GITHUB_TEST_OWNER', 'GITHUB_TEST_REPO')
 const suiteOrSkip = (variants.length > 0 && hasWriteEnv) ? describe : describe.skip
 
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  { maxAttempts = 3, delayMs = 2000, retryIf = (_e: unknown): boolean => true } = {},
+): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    }
+    catch (error) {
+      lastError = error
+      if (attempt < maxAttempts && retryIf(error)) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt))
+        continue
+      }
+      break
+    }
+  }
+  throw lastError
+}
+
 suiteOrSkip('github write handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
@@ -216,17 +237,26 @@ suiteOrSkip('github write handlers (live)', () => {
         expect(commit?.commit?.message).toBe(`Add multiple files ${timestamp}`)
         expect(commit?.files?.length).toBe(3)
 
-        const commit2 = await create_commit({
-          owner: ctx.owner,
-          repo: ctx.repo,
-          branch: branchName,
-          message: `Update and delete files ${timestamp}`,
-          files: [
-            { path: `multi-test/file1-${timestamp}.txt`, content: 'Updated content of file 1' },
-            { path: `multi-test/file2-${timestamp}.txt` },
-            { path: `multi-test/file4-${timestamp}.txt`, content: 'New file 4' },
-          ],
-        })
+        // Retry second commit: GitHub's backend sometimes needs a moment to settle
+        // after the first commit before accepting a follow-up on the same branch.
+        const commit2 = await withRetry(
+          () => create_commit({
+            owner: ctx.owner,
+            repo: ctx.repo,
+            branch: branchName,
+            message: `Update and delete files ${timestamp}`,
+            files: [
+              { path: `multi-test/file1-${timestamp}.txt`, content: 'Updated content of file 1' },
+              { path: `multi-test/file2-${timestamp}.txt` },
+              { path: `multi-test/file4-${timestamp}.txt`, content: 'New file 4' },
+            ],
+          }),
+          {
+            maxAttempts: 3,
+            delayMs: 2000,
+            retryIf: (e: unknown) => String((e as { message?: string })?.message || '').includes('GitRPC::BadObjectState'),
+          },
+        )
         expect(commit2?.commit?.sha).toBeTruthy()
         expect(commit2?.commit?.message).toBe(`Update and delete files ${timestamp}`)
 
