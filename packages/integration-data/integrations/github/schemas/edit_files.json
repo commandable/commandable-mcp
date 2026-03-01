@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "branch": { "type": "string", "description": "Branch to commit to" },
+    "message": { "type": "string", "description": "Commit message" },
+    "files": {
+      "type": "array",
+      "description": "Files to create, edit, or delete in this commit",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "description": "File path in the repository" },
+          "action": { "type": "string", "enum": ["create", "edit", "delete"], "description": "'create': new file or overwrite with content. 'edit': apply search/replace edits to existing file. 'delete': remove the file." },
+          "content": { "type": "string", "description": "Full file content (required for 'create' action)" },
+          "edits": {
+            "type": "array",
+            "description": "Search/replace pairs (required for 'edit' action). Each old_text must match exactly, including whitespace.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "old_text": { "type": "string", "description": "Exact text to find" },
+                "new_text": { "type": "string", "description": "Text to replace it with" }
+              },
+              "required": ["old_text", "new_text"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["path", "action"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["owner", "repo", "branch", "message", "files"],
+  "additionalProperties": false
+}

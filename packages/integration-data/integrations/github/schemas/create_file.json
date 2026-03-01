@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "branch": { "type": "string", "description": "Branch to commit to" },
+    "path": { "type": "string", "description": "File path to create (e.g. 'src/utils/helpers.ts')" },
+    "content": { "type": "string", "description": "Plain text file content" },
+    "message": { "type": "string", "description": "Commit message" }
+  },
+  "required": ["owner", "repo", "branch", "path", "content", "message"],
+  "additionalProperties": false
+}

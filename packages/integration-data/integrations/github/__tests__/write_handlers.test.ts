@@ -158,97 +158,180 @@ suiteOrSkip('github write handlers (live)', () => {
         expect(deleted?.status).toBe(204)
       }, 90000)
 
-      it('create_or_update_file: single file commit', async () => {
+      it('create_file: create, overwrite, and verify', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
 
         const timestamp = Date.now()
-        const branchName = `test-single-file-${timestamp}`
+        const branchName = `test-create-file-${timestamp}`
+        const filePath = `test-create-${timestamp}.txt`
 
         const create_branch = toolbox.write('create_branch')
         const branch = await create_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
         expect(branch?.ref).toBe(`refs/heads/${branchName}`)
 
-        const create_or_update_file = toolbox.write('create_or_update_file')
-        const file = await create_or_update_file({
+        const create_file = toolbox.write('create_file')
+        const created = await create_file({
           owner: ctx.owner,
           repo: ctx.repo,
-          path: `test-single-${timestamp}.txt`,
-          message: `Add single test file ${timestamp}`,
-          content: `Test content with UTF-8: Hello 世界 🌍\nCreated at ${timestamp}`,
           branch: branchName,
+          path: filePath,
+          content: `Test content with UTF-8: Hello 世界 🌍\nCreated at ${timestamp}`,
+          message: `Add test file ${timestamp}`,
         })
-        expect(file?.commit?.message).toBe(`Add single test file ${timestamp}`)
-        expect(file?.content?.path).toBe(`test-single-${timestamp}.txt`)
+        expect(created?.commit?.sha).toBeTruthy()
+        expect(created?.file?.path).toBe(filePath)
+        expect(created?.file?.action).toBe('created')
 
-        // get_file_contents and delete_file roundtrip
+        // Overwrite the same file
+        const overwritten = await withRetry(
+          () => create_file({
+            owner: ctx.owner,
+            repo: ctx.repo,
+            branch: branchName,
+            path: filePath,
+            content: `Overwritten content at ${timestamp}`,
+            message: `Overwrite test file ${timestamp}`,
+          }),
+          { maxAttempts: 3, delayMs: 2000 },
+        )
+        expect(overwritten?.commit?.sha).toBeTruthy()
+        expect(overwritten?.file?.action).toBe('overwritten')
+
+        // Verify content
         const get_file_contents = toolbox.read('get_file_contents')
         const contents = await get_file_contents({
           owner: ctx.owner,
           repo: ctx.repo,
-          path: `test-single-${timestamp}.txt`,
+          path: filePath,
           ref: branchName,
         })
-        expect(contents?.encoding).toBe('utf-8')
-        expect(contents?.content).toContain('Hello')
-        const fileSha = contents?.sha
+        expect(contents?.content).toContain('Overwritten content')
 
+        // delete_file without SHA (auto-fetches it)
         const delete_file = toolbox.write('delete_file')
         const deleted = await delete_file({
           owner: ctx.owner,
           repo: ctx.repo,
-          path: `test-single-${timestamp}.txt`,
+          path: filePath,
           message: `Delete test file ${timestamp}`,
-          sha: fileSha,
           branch: branchName,
         })
         expect(deleted?.commit?.message).toBe(`Delete test file ${timestamp}`)
 
-        // delete_branch cleanup
         const delete_branch = toolbox.write('delete_branch')
-        const deletedBranch = await delete_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
-        expect(deletedBranch?.success).toBe(true)
+        await delete_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
       }, 120000)
 
-      it('create_commit: multiple files in one commit', async () => {
+      it('edit_file: search/replace on a single file', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
 
         const timestamp = Date.now()
-        const branchName = `test-multi-file-${timestamp}`
+        const branchName = `test-edit-file-${timestamp}`
+        const filePath = `test-edit-${timestamp}.txt`
+
+        const create_branch = toolbox.write('create_branch')
+        await create_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
+
+        // Seed a file to edit
+        const create_file = toolbox.write('create_file')
+        await create_file({
+          owner: ctx.owner,
+          repo: ctx.repo,
+          branch: branchName,
+          path: filePath,
+          content: 'line 1: hello world\nline 2: foo bar\nline 3: goodbye world\n',
+          message: `Seed file for edit test ${timestamp}`,
+        })
+
+        // Apply search/replace edits
+        const edit_file = toolbox.write('edit_file')
+        const edited = await withRetry(
+          () => edit_file({
+            owner: ctx.owner,
+            repo: ctx.repo,
+            branch: branchName,
+            path: filePath,
+            edits: [
+              { old_text: 'hello world', new_text: 'hello universe' },
+              { old_text: 'foo bar', new_text: 'baz qux' },
+            ],
+            message: `Edit file ${timestamp}`,
+          }),
+          { maxAttempts: 3, delayMs: 2000 },
+        )
+        expect(edited?.commit?.sha).toBeTruthy()
+        expect(edited?.file?.path).toBe(filePath)
+
+        // Verify edits applied -- retry until the Contents API reflects the new commit
+        const get_file_contents = toolbox.read('get_file_contents')
+        const contents = await withRetry(
+          async () => {
+            const c = await get_file_contents({
+              owner: ctx.owner,
+              repo: ctx.repo,
+              path: filePath,
+              ref: branchName,
+            })
+            if (!c?.content?.includes('hello universe'))
+              throw new Error('stale content: edit not yet visible')
+            return c
+          },
+          { maxAttempts: 5, delayMs: 1500 },
+        )
+        expect(contents?.content).toContain('hello universe')
+        expect(contents?.content).toContain('baz qux')
+        expect(contents?.content).toContain('goodbye world')
+        expect(contents?.content).not.toContain('hello world')
+
+        const delete_branch = toolbox.write('delete_branch')
+        await delete_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
+      }, 120000)
+
+      it('edit_files: mixed create, edit, delete in one atomic commit', async () => {
+        if (!ctx.owner || !ctx.repo)
+          return expect(true).toBe(true)
+
+        const timestamp = Date.now()
+        const branchName = `test-edit-files-${timestamp}`
 
         const create_branch = toolbox.write('create_branch')
         const branch = await create_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
         expect(branch?.ref).toBe(`refs/heads/${branchName}`)
 
-        const create_commit = toolbox.write('create_commit')
-        const commit = await create_commit({
+        // Seed initial files via edit_files (create action)
+        const edit_files = toolbox.write('edit_files')
+        const commit1 = await edit_files({
           owner: ctx.owner,
           repo: ctx.repo,
           branch: branchName,
-          message: `Add multiple files ${timestamp}`,
+          message: `Add initial files ${timestamp}`,
           files: [
-            { path: `multi-test/file1-${timestamp}.txt`, content: 'Content of file 1' },
-            { path: `multi-test/file2-${timestamp}.txt`, content: 'Content of file 2' },
-            { path: `multi-test/file3-${timestamp}.md`, content: '# Test File 3\n\nWith UTF-8: 你好 🚀' },
+            { path: `multi-test/file1-${timestamp}.txt`, action: 'create', content: 'Content of file 1' },
+            { path: `multi-test/file2-${timestamp}.txt`, action: 'create', content: 'Content of file 2' },
+            { path: `multi-test/file3-${timestamp}.md`, action: 'create', content: '# Test File 3\n\nWith UTF-8: 你好 🚀' },
           ],
         })
-        expect(commit?.commit?.sha).toBeTruthy()
-        expect(commit?.commit?.message).toBe(`Add multiple files ${timestamp}`)
-        expect(commit?.files?.length).toBe(3)
+        expect(commit1?.commit?.sha).toBeTruthy()
+        expect(commit1?.commit?.message).toBe(`Add initial files ${timestamp}`)
+        expect(commit1?.files?.length).toBe(3)
 
-        // Retry second commit: GitHub's backend sometimes needs a moment to settle
-        // after the first commit before accepting a follow-up on the same branch.
+        // Mixed operations: edit file1, delete file2, create file4
         const commit2 = await withRetry(
-          () => create_commit({
+          () => edit_files({
             owner: ctx.owner,
             repo: ctx.repo,
             branch: branchName,
-            message: `Update and delete files ${timestamp}`,
+            message: `Mixed edit/delete/create ${timestamp}`,
             files: [
-              { path: `multi-test/file1-${timestamp}.txt`, content: 'Updated content of file 1' },
-              { path: `multi-test/file2-${timestamp}.txt` },
-              { path: `multi-test/file4-${timestamp}.txt`, content: 'New file 4' },
+              {
+                path: `multi-test/file1-${timestamp}.txt`,
+                action: 'edit',
+                edits: [{ old_text: 'Content of file 1', new_text: 'Updated content of file 1' }],
+              },
+              { path: `multi-test/file2-${timestamp}.txt`, action: 'delete' },
+              { path: `multi-test/file4-${timestamp}.txt`, action: 'create', content: 'New file 4' },
             ],
           }),
           {
@@ -258,15 +341,42 @@ suiteOrSkip('github write handlers (live)', () => {
           },
         )
         expect(commit2?.commit?.sha).toBeTruthy()
-        expect(commit2?.commit?.message).toBe(`Update and delete files ${timestamp}`)
+        expect(commit2?.files?.length).toBe(3)
+
+        // Verify the edit applied -- retry until the Contents API reflects the new commit
+        const get_file_contents = toolbox.read('get_file_contents')
+        const f1 = await withRetry(
+          async () => {
+            const c = await get_file_contents({
+              owner: ctx.owner,
+              repo: ctx.repo,
+              path: `multi-test/file1-${timestamp}.txt`,
+              ref: branchName,
+            })
+            if (!c?.content?.includes('Updated content of file 1'))
+              throw new Error('stale content: edit not yet visible')
+            return c
+          },
+          { maxAttempts: 5, delayMs: 1500 },
+        )
+        expect(f1?.content).toContain('Updated content of file 1')
+
+        // Verify the new file was created
+        const f4 = await get_file_contents({
+          owner: ctx.owner,
+          repo: ctx.repo,
+          path: `multi-test/file4-${timestamp}.txt`,
+          ref: branchName,
+        })
+        expect(f4?.content).toContain('New file 4')
 
         // get_commit verifies the commit details
         const get_commit = toolbox.read('get_commit')
         const commitDetails = await get_commit({ owner: ctx.owner, repo: ctx.repo, sha: commit2.commit.sha })
         expect(commitDetails?.sha).toBe(commit2.commit.sha)
-      }, 120000)
+      }, 150000)
 
-      it('full PR workflow: create_branch -> create_commit -> create_pull_request -> update_pull_request -> create_pull_request_review -> merge_pull_request -> delete_branch', async () => {
+      it('full PR workflow: create_branch -> edit_files -> create_pull_request -> update_pull_request -> create_pull_request_review -> merge_pull_request -> delete_branch', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
 
@@ -277,15 +387,15 @@ suiteOrSkip('github write handlers (live)', () => {
         const branch = await create_branch({ owner: ctx.owner, repo: ctx.repo, branch: branchName })
         expect(branch?.ref).toBe(`refs/heads/${branchName}`)
 
-        const create_commit = toolbox.write('create_commit')
-        const commit = await create_commit({
+        const edit_files = toolbox.write('edit_files')
+        const commit = await edit_files({
           owner: ctx.owner,
           repo: ctx.repo,
           branch: branchName,
           message: `Add feature files ${timestamp}`,
           files: [
-            { path: `feature-${timestamp}/index.js`, content: 'export default function() { return "Hello"; }' },
-            { path: `feature-${timestamp}/README.md`, content: `# Feature ${timestamp}\n\nThis is a test feature.` },
+            { path: `feature-${timestamp}/index.js`, action: 'create', content: 'export default function() { return "Hello"; }' },
+            { path: `feature-${timestamp}/README.md`, action: 'create', content: `# Feature ${timestamp}\n\nThis is a test feature.` },
           ],
         })
         expect(commit?.commit?.sha).toBeTruthy()

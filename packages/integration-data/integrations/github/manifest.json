@@ -1,6 +1,6 @@
 {
   "name": "github",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "toolsets": {
     "code": {
       "label": "Code & Files",
@@ -69,9 +69,10 @@
     { "name": "create_branch", "description": "Create a new branch in a repository, branching from the repo's default branch by default.", "inputSchema": "schemas/create_branch.json", "handler": "handlers/create_branch.js", "scope": "write", "toolset": "code" },
     { "name": "delete_branch", "description": "Delete a branch. Typically used after a pull request is merged. Use list_branches to find the branch name first.", "inputSchema": "schemas/delete_branch.json", "handler": "handlers/delete_branch.js", "scope": "write", "toolset": "code" },
 
-    { "name": "create_or_update_file", "description": "Create or update a single file in a repository. Content must be plain text (base64 encoding is handled internally). Provide sha when updating an existing file (get it from get_file_contents).", "inputSchema": "schemas/create_or_update_file.json", "handler": "handlers/create_or_update_file.js", "scope": "write", "toolset": "code" },
-    { "name": "delete_file", "description": "Delete a file from a repository. Requires the file's blob SHA (get it from get_file_contents). Creates a commit with the deletion.", "inputSchema": "schemas/delete_file.json", "handler": "handlers/delete_file.js", "scope": "write", "toolset": "code" },
-    { "name": "create_commit", "description": "Create a commit with multiple file changes in a single operation. Supports adding, modifying, and deleting files atomically. Content must be plain text (base64 handled internally). Omit content to delete a file.", "inputSchema": "schemas/create_commit.json", "handler": "handlers/create_commit.js", "scope": "write", "toolset": "code" },
+    { "name": "edit_file", "description": "Edit a file using search/replace. Fetches the file, applies edits, and commits the result. Each old_text must match the file content exactly, including whitespace and indentation. Use get_file_contents to verify content before editing. For multi-file atomic changes, use edit_files instead.", "inputSchema": "schemas/edit_file.json", "handler": "handlers/edit_file.js", "scope": "write", "toolset": "code" },
+    { "name": "edit_files", "description": "Create, edit, and delete multiple files in a single atomic commit. Use action 'create' with content for new files, 'edit' with old_text/new_text search/replace pairs for existing files, 'delete' to remove files. All changes are committed together. For single-file edits, use edit_file instead.", "inputSchema": "schemas/edit_files.json", "handler": "handlers/edit_files.js", "scope": "write", "toolset": "code" },
+    { "name": "create_file", "description": "Create a new file or overwrite an existing file's content in a single commit. Handles SHA resolution internally -- no need to fetch the file first. For partial edits to existing files, use edit_file instead.", "inputSchema": "schemas/create_file.json", "handler": "handlers/create_file.js", "scope": "write", "toolset": "code" },
+    { "name": "delete_file", "description": "Delete a file from a repository. The file's SHA is fetched automatically. Creates a commit with the deletion.", "inputSchema": "schemas/delete_file.json", "handler": "handlers/delete_file.js", "scope": "write", "toolset": "code" },
 
     { "name": "create_pull_request", "description": "Open a new pull request from a head branch into a base branch.", "inputSchema": "schemas/create_pull_request.json", "handler": "handlers/create_pull_request.js", "scope": "write", "toolset": "pull_requests" },
     { "name": "update_pull_request", "description": "Edit a pull request's title, body, state (open/closed), base branch, or draft status.", "inputSchema": "schemas/update_pull_request.json", "handler": "handlers/update_pull_request.js", "scope": "write", "toolset": "pull_requests" },

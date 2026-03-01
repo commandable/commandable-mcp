@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "owner": { "type": "string", "description": "Repository owner" },
+    "repo": { "type": "string", "description": "Repository name" },
+    "branch": { "type": "string", "description": "Branch to commit to" },
+    "path": { "type": "string", "description": "Path of the file to edit (e.g. 'src/index.ts')" },
+    "edits": {
+      "type": "array",
+      "description": "Search/replace operations applied in order. Each old_text must match the file content exactly, including whitespace and indentation.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "old_text": { "type": "string", "description": "Exact text to find in the file" },
+          "new_text": { "type": "string", "description": "Text to replace it with" }
+        },
+        "required": ["old_text", "new_text"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "message": { "type": "string", "description": "Commit message" }
+  },
+  "required": ["owner", "repo", "branch", "path", "edits", "message"],
+  "additionalProperties": false
+}
