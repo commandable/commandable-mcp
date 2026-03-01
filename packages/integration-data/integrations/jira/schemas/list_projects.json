@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Optional search text to filter projects by name or key."
+    },
+    "startAt": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 50
+    }
+  },
+  "additionalProperties": false
+}
+

@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "title": "Page ID",
+      "description": "The Confluence page ID."
+    },
+    "labels": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Labels to add (without the `global:` prefix). Example: `design-doc`, `runbook`."
+    }
+  },
+  "required": ["pageId", "labels"],
+  "additionalProperties": false
+}
+

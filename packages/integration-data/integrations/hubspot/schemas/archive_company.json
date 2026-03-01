@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "title": "Company ID",
+      "description": "HubSpot company object ID."
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Set the issue summary/title."
+    },
+    "descriptionText": {
+      "type": "string",
+      "description": "Set the issue description as plain text (converted to ADF)."
+    },
+    "labels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Set the full labels array (replaces existing labels)."
+    },
+    "priorityName": {
+      "type": "string",
+      "description": "Set priority by name."
+    },
+    "priorityId": {
+      "type": "string",
+      "description": "Set priority by ID."
+    },
+    "assigneeAccountId": {
+      "type": ["string", "null"],
+      "description": "Assign to this accountId, or null to unassign."
+    },
+    "fields": {
+      "type": "object",
+      "description": "Advanced: direct Jira fields object. This is passed through to the Jira API. Use only if you know Jira field formats.",
+      "additionalProperties": true
+    },
+    "update": {
+      "type": "object",
+      "description": "Advanced: Jira update operations object. Use for add/remove operations on fields like labels.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["issueIdOrKey"],
+  "additionalProperties": false
+}
+

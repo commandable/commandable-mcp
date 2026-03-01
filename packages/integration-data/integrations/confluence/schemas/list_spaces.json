@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional list of space IDs to filter by."
+    },
+    "keys": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional list of space keys to filter by."
+    },
+    "type": {
+      "type": "string",
+      "description": "Optional space type filter (e.g. global, personal)."
+    },
+    "status": {
+      "type": "string",
+      "description": "Optional space status filter (e.g. current, archived)."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 250,
+      "default": 50,
+      "description": "Maximum number of spaces to return."
+    },
+    "cursor": {
+      "type": ["string", "null"],
+      "description": "Pagination cursor from a previous response."
+    }
+  },
+  "additionalProperties": false
+}
+

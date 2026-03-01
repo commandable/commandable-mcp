@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "description": "HubSpot deal object ID." },
+    "dealname": { "type": "string" },
+    "amount": { "type": ["string", "number"] },
+    "pipeline": { "type": "string" },
+    "dealstage": { "type": "string" },
+    "closedate": { "type": ["string", "number"] },
+    "properties": {
+      "type": "object",
+      "description": "HubSpot deal properties to update (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

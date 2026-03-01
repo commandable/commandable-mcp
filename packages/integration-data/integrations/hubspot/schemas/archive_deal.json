@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "description": "HubSpot deal object ID." }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

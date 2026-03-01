@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "title": "Page ID",
+      "description": "The Confluence page ID."
+    },
+    "purge": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, permanently purge the page (only works for trashed pages with admin permission)."
+    },
+    "draft": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, delete a draft page."
+    }
+  },
+  "required": ["pageId"],
+  "additionalProperties": false
+}
+

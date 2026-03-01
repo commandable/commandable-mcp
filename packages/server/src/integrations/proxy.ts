@@ -222,6 +222,20 @@ export class IntegrationProxy {
         const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
         ;(creds as any).token = token
       }
+      else if (credCfg.preprocess === 'jira_api_token') {
+        const email = (creds as any).email
+        const apiToken = (creds as any).apiToken
+        if (!email || !apiToken)
+          throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
+        ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
+      }
+      else if (credCfg.preprocess === 'confluence_api_token') {
+        const email = (creds as any).email
+        const apiToken = (creds as any).apiToken
+        if (!email || !apiToken)
+          throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
+        ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
+      }
 
       const resolveTemplate = (template: string): string => {
         return String(template).replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key) => {
@@ -245,7 +259,11 @@ export class IntegrationProxy {
       if (!providerCfg)
         throw new HttpError(501, `Provider '${provider}' is not configured in the server proxy.`)
 
-      const baseUrl = typeof providerCfg.baseUrl === 'function' ? providerCfg.baseUrl(/* todo */) : providerCfg.baseUrl
+      const baseUrl = credCfg.baseUrlTemplate
+        ? resolveTemplate(credCfg.baseUrlTemplate)
+        : (typeof providerCfg.baseUrl === 'function'
+            ? providerCfg.baseUrl(integration, creds, credCfg)
+            : providerCfg.baseUrl)
       let finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
 
       const queryString = resolvedQuery.toString()
@@ -326,7 +344,9 @@ export class IntegrationProxy {
     if (!providerCfg)
       throw new HttpError(501, `Provider '${providerId}' is not configured in the server proxy.`)
 
-    const baseUrl = typeof providerCfg.baseUrl === 'function' ? providerCfg.baseUrl(/* todo */) : providerCfg.baseUrl
+    const baseUrl = typeof providerCfg.baseUrl === 'function'
+      ? providerCfg.baseUrl(integration, creds)
+      : providerCfg.baseUrl
     const finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
 
     try {

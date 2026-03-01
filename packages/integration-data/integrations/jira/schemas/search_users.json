@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Free-text query (name or email) to search users."
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 50
+    }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}
+

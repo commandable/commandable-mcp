@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "projectKey": {
+      "type": "string",
+      "description": "Project key, e.g. \"PROJ\"."
+    },
+    "summary": {
+      "type": "string",
+      "description": "Issue summary/title."
+    },
+    "descriptionText": {
+      "type": "string",
+      "description": "Plain-text issue description. The handler converts this to Jira ADF."
+    },
+    "issueTypeName": {
+      "type": "string",
+      "description": "Issue type name, e.g. \"Task\", \"Bug\", \"Story\"."
+    },
+    "issueTypeId": {
+      "type": "string",
+      "description": "Issue type ID (alternative to issueTypeName)."
+    },
+    "priorityName": {
+      "type": "string",
+      "description": "Priority name, e.g. \"High\"."
+    },
+    "priorityId": {
+      "type": "string",
+      "description": "Priority ID (alternative to priorityName)."
+    },
+    "labels": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional labels to apply."
+    },
+    "assigneeAccountId": {
+      "type": "string",
+      "description": "Optional assignee accountId. Use search_users to find accountIds."
+    }
+  },
+  "required": ["projectKey", "summary"],
+  "anyOf": [
+    { "required": ["issueTypeName"] },
+    { "required": ["issueTypeId"] }
+  ],
+  "additionalProperties": false
+}
+

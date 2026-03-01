@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "description": "HubSpot ticket object ID." },
+    "properties": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific property names to return (e.g. subject, content, hs_pipeline, hs_pipeline_stage, hs_ticket_priority)."
+    },
+    "associations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Associated object types to include (e.g. contacts, companies, deals)."
+    },
+    "archived": { "type": "boolean" }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

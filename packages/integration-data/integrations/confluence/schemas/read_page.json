@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "title": "Page ID",
+      "description": "The Confluence page ID."
+    },
+    "includeLabels": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include labels in the response."
+    },
+    "includeProperties": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include content properties (may be verbose)."
+    }
+  },
+  "required": ["pageId"],
+  "additionalProperties": false
+}
+

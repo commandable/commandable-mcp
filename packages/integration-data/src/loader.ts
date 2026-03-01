@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url'
 export interface CredentialVariantConfig {
   label: string
   schema: JSONSchema7
+  /**
+   * Optional template used to construct the provider base URL from credential fields.
+   * Example: "https://{{domain}}.atlassian.net"
+   */
+  baseUrlTemplate?: string
   injection: {
     headers?: Record<string, string>
     query?: Record<string, string>
@@ -23,6 +28,7 @@ export interface IntegrationCredentialConfig {
   variantKey: string
   label: string
   schema: JSONSchema7
+  baseUrlTemplate?: string
   injection: {
     headers?: Record<string, string>
     query?: Record<string, string>
@@ -252,6 +258,7 @@ export function loadIntegrationCredentialConfig(
     variantKey: key,
     label: variant.label,
     schema: ensureSchemaObject(variant.schema) as JSONSchema7,
+    baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : undefined,
     injection: {
       headers: variant.injection?.headers || undefined,
       query: variant.injection?.query || undefined,

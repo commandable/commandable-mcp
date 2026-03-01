@@ -1,0 +1,230 @@
+{
+  "name": "hubspot",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "search_contacts",
+      "description": "Search for contacts. Use query for simple free-text search, and filters for precise property-based filtering. Returns a compact list of matching contacts.",
+      "inputSchema": "schemas/search_contacts.json",
+      "handler": "handlers/search_contacts.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_contact",
+      "description": "Get a contact by ID. Use properties to request specific fields, and associations to include linked object IDs (e.g. companies, deals, tickets).",
+      "inputSchema": "schemas/get_contact.json",
+      "handler": "handlers/get_contact.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_contact",
+      "description": "Create a contact. Provide common fields (firstname/lastname/email) and/or a properties map for other HubSpot contact properties.",
+      "inputSchema": "schemas/create_contact.json",
+      "handler": "handlers/create_contact.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_contact",
+      "description": "Update a contact by ID. Provide any fields to update as common fields and/or in the properties map. Fields not provided are unchanged.",
+      "inputSchema": "schemas/update_contact.json",
+      "handler": "handlers/update_contact.js",
+      "scope": "write"
+    },
+    {
+      "name": "archive_contact",
+      "description": "Archive (delete) a contact by ID. This moves the record to the recycle bin.",
+      "inputSchema": "schemas/archive_contact.json",
+      "handler": "handlers/archive_contact.js",
+      "scope": "write"
+    },
+
+    {
+      "name": "search_companies",
+      "description": "Search for companies. Use query for free-text search and filters for property-based filtering. Returns a compact list of matching companies.",
+      "inputSchema": "schemas/search_companies.json",
+      "handler": "handlers/search_companies.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_company",
+      "description": "Get a company by ID. Use properties to request specific fields, and associations to include linked object IDs (e.g. contacts, deals, tickets).",
+      "inputSchema": "schemas/get_company.json",
+      "handler": "handlers/get_company.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_company",
+      "description": "Create a company. Provide name/domain and/or a properties map for other HubSpot company properties.",
+      "inputSchema": "schemas/create_company.json",
+      "handler": "handlers/create_company.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_company",
+      "description": "Update a company by ID. Provide any fields to update as common fields and/or in the properties map. Fields not provided are unchanged.",
+      "inputSchema": "schemas/update_company.json",
+      "handler": "handlers/update_company.js",
+      "scope": "write"
+    },
+    {
+      "name": "archive_company",
+      "description": "Archive (delete) a company by ID. This moves the record to the recycle bin.",
+      "inputSchema": "schemas/archive_company.json",
+      "handler": "handlers/archive_company.js",
+      "scope": "write"
+    },
+
+    {
+      "name": "list_owners",
+      "description": "List CRM owners (users) available in the HubSpot account. Useful for assigning owners to records via hubspot_owner_id.",
+      "inputSchema": "schemas/list_owners.json",
+      "handler": "handlers/list_owners.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_properties",
+      "description": "List properties for an object type (e.g. contacts, companies, deals, tickets). Use this to discover valid property names for filtering and updates.",
+      "inputSchema": "schemas/list_properties.json",
+      "handler": "handlers/list_properties.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_pipelines",
+      "description": "List pipelines and stages for an object type (commonly deals or tickets). Use this to find valid pipeline and stage IDs before creating/updating records.",
+      "inputSchema": "schemas/list_pipelines.json",
+      "handler": "handlers/list_pipelines.js",
+      "scope": "read"
+    },
+
+    {
+      "name": "get_associations",
+      "description": "Get associations from a CRM record to another object type. Returns the associated record IDs (paginated).",
+      "inputSchema": "schemas/get_associations.json",
+      "handler": "handlers/get_associations.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_association",
+      "description": "Create a default (unlabeled) association between two CRM records. Example: associate a contact with a company or a deal with a contact.",
+      "inputSchema": "schemas/create_association.json",
+      "handler": "handlers/create_association.js",
+      "scope": "write"
+    },
+    {
+      "name": "remove_association",
+      "description": "Remove an association between two CRM records. This uses HubSpot's association batch archive endpoint under the hood.",
+      "inputSchema": "schemas/remove_association.json",
+      "handler": "handlers/remove_association.js",
+      "scope": "write"
+    },
+
+    {
+      "name": "search_deals",
+      "description": "Search for deals. Use query for free-text search and filters for property-based filtering (e.g. pipeline, dealstage, amount).",
+      "inputSchema": "schemas/search_deals.json",
+      "handler": "handlers/search_deals.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_deal",
+      "description": "Get a deal by ID. Use properties to request specific fields, and associations to include linked object IDs.",
+      "inputSchema": "schemas/get_deal.json",
+      "handler": "handlers/get_deal.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_deal",
+      "description": "Create a deal. Provide dealname/amount/pipeline/dealstage and/or a properties map for other HubSpot deal properties.",
+      "inputSchema": "schemas/create_deal.json",
+      "handler": "handlers/create_deal.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_deal",
+      "description": "Update a deal by ID. Common updates include moving stages via dealstage. Fields not provided are unchanged.",
+      "inputSchema": "schemas/update_deal.json",
+      "handler": "handlers/update_deal.js",
+      "scope": "write"
+    },
+    {
+      "name": "archive_deal",
+      "description": "Archive (delete) a deal by ID. This moves the record to the recycle bin.",
+      "inputSchema": "schemas/archive_deal.json",
+      "handler": "handlers/archive_deal.js",
+      "scope": "write"
+    },
+
+    {
+      "name": "search_tickets",
+      "description": "Search for tickets. Use query for free-text search and filters for property-based filtering (e.g. hs_pipeline, hs_pipeline_stage, priority).",
+      "inputSchema": "schemas/search_tickets.json",
+      "handler": "handlers/search_tickets.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_ticket",
+      "description": "Get a ticket by ID. Use properties to request specific fields, and associations to include linked object IDs.",
+      "inputSchema": "schemas/get_ticket.json",
+      "handler": "handlers/get_ticket.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_ticket",
+      "description": "Create a ticket. Provide subject/content/pipeline/stage and/or a properties map for other HubSpot ticket properties.",
+      "inputSchema": "schemas/create_ticket.json",
+      "handler": "handlers/create_ticket.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_ticket",
+      "description": "Update a ticket by ID. Common updates include changing hs_pipeline_stage. Fields not provided are unchanged.",
+      "inputSchema": "schemas/update_ticket.json",
+      "handler": "handlers/update_ticket.js",
+      "scope": "write"
+    },
+    {
+      "name": "archive_ticket",
+      "description": "Archive (delete) a ticket by ID. This moves the record to the recycle bin.",
+      "inputSchema": "schemas/archive_ticket.json",
+      "handler": "handlers/archive_ticket.js",
+      "scope": "write"
+    },
+
+    {
+      "name": "search_notes",
+      "description": "Search notes. Use query for free-text search and filters for precise property-based filtering.",
+      "inputSchema": "schemas/search_notes.json",
+      "handler": "handlers/search_notes.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_note",
+      "description": "Create a note and (optionally) associate it to one or more CRM records (contacts, companies, deals, tickets). Provide body text; the handler sets hs_note_body and hs_timestamp automatically unless overridden.",
+      "inputSchema": "schemas/create_note.json",
+      "handler": "handlers/create_note.js",
+      "scope": "write"
+    },
+    {
+      "name": "search_tasks",
+      "description": "Search tasks. Use query for free-text search and filters for precise property-based filtering.",
+      "inputSchema": "schemas/search_tasks.json",
+      "handler": "handlers/search_tasks.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_task",
+      "description": "Create a task and (optionally) associate it to one or more CRM records. Provide subject/body/status/priority and a due timestamp; the handler maps these to HubSpot task properties.",
+      "inputSchema": "schemas/create_task.json",
+      "handler": "handlers/create_task.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_task",
+      "description": "Update a task by ID. Common updates include setting hs_task_status to COMPLETED.",
+      "inputSchema": "schemas/update_task.json",
+      "handler": "handlers/update_task.js",
+      "scope": "write"
+    }
+  ]
+}
+

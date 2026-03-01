@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "boardId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Board ID."
+    }
+  },
+  "required": ["boardId"],
+  "additionalProperties": false
+}
+

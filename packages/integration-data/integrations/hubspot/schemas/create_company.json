@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "domain": { "type": "string" },
+    "properties": {
+      "type": "object",
+      "description": "Additional HubSpot company properties to set (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

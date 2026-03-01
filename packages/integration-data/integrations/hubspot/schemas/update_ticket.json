@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "description": "HubSpot ticket object ID." },
+    "subject": { "type": "string" },
+    "content": { "type": "string" },
+    "hs_pipeline": { "type": "string" },
+    "hs_pipeline_stage": { "type": "string" },
+    "properties": {
+      "type": "object",
+      "description": "HubSpot ticket properties to update (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

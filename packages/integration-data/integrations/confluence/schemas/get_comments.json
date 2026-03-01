@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "title": "Page ID",
+      "description": "The Confluence page ID."
+    },
+    "includeBodyFormat": {
+      "type": "string",
+      "enum": ["storage", "view"],
+      "default": "view",
+      "description": "Which body representation to request for comment bodies."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 250,
+      "default": 50,
+      "description": "Maximum number of comments to return."
+    },
+    "cursor": {
+      "type": ["string", "null"],
+      "description": "Pagination cursor from a previous response."
+    }
+  },
+  "required": ["pageId"],
+  "additionalProperties": false
+}
+

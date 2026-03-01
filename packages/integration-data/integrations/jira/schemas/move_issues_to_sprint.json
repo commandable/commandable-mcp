@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "sprintId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Sprint ID."
+    },
+    "issueKeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Issue keys to move into the sprint, e.g. [\"PROJ-1\",\"PROJ-2\"]."
+    }
+  },
+  "required": ["sprintId", "issueKeys"],
+  "additionalProperties": false
+}
+

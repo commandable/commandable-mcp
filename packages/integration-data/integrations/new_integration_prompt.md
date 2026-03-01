@@ -195,3 +195,7 @@ Complex conversion logic (like Docs-to-Markdown) can fail on edge cases. Always 
 ### 11. Future: native API format exports
 
 Google Drive's `files.export` API now supports `text/markdown` as an export MIME type for Docs. We currently use custom Docs API -> Markdown conversion to keep the integration self-contained (no cross-API dependency on Drive scopes). A `todo.md` in `google-docs/` tracks this for future investigation when we add cross-provider fetch support.
+
+
+
+Important hint - when researching a new integration - it can be really useful to read existing MCP servers for that integration. they may be open source and freely avaialable. This should give you an idea of the right kind of abstractions to use and tools to provide.

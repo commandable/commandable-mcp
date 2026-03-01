@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "spaceId": {
+      "type": "string",
+      "title": "Space ID",
+      "description": "The Confluence space ID."
+    },
+    "includePermissions": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, include permissions in the response (may be verbose)."
+    }
+  },
+  "required": ["spaceId"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    },
+    "startAt": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 50
+    }
+  },
+  "required": ["issueIdOrKey"],
+  "additionalProperties": false
+}
+

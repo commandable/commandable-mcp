@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "dealname": { "type": "string", "description": "Deal name (maps to dealname property)." },
+    "amount": { "type": ["string", "number"], "description": "Deal amount (maps to amount property)." },
+    "pipeline": { "type": "string", "description": "Pipeline ID (maps to pipeline property)." },
+    "dealstage": { "type": "string", "description": "Deal stage ID (maps to dealstage property)." },
+    "closedate": {
+      "type": ["string", "number"],
+      "description": "Close date. Prefer Unix timestamp in milliseconds (maps to closedate property)."
+    },
+    "properties": {
+      "type": "object",
+      "description": "Additional HubSpot deal properties to set (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

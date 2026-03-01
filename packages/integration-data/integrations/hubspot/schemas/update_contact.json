@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "title": "Contact ID",
+      "description": "HubSpot contact object ID."
+    },
+    "firstname": { "type": "string" },
+    "lastname": { "type": "string" },
+    "email": { "type": "string" },
+    "properties": {
+      "type": "object",
+      "description": "HubSpot contact properties to update (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "firstname": { "type": "string" },
+    "lastname": { "type": "string" },
+    "email": { "type": "string" },
+    "properties": {
+      "type": "object",
+      "description": "Additional HubSpot contact properties to set (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

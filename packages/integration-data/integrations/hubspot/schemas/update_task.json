@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "description": "HubSpot task object ID." },
+    "subject": { "type": "string", "description": "Maps to hs_task_subject." },
+    "body": { "type": "string", "description": "Maps to hs_task_body." },
+    "status": {
+      "type": "string",
+      "enum": ["NOT_STARTED", "COMPLETED"],
+      "description": "Maps to hs_task_status."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH"],
+      "description": "Maps to hs_task_priority."
+    },
+    "dueTimestamp": {
+      "type": ["string", "number"],
+      "description": "Maps to hs_timestamp (task due date/time). Prefer Unix timestamp in milliseconds."
+    },
+    "hubspot_owner_id": { "type": ["string", "number"] },
+    "properties": {
+      "type": "object",
+      "description": "Advanced: raw HubSpot task properties to update (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+
