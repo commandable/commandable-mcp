@@ -5,12 +5,12 @@
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mynt-ai/commandable-app.git",
-    "directory": "commandable-mcp/packages/server"
+    "url": "git+https://github.com/commandable/commandable-mcp.git",
+    "directory": "packages/server"
   },
-  "homepage": "https://github.com/mynt-ai/commandable-app#readme",
+  "homepage": "https://github.com/commandable/commandable-mcp#readme",
   "bugs": {
-    "url": "https://github.com/mynt-ai/commandable-app/issues"
+    "url": "https://github.com/commandable/commandable-mcp/issues"
   },
   "engines": {
     "node": ">=18"

@@ -1,6 +1,10 @@
-name: Commandable MCP (server) tests
+name: Commandable MCP CI
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -52,61 +56,3 @@ jobs:
           GITHUB_TEST_REPO: ${{ secrets.GITHUB_TEST_REPO }}
           GCAL_TEST_CALENDAR_ID: ${{ secrets.GCAL_TEST_CALENDAR_ID }}
         run: yarn workspace @commandable/mcp test
-
-name: Commandable MCP (server) tests
-
-on:
-  workflow_dispatch:
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-          cache-dependency-path: commandable-mcp/yarn.lock
-
-      - name: Install dependencies
-        working-directory: commandable-mcp
-        run: |
-          corepack enable
-          yarn install --frozen-lockfile
-
-      - name: Run server tests
-        working-directory: commandable-mcp
-        env:
-          # GitHub provides this automatically; smoke suite will skip GitHub if missing.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
-          TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          GOOGLE_SHEETS_TEST_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_TEST_SPREADSHEET_ID }}
-          GOOGLE_DOCS_TEST_DOCUMENT_ID: ${{ secrets.GOOGLE_DOCS_TEST_DOCUMENT_ID }}
-          GOOGLE_SLIDES_TEST_PRESENTATION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_PRESENTATION_ID }}
-          GOOGLE_IMPERSONATE_SUBJECT: ${{ secrets.GOOGLE_IMPERSONATE_SUBJECT }}
-          # Managed OAuth live suites (integration-data/**/__tests__/*handlers.test.ts)
-          COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
-          COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
-          TRELLO_TEST_CONNECTION_ID: ${{ secrets.TRELLO_TEST_CONNECTION_ID }}
-          NOTION_TEST_CONNECTION_ID: ${{ secrets.NOTION_TEST_CONNECTION_ID }}
-          AIRTABLE_TEST_CONNECTION_ID: ${{ secrets.AIRTABLE_TEST_CONNECTION_ID }}
-          GITHUB_TEST_CONNECTION_ID: ${{ secrets.GITHUB_TEST_CONNECTION_ID }}
-          GOOGLE_CALENDAR_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_CALENDAR_TEST_CONNECTION_ID }}
-          GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
-          GOOGLE_DOCS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_DOCS_TEST_CONNECTION_ID }}
-          GOOGLE_SLIDES_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_CONNECTION_ID }}
-          # Resource IDs used by some write suites
-          GITHUB_TEST_OWNER: ${{ secrets.GITHUB_TEST_OWNER }}
-          GITHUB_TEST_REPO: ${{ secrets.GITHUB_TEST_REPO }}
-          GCAL_TEST_CALENDAR_ID: ${{ secrets.GCAL_TEST_CALENDAR_ID }}
-        run: yarn workspace @commandable/mcp test
-
