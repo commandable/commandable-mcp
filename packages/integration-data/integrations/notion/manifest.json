@@ -1,139 +1,168 @@
 {
   "name": "notion",
   "version": "0.1.0",
+  "toolsets": {
+    "pages": {
+      "label": "Pages",
+      "description": "Find, read, and edit Notion pages, blocks, comments, and users"
+    },
+    "databases": {
+      "label": "Databases",
+      "description": "Query and manage Notion databases"
+    }
+  },
   "tools": [
     {
       "name": "search",
       "description": "Search across all accessible Notion content (pages, databases).",
       "inputSchema": "schemas/search.json",
       "handler": "handlers/search.js",
-      "scope": "read"
+      "scope": "read",
+      "toolset": "pages"
     },
     {
       "name": "retrieve_page",
       "description": "Retrieve a page by ID.",
       "inputSchema": "schemas/id_page.json",
       "handler": "handlers/retrieve_page.js",
-      "scope": "read"
-    },
-    {
-      "name": "retrieve_database",
-      "description": "Retrieve a database by ID.",
-      "inputSchema": "schemas/id_database.json",
-      "handler": "handlers/retrieve_database.js",
-      "scope": "read"
-    },
-    {
-      "name": "query_database",
-      "description": "Query a database with optional filter, sorts, and pagination.",
-      "inputSchema": "schemas/query_database.json",
-      "handler": "handlers/query_database.js",
-      "scope": "read"
-    },
-    {
-      "name": "list_block_children",
-      "description": "List child blocks for a block (including page blocks).",
-      "inputSchema": "schemas/list_block_children.json",
-      "handler": "handlers/list_block_children.js",
-      "scope": "read"
-    },
-    {
-      "name": "retrieve_block",
-      "description": "Retrieve a block by ID.",
-      "inputSchema": "schemas/id_block.json",
-      "handler": "handlers/retrieve_block.js",
-      "scope": "read"
-    },
-    {
-      "name": "list_users",
-      "description": "List users in the workspace.",
-      "inputSchema": "schemas/list_users.json",
-      "handler": "handlers/list_users.js",
-      "scope": "read"
-    },
-    {
-      "name": "retrieve_user",
-      "description": "Retrieve a user by ID.",
-      "inputSchema": "schemas/id_user.json",
-      "handler": "handlers/retrieve_user.js",
-      "scope": "read"
-    },
-    {
-      "name": "list_comments",
-      "description": "List comments for a given discussion or page block.",
-      "inputSchema": "schemas/list_comments.json",
-      "handler": "handlers/list_comments.js",
-      "scope": "read"
-    },
-    {
-      "name": "get_me",
-      "description": "Retrieve the authenticated user (bot) profile.",
-      "inputSchema": "schemas/empty.json",
-      "handler": "handlers/get_me.js",
-      "scope": "read"
+      "scope": "read",
+      "toolset": "pages"
     },
     {
       "name": "retrieve_page_property_item",
       "description": "Retrieve a specific page property item (handles rollups and pagination).",
       "inputSchema": "schemas/retrieve_page_property_item.json",
       "handler": "handlers/retrieve_page_property_item.js",
-      "scope": "read"
+      "scope": "read",
+      "toolset": "pages"
+    },
+    {
+      "name": "list_block_children",
+      "description": "List child blocks for a block (including page blocks).",
+      "inputSchema": "schemas/list_block_children.json",
+      "handler": "handlers/list_block_children.js",
+      "scope": "read",
+      "toolset": "pages"
+    },
+    {
+      "name": "retrieve_block",
+      "description": "Retrieve a block by ID.",
+      "inputSchema": "schemas/id_block.json",
+      "handler": "handlers/retrieve_block.js",
+      "scope": "read",
+      "toolset": "pages"
+    },
+    {
+      "name": "list_users",
+      "description": "List users in the workspace.",
+      "inputSchema": "schemas/list_users.json",
+      "handler": "handlers/list_users.js",
+      "scope": "read",
+      "toolset": "pages"
+    },
+    {
+      "name": "retrieve_user",
+      "description": "Retrieve a user by ID.",
+      "inputSchema": "schemas/id_user.json",
+      "handler": "handlers/retrieve_user.js",
+      "scope": "read",
+      "toolset": "pages"
+    },
+    {
+      "name": "list_comments",
+      "description": "List comments for a given discussion or page block.",
+      "inputSchema": "schemas/list_comments.json",
+      "handler": "handlers/list_comments.js",
+      "scope": "read",
+      "toolset": "pages"
+    },
+    {
+      "name": "get_me",
+      "description": "Retrieve the authenticated user (bot) profile.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/get_me.js",
+      "scope": "read",
+      "toolset": "pages"
     },
     {
       "name": "create_page",
       "description": "Create a new page in a database or as a child of a page.",
       "inputSchema": "schemas/create_page.json",
       "handler": "handlers/create_page.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "pages"
     },
     {
       "name": "update_page_properties",
       "description": "Update page properties, archive/unarchive, icon and cover.",
       "inputSchema": "schemas/update_page_properties.json",
       "handler": "handlers/update_page_properties.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "pages"
     },
     {
       "name": "append_block_children",
       "description": "Append child blocks to a block (including page blocks).",
       "inputSchema": "schemas/append_block_children.json",
       "handler": "handlers/append_block_children.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "pages"
     },
     {
       "name": "update_block",
       "description": "Update a block (content, archived state, etc).",
       "inputSchema": "schemas/update_block.json",
       "handler": "handlers/update_block.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "pages"
     },
     {
       "name": "delete_block",
       "description": "Archive a block (soft delete).",
       "inputSchema": "schemas/delete_block.json",
       "handler": "handlers/delete_block.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "pages"
     },
     {
       "name": "create_comment",
       "description": "Create a comment on a discussion or block.",
       "inputSchema": "schemas/create_comment.json",
       "handler": "handlers/create_comment.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "pages"
+    },
+    {
+      "name": "retrieve_database",
+      "description": "Retrieve a database by ID.",
+      "inputSchema": "schemas/id_database.json",
+      "handler": "handlers/retrieve_database.js",
+      "scope": "read",
+      "toolset": "databases"
+    },
+    {
+      "name": "query_database",
+      "description": "Query a database with optional filter, sorts, and pagination.",
+      "inputSchema": "schemas/query_database.json",
+      "handler": "handlers/query_database.js",
+      "scope": "read",
+      "toolset": "databases"
     },
     {
       "name": "create_database",
       "description": "Create a new database under a page.",
       "inputSchema": "schemas/create_database.json",
       "handler": "handlers/create_database.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "databases"
     },
     {
       "name": "update_database",
       "description": "Update database title, description, properties, or archived state.",
       "inputSchema": "schemas/update_database.json",
       "handler": "handlers/update_database.js",
-      "scope": "write"
+      "scope": "write",
+      "toolset": "databases"
     }
   ]
 }

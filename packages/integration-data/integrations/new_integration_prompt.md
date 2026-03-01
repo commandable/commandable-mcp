@@ -6,7 +6,7 @@ Write a new integration-data folder for `<INTEGRATION_NAME>`.
 
 Create `commandable-mcp/packages/server/integration-data/<name>/` containing:
 
-- `manifest.json`: flat `tools[]`; each tool has `name`, `description`, `inputSchema` (relative path), `handler` (relative path), `scope` (`read` | `write` | optionally `admin`)
+- `manifest.json`: flat `tools[]`; each tool has `name`, `description`, `inputSchema` (relative path), `handler` (relative path), `scope` (`read` | `write` | optionally `admin`). If the integration has genuinely independent workflow areas, add a top-level `toolsets` map and a `toolset` field on each tool (see **Toolsets** section below).
 - `schemas/*.json`: JSON Schema for each tool input. Prefer `additionalProperties: false` for strict contracts; use `true` only for pass-through bodies (common in Google APIs). Reuse `empty.json` for no-arg tools.
 - `handlers/*.js`: async arrow functions `async (input) => { ... }` using `integration.fetch(path, init?)` for all HTTP calls. Pass `body` as a plain object (proxy will JSON-stringify). Return parsed JSON.
 - `credentials.json`: `{ schema, injection }` where `schema` is JSON Schema for secrets and `injection` is `headers` and/or `query` templates using `{{placeholder}}`
@@ -121,9 +121,58 @@ Each integration's `prompt.md` should cover workflow guidance agents need but ca
 - Docs: index-based editing abstracted by first-match tools, marker pattern explanation
 - Slides: EMU units, slide addressing (0-based index vs objectId), predefined layouts
 
-### 8. Future: tool tiering for selective loading
+### 8. Toolsets: grouping tools for LLM focus
 
-taylorwilsdon uses a `tool_tiers.yaml` with `core`/`extended`/`complete` tiers so users can selectively enable subsets of tools. We plan to add a similar `tier` field to manifest entries. When building new integrations, think about which tools are core (used in >80% of workflows) vs extended (power-user or niche).
+Toolsets let users selectively enable subsets of an integration's tools so the LLM isn't drowned in irrelevant tool definitions. They reduce context-window pollution and improve tool selection accuracy.
+
+**When to use toolsets (multi-toolset)**
+
+Only add toolsets when the integration covers **genuinely independent agent workflows** -- work areas where an agent would realistically want one subset and NOT the others. The test: "would an agent doing task A ever need the tools from group B?" If the answer is usually yes, they belong in the same toolset.
+
+Good splits (independent workflows):
+- **GitHub**: Code & Files, Issues, Pull Requests, CI, Releases, Repository Management -- a PR reviewer doesn't need release tools.
+- **Gmail**: Email (search + read + compose) vs Organize (label, archive, trash, delete) -- reading and replying is one workflow; inbox triage is another.
+- **Calendar**: Events (the core scheduling workflow) vs Sharing (ACL/permission management most agents never touch).
+- **Notion**: Pages (content, blocks, comments, users) vs Databases (query, create, update databases) -- distinct Notion concepts.
+
+**When NOT to use toolsets (single toolset = omit entirely)**
+
+If the integration is a single-purpose app where all tools serve one workflow, don't add `toolsets` at all. Tools without a `toolset` field always load, so omitting is clean and zero-ceremony.
+
+Examples that are correctly single-toolset:
+- **Google Docs** (12 tools): "edit a document" is one job. Splitting reading from editing or text from styling is splitting by code structure, not by user intent.
+- **Google Sheets** (10 tools): "work with spreadsheet data" is one job.
+- **Google Slides** (11 tools): "edit a presentation" is one job.
+- **Google Drive** (9 tools): small integration, all file operations.
+- **Trello** (34 tools): you can't work with cards without board context. It's one workflow.
+- **Airtable** (11 tools): schema discovery and record operations are one workflow.
+
+**Don't duplicate `scope`**
+
+`scope` (read/write/admin) already controls access levels. If the only meaningful split is read vs write, that's handled. Toolsets are about **what domain you're working in**, not what permission level you have.
+
+**Manifest structure** when toolsets are used:
+
+```json
+{
+  "toolsets": {
+    "events": {
+      "label": "Events",
+      "description": "Browse, schedule, and manage calendar events"
+    },
+    "sharing": {
+      "label": "Sharing",
+      "description": "Control who can access calendars"
+    }
+  },
+  "tools": [
+    { "name": "list_events", ..., "toolset": "events" },
+    { "name": "list_acl", ..., "toolset": "sharing" }
+  ]
+}
+```
+
+Each toolset key must be `snake_case`. Every tool must reference a key that exists in `toolsets`. The `label` is a short human-readable name; `description` is one sentence explaining what the toolset covers.
 
 ### 9. Reference implementation comparison
 
