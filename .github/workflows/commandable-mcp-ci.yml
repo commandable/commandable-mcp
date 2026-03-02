@@ -65,6 +65,7 @@ jobs:
 
       - name: Run ${{ matrix.integration }} tests
         env:
+          VITEST_INTEGRATION: ${{ matrix.integration }}
           # ── GitHub ────────────────────────────────────────────────────────────
           _GITHUB_CLASSIC_PAT: ${{ secrets._GITHUB_CLASSIC_PAT }}
           _GITHUB_FINE_GRAINED_PAT: ${{ secrets._GITHUB_FINE_GRAINED_PAT }}
@@ -119,8 +120,7 @@ jobs:
         run: |
           yarn workspace @commandable/mcp test -- \
             --reporter=json \
-            --outputFile=test-results.json \
-            "integrations/${{ matrix.integration }}"
+            --outputFile=test-results.json
 
       - name: Upload test results
         if: always()

@@ -26,6 +26,8 @@ for (const entry of readdirSync(integrationsDir, { withFileTypes: true })) {
   loadEnv(resolve(dir, '.env.test.managed'))
 }
 
+const integration = process.env.VITEST_INTEGRATION
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -35,10 +37,12 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: [
-      'src/__tests__/**/*.test.ts',
-      '../integration-data/integrations/**/__tests__/**/*.test.ts',
-    ],
+    include: integration
+      ? [`../integration-data/integrations/${integration}/__tests__/**/*.test.ts`]
+      : [
+          'src/__tests__/**/*.test.ts',
+          '../integration-data/integrations/**/__tests__/**/*.test.ts',
+        ],
   },
 })
 
