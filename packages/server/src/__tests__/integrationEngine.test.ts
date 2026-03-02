@@ -26,8 +26,8 @@ describe('integration engine ports', () => {
     expect(res.logs.join('\\n')).toContain('hi')
   })
 
-  it('injects sandbox utils', async () => {
-    const utils = buildSandboxUtils(['adf'])
+  it('injects sandbox utils (explicit bundles)', async () => {
+    const utils = buildSandboxUtils(['html', 'adf'])
     const handler = createSafeHandlerFromString(
       `async (_input) => {
         const md = utils.htmlToMarkdown('<p>Hello</p>')
@@ -42,6 +42,24 @@ describe('integration engine ports', () => {
     expect(String(res.result?.md)).toContain('Hello')
     expect(res.result?.docType).toBe('doc')
     expect(res.result?.version).toBe(1)
+  })
+
+  it('does not inject utils that were not requested', async () => {
+    const utils = buildSandboxUtils([])
+    const handler = createSafeHandlerFromString(
+      `async (_input) => {
+        return {
+          hasHtml: typeof utils.htmlToMarkdown === 'function',
+          hasAdf: typeof utils.adf === 'object',
+        }
+      }`,
+      () => ({}),
+      utils,
+    )
+    const res = await handler({})
+    expect(res.success).toBe(true)
+    expect(res.result?.hasHtml).toBe(false)
+    expect(res.result?.hasAdf).toBe(false)
   })
 })
 

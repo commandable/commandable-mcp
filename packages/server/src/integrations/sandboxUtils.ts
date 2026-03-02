@@ -2,8 +2,8 @@ import TurndownService from 'turndown'
 import { marked } from 'marked'
 
 export type SandboxUtils = {
-  htmlToMarkdown: (html: string) => string
-  htmlToText: (html: string) => string
+  htmlToMarkdown?: (html: string) => string
+  htmlToText?: (html: string) => string
   adf?: {
     toMarkdown: (adf: any) => string
     toPlainText: (adf: any) => string
@@ -510,14 +510,15 @@ function markdownToAdf(markdown: any) {
 
 export function buildSandboxUtils(bundles?: string[]): SandboxUtils {
   const enabled = new Set((bundles || []).filter(Boolean))
+  const utils: SandboxUtils = {}
 
-  const utils: SandboxUtils = {
-    htmlToMarkdown: (html: string) => {
+  if (enabled.has('html')) {
+    utils.htmlToMarkdown = (html: string) => {
       try { return turndown.turndown(String(html ?? '')) } catch { return '' }
-    },
-    htmlToText: (html: string) => {
+    }
+    utils.htmlToText = (html: string) => {
       try { return stripTagsToText(html) } catch { return '' }
-    },
+    }
   }
 
   if (enabled.has('adf')) {

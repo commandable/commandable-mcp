@@ -1,6 +1,7 @@
 {
   "name": "confluence",
   "version": "0.1.0",
+  "utils": ["html"],
   "tools": [
     {
       "name": "list_spaces",
