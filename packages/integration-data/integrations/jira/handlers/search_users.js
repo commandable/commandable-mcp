@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const params = new URLSearchParams()
   params.set('query', input.query)
   params.set('maxResults', String(input.maxResults ?? 50))

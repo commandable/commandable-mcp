@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const pageId = encodeURIComponent(String(input.pageId))
   const labels = Array.isArray(input.labels) ? input.labels : []
 

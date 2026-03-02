@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const pageId = encodeURIComponent(String(input.pageId))
 
   // Fetch current page to get current version and preserve defaults.

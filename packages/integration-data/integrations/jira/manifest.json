@@ -1,6 +1,7 @@
 {
   "name": "jira",
   "version": "0.1.0",
+  "handlerMode": "module",
   "toolsets": {
     "issues": {
       "label": "Issues",
@@ -79,7 +80,7 @@
 
     {
       "name": "create_issue",
-      "description": "Create a new Jira issue. Provide descriptionText as plain text; the handler converts it to Jira ADF automatically. Use get_project to discover valid issue types.",
+      "description": "Create a new Jira issue. Provide descriptionText as Markdown; the handler converts it to Jira ADF automatically. Use get_project to discover valid issue types.",
       "inputSchema": "schemas/create_issue.json",
       "handler": "handlers/create_issue.js",
       "scope": "write",
@@ -87,7 +88,7 @@
     },
     {
       "name": "update_issue",
-      "description": "Update a Jira issue. You can use simple fields like summary/descriptionText/labels/priorityName/assigneeAccountId, or pass advanced Jira 'fields'/'update' objects for complex updates. descriptionText is converted to ADF automatically.",
+      "description": "Update a Jira issue. You can use simple fields like summary/descriptionText/labels/priorityName/assigneeAccountId, or pass advanced Jira 'fields'/'update' objects for complex updates. descriptionText is treated as Markdown and converted to ADF automatically.",
       "inputSchema": "schemas/update_issue.json",
       "handler": "handlers/update_issue.js",
       "scope": "write",
@@ -95,7 +96,7 @@
     },
     {
       "name": "transition_issue",
-      "description": "Transition an issue to a new workflow status. Provide transitionId or transitionName. If transitionName is provided, the handler resolves it by fetching transitions first. Optionally add a comment during the transition (commentText converted to ADF).",
+      "description": "Transition an issue to a new workflow status. Provide transitionId or transitionName. If transitionName is provided, the handler resolves it by fetching transitions first. Optionally add a comment during the transition (commentText is treated as Markdown and converted to ADF).",
       "inputSchema": "schemas/transition_issue.json",
       "handler": "handlers/transition_issue.js",
       "scope": "write",
@@ -103,7 +104,7 @@
     },
     {
       "name": "add_comment",
-      "description": "Add a comment to an issue. Provide bodyText as plain text; the handler converts it to Jira ADF automatically.",
+      "description": "Add a comment to an issue. Provide bodyText as Markdown; the handler converts it to Jira ADF automatically.",
       "inputSchema": "schemas/add_comment.json",
       "handler": "handlers/add_comment.js",
       "scope": "write",

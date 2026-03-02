@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const body = {
     spaceId: String(input.spaceId),
     status: input.status || 'current',

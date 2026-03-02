@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const res = await integration.fetch(`/rest/api/3/issue/${encodeURIComponent(input.issueIdOrKey)}`, {
     method: 'DELETE',
   })

@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const params = new URLSearchParams()
   if (input.jql)
     params.set('jql', input.jql)

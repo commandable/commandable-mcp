@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const spaceId = encodeURIComponent(String(input.spaceId))
   const params = new URLSearchParams()
   if (input.includePermissions) params.set('include-permissions', 'true')

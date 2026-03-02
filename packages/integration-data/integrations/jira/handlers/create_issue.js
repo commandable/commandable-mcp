@@ -1,59 +1,35 @@
-(() => {
-  function normalizeNewlines(s) {
-    return String(s ?? '').replace(/\r\n/g, '\n')
+import { markdownToAdf } from './adf_helpers.js'
+
+export default (integration) => async (input) => {
+  const fields = {
+    project: { key: input.projectKey },
+    summary: input.summary,
   }
 
-  function textToAdf(text) {
-    const s = normalizeNewlines(text || '').trim()
-    if (!s) {
-      return {
-        type: 'doc',
-        version: 1,
-        content: [{ type: 'paragraph', content: [] }],
-      }
-    }
-    const paragraphs = s.split(/\n{2,}/g).map(p => p.trim()).filter(Boolean)
-    return {
-      type: 'doc',
-      version: 1,
-      content: paragraphs.map(p => ({
-        type: 'paragraph',
-        content: [{ type: 'text', text: p }],
-      })),
-    }
-  }
+  if (input.descriptionText)
+    fields.description = markdownToAdf(input.descriptionText)
 
-  return async (input) => {
-    const fields = {
-      project: { key: input.projectKey },
-      summary: input.summary,
-    }
+  if (input.issueTypeId)
+    fields.issuetype = { id: input.issueTypeId }
+  else if (input.issueTypeName)
+    fields.issuetype = { name: input.issueTypeName }
 
-    if (input.descriptionText)
-      fields.description = textToAdf(input.descriptionText)
+  if (input.priorityId)
+    fields.priority = { id: input.priorityId }
+  else if (input.priorityName)
+    fields.priority = { name: input.priorityName }
 
-    if (input.issueTypeId)
-      fields.issuetype = { id: input.issueTypeId }
-    else if (input.issueTypeName)
-      fields.issuetype = { name: input.issueTypeName }
+  if (Array.isArray(input.labels))
+    fields.labels = input.labels
 
-    if (input.priorityId)
-      fields.priority = { id: input.priorityId }
-    else if (input.priorityName)
-      fields.priority = { name: input.priorityName }
+  if (input.assigneeAccountId)
+    fields.assignee = { accountId: input.assigneeAccountId }
 
-    if (Array.isArray(input.labels))
-      fields.labels = input.labels
+  const res = await integration.fetch('/rest/api/3/issue', {
+    method: 'POST',
+    body: { fields },
+  })
 
-    if (input.assigneeAccountId)
-      fields.assignee = { accountId: input.assigneeAccountId }
-
-    const res = await integration.fetch('/rest/api/3/issue', {
-      method: 'POST',
-      body: { fields },
-    })
-
-    return await res.json()
-  }
-})()
+  return await res.json()
+}
 

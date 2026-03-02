@@ -50,7 +50,25 @@ Jira workflows are project-specific, so you must discover valid transitions:
 Jira Cloud REST API v3 uses **Atlassian Document Format (ADF)** for fields like `description` and comment bodies.
 
 - Read tools convert ADF to Markdown so you can read it directly.
-- Write tools accept plain text and convert it to minimal ADF automatically (`descriptionText`, `bodyText`, `commentText`).
+- Write tools accept **Markdown** in their `*Text` fields and convert it to ADF (`descriptionText`, `bodyText`, `commentText`).
+
+### Round-trip Markdown workflow (recommended)
+
+You can safely do a Markdown round-trip:
+
+1. `get_issue` -> edit `descriptionMarkdown`
+2. `update_issue { descriptionText: <your edited Markdown> }`
+
+Supported Markdown features when writing:
+
+- Headings (`#`, `##`, ...)
+- Bold/italic/strikethrough (`**bold**`, `*italic*`, `~~strike~~`)
+- Inline code and fenced code blocks (```), including optional language fences
+- Lists (ordered/unordered), nested lists
+- Blockquotes (`>`)
+- Horizontal rules (`---`)
+- Tables
+- Links (`[text](url)`)
 
 ## Boards & sprints
 

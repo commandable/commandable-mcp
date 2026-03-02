@@ -1,7 +1,13 @@
 import { IntegrationProxy } from '../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../server/src/integrations/dataLoader.js'
+import { pathToFileURL } from 'node:url'
 
-type ToolDef = { name: string, handlerCode: string }
+type ToolDef = {
+  name: string
+  handlerCode: string
+  handlerMode?: 'sandbox' | 'module'
+  handlerPath?: string
+}
 
 type ToolSet = {
   read: ToolDef[]
@@ -49,6 +55,24 @@ function getTools(type: string, credentialVariant?: string): ToolSet {
 
 function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(node, path, init) }
+
+  if (tool.handlerMode === 'module' && typeof tool.handlerPath === 'string' && tool.handlerPath.length) {
+    let compiled: null | ((input: any) => Promise<any>) = null
+    return async (input: any) => {
+      if (!compiled) {
+        const mod: any = await import(pathToFileURL(tool.handlerPath!).href)
+        const factory = mod?.default
+        if (typeof factory !== 'function')
+          throw new Error(`Invalid module handler: missing default export factory (${tool.handlerPath})`)
+        const handler = factory(integration)
+        if (typeof handler !== 'function')
+          throw new Error(`Invalid module handler: factory did not return a function (${tool.handlerPath})`)
+        compiled = handler
+      }
+      return await compiled(input)
+    }
+  }
+
   const build = new Function('integration', `return (${tool.handlerCode});`)
   return build(integration) as (input: any) => Promise<any>
 }

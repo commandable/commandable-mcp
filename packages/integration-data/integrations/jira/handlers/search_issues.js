@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const body = {
     jql: input.jql,
     maxResults: input.maxResults ?? 50,

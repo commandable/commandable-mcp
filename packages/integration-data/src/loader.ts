@@ -73,12 +73,21 @@ export interface ToolData {
   description: string
   inputSchema: JSONSchema7 | Record<string, unknown>
   handlerCode: string
+  /**
+   * Execution mode for this handler.
+   * - sandbox (default): handlerCode is executed in a vm sandbox
+   * - module: handlerPath is imported as an ES module and executed in-process
+   */
+  handlerMode?: 'sandbox' | 'module'
+  /** Absolute file path to the handler module when handlerMode === 'module'. */
+  handlerPath?: string
 }
 
 interface Manifest {
   name: string
   version?: string
   baseUrl?: string
+  handlerMode?: 'sandbox' | 'module'
   toolsets?: Record<string, ToolsetMeta>
   tools: FlatTools
   displayCards?: DisplayCardRef[]
@@ -140,12 +149,25 @@ export function loadIntegrationPrompt(type: string): string | null {
   }
 }
 
-function materializeTool(type: string, ref: ToolRef): ToolData {
+function materializeTool(type: string, ref: ToolRef, handlerMode?: Manifest['handlerMode']): ToolData {
   const dir = integrationDir(type)
   const schemaPath = resolve(dir, ref.inputSchema)
   const handlerPath = resolve(dir, ref.handler)
 
   const schema = readJsonFile(schemaPath)
+  const resolvedMode: ToolData['handlerMode'] = handlerMode === 'module' ? 'module' : 'sandbox'
+
+  if (resolvedMode === 'module') {
+    return {
+      name: ref.name,
+      description: ref.description,
+      inputSchema: ensureSchemaObject(schema),
+      handlerCode: '',
+      handlerMode: 'module',
+      handlerPath,
+    }
+  }
+
   const handlerCode = readFileSync(handlerPath, 'utf8').trim()
 
   return {
@@ -153,6 +175,7 @@ function materializeTool(type: string, ref: ToolRef): ToolData {
     description: ref.description,
     inputSchema: ensureSchemaObject(schema),
     handlerCode,
+    handlerMode: 'sandbox',
   }
 }
 
@@ -213,9 +236,9 @@ export function loadIntegrationTools(
   }
 
   return {
-    read: readRefs.map(t => materializeTool(type, t)),
-    write: writeRefs.map(t => materializeTool(type, t)),
-    admin: adminRefs.map(t => materializeTool(type, t)),
+    read: readRefs.map(t => materializeTool(type, t, manifest.handlerMode)),
+    write: writeRefs.map(t => materializeTool(type, t, manifest.handlerMode)),
+    admin: adminRefs.map(t => materializeTool(type, t, manifest.handlerMode)),
   }
 }
 

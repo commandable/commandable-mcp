@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const params = new URLSearchParams()
   if (input.expandIssueTypes !== false)
     params.set('expand', 'issueTypes')

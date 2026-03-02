@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const pageId = encodeURIComponent(String(input.pageId))
   const params = new URLSearchParams()
   if (input.purge) params.set('purge', 'true')

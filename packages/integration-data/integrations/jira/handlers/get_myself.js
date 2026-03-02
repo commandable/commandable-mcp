@@ -1,4 +1,4 @@
-async (_input) => {
+export default (integration) => async (_input) => {
   const res = await integration.fetch('/rest/api/3/myself')
   const data = await res.json()
 

@@ -4,6 +4,10 @@ function escapeMarkdown(text) {
     .replace(/`/g, '\\`')
 }
 
+function escapeLinkTarget(url) {
+  return String(url ?? '').replace(/\)/g, '%29')
+}
+
 function normalizeNewlines(s) {
   return String(s ?? '').replace(/\r\n/g, '\n')
 }
@@ -51,6 +55,11 @@ function renderInline(node) {
 
   if (node.type === 'hardBreak')
     return '\n'
+
+  if (node.type === 'inlineCard') {
+    const url = node.attrs?.url
+    return url ? `<${escapeMarkdown(url)}>` : ''
+  }
 
   if (node.type === 'mention') {
     const text = node.attrs?.text || node.attrs?.displayName || node.attrs?.id || '@mention'
@@ -161,15 +170,36 @@ function renderBlock(node, depth = 0) {
     return inner.split('\n').map(line => `> ${line}`).join('\n')
   }
 
+  if (type === 'expand' || type === 'nestedExpand') {
+    const title = node.attrs?.title || 'Details'
+    const inner = joinBlocks(content.map(c => renderBlock(c, depth)))
+    if (!inner)
+      return ''
+    return `<details>\n<summary>${escapeMarkdown(title)}</summary>\n\n${inner}\n</details>`
+  }
+
   if (type === 'bulletList')
     return renderList(content, false, depth)
 
   if (type === 'orderedList')
     return renderList(content, true, depth)
 
+  if (type === 'taskList') {
+    const rendered = content.map(c => renderBlock(c, depth)).filter(Boolean).join('\n')
+    return rendered.trimEnd()
+  }
+
+  if (type === 'taskItem') {
+    const checked = node.attrs?.state === 'DONE'
+    const indent = '  '.repeat(depth)
+    const inner = renderInline({ content }).trim()
+    return `${indent}- [${checked ? 'x' : ' '}] ${inner}`.trimEnd()
+  }
+
   if (type === 'codeBlock') {
     const text = adfTextContent(node)
-    return `\`\`\`\n${normalizeNewlines(text).trimEnd()}\n\`\`\``
+    const lang = node.attrs?.language ? String(node.attrs.language) : ''
+    return `\`\`\`${lang}\n${normalizeNewlines(text).trimEnd()}\n\`\`\``
   }
 
   if (type === 'rule')
@@ -177,6 +207,11 @@ function renderBlock(node, depth = 0) {
 
   if (type === 'table')
     return renderTable(node)
+
+  if (type === 'blockCard') {
+    const url = node.attrs?.url
+    return url ? `<${escapeMarkdown(url)}>` : ''
+  }
 
   if (type === 'panel') {
     const inner = joinBlocks(content.map(c => renderBlock(c, depth)))
@@ -240,5 +275,202 @@ function textToAdf(text) {
   }
 }
 
-export { adfToMarkdown, adfToPlainText, textToAdf }
+import { marked } from 'marked'
+
+function inlineTokensToAdf(inlineTokens) {
+  const out = []
+
+  const pushText = (text, marks) => {
+    const t = String(text ?? '')
+    if (!t)
+      return
+    const node = { type: 'text', text: t }
+    if (marks?.length)
+      node.marks = marks
+    out.push(node)
+  }
+
+  const walk = (tokens, marks = []) => {
+    for (const tok of tokens || []) {
+      if (!tok)
+        continue
+      if (tok.type === 'text') {
+        pushText(tok.text, marks)
+      }
+      else if (tok.type === 'strong') {
+        walk(tok.tokens || [], [...marks, { type: 'strong' }])
+      }
+      else if (tok.type === 'em') {
+        walk(tok.tokens || [], [...marks, { type: 'em' }])
+      }
+      else if (tok.type === 'del') {
+        walk(tok.tokens || [], [...marks, { type: 'strike' }])
+      }
+      else if (tok.type === 'codespan') {
+        pushText(tok.text, [...marks, { type: 'code' }])
+      }
+      else if (tok.type === 'br') {
+        out.push({ type: 'hardBreak' })
+      }
+      else if (tok.type === 'link') {
+        const href = tok.href ? String(tok.href) : ''
+        const nextMarks = href ? [...marks, { type: 'link', attrs: { href: escapeLinkTarget(href) } }] : marks
+        walk(tok.tokens || [{ type: 'text', text: tok.text }], nextMarks)
+      }
+      else if (tok.type === 'image') {
+        // ADF media requires uploads; keep the alt text (and URL if present).
+        const alt = tok.text ? String(tok.text) : ''
+        const href = tok.href ? String(tok.href) : ''
+        const label = alt || href
+        if (label)
+          pushText(label, marks)
+      }
+      else if (Array.isArray(tok.tokens)) {
+        walk(tok.tokens, marks)
+      }
+      else if (tok.raw) {
+        pushText(tok.raw, marks)
+      }
+    }
+  }
+
+  walk(inlineTokens, [])
+  return out
+}
+
+function blockTokensToAdf(tokens) {
+  const out = []
+
+  const walk = (toks) => {
+    for (const tok of toks || []) {
+      if (!tok)
+        continue
+
+      if (tok.type === 'space') {
+        continue
+      }
+
+      if (tok.type === 'heading') {
+        out.push({
+          type: 'heading',
+          attrs: { level: Math.min(Math.max(Number(tok.depth || 1), 1), 6) },
+          content: inlineTokensToAdf(tok.tokens || [{ type: 'text', text: tok.text }]),
+        })
+        continue
+      }
+
+      if (tok.type === 'paragraph') {
+        out.push({
+          type: 'paragraph',
+          content: inlineTokensToAdf(tok.tokens || [{ type: 'text', text: tok.text }]),
+        })
+        continue
+      }
+
+      if (tok.type === 'blockquote') {
+        const innerBlocks = blockTokensToAdf(tok.tokens || [])
+        out.push({ type: 'blockquote', content: innerBlocks.length ? innerBlocks : [{ type: 'paragraph', content: [] }] })
+        continue
+      }
+
+      if (tok.type === 'hr') {
+        out.push({ type: 'rule' })
+        continue
+      }
+
+      if (tok.type === 'code') {
+        const lang = tok.lang ? String(tok.lang) : undefined
+        const codeNode = {
+          type: 'codeBlock',
+          attrs: lang ? { language: lang } : {},
+          content: [{ type: 'text', text: normalizeNewlines(tok.text || '') }],
+        }
+        out.push(codeNode)
+        continue
+      }
+
+      if (tok.type === 'list') {
+        const listType = tok.ordered ? 'orderedList' : 'bulletList'
+        const listItems = (tok.items || []).map((item) => {
+          const itemBlocks = blockTokensToAdf(item.tokens || [])
+          return {
+            type: 'listItem',
+            content: itemBlocks.length ? itemBlocks : [{ type: 'paragraph', content: [] }],
+          }
+        })
+        out.push({ type: listType, content: listItems })
+        continue
+      }
+
+      if (tok.type === 'table') {
+        const makeRow = (cells, isHeader) => ({
+          type: 'tableRow',
+          content: (cells || []).map((cell) => ({
+            type: isHeader ? 'tableHeader' : 'tableCell',
+            content: [{
+              type: 'paragraph',
+              content: inlineTokensToAdf(cell.tokens || [{ type: 'text', text: cell.text }]),
+            }],
+          })),
+        })
+
+        const headerRow = makeRow(tok.header || [], true)
+        const bodyRows = (tok.rows || []).map(r => makeRow(r, false))
+        out.push({ type: 'table', content: [headerRow, ...bodyRows] })
+        continue
+      }
+
+      if (tok.type === 'html') {
+        // Keep raw HTML as text (Jira may or may not accept it; safest is text).
+        const raw = String(tok.text || tok.raw || '').trim()
+        if (raw) {
+          out.push({
+            type: 'paragraph',
+            content: [{ type: 'text', text: raw }],
+          })
+        }
+        continue
+      }
+
+      if (tok.type === 'text') {
+        // Marked sometimes emits 'text' tokens containing inline content and/or additional nested tokens.
+        const hasNested = Array.isArray(tok.tokens) && tok.tokens.length
+        if (hasNested) {
+          out.push({ type: 'paragraph', content: inlineTokensToAdf(tok.tokens) })
+        }
+        else if (tok.text) {
+          out.push({ type: 'paragraph', content: [{ type: 'text', text: String(tok.text) }] })
+        }
+        continue
+      }
+
+      if (Array.isArray(tok.tokens)) {
+        walk(tok.tokens)
+        continue
+      }
+
+      if (tok.raw) {
+        const raw = String(tok.raw).trim()
+        if (raw)
+          out.push({ type: 'paragraph', content: [{ type: 'text', text: raw }] })
+      }
+    }
+  }
+
+  walk(tokens)
+  return out
+}
+
+function markdownToAdf(markdown) {
+  const src = String(markdown ?? '')
+  const tokens = marked.lexer(src)
+  const content = blockTokensToAdf(tokens)
+  return {
+    type: 'doc',
+    version: 1,
+    content: content.length ? content : [{ type: 'paragraph', content: [] }],
+  }
+}
+
+export { adfToMarkdown, adfToPlainText, textToAdf, markdownToAdf }
 

@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const body = {
     pageId: String(input.pageId),
     body: {

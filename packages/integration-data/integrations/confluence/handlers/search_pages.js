@@ -1,4 +1,4 @@
-async (input) => {
+export default (integration) => async (input) => {
   const limit = typeof input.limit === 'number' ? input.limit : 10
   const start = typeof input.start === 'number' ? input.start : 0
 
