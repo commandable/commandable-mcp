@@ -9,6 +9,10 @@ export const IntegrationConfigSchema = z.object({
   credentialId: z.string().min(1).optional(),
   credentialVariant: z.string().min(1).optional(),
   toolsets: z.array(z.string()).optional(),
+  /** Cap the maximum scope tier. 'read' means only read tools; 'write' means read+write. */
+  maxScope: z.enum(['read', 'write']).optional(),
+  /** Individual tool names to block regardless of toolset or scope. */
+  disabledTools: z.array(z.string()).optional(),
   config: z.record(z.string(), z.any()).optional(),
   credentials: z.record(z.string(), z.string()).optional(),
 })

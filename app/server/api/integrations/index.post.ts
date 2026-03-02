@@ -19,6 +19,8 @@ export default defineEventHandler(async (event) => {
     connectionId: body?.connectionId || undefined,
     credentialId: body?.credentialId || undefined,
     enabledToolsets: Array.isArray(body?.enabledToolsets) ? body.enabledToolsets : undefined,
+    maxScope: body?.maxScope === 'read' || body?.maxScope === 'write' ? body.maxScope : undefined,
+    disabledTools: Array.isArray(body?.disabledTools) && body.disabledTools.length ? body.disabledTools : undefined,
   }
 
   if (!integration.type)

@@ -26,6 +26,8 @@ export function buildToolsByIntegration(
     const loaded = loadIntegrationTools(integ.type, {
       credentialVariant: integ.credentialVariant ?? undefined,
       toolsets: integ.enabledToolsets ?? undefined,
+      maxScope: integ.maxScope ?? undefined,
+      disabledTools: integ.disabledTools ?? undefined,
     })
     const read = loaded?.read || []
     const write = loaded?.write || []

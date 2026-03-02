@@ -14,6 +14,8 @@ export const sqliteIntegrations = sqliteTable('integrations', {
   credentialVariant: text('credential_variant'),
   configJson: text('config_json'),
   enabledToolsets: text('enabled_toolsets'),
+  maxScope: text('max_scope'),
+  disabledTools: text('disabled_tools'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
@@ -55,6 +57,8 @@ export const pgIntegrations = pgTable('integrations', {
   credentialVariant: pgText('credential_variant'),
   configJson: jsonb('config_json'),
   enabledToolsets: pgText('enabled_toolsets'),
+  maxScope: pgText('max_scope'),
+  disabledTools: pgText('disabled_tools'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 })
 

@@ -5,6 +5,7 @@ export type {
   DisplayCardData,
   ToolsetMeta,
   ToolData,
+  ToolListItem,
 } from '@commandable/integration-data'
 
 export {
@@ -12,6 +13,7 @@ export {
   loadIntegrationManifest,
   loadIntegrationPrompt,
   loadIntegrationTools,
+  loadIntegrationToolList,
   loadIntegrationDisplayCards,
   loadIntegrationToolsets,
   loadIntegrationCredentialConfig,

@@ -59,6 +59,37 @@
           Failed to load tool groups.
         </div>
 
+        <div v-if="selectedType" class="space-y-2">
+          <div class="text-sm font-medium">
+            Access level
+          </div>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="px-3 py-1.5 text-sm rounded-md border transition-colors"
+              :class="selectedTypeMaxScope !== 'read'
+                ? 'border-green-500 bg-green-50 text-green-700 font-medium dark:bg-green-950 dark:text-green-300'
+                : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400'"
+              @click="selectedTypeMaxScope = null"
+            >
+              Read + Write
+            </button>
+            <button
+              type="button"
+              class="px-3 py-1.5 text-sm rounded-md border transition-colors"
+              :class="selectedTypeMaxScope === 'read'
+                ? 'border-green-500 bg-green-50 text-green-700 font-medium dark:bg-green-950 dark:text-green-300'
+                : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400'"
+              @click="selectedTypeMaxScope = 'read'"
+            >
+              Read-only
+            </button>
+          </div>
+          <p v-if="selectedTypeMaxScope === 'read'" class="text-xs text-amber-600 dark:text-amber-400">
+            Only read tools will be available. Write and admin tools will be hidden.
+          </p>
+        </div>
+
         <UButton :disabled="!selectedType || adding || (selectedTypeToolsets.length > 0 && !selectedTypeEnabledToolsets.length)" @click="add">
           Add
         </UButton>
@@ -108,6 +139,22 @@
               >
                 {{ toolsetLabel(i.type, key) }}
               </UBadge>
+              <UBadge
+                v-if="i.maxScope === 'read'"
+                size="xs"
+                color="warning"
+                variant="soft"
+              >
+                Read-only
+              </UBadge>
+              <UBadge
+                v-if="i.disabledTools && i.disabledTools.length"
+                size="xs"
+                color="neutral"
+                variant="soft"
+              >
+                {{ i.disabledTools.length }} tool{{ i.disabledTools.length === 1 ? '' : 's' }} blocked
+              </UBadge>
             </div>
           </div>
 
@@ -124,6 +171,9 @@
             </UButton>
             <UButton size="sm" variant="soft" color="neutral" @click="openToolsets(i)">
               Edit tool groups
+            </UButton>
+            <UButton size="sm" variant="soft" color="neutral" @click="openAccess(i)">
+              Configure tool access
             </UButton>
             <UButton size="sm" variant="ghost" color="error" @click="remove(i)">
               Remove
@@ -237,6 +287,163 @@
         </div>
       </UCard>
     </UModal>
+    <!-- Configure tool access modal -->
+    <UModal v-model:open="accessModalOpen">
+      <UCard>
+        <template #header>
+          <div class="font-medium">
+            Configure tool access: {{ accessIntegration?.label }}
+          </div>
+        </template>
+
+        <div class="space-y-6">
+          <!-- Section 1: Scope cap -->
+          <div class="space-y-2">
+            <div class="text-sm font-medium">
+              Access level
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 text-sm rounded-md border transition-colors"
+                :class="accessMaxScope !== 'read'
+                  ? 'border-green-500 bg-green-50 text-green-700 font-medium dark:bg-green-950 dark:text-green-300'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400'"
+                @click="accessMaxScope = null"
+              >
+                Read + Write
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 text-sm rounded-md border transition-colors"
+                :class="accessMaxScope === 'read'
+                  ? 'border-green-500 bg-green-50 text-green-700 font-medium dark:bg-green-950 dark:text-green-300'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400'"
+                @click="accessMaxScope = 'read'"
+              >
+                Read-only
+              </button>
+            </div>
+            <p v-if="accessMaxScope === 'read'" class="text-xs text-amber-600 dark:text-amber-400">
+              Only read tools will be available. Write tools are dimmed below.
+            </p>
+          </div>
+
+          <!-- Section 2: Tool groups -->
+          <div v-if="getAccessToolsets().length" class="space-y-2">
+            <div class="text-sm font-medium">
+              Tool groups
+            </div>
+            <div class="space-y-1">
+              <label
+                v-for="toolset in getAccessToolsets()"
+                :key="`access-ts-${toolset.key}`"
+                class="flex items-start gap-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  :checked="isToolsetChecked(toolset.key)"
+                  class="mt-1"
+                  @change="toggleAccessToolset(toolset.key)"
+                >
+                <span>
+                  <span class="font-medium">{{ toolset.label }}</span>
+                  <span class="text-muted"> — {{ toolset.description }}</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 3: Individual tools -->
+          <div class="space-y-2">
+            <div class="text-sm font-medium">
+              Individual tools
+            </div>
+
+            <div v-if="accessToolsPending" class="text-sm text-muted">
+              Loading tools…
+            </div>
+            <div v-else-if="accessToolsError" class="text-sm text-red-600">
+              Failed to load tools.
+            </div>
+            <div v-else-if="!getAccessToolsets().length" class="text-sm text-muted">
+              No tool groups defined for this integration.
+            </div>
+            <div v-else class="space-y-2">
+              <div
+                v-for="toolset in getAccessToolsets()"
+                :key="`access-tools-${toolset.key}`"
+                class="border border-slate-200 dark:border-slate-700 rounded-md overflow-hidden"
+                :class="!isToolsetChecked(toolset.key) ? 'opacity-50' : ''"
+              >
+                <!-- Toolset header -->
+                <button
+                  type="button"
+                  class="w-full flex items-center justify-between px-3 py-2 text-sm font-medium bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  @click="toggleSection(toolset.key)"
+                >
+                  <span>
+                    {{ toolset.label }}
+                    <span class="font-normal text-muted ml-1">
+                      ({{ getActiveToolCount(toolset.key) }}/{{ getToolsForSection(toolset.key).length }} active)
+                    </span>
+                  </span>
+                  <span class="text-muted text-xs">{{ expandedSections.has(toolset.key) ? '▲' : '▼' }}</span>
+                </button>
+
+                <!-- Tools list (expanded) -->
+                <div v-if="expandedSections.has(toolset.key)" class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <div
+                    v-for="tool in getToolsForSection(toolset.key)"
+                    :key="`tool-${tool.name}`"
+                    class="flex items-start gap-2 px-3 py-2"
+                    :class="isToolHiddenByScope(tool) ? 'opacity-40' : ''"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="isToolChecked(tool.name)"
+                      :disabled="isToolHiddenByScope(tool)"
+                      class="mt-0.5 shrink-0"
+                      @change="toggleAccessTool(tool.name)"
+                    >
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-mono font-medium">{{ tool.name }}</span>
+                        <span
+                          class="text-xs px-1.5 py-0.5 rounded font-medium"
+                          :class="tool.scope === 'read'
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                            : tool.scope === 'write'
+                              ? 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400'
+                              : 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'"
+                        >
+                          {{ tool.scope }}
+                        </span>
+                        <span v-if="isToolHiddenByScope(tool)" class="text-xs text-muted italic">hidden by Read-only</span>
+                      </div>
+                      <p class="text-xs text-muted mt-0.5 leading-snug">
+                        {{ tool.description }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton variant="soft" color="neutral" @click="accessModalOpen = false">
+              Cancel
+            </UButton>
+            <UButton :loading="savingAccess" @click="saveAccess">
+              Save
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </UContainer>
 </template>
 
@@ -248,6 +455,15 @@ type Integration = {
   label: string
   credentialVariant?: string | null
   enabledToolsets?: string[] | null
+  maxScope?: 'read' | 'write' | null
+  disabledTools?: string[] | null
+}
+
+type ToolItem = {
+  name: string
+  description: string
+  scope: 'read' | 'write' | 'admin'
+  toolset?: string
 }
 
 type CredentialVariant = {
@@ -281,6 +497,7 @@ const selectedTypeToolsets = ref<ToolsetMeta[]>([])
 const selectedTypeToolsetsPending = ref(false)
 const selectedTypeToolsetsError = ref<any | null>(null)
 const selectedTypeEnabledToolsets = ref<string[]>([])
+const selectedTypeMaxScope = ref<'read' | null>(null)
 const toolsetsByType = reactive<Record<string, ToolsetMeta[]>>({})
 
 const credentialStatus = reactive<Record<string, boolean>>({})
@@ -334,6 +551,7 @@ watch(selectedType, async (type) => {
   selectedTypeToolsets.value = []
   selectedTypeEnabledToolsets.value = []
   selectedTypeToolsetsError.value = null
+  selectedTypeMaxScope.value = null
   if (!type)
     return
   selectedTypeToolsetsPending.value = true
@@ -359,9 +577,11 @@ async function add() {
       body: {
         type: selectedType.value,
         enabledToolsets: selectedTypeToolsets.value.length ? selectedTypeEnabledToolsets.value : undefined,
+        maxScope: selectedTypeMaxScope.value || undefined,
       },
     })
     selectedType.value = undefined
+    selectedTypeMaxScope.value = null
     await refresh()
   }
   finally {
@@ -476,6 +696,149 @@ async function saveToolsets() {
   }
   finally {
     savingToolsets.value = false
+  }
+}
+
+// ── Configure tool access modal ────────────────────────────────────────────
+
+const accessModalOpen = ref(false)
+const accessIntegration = ref<Integration | null>(null)
+const accessToolsPending = ref(false)
+const accessToolsError = ref<any | null>(null)
+const toolsByType = reactive<Record<string, ToolItem[]>>({})
+
+// Form state for the modal
+const accessMaxScope = ref<'read' | null>(null)
+const accessEnabledToolsets = ref<string[]>([])
+const accessDisabledTools = ref<string[]>([])
+const savingAccess = ref(false)
+const expandedSections = ref<Set<string>>(new Set())
+
+async function fetchToolsForType(type: string): Promise<ToolItem[]> {
+  if (toolsByType[type])
+    return toolsByType[type]
+  const data = await $fetch<ToolItem[]>(`/api/catalog/${type}/tools`)
+  toolsByType[type] = data || []
+  return toolsByType[type]
+}
+
+async function openAccess(i: Integration) {
+  accessIntegration.value = i
+  accessMaxScope.value = i.maxScope === 'read' ? 'read' : null
+  accessDisabledTools.value = i.disabledTools ? [...i.disabledTools] : []
+  accessModalOpen.value = true
+  expandedSections.value = new Set()
+  accessToolsError.value = null
+
+  // Pre-populate toolsets from cached data (already fetched for list display)
+  const opts = await fetchToolsetsForType(i.type).catch(() => [])
+  const allKeys = opts.map(o => o.key)
+  accessEnabledToolsets.value = (i.enabledToolsets && i.enabledToolsets.length)
+    ? [...i.enabledToolsets]
+    : allKeys
+
+  // Fetch individual tools
+  accessToolsPending.value = true
+  try {
+    await fetchToolsForType(i.type)
+  }
+  catch (e) {
+    accessToolsError.value = e
+  }
+  finally {
+    accessToolsPending.value = false
+  }
+}
+
+function getAccessToolsets(): ToolsetMeta[] {
+  if (!accessIntegration.value)
+    return []
+  return toolsetsByType[accessIntegration.value.type] || []
+}
+
+function getToolsForSection(toolsetKey: string): ToolItem[] {
+  if (!accessIntegration.value)
+    return []
+  return (toolsByType[accessIntegration.value.type] || []).filter(t => t.toolset === toolsetKey)
+}
+
+function isToolsetChecked(key: string): boolean {
+  return accessEnabledToolsets.value.includes(key)
+}
+
+function toggleAccessToolset(key: string) {
+  const idx = accessEnabledToolsets.value.indexOf(key)
+  if (idx >= 0) {
+    // Don't allow unchecking the last toolset
+    if (accessEnabledToolsets.value.length > 1)
+      accessEnabledToolsets.value.splice(idx, 1)
+  }
+  else {
+    accessEnabledToolsets.value.push(key)
+  }
+}
+
+function isToolChecked(name: string): boolean {
+  return !accessDisabledTools.value.includes(name)
+}
+
+function toggleAccessTool(name: string) {
+  const idx = accessDisabledTools.value.indexOf(name)
+  if (idx >= 0)
+    accessDisabledTools.value.splice(idx, 1)
+  else
+    accessDisabledTools.value.push(name)
+}
+
+function isToolHiddenByScope(tool: ToolItem): boolean {
+  return accessMaxScope.value === 'read' && tool.scope !== 'read'
+}
+
+function toggleSection(key: string) {
+  if (expandedSections.value.has(key))
+    expandedSections.value.delete(key)
+  else
+    expandedSections.value.add(key)
+  expandedSections.value = new Set(expandedSections.value)
+}
+
+function getActiveToolCount(toolsetKey: string): number {
+  return getToolsForSection(toolsetKey).filter((t) => {
+    if (isToolHiddenByScope(t)) return false
+    if (accessDisabledTools.value.includes(t.name)) return false
+    return true
+  }).length
+}
+
+async function saveAccess() {
+  if (!accessIntegration.value)
+    return
+  savingAccess.value = true
+  try {
+    const id = accessIntegration.value.id
+    const allToolsets = toolsetsByType[accessIntegration.value.type] || []
+    const allKeys = allToolsets.map(o => o.key)
+    // null means all toolsets enabled
+    const enabledToolsets = allKeys.length && accessEnabledToolsets.value.length < allKeys.length
+      ? accessEnabledToolsets.value
+      : []
+
+    await $fetch(`/api/integrations/${id}/toolsets`, {
+      method: 'POST',
+      body: { enabledToolsets },
+    })
+    await $fetch(`/api/integrations/${id}/permissions`, {
+      method: 'POST',
+      body: {
+        maxScope: accessMaxScope.value,
+        disabledTools: accessDisabledTools.value.length ? accessDisabledTools.value : null,
+      },
+    })
+    accessModalOpen.value = false
+    await refresh()
+  }
+  finally {
+    savingAccess.value = false
   }
 }
 

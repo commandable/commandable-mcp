@@ -20,6 +20,47 @@ function isTruthyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0
 }
 
+/**
+ * Strips markdown syntax for plain-terminal display and word-wraps lines
+ * that exceed maxWidth so clack's note() box doesn't overflow narrow terminals.
+ */
+function formatHintForTerminal(text: string, maxWidth = 60): string {
+  const stripped = text
+    .replace(/\*\*(.+?)\*\*/g, '$1') // **bold** → bold
+    .replace(/\*(.+?)\*/g, '$1') // *italic* → italic
+    .replace(/`([^`]+)`/g, '$1') // `code` → code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) → text
+
+  return stripped
+    .split('\n')
+    .map((line) => {
+      if (line.length <= maxWidth)
+        return line
+      // Wrap at word boundaries
+      const words = line.split(' ')
+      const wrapped: string[] = []
+      let current = ''
+      // Preserve leading indent/list prefix on continuation lines
+      const indent = /^(\s*(?:\d+\.\s|\*\s|-\s)?)/.exec(line)?.[1]?.replace(/\S/g, ' ') ?? ''
+      for (const word of words) {
+        if (!current) {
+          current = word
+        }
+        else if ((current + ' ' + word).length <= maxWidth) {
+          current += ' ' + word
+        }
+        else {
+          wrapped.push(current)
+          current = indent + word
+        }
+      }
+      if (current)
+        wrapped.push(current)
+      return wrapped.join('\n')
+    })
+    .join('\n')
+}
+
 function isProbablySecretKeyName(key: string): boolean {
   const k = key.toLowerCase()
   return k.includes('token') || k.includes('secret') || k.includes('password') || k.endsWith('key') || k.includes('apikey')
@@ -82,7 +123,7 @@ async function promptCredentialsForVariant(
 
   const hint = loadIntegrationHint(type, variantKey)
   if (hint) {
-    note(hint, `${type} (${variantKey}): setup hint`)
+    note(formatHintForTerminal(hint), `${type} (${variantKey}): setup hint`)
   }
   else {
     log.info(picocolors.dim(`No setup hint found for ${type}/${variantKey}.`))
@@ -149,6 +190,22 @@ async function selectIntegrations(args: { title: string, excludeTypes?: Set<stri
   return (selected as string[]).map(s => String(s)).filter(Boolean)
 }
 
+async function selectMaxScope(): Promise<'read' | null | undefined> {
+  const result = await select({
+    message: 'What level of access should this integration have?',
+    options: [
+      { value: 'all', label: 'Read + Write', hint: 'Full access — the AI can read and make changes' },
+      { value: 'read', label: 'Read-only', hint: 'The AI can only read data, never write or delete' },
+    ],
+    initialValue: 'all',
+  })
+
+  if (isCancel(result))
+    return null
+
+  return result === 'read' ? 'read' : undefined
+}
+
 async function selectEnabledToolsets(type: string): Promise<string[] | undefined | null> {
   const toolsets = loadIntegrationToolsets(type)
   if (!toolsets)
@@ -187,7 +244,7 @@ function makeClaudeDesktopSnippet() {
   }
 }
 
-function makeIntegrationRecord(type: string, variantKey: string, enabledToolsets?: string[]): IntegrationData {
+function makeIntegrationRecord(type: string, variantKey: string, enabledToolsets?: string[], maxScope?: 'read' | null): IntegrationData {
   return {
     spaceId: 'local',
     id: type,
@@ -198,10 +255,11 @@ function makeIntegrationRecord(type: string, variantKey: string, enabledToolsets
     credentialId: `${type}-creds`,
     credentialVariant: variantKey,
     enabledToolsets,
+    maxScope: maxScope ?? null,
   }
 }
 
-async function configureIntegration(type: string): Promise<{ variantKey: string, credentials: Record<string, string>, enabledToolsets?: string[] } | null> {
+async function configureIntegration(type: string): Promise<{ variantKey: string, credentials: Record<string, string>, enabledToolsets?: string[], maxScope?: 'read' | null } | null> {
   log.info(`Configuring ${picocolors.cyan(type)}`)
 
   const variantKey = await selectCredentialVariant(type)
@@ -217,11 +275,15 @@ async function configureIntegration(type: string): Promise<{ variantKey: string,
   if (enabledToolsets === null)
     return null
 
+  const maxScope = await selectMaxScope()
+  if (maxScope === null)
+    return null
+
   const credentials = await promptCredentialsForVariant(type, variantKey)
   if (credentials === null)
     return null
 
-  return { variantKey, credentials, enabledToolsets: enabledToolsets ?? undefined }
+  return { variantKey, credentials, enabledToolsets: enabledToolsets ?? undefined, maxScope }
 }
 
 export async function runInitInteractive() {
@@ -244,8 +306,8 @@ export async function runInitInteractive() {
         return
       }
 
-      const { variantKey, credentials, enabledToolsets } = result
-      const integration = makeIntegrationRecord(type, variantKey, enabledToolsets)
+      const { variantKey, credentials, enabledToolsets, maxScope } = result
+      const integration = makeIntegrationRecord(type, variantKey, enabledToolsets, maxScope)
       await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
       await upsertIntegration(db, integration)
     }
@@ -286,8 +348,8 @@ export async function runAddInteractive() {
         return
       }
 
-      const { variantKey, credentials, enabledToolsets } = result
-      const integration = makeIntegrationRecord(type, variantKey, enabledToolsets)
+      const { variantKey, credentials, enabledToolsets, maxScope } = result
+      const integration = makeIntegrationRecord(type, variantKey, enabledToolsets, maxScope)
       await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
       await upsertIntegration(db, integration)
       added.push(type)

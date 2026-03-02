@@ -13,7 +13,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "@commandable/mcp": "0.0.1",
+    "@commandable/mcp": "workspace:*",
     "@iconify-json/lucide": "^1.2.90",
     "@iconify-json/simple-icons": "^1.2.70",
     "@nuxt/ui": "^4.4.0",
