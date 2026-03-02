@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       # Many suites hit third-party APIs. Limit concurrency to reduce rate limiting.
-      max-parallel: 3
+      max-parallel: 10
       matrix:
         integration:
           - github
@@ -127,7 +127,7 @@ jobs:
         run: |
           yarn workspace @commandable/mcp test -- \
             --reporter=json \
-            --outputFile=test-results.json
+            --outputFile=$GITHUB_WORKSPACE/packages/server/test-results.json
 
       - name: Upload test results
         if: always()
