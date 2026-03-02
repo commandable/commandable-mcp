@@ -143,6 +143,10 @@ function scopeClass(scope: string): string {
 }
 
 function isToolsetEnabled(key: string): boolean {
+  if (key === '__all__') {
+    // Considered enabled if at least one tool in the group is not disabled
+    return getToolsInSet('__all__').some(t => !props.disabledTools.includes(t.name))
+  }
   return props.enabledToolsets.includes(key)
 }
 
@@ -168,6 +172,13 @@ function getActiveCount(key: string): number {
 }
 
 function toggleToolset(key: string, enabled: boolean) {
+  if (key === '__all__') {
+    // Toggle all tools in/out of disabledTools
+    const allNames = getToolsInSet('__all__').map(t => t.name)
+    const current = props.disabledTools.filter(n => !allNames.includes(n))
+    emit('update:disabledTools', enabled ? current : [...current, ...allNames])
+    return
+  }
   const current = [...props.enabledToolsets]
   if (enabled) {
     if (!current.includes(key)) current.push(key)
