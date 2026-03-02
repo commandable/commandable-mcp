@@ -19,12 +19,19 @@ export interface IntegrationProxyOptions {
 }
 
 function getErrorHint(status: number, provider: string, bodyText: string): string {
-  if (status === 401)
-    return 'Authentication failed. Check that the credential token is valid and not expired. For service accounts, verify the service account has been granted access to the resource.'
-  if (status === 403)
-    return 'Permission denied. The credential does not have sufficient scopes or access to this resource. For Google integrations, ensure the required API scopes are enabled and the service account has been shared access to the resource.'
+  const isGoogle = provider.startsWith('google-')
+  if (status === 401) {
+    if (isGoogle)
+      return 'Authentication failed. Check that the credential token is valid and not expired. For service accounts, verify the service account has been granted access to the resource.'
+    return 'Authentication failed. Check that the credential is valid and not expired.'
+  }
+  if (status === 403) {
+    if (isGoogle)
+      return 'Permission denied. The credential does not have sufficient scopes or access to this resource. Ensure the required API scopes are enabled and the service account has been shared access to the resource.'
+    return 'Permission denied. The credential does not have sufficient scopes or access to this resource.'
+  }
   if (status === 404) {
-    if (provider.startsWith('google-'))
+    if (isGoogle)
       return 'Resource not found. The ID may be invalid or the resource may have been deleted. Use the appropriate list or search tool to find valid IDs. For Google Drive, ensure the service account has been granted access to the file or folder.'
     return 'Resource not found. Verify the ID is correct and the resource exists.'
   }
