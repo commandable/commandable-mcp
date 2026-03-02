@@ -25,7 +25,7 @@ export function getCommandableDir(): string {
 }
 
 export function getOrCreateEncryptionSecret(): string {
-  const envSecret = process.env.COMMANDABLE_ENCRYPTION_SECRET || process.env.COMMANDABLE_MCP_ENCRYPTION_SECRET
+  const envSecret = process.env.COMMANDABLE_ENCRYPTION_SECRET
   if (envSecret && envSecret.trim().length)
     return envSecret.trim()
 
@@ -44,11 +44,37 @@ export function getOrCreateEncryptionSecret(): string {
   return secret
 }
 
+const REQUIRED_INTEGRATION_COLUMNS = [
+  'id', 'space_id', 'type', 'reference_id', 'label',
+  'connection_method', 'connection_id', 'credential_id', 'credential_variant',
+  'config_json', 'enabled_toolsets', 'max_scope', 'disabled_tools', 'created_at',
+]
+
 export async function openLocalDb(): Promise<{ db: DbClient, close: () => Promise<void> }> {
   const dir = getCommandableDir()
   const sqlitePath = resolve(dir, 'credentials.sqlite')
   const client = createDb({ sqlitePath })
   await ensureSchema(client)
+
+  // Verify the integrations table has all expected columns. We're in early
+  // development and don't run migrations — if the schema is stale the user
+  // must delete the database and start fresh.
+  if (client.dialect === 'sqlite') {
+    const cols: Array<{ name: string }> = client.raw.prepare('PRAGMA table_info(integrations)').all() as any
+    const colNames = new Set(cols.map(c => c.name))
+    const missing = REQUIRED_INTEGRATION_COLUMNS.filter(c => !colNames.has(c))
+    if (missing.length) {
+      if (client.dialect === 'sqlite')
+        client.close()
+      console.error(`\nError: Your database is out of date (missing columns: ${missing.join(', ')}).`)
+      console.error(`\nWe're in early development and don't run automatic migrations yet.`)
+      console.error(`Please delete your database and run again:\n`)
+      console.error(`  rm ${sqlitePath}`)
+      console.error(`  commandable-mcp init\n`)
+      process.exit(1)
+    }
+  }
+
   return {
     db: client,
     close: async () => {

@@ -8,8 +8,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'id is required' })
 
   const body = await readBody(event)
-  if (!Array.isArray(body?.enabledToolsets))
-    throw createError({ statusCode: 400, statusMessage: 'enabledToolsets must be an array' })
 
   const db = await getDb()
   const integrations = await listIntegrations(db, 'local')
@@ -17,11 +15,15 @@ export default defineEventHandler(async (event) => {
   if (!integration)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  // Empty array means "all toolsets enabled" -> store null to avoid filtering out all tools.
-  integration.enabledToolsets = Array.isArray(body.enabledToolsets) && body.enabledToolsets.length
-    ? body.enabledToolsets.map((value: unknown) => String(value))
-    : null
+  // maxScope: 'read' | 'write' | null — null clears the cap
+  if ('maxScope' in body)
+    integration.maxScope = body.maxScope === 'read' || body.maxScope === 'write' ? body.maxScope : null
+
+  // disabledTools: string[] | null — null or empty array clears the blocklist
+  if ('disabledTools' in body)
+    integration.disabledTools = Array.isArray(body.disabledTools) && body.disabledTools.length ? body.disabledTools.map(String) : null
+
   await upsertIntegration(db, integration)
 
-  return { ok: true, enabledToolsets: integration.enabledToolsets ?? null }
+  return { ok: true, maxScope: integration.maxScope ?? null, disabledTools: integration.disabledTools ?? null }
 })

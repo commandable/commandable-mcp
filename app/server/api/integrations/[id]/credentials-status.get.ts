@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { SqlCredentialStore, loadIntegrationCredentialConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import { SqlCredentialStore, getOrCreateEncryptionSecret, loadIntegrationCredentialConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -8,9 +8,7 @@ export default defineEventHandler(async (event) => {
   if (!id)
     throw createError({ statusCode: 400, statusMessage: 'id is required' })
 
-  const encryptionSecret = process.env.COMMANDABLE_MCP_ENCRYPTION_SECRET
-  if (!encryptionSecret)
-    throw createError({ statusCode: 500, statusMessage: 'COMMANDABLE_MCP_ENCRYPTION_SECRET is not set' })
+  const encryptionSecret = getOrCreateEncryptionSecret()
 
   const db = await getDb()
   const table: any = db.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations

@@ -8,6 +8,7 @@
   "scripts": {
     "build": "yarn workspaces foreach -A run build",
     "dev": "yarn workspace commandable-mcp-app dev",
+    "dev:full": "yarn workspace @commandable/mcp dev & yarn workspace commandable-mcp-app dev",
     "lint": "yarn workspaces foreach -A run lint",
     "test": "yarn workspace @commandable/mcp test",
     "test:all": "yarn workspaces foreach -A run test",

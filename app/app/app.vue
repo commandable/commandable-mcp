@@ -27,16 +27,22 @@ useSeoMeta({
   <UApp>
     <UHeader>
       <template #left>
-        <NuxtLink to="/">
+        <NuxtLink to="/" class="flex items-center gap-4">
           <AppLogo class="w-auto h-6 shrink-0" />
         </NuxtLink>
+
+        <nav class="flex items-center gap-1 ml-4">
+          <UButton to="/integrations" icon="i-lucide-plug" variant="ghost" color="neutral" size="sm">
+            Integrations
+          </UButton>
+        </nav>
       </template>
 
       <template #right>
         <UColorModeButton />
 
         <UButton
-          to="https://github.com/commandablehq/commandable-mcp"
+          to="https://github.com/commandable/commandable-mcp"
           target="_blank"
           icon="i-simple-icons-github"
           aria-label="GitHub"
@@ -59,7 +65,7 @@ useSeoMeta({
 
       <template #right>
         <UButton
-          to="https://github.com/commandablehq/commandable-mcp"
+          to="https://github.com/commandable/commandable-mcp"
           target="_blank"
           icon="i-simple-icons-github"
           aria-label="GitHub"

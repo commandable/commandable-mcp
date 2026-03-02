@@ -15,6 +15,7 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
       ? (r.configJson ? JSON.parse(r.configJson) : undefined)
       : (r.configJson ?? undefined)
     const enabledToolsets = r.enabledToolsets ? JSON.parse(r.enabledToolsets) : undefined
+    const disabledTools = r.disabledTools ? JSON.parse(r.disabledTools) : undefined
 
     const createdAt = client.dialect === 'sqlite'
       ? (r.createdAt ? new Date(r.createdAt) : undefined)
@@ -28,12 +29,15 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
       type: r.type,
       referenceId: r.referenceId,
       label: r.label,
+      enabled: r.enabled === 0 || r.enabled === '0' ? false : true,
       connectionMethod: r.connectionMethod ?? undefined,
       connectionId: r.connectionId ?? undefined,
       credentialId: r.credentialId ?? undefined,
       credentialVariant: r.credentialVariant ?? undefined,
       config: cfg,
       enabledToolsets,
+      maxScope: (r.maxScope as 'read' | 'write' | null) ?? undefined,
+      disabledTools,
     }
     return integ
   })
@@ -46,6 +50,10 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
     ? (integration.config ? JSON.stringify(integration.config) : null)
     : (integration.config ?? null)
   const enabledToolsetsValue = integration.enabledToolsets ? JSON.stringify(integration.enabledToolsets) : null
+  const disabledToolsValue = integration.disabledTools?.length ? JSON.stringify(integration.disabledTools) : null
+  const enabledValue = client.dialect === 'sqlite'
+    ? (integration.enabled === false ? 0 : 1)
+    : (integration.enabled === false ? '0' : '1')
 
   await (client.db as any)
     .insert(table)
@@ -55,12 +63,15 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
       type: integration.type,
       referenceId: integration.referenceId,
       label: integration.label,
+      enabled: enabledValue,
       connectionMethod: integration.connectionMethod ?? null,
       connectionId: integration.connectionId ?? null,
       credentialId: integration.credentialId ?? null,
       credentialVariant: integration.credentialVariant ?? null,
       configJson: configValue,
       enabledToolsets: enabledToolsetsValue,
+      maxScope: integration.maxScope ?? null,
+      disabledTools: disabledToolsValue,
       createdAt: client.dialect === 'sqlite' ? now : now,
     })
     .onConflictDoUpdate({
@@ -70,12 +81,15 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
         type: integration.type,
         referenceId: integration.referenceId,
         label: integration.label,
+        enabled: enabledValue,
         connectionMethod: integration.connectionMethod ?? null,
         connectionId: integration.connectionId ?? null,
         credentialId: integration.credentialId ?? null,
         credentialVariant: integration.credentialVariant ?? null,
         configJson: configValue,
         enabledToolsets: enabledToolsetsValue,
+        maxScope: integration.maxScope ?? null,
+        disabledTools: disabledToolsValue,
       },
     })
 }

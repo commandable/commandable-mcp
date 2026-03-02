@@ -14,11 +14,15 @@ export default defineEventHandler(async (event) => {
     type: body?.type,
     referenceId: body?.referenceId || body?.type,
     label: body?.label || body?.type,
+    enabled: typeof body?.enabled === 'boolean' ? body.enabled : true,
     config: body?.config || undefined,
     connectionMethod: body?.connectionMethod || undefined,
     connectionId: body?.connectionId || undefined,
     credentialId: body?.credentialId || undefined,
-    enabledToolsets: Array.isArray(body?.enabledToolsets) ? body.enabledToolsets : undefined,
+    // Empty array means "all toolsets enabled" -> store null/undefined (no filtering).
+    enabledToolsets: Array.isArray(body?.enabledToolsets) && body.enabledToolsets.length ? body.enabledToolsets : undefined,
+    maxScope: body?.maxScope === 'read' || body?.maxScope === 'write' ? body.maxScope : undefined,
+    disabledTools: Array.isArray(body?.disabledTools) && body.disabledTools.length ? body.disabledTools : undefined,
   }
 
   if (!integration.type)

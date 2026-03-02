@@ -388,27 +388,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@commandable/mcp@npm:0.0.1":
-  version: 0.0.1
-  resolution: "@commandable/mcp@npm:0.0.1"
-  dependencies:
-    "@clack/prompts": "npm:^1.0.1"
-    "@modelcontextprotocol/sdk": "npm:^1.27.1"
-    better-sqlite3: "npm:^12.4.1"
-    drizzle-orm: "npm:^0.44.5"
-    fastest-levenshtein: "npm:^1.0.16"
-    google-auth-library: "npm:^10.3.0"
-    json-schema: "npm:^0.4.0"
-    pg: "npm:^8.16.3"
-    picocolors: "npm:^1.1.1"
-    zod: "npm:^4.1.5"
-  bin:
-    commandable-mcp: dist/cli/bin.js
-  checksum: 10c0/a24199536d368902dbcb95156aa748e569c278d377d11fc5f4aba7084220bb43109d8541323aa66539f821dc98270620fab96c35275b6ae136ea10ef78b81fe6
-  languageName: node
-  linkType: hard
-
-"@commandable/mcp@workspace:packages/server":
+"@commandable/mcp@workspace:*, @commandable/mcp@workspace:packages/server":
   version: 0.0.0-use.local
   resolution: "@commandable/mcp@workspace:packages/server"
   dependencies:
@@ -5042,7 +5022,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "commandable-mcp-app@workspace:app"
   dependencies:
-    "@commandable/mcp": "npm:0.0.1"
+    "@commandable/mcp": "workspace:*"
     "@iconify-json/lucide": "npm:^1.2.90"
     "@iconify-json/simple-icons": "npm:^1.2.70"
     "@nuxt/eslint": "npm:^1.15.1"

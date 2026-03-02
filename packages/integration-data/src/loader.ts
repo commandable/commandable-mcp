@@ -60,6 +60,23 @@ export interface ToolsetMeta {
   description: string
 }
 
+export interface ToolListItem {
+  name: string
+  displayName: string
+  description: string
+  scope: 'read' | 'write' | 'admin'
+  toolset?: string
+}
+
+function humanizeName(name: string): string {
+  return name
+    .replace(/_/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w.length ? `${w[0]!.toUpperCase()}${w.slice(1).toLowerCase()}` : w)
+    .join(' ')
+}
+
 export interface DisplayCardData {
   name: string
   description: string
@@ -182,6 +199,8 @@ export function loadIntegrationToolsets(type: string): Record<string, ToolsetMet
   return manifest?.toolsets ?? null
 }
 
+const SCOPE_RANK: Record<string, number> = { read: 0, write: 1, admin: 2 }
+
 /**
  * Load tools for an integration, optionally filtered to only those compatible
  * with the active credential variant. Tools without a `credentialVariants`
@@ -189,7 +208,14 @@ export function loadIntegrationToolsets(type: string): Record<string, ToolsetMet
  */
 export function loadIntegrationTools(
   type: string,
-  opts?: { credentialVariant?: string, toolsets?: string[] },
+  opts?: {
+    credentialVariant?: string
+    toolsets?: string[]
+    /** Cap the maximum scope tier. 'read' means only read tools; 'write' means read+write. null/undefined means all. */
+    maxScope?: 'read' | 'write' | null
+    /** Individual tool names to block regardless of toolset or scope settings. */
+    disabledTools?: string[] | null
+  },
 ): { read: ToolData[], write: ToolData[], admin: ToolData[] } | null {
   const manifest = loadIntegrationManifest(type)
   if (!manifest)
@@ -197,6 +223,8 @@ export function loadIntegrationTools(
 
   const activeVariant = opts?.credentialVariant
   const activeToolsets = opts?.toolsets
+  const maxRank = opts?.maxScope != null ? (SCOPE_RANK[opts.maxScope] ?? 2) : 2
+  const blocked = opts?.disabledTools?.length ? new Set(opts.disabledTools) : null
 
   const flat = manifest.tools as FlatTools
   const readRefs: ToolRef[] = []
@@ -210,6 +238,11 @@ export function loadIntegrationTools(
       continue
 
     const scope = t.scope || 'read'
+    if ((SCOPE_RANK[scope] ?? 0) > maxRank)
+      continue
+    if (blocked?.has(t.name))
+      continue
+
     if (scope === 'read') readRefs.push(t)
     else if (scope === 'write') writeRefs.push(t)
     else if (scope === 'admin') adminRefs.push(t)
@@ -221,6 +254,24 @@ export function loadIntegrationTools(
     write: writeRefs.map(t => materializeTool(type, t, manifest.utils)),
     admin: adminRefs.map(t => materializeTool(type, t, manifest.utils)),
   }
+}
+
+/**
+ * Returns a lightweight flat list of all tools in an integration's manifest
+ * without materializing handlers or schemas. Used by the UI to render tool
+ * selection controls.
+ */
+export function loadIntegrationToolList(type: string): ToolListItem[] {
+  const manifest = loadIntegrationManifest(type)
+  if (!manifest)
+    return []
+  return manifest.tools.map(t => ({
+    name: t.name,
+    displayName: humanizeName(t.name),
+    description: t.description,
+    scope: (t.scope || 'read') as 'read' | 'write' | 'admin',
+    toolset: t.toolset,
+  }))
 }
 
 /** Load the full variants file for an integration. */

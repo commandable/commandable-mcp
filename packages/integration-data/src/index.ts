@@ -5,6 +5,7 @@ export type {
   DisplayCardData,
   ToolsetMeta,
   ToolData,
+  ToolListItem,
   IntegrationCatalogItem,
 } from './loader.js'
 
@@ -13,6 +14,7 @@ export {
   loadIntegrationManifest,
   loadIntegrationPrompt,
   loadIntegrationTools,
+  loadIntegrationToolList,
   loadIntegrationDisplayCards,
   loadIntegrationToolsets,
   loadIntegrationCredentialConfig,
