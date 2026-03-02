@@ -2,8 +2,10 @@ async (input) => {
   const pageId = encodeURIComponent(String(input.pageId))
   const params = new URLSearchParams()
 
-  const bodyFormat = input.includeBodyFormat || 'view'
-  params.set('body-format', String(bodyFormat))
+  const raw = (input.includeBodyFormat || 'storage')
+  const normalized = String(raw).trim().toUpperCase()
+  const bodyFormat = normalized === 'ATLAS_DOC_FORMAT' ? 'ATLAS_DOC_FORMAT' : 'STORAGE'
+  params.set('body-format', bodyFormat)
 
   const limit = typeof input.limit === 'number' ? input.limit : undefined
   if (limit) params.set('limit', String(limit))
