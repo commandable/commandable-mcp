@@ -192,10 +192,10 @@
       "toolset": "boards"
     },
     {
-      "name": "delete_sprint",
-      "description": "Delete a sprint by sprintId (agile API). Use with care; this is irreversible.",
-      "inputSchema": "schemas/delete_sprint.json",
-      "handler": "handlers/delete_sprint.js",
+      "name": "update_sprint",
+      "description": "Update a sprint (agile API). Use to rename, set/change goal, start a sprint (state: active, requires startDate + endDate), or close it (state: closed). Partial update — only provided fields are changed.",
+      "inputSchema": "schemas/update_sprint.json",
+      "handler": "handlers/update_sprint.js",
       "scope": "write",
       "toolset": "boards"
     }

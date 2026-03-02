@@ -13,7 +13,7 @@ import { createCredentialStore, createIntegrationNode, createProxy, createToolbo
 //
 // Optional:
 // - JIRA_TEST_TRANSITION_NAME (enables transition_issue)
-// - JIRA_TEST_BOARD_ID (enables sprint roundtrip: create_sprint -> move_issues_to_sprint -> delete_sprint)
+// - JIRA_TEST_BOARD_ID (enables sprint roundtrip: create_sprint -> update_sprint -> move_issues_to_sprint -> update_sprint)
 
 const env = process.env as Record<string, string | undefined>
 
@@ -44,8 +44,8 @@ suiteOrSkip('jira write handlers (live)', () => {
         await safeCleanup(async () => {
           if (!ctx.createdSprintId)
             return
-          const delete_sprint = jira.write('delete_sprint')
-          await delete_sprint({ sprintId: ctx.createdSprintId })
+          const update_sprint = jira.write('update_sprint')
+          await update_sprint({ sprintId: ctx.createdSprintId, state: 'closed' })
         })
         await safeCleanup(async () => {
           if (!ctx.createdIssueKey)
@@ -123,7 +123,7 @@ suiteOrSkip('jira write handlers (live)', () => {
         }
       }, 120000)
 
-      it('sprint roundtrip: create_sprint -> move_issues_to_sprint -> delete_sprint (optional)', async () => {
+      it('sprint roundtrip: create_sprint -> update_sprint (start) -> move_issues_to_sprint -> update_sprint (close) (optional)', async () => {
         if (!env.JIRA_TEST_BOARD_ID || !ctx.createdIssueKey)
           return expect(true).toBe(true)
         const boardId = Number(env.JIRA_TEST_BOARD_ID)
@@ -137,13 +137,18 @@ suiteOrSkip('jira write handlers (live)', () => {
         expect(typeof sprintId).toBe('number')
         ctx.createdSprintId = sprintId
 
+        const update_sprint = jira.write('update_sprint')
+        const today = new Date().toISOString().slice(0, 10)
+        const twoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+        const started = await update_sprint({ sprintId, state: 'active', startDate: today, endDate: twoWeeks })
+        expect(started?.state === 'active' || started?.id === sprintId || started).toBeTruthy()
+
         const move_issues_to_sprint = jira.write('move_issues_to_sprint')
         const moved = await move_issues_to_sprint({ sprintId, issueKeys: [ctx.createdIssueKey] })
         expect(moved?.success === true || moved).toBeTruthy()
 
-        const delete_sprint = jira.write('delete_sprint')
-        const del = await delete_sprint({ sprintId })
-        expect(del?.success === true || del).toBeTruthy()
+        const closed = await update_sprint({ sprintId, state: 'closed' })
+        expect(closed?.state === 'closed' || closed?.id === sprintId || closed).toBeTruthy()
         ctx.createdSprintId = undefined
       }, 120000)
 
