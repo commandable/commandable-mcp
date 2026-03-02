@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "objectType": {
+      "type": "string",
+      "title": "Object type",
+      "description": "HubSpot object type to list properties for (e.g. contacts, companies, deals, tickets, notes, tasks)."
+    },
+    "archived": {
+      "type": "boolean",
+      "description": "Whether to include archived properties."
+    }
+  },
+  "required": ["objectType"],
+  "additionalProperties": false
+}
+

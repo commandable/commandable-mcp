@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url'
 export interface CredentialVariantConfig {
   label: string
   schema: JSONSchema7
+  /**
+   * Optional template used to construct the provider base URL from credential fields.
+   * Example: "https://{{domain}}.atlassian.net"
+   */
+  baseUrlTemplate?: string
   injection: {
     headers?: Record<string, string>
     query?: Record<string, string>
@@ -23,6 +28,7 @@ export interface IntegrationCredentialConfig {
   variantKey: string
   label: string
   schema: JSONSchema7
+  baseUrlTemplate?: string
   injection: {
     headers?: Record<string, string>
     query?: Record<string, string>
@@ -67,12 +73,15 @@ export interface ToolData {
   description: string
   inputSchema: JSONSchema7 | Record<string, unknown>
   handlerCode: string
+  /** Optional sandbox util bundles required by this integration (e.g. ['adf']). */
+  utils?: string[]
 }
 
 interface Manifest {
   name: string
   version?: string
   baseUrl?: string
+  utils?: string[]
   toolsets?: Record<string, ToolsetMeta>
   tools: FlatTools
   displayCards?: DisplayCardRef[]
@@ -134,7 +143,7 @@ export function loadIntegrationPrompt(type: string): string | null {
   }
 }
 
-function materializeTool(type: string, ref: ToolRef): ToolData {
+function materializeTool(type: string, ref: ToolRef, utils?: string[]): ToolData {
   const dir = integrationDir(type)
   const schemaPath = resolve(dir, ref.inputSchema)
   const handlerPath = resolve(dir, ref.handler)
@@ -147,6 +156,7 @@ function materializeTool(type: string, ref: ToolRef): ToolData {
     description: ref.description,
     inputSchema: ensureSchemaObject(schema),
     handlerCode,
+    utils: Array.isArray(utils) ? utils : undefined,
   }
 }
 
@@ -207,9 +217,9 @@ export function loadIntegrationTools(
   }
 
   return {
-    read: readRefs.map(t => materializeTool(type, t)),
-    write: writeRefs.map(t => materializeTool(type, t)),
-    admin: adminRefs.map(t => materializeTool(type, t)),
+    read: readRefs.map(t => materializeTool(type, t, manifest.utils)),
+    write: writeRefs.map(t => materializeTool(type, t, manifest.utils)),
+    admin: adminRefs.map(t => materializeTool(type, t, manifest.utils)),
   }
 }
 
@@ -252,6 +262,7 @@ export function loadIntegrationCredentialConfig(
     variantKey: key,
     label: variant.label,
     schema: ensureSchemaObject(variant.schema) as JSONSchema7,
+    baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : undefined,
     injection: {
       headers: variant.injection?.headers || undefined,
       query: variant.injection?.query || undefined,

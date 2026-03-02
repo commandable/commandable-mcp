@@ -169,16 +169,23 @@ npx -y @commandable/mcp init --config ./commandable.config.yaml
 
 ## Supported integrations
 
-| Integration | Tools | Toolsets |
-|-------------|-------|----------|
-| GitHub | repos, issues, pull requests, commits | `code`, `issues`, `pull_requests`, `ci`, `releases`, `repo_admin` |
-| Notion | pages, databases, blocks | all tools enabled |
-| Trello | boards, lists, cards | all tools enabled |
-| Airtable | bases, tables, records | all tools enabled |
-| Google Calendar | events, calendars | all tools enabled |
-| Google Docs | documents, content | all tools enabled |
-| Google Sheets | spreadsheets, rows, cells | all tools enabled |
-| Google Slides | presentations, slides | all tools enabled |
+<!-- INTEGRATION_TABLE_START -->
+| Integration | Tools | Toolsets | Live Tests |
+|---|---|---|---|
+| [Airtable](packages/integration-data/integrations/airtable/) | 11 | all tools | ![Airtable tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-airtable.json) |
+| [Confluence](packages/integration-data/integrations/confluence/) | 11 | all tools | ![Confluence tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-confluence.json) |
+| [GitHub](packages/integration-data/integrations/github/) | 47 | `code`, `issues`, `pull_requests`, `ci`, `releases`, `repo_admin` | ![GitHub tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-github.json) |
+| [Google Calendar](packages/integration-data/integrations/google-calendar/) | 17 | `events`, `sharing` | ![Google Calendar tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-google-calendar.json) |
+| [Google Docs](packages/integration-data/integrations/google-docs/) | 13 | all tools | ![Google Docs tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-google-docs.json) |
+| [Google Drive](packages/integration-data/integrations/google-drive/) | 9 | all tools | ![Google Drive tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-google-drive.json) |
+| [Gmail](packages/integration-data/integrations/google-gmail/) | 25 | `email`, `organize` | ![Gmail tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-google-gmail.json) |
+| [Google Sheets](packages/integration-data/integrations/google-sheet/) | 10 | all tools | ![Google Sheets tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-google-sheet.json) |
+| [Google Slides](packages/integration-data/integrations/google-slides/) | 11 | all tools | ![Google Slides tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-google-slides.json) |
+| [HubSpot](packages/integration-data/integrations/hubspot/) | 31 | all tools | ![HubSpot tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-hubspot.json) |
+| [Jira](packages/integration-data/integrations/jira/) | 23 | `issues`, `boards` | ![Jira tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-jira.json) |
+| [Notion](packages/integration-data/integrations/notion/) | 19 | `pages`, `databases` | ![Notion tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-notion.json) |
+| [Trello](packages/integration-data/integrations/trello/) | 34 | all tools | ![Trello tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-trello.json) |
+<!-- INTEGRATION_TABLE_END -->
 
 ---
 

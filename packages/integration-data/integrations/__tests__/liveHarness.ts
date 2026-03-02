@@ -1,7 +1,13 @@
 import { IntegrationProxy } from '../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../server/src/integrations/dataLoader.js'
+import { createSafeHandlerFromString } from '../../../server/src/integrations/sandbox.js'
+import { buildSandboxUtils } from '../../../server/src/integrations/sandboxUtils.js'
 
-type ToolDef = { name: string, handlerCode: string }
+type ToolDef = {
+  name: string
+  handlerCode: string
+  utils?: string[]
+}
 
 type ToolSet = {
   read: ToolDef[]
@@ -49,8 +55,15 @@ function getTools(type: string, credentialVariant?: string): ToolSet {
 
 function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(node, path, init) }
-  const build = new Function('integration', `return (${tool.handlerCode});`)
-  return build(integration) as (input: any) => Promise<any>
+  const wrapper = `async (input) => {\n  const integration = getIntegration('${String(node?.id || 'node')}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
+  const utils = buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined)
+  const safeHandler = createSafeHandlerFromString(wrapper, () => integration, utils)
+  return async (input: any) => {
+    const res = await safeHandler(input)
+    if (!res.success)
+      throw res.result
+    return res.result
+  }
 }
 
 export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string) {

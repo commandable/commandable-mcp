@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "sprintId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Sprint ID."
+    },
+    "jql": {
+      "type": "string",
+      "description": "Optional additional JQL to filter sprint issues."
+    },
+    "fields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional issue fields to include."
+    },
+    "startAt": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 50
+    }
+  },
+  "required": ["sprintId"],
+  "additionalProperties": false
+}
+

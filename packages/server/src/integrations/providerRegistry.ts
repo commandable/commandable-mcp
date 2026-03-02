@@ -19,6 +19,10 @@ export const PROVIDERS: Record<string, any> = {
     baseUrl: 'https://api.github.com',
     makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
   },
+  'hubspot': {
+    baseUrl: 'https://api.hubapi.com',
+    makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  },
   'notion': {
     baseUrl: 'https://api.notion.com/v1',
     makeAuth: (token: string) => ({
@@ -50,9 +54,23 @@ export const PROVIDERS: Record<string, any> = {
     baseUrl: 'https://gmail.googleapis.com/gmail/v1',
     makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
   },
-  // 'jira': {
-  //   baseUrl: (sub: string) => `https://api.atlassian.com/ex/jira/${sub}`,
-  //   makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
-  // },
+  'jira': {
+    baseUrl: (integration: any, creds?: any) => {
+      const cloudId = creds?.cloudId || integration?.config?.cloudId || integration?.config?.sub
+      return cloudId
+        ? `https://api.atlassian.com/ex/jira/${cloudId}`
+        : 'https://api.atlassian.com/ex/jira'
+    },
+    makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  },
+  'confluence': {
+    baseUrl: (integration: any, creds?: any) => {
+      const cloudId = creds?.cloudId || integration?.config?.cloudId || integration?.config?.sub
+      return cloudId
+        ? `https://api.atlassian.com/ex/confluence/${cloudId}`
+        : 'https://api.atlassian.com/ex/confluence'
+    },
+    makeAuth: (token: string) => ({ Authorization: `Bearer ${token}` }),
+  },
 }
 

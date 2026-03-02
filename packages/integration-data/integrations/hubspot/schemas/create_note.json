@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "body": {
+      "type": "string",
+      "description": "Note text content. The handler maps this to hs_note_body."
+    },
+    "timestamp": {
+      "type": ["string", "number"],
+      "description": "Timestamp for hs_timestamp. Prefer Unix timestamp in milliseconds. If omitted, current time is used."
+    },
+    "hubspot_owner_id": {
+      "type": ["string", "number"],
+      "description": "Optional owner ID to attribute the note to."
+    },
+    "associateWith": {
+      "type": "array",
+      "description": "CRM records to associate this note with.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "objectType": { "type": "string", "description": "e.g. contacts, companies, deals, tickets" },
+          "objectId": { "type": "string", "description": "HubSpot object ID" }
+        },
+        "required": ["objectType", "objectId"],
+        "additionalProperties": false
+      }
+    },
+    "properties": {
+      "type": "object",
+      "description": "Advanced: raw HubSpot note properties to set/override (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

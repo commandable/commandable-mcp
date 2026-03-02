@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "properties": {
+    "subject": {
+      "type": "string",
+      "description": "Task subject/title (maps to hs_task_subject)."
+    },
+    "body": {
+      "type": "string",
+      "description": "Task body/notes (maps to hs_task_body)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["NOT_STARTED", "COMPLETED"],
+      "description": "Task status (maps to hs_task_status)."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH"],
+      "description": "Task priority (maps to hs_task_priority)."
+    },
+    "dueTimestamp": {
+      "type": ["string", "number"],
+      "description": "Due date/time timestamp for the task. HubSpot tasks use hs_timestamp for due date. Prefer Unix timestamp in milliseconds."
+    },
+    "hubspot_owner_id": {
+      "type": ["string", "number"],
+      "description": "Optional owner ID to assign the task to."
+    },
+    "associateWith": {
+      "type": "array",
+      "description": "CRM records to associate this task with.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "objectType": { "type": "string", "description": "e.g. contacts, companies, deals, tickets" },
+          "objectId": { "type": "string", "description": "HubSpot object ID" }
+        },
+        "required": ["objectType", "objectId"],
+        "additionalProperties": false
+      }
+    },
+    "properties": {
+      "type": "object",
+      "description": "Advanced: raw HubSpot task properties to set/override (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

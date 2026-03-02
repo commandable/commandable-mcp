@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "properties": {
+    "jql": {
+      "type": "string",
+      "title": "JQL",
+      "description": "Jira Query Language string, e.g. \"project = PROJ AND status != Done ORDER BY updated DESC\"."
+    },
+    "fields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional list of fields to include (e.g. [\"summary\",\"status\",\"assignee\"]). If omitted, Jira uses its default set."
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "default": 50
+    },
+    "nextPageToken": {
+      "type": ["string", "null"],
+      "description": "Token from a previous response to fetch the next page."
+    }
+  },
+  "required": ["jql"],
+  "additionalProperties": false
+}
+

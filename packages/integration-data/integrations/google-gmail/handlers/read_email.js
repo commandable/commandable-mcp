@@ -12,7 +12,7 @@ async (input) => {
   const decodeBase64url = (data) => {
     if (!data) return ''
     try {
-      return Buffer.from(data.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8')
+      return decodeURIComponent(escape(atob(data.replace(/-/g, '+').replace(/_/g, '/'))))
     }
     catch {
       return ''

@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "Free-text search query (optional)." },
+    "filters": {
+      "type": "array",
+      "description": "Property-based filters converted into HubSpot filterGroups.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "propertyName": { "type": "string" },
+          "operator": {
+            "type": "string",
+            "enum": [
+              "EQ",
+              "NEQ",
+              "LT",
+              "LTE",
+              "GT",
+              "GTE",
+              "BETWEEN",
+              "HAS_PROPERTY",
+              "NOT_HAS_PROPERTY",
+              "CONTAINS_TOKEN"
+            ]
+          },
+          "value": { "type": ["string", "number", "boolean"] }
+        },
+        "required": ["propertyName", "operator"],
+        "additionalProperties": false
+      }
+    },
+    "properties": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Which note properties to return (e.g. hs_note_body, hs_timestamp)."
+    },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "after": { "type": "string", "description": "Paging cursor token." }
+  },
+  "additionalProperties": false
+}
+

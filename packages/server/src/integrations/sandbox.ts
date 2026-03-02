@@ -1,6 +1,7 @@
 import { URL, URLSearchParams } from 'node:url'
 import vm from 'node:vm'
 import * as zodLib from 'zod'
+import type { SandboxUtils } from './sandboxUtils.js'
 
 function makeSyntheticFromObject(pkg: any, context: vm.Context): vm.Module {
   const exportNames = Array.from(new Set(['default', ...Object.keys(pkg)]))
@@ -102,6 +103,7 @@ export async function loadWorkflowModule(source: string, getIntegration?: Functi
 export function createSafeHandlerFromString(
   handlerString: string,
   getIntegration: Function,
+  utils?: SandboxUtils,
 ): (args: any) => Promise<{ success: boolean, result: any, logs: string[] }> {
   const realConsole = console
   const isolatedConsole: any = {
@@ -145,6 +147,7 @@ export function createSafeHandlerFromString(
   const context = vm.createContext({
     console: isolatedConsole,
     getIntegration,
+    utils: utils || {},
     module: {},
     URL,
     URLSearchParams,

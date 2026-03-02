@@ -1,17 +1,32 @@
 import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { config as dotenv } from 'dotenv'
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
 const here = fileURLToPath(new URL('.', import.meta.url))
 
-for (const f of ['.env.test', '.env.test.managed']) {
-  const p = resolve(root, f)
-  if (existsSync(p))
-    dotenv({ path: p, override: false })
+function loadEnv(path: string) {
+  if (existsSync(path))
+    dotenv({ path, override: false })
 }
+
+// Shared Google credentials (used by all google-* integrations)
+for (const f of ['.env.test.google', '.env.test.google.managed']) {
+  loadEnv(resolve(root, f))
+}
+
+// Per-integration env files
+const integrationsDir = resolve(root, 'packages/integration-data/integrations')
+for (const entry of readdirSync(integrationsDir, { withFileTypes: true })) {
+  if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === '__tests__') continue
+  const dir = resolve(integrationsDir, entry.name)
+  loadEnv(resolve(dir, '.env.test'))
+  loadEnv(resolve(dir, '.env.test.managed'))
+}
+
+const integration = process.env.VITEST_INTEGRATION
 
 export default defineConfig({
   resolve: {
@@ -22,10 +37,12 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: [
-      'src/__tests__/**/*.test.ts',
-      '../integration-data/integrations/**/__tests__/**/*.test.ts',
-    ],
+    include: integration
+      ? [`../integration-data/integrations/${integration}/__tests__/**/*.test.ts`]
+      : [
+          'src/__tests__/**/*.test.ts',
+          '../integration-data/integrations/**/__tests__/**/*.test.ts',
+        ],
   },
 })
 

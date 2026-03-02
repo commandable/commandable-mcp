@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "title": "Issue key or ID",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    },
+    "fields": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional list of fields to request. If omitted, a reasonable default set is used."
+    },
+    "expand": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional expand values supported by Jira (e.g. [\"renderedFields\"])."
+    }
+  },
+  "required": ["issueIdOrKey"],
+  "additionalProperties": false
+}
+

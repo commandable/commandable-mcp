@@ -8,15 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  # ─── Core unit tests (no integration secrets needed) ─────────────────────────
+  core-tests:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
@@ -26,36 +24,134 @@ jobs:
           corepack prepare yarn@4.12.0 --activate
           yarn install --frozen-lockfile
 
-      - name: Run server tests
+      - name: Run core unit tests
+        run: yarn workspace @commandable/mcp test -- src/__tests__
+
+  # ─── Per-integration live tests (matrix, fail-fast disabled) ─────────────────
+  test-integration:
+    runs-on: ubuntu-latest
+    needs: core-tests
+    strategy:
+      fail-fast: false
+      # Many suites hit third-party APIs. Limit concurrency to reduce rate limiting.
+      max-parallel: 3
+      matrix:
+        integration:
+          - github
+          - jira
+          - notion
+          - airtable
+          - trello
+          - hubspot
+          - confluence
+          - google-calendar
+          - google-docs
+          - google-drive
+          - google-gmail
+          - google-sheet
+          - google-slides
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          corepack prepare yarn@4.12.0 --activate
+          yarn install --frozen-lockfile
+
+      - name: Run ${{ matrix.integration }} tests
         env:
-          # GitHub provides this automatically; smoke suite will skip GitHub if missing.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_TEST_PARENT_PAGE_ID: ${{ vars.NOTION_TEST_PARENT_PAGE_ID }}
-          TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
-          TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          GOOGLE_SHEETS_TEST_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_TEST_SPREADSHEET_ID }}
-          GOOGLE_DOCS_TEST_DOCUMENT_ID: ${{ secrets.GOOGLE_DOCS_TEST_DOCUMENT_ID }}
-          GOOGLE_SLIDES_TEST_PRESENTATION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_PRESENTATION_ID }}
-          GOOGLE_IMPERSONATE_SUBJECT: ${{ vars.GOOGLE_IMPERSONATE_SUBJECT }}
-          # Managed OAuth live suites (integration-data/**/__tests__/*handlers.test.ts)
-          COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
-          COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
-          TRELLO_TEST_CONNECTION_ID: ${{ secrets.TRELLO_TEST_CONNECTION_ID }}
-          NOTION_TEST_CONNECTION_ID: ${{ secrets.NOTION_TEST_CONNECTION_ID }}
-          AIRTABLE_TEST_CONNECTION_ID: ${{ secrets.AIRTABLE_TEST_CONNECTION_ID }}
-          _GITHUB_TEST_CONNECTION_ID: ${{ secrets._GITHUB_TEST_CONNECTION_ID }}
-          GOOGLE_CALENDAR_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_CALENDAR_TEST_CONNECTION_ID }}
-          GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
-          GOOGLE_DOCS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_DOCS_TEST_CONNECTION_ID }}
-          GOOGLE_SLIDES_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_CONNECTION_ID }}
-          # Airtable write suite resource IDs (stored as GitHub Variables)
-          AIRTABLE_TEST_WRITE_BASE_ID: ${{ vars.AIRTABLE_TEST_WRITE_BASE_ID }}
-          AIRTABLE_TEST_WRITE_TABLE_ID: ${{ vars.AIRTABLE_TEST_WRITE_TABLE_ID }}
-          # Resource IDs used by some write suites
+          VITEST_INTEGRATION: ${{ matrix.integration }}
+          # ── GitHub ────────────────────────────────────────────────────────────
+          _GITHUB_CLASSIC_PAT: ${{ secrets._GITHUB_CLASSIC_PAT }}
+          _GITHUB_FINE_GRAINED_PAT: ${{ secrets._GITHUB_FINE_GRAINED_PAT }}
           _GITHUB_TEST_OWNER: ${{ vars._GITHUB_TEST_OWNER }}
           _GITHUB_TEST_REPO: ${{ vars._GITHUB_TEST_REPO }}
-          GCAL_TEST_CALENDAR_ID: ${{ secrets.GCAL_TEST_CALENDAR_ID }}
-        run: yarn workspace @commandable/mcp test
+          _GITHUB_TEST_CONNECTION_ID: ${{ secrets._GITHUB_TEST_CONNECTION_ID }}
+          # ── Notion ────────────────────────────────────────────────────────────
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_TEST_PARENT_PAGE_ID: ${{ vars.NOTION_TEST_PARENT_PAGE_ID }}
+          NOTION_TEST_CONNECTION_ID: ${{ secrets.NOTION_TEST_CONNECTION_ID }}
+          # ── Airtable ──────────────────────────────────────────────────────────
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          AIRTABLE_TEST_WRITE_BASE_ID: ${{ vars.AIRTABLE_TEST_WRITE_BASE_ID }}
+          AIRTABLE_TEST_WRITE_TABLE_ID: ${{ vars.AIRTABLE_TEST_WRITE_TABLE_ID }}
+          AIRTABLE_TEST_CONNECTION_ID: ${{ secrets.AIRTABLE_TEST_CONNECTION_ID }}
+          # ── Trello ────────────────────────────────────────────────────────────
+          TRELLO_API_KEY: ${{ secrets.TRELLO_API_KEY }}
+          TRELLO_API_TOKEN: ${{ secrets.TRELLO_API_TOKEN }}
+          TRELLO_TEST_CONNECTION_ID: ${{ secrets.TRELLO_TEST_CONNECTION_ID }}
+          # ── HubSpot ───────────────────────────────────────────────────────────
+          HUBSPOT_TOKEN: ${{ secrets.HUBSPOT_TOKEN }}
+          HUBSPOT_TEST_DEAL_PIPELINE_ID: ${{ vars.HUBSPOT_TEST_DEAL_PIPELINE_ID }}
+          HUBSPOT_TEST_DEAL_STAGE_ID: ${{ vars.HUBSPOT_TEST_DEAL_STAGE_ID }}
+          HUBSPOT_TEST_TICKET_PIPELINE_ID: ${{ vars.HUBSPOT_TEST_TICKET_PIPELINE_ID }}
+          HUBSPOT_TEST_TICKET_STAGE_ID: ${{ vars.HUBSPOT_TEST_TICKET_STAGE_ID }}
+          # ── Confluence ────────────────────────────────────────────────────────
+          CONFLUENCE_DOMAIN: ${{ vars.CONFLUENCE_DOMAIN }}
+          CONFLUENCE_EMAIL: ${{ vars.CONFLUENCE_EMAIL }}
+          CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          CONFLUENCE_TEST_SPACE_KEY: ${{ vars.CONFLUENCE_TEST_SPACE_KEY }}
+          CONFLUENCE_TEST_PARENT_PAGE_ID: ${{ vars.CONFLUENCE_TEST_PARENT_PAGE_ID }}
+          # ── Google (shared by all google-* integrations) ──────────────────────
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
+          GOOGLE_IMPERSONATE_SUBJECT: ${{ vars.GOOGLE_IMPERSONATE_SUBJECT }}
+          # ── Google Calendar ───────────────────────────────────────────────────
+          GOOGLE_CALENDAR_TEST_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_TEST_CALENDAR_ID }}
+          GOOGLE_CALENDAR_TEST_ADMIN_WRITE: ${{ vars.GOOGLE_CALENDAR_TEST_ADMIN_WRITE }}
+          GOOGLE_CALENDAR_TEST_QUICK_ADD: ${{ vars.GOOGLE_CALENDAR_TEST_QUICK_ADD }}
+          GOOGLE_CALENDAR_TEST_MOVE_DEST: ${{ vars.GOOGLE_CALENDAR_TEST_MOVE_DEST }}
+          GOOGLE_CALENDAR_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_CALENDAR_TEST_CONNECTION_ID }}
+          # ── Gmail ─────────────────────────────────────────────────────────────
+          GMAIL_TEST_MESSAGE_ID: ${{ vars.GMAIL_TEST_MESSAGE_ID }}
+          GMAIL_TEST_THREAD_ID: ${{ vars.GMAIL_TEST_THREAD_ID }}
+          GMAIL_TEST_SEND_TO: ${{ vars.GMAIL_TEST_SEND_TO }}
+          # ── Google Sheets ─────────────────────────────────────────────────────
+          GOOGLE_SHEETS_TEST_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_TEST_SPREADSHEET_ID }}
+          GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
+          # ── Google Docs ───────────────────────────────────────────────────────
+          GOOGLE_DOCS_TEST_DOCUMENT_ID: ${{ secrets.GOOGLE_DOCS_TEST_DOCUMENT_ID }}
+          GOOGLE_DOCS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_DOCS_TEST_CONNECTION_ID }}
+          # ── Google Slides ─────────────────────────────────────────────────────
+          GOOGLE_SLIDES_TEST_PRESENTATION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_PRESENTATION_ID }}
+          GOOGLE_SLIDES_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_CONNECTION_ID }}
+          # ── Managed OAuth ─────────────────────────────────────────────────────
+          COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
+          COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
+        run: |
+          yarn workspace @commandable/mcp test -- \
+            --reporter=json \
+            --outputFile=test-results.json
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.integration }}
+          path: packages/server/test-results.json
+          if-no-files-found: warn
+
+  # ─── Update gist badges (main branch pushes only) ────────────────────────────
+  update-badges:
+    runs-on: ubuntu-latest
+    needs: test-integration
+    if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-results
+
+      - name: Update gist badges
+        env:
+          GIST_SECRET: ${{ secrets.GIST_SECRET }}
+        run: node scripts/update-badges.js

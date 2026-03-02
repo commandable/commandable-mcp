@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "subject": { "type": "string", "description": "Ticket subject (maps to subject property)." },
+    "content": { "type": "string", "description": "Ticket content/body (maps to content property)." },
+    "hs_pipeline": { "type": "string", "description": "Pipeline ID (maps to hs_pipeline property)." },
+    "hs_pipeline_stage": { "type": "string", "description": "Pipeline stage ID (maps to hs_pipeline_stage property)." },
+    "properties": {
+      "type": "object",
+      "description": "Additional HubSpot ticket properties to set (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

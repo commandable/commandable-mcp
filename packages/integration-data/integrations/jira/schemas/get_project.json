@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "projectIdOrKey": {
+      "type": "string",
+      "description": "Project key like \"PROJ\" or numeric project ID."
+    },
+    "expandIssueTypes": {
+      "type": "boolean",
+      "default": true,
+      "description": "If true, expands the project response to include issue types."
+    }
+  },
+  "required": ["projectIdOrKey"],
+  "additionalProperties": false
+}
+

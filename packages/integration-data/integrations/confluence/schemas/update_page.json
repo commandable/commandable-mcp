@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "title": "Page ID",
+      "description": "The Confluence page ID."
+    },
+    "title": {
+      "type": ["string", "null"],
+      "description": "New page title. If omitted, the existing title is preserved."
+    },
+    "bodyStorage": {
+      "type": "string",
+      "title": "Body (storage XHTML)",
+      "description": "Confluence storage format (XHTML) body value."
+    },
+    "versionMessage": {
+      "type": ["string", "null"],
+      "description": "Optional version message for the update."
+    },
+    "minorEdit": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, mark the update as a minor edit when supported."
+    }
+  },
+  "required": ["pageId", "bodyStorage"],
+  "additionalProperties": false
+}
+

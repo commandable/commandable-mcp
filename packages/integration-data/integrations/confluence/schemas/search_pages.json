@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "cql": {
+      "type": "string",
+      "title": "CQL",
+      "description": "Confluence Query Language string. Example: `space = \"ENG\" AND type = page AND text ~ \"onboarding\" ORDER BY lastmodified DESC`."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10,
+      "description": "Maximum results to return."
+    },
+    "start": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Offset into results for pagination (v1 search)."
+    }
+  },
+  "required": ["cql"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    },
+    "accountId": {
+      "type": ["string", "null"],
+      "description": "Account ID to assign the issue to, or null to unassign."
+    }
+  },
+  "required": ["issueIdOrKey", "accountId"],
+  "additionalProperties": false
+}
+

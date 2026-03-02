@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "title": "Contact ID",
+      "description": "HubSpot contact object ID."
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

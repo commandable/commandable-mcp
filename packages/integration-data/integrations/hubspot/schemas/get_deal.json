@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string", "description": "HubSpot deal object ID." },
+    "properties": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific property names to return (e.g. dealname, amount, pipeline, dealstage, closedate)."
+    },
+    "associations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Associated object types to include (e.g. contacts, companies, tickets)."
+    },
+    "archived": { "type": "boolean" }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

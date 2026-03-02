@@ -1,0 +1,85 @@
+{
+  "name": "confluence",
+  "version": "0.1.0",
+  "utils": ["html"],
+  "tools": [
+    {
+      "name": "list_spaces",
+      "description": "List Confluence spaces you can access. Use this to discover `spaceId`/`spaceKey` before searching or creating pages. Pagination uses `cursor` from the previous response.",
+      "inputSchema": "schemas/list_spaces.json",
+      "handler": "handlers/list_spaces.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_space",
+      "description": "Get a Confluence space by `spaceId`, including its homepage and basic metadata.",
+      "inputSchema": "schemas/get_space.json",
+      "handler": "handlers/get_space.js",
+      "scope": "read"
+    },
+    {
+      "name": "search_pages",
+      "description": "Search for pages using CQL (Confluence Query Language). Use this as the primary discovery tool to find page IDs. Example CQL: `space = \"ENG\" AND type = page AND text ~ \"onboarding\" ORDER BY lastmodified DESC`.",
+      "inputSchema": "schemas/search_pages.json",
+      "handler": "handlers/search_pages.js",
+      "scope": "read"
+    },
+    {
+      "name": "read_page",
+      "description": "Read a page and return its content in Confluence storage format (XHTML). Set `outputMarkdown: true` to get Markdown instead — useful for quick reading or summarisation but lossy, do not use it if you plan to edit the page.",
+      "inputSchema": "schemas/read_page.json",
+      "handler": "handlers/read_page.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_page_children",
+      "description": "List child content under a page (typically child pages). Use this to navigate page hierarchies and build a table-of-contents workflow.",
+      "inputSchema": "schemas/get_page_children.json",
+      "handler": "handlers/get_page_children.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_comments",
+      "description": "List footer comments for a page, optionally including their child replies. Use this to review discussion threads on a page.",
+      "inputSchema": "schemas/get_comments.json",
+      "handler": "handlers/get_comments.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_page",
+      "description": "Create a new Confluence page. Provide the body as Confluence storage format (XHTML). For simple pages you can use basic HTML like `<h1>`, `<p>`, `<ul>`, `<li>`, `<code>`, and links.",
+      "inputSchema": "schemas/create_page.json",
+      "handler": "handlers/create_page.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_page",
+      "description": "Update an existing Confluence page. This tool auto-fetches the current version number and increments it, so you don't need to manage versioning. Provide the body as Confluence storage format (XHTML).",
+      "inputSchema": "schemas/update_page.json",
+      "handler": "handlers/update_page.js",
+      "scope": "write"
+    },
+    {
+      "name": "delete_page",
+      "description": "Delete a Confluence page (moves it to trash by default). Use carefully.",
+      "inputSchema": "schemas/delete_page.json",
+      "handler": "handlers/delete_page.js",
+      "scope": "write"
+    },
+    {
+      "name": "add_comment",
+      "description": "Add a footer comment to a Confluence page. Provide the body as Confluence storage format (XHTML). Optionally set `parentCommentId` to create a threaded reply.",
+      "inputSchema": "schemas/add_comment.json",
+      "handler": "handlers/add_comment.js",
+      "scope": "write"
+    },
+    {
+      "name": "add_label",
+      "description": "Add one or more labels to a Confluence page. Labels are useful for discovery via CQL (`label = \"...\"`).",
+      "inputSchema": "schemas/add_label.json",
+      "handler": "handlers/add_label.js",
+      "scope": "write"
+    }
+  ]
+}
+

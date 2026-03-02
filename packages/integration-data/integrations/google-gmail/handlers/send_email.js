@@ -14,7 +14,7 @@ async (input) => {
     lines.push('', input.body)
   }
   const mime = lines.join('\r\n')
-  const raw = Buffer.from(mime).toString('base64url')
+  const raw = btoa(unescape(encodeURIComponent(mime))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   const body = { raw }
   if (input.threadId) body.threadId = input.threadId
   const res = await integration.fetch(`/users/${userId}/messages/send`, { method: 'POST', body })

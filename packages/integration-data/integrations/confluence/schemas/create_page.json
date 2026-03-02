@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "spaceId": {
+      "type": "string",
+      "title": "Space ID",
+      "description": "The space ID where the page will be created."
+    },
+    "title": {
+      "type": "string",
+      "title": "Title",
+      "description": "Page title."
+    },
+    "bodyStorage": {
+      "type": "string",
+      "title": "Body (storage XHTML)",
+      "description": "Confluence storage format (XHTML) body value."
+    },
+    "parentId": {
+      "type": ["string", "null"],
+      "description": "Optional parent page ID to create this page under."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["current", "draft"],
+      "default": "current",
+      "description": "Create as published (current) or as a draft."
+    }
+  },
+  "required": ["spaceId", "title", "bodyStorage"],
+  "additionalProperties": false
+}
+

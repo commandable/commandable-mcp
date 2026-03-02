@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "sprintId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Sprint ID."
+    }
+  },
+  "required": ["sprintId"],
+  "additionalProperties": false
+}
+

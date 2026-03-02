@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "title": "Company ID",
+      "description": "HubSpot company object ID."
+    },
+    "name": { "type": "string" },
+    "domain": { "type": "string" },
+    "properties": {
+      "type": "object",
+      "description": "HubSpot company properties to update (propertyName -> value).",
+      "additionalProperties": true
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+

@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    },
+    "bodyText": {
+      "type": "string",
+      "description": "Plain-text comment body. Converted to ADF by the handler."
+    }
+  },
+  "required": ["issueIdOrKey", "bodyText"],
+  "additionalProperties": false
+}
+

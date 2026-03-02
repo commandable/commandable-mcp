@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "properties": {
+    "projectKeyOrId": {
+      "type": "string",
+      "description": "Optional project key (e.g. \"PROJ\") or project ID to filter boards."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["scrum", "kanban"],
+      "description": "Optional board type filter."
+    },
+    "startAt": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 50
+    }
+  },
+  "additionalProperties": false
+}
+

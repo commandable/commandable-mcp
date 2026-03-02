@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { loadIntegrationTools } from '../integrations/dataLoader.js'
+import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
 
 const integrationDataDir = fileURLToPath(new URL('../../../integration-data/integrations', import.meta.url))
 
@@ -23,6 +24,44 @@ describe('integration engine ports', () => {
     expect(res.success).toBe(true)
     expect(res.result).toBe(2)
     expect(res.logs.join('\\n')).toContain('hi')
+  })
+
+  it('injects sandbox utils (explicit bundles)', async () => {
+    const utils = buildSandboxUtils(['html', 'adf'])
+    const handler = createSafeHandlerFromString(
+      `async (_input) => {
+        const md = utils.html.toMarkdown('<p>Hello</p>')
+        const html = utils.html.fromMarkdown('**bold**')
+        const doc = utils.adf.fromMarkdown('# Title')
+        return { md, html, docType: doc?.type, version: doc?.version }
+      }`,
+      () => ({}),
+      utils,
+    )
+    const res = await handler({})
+    expect(res.success).toBe(true)
+    expect(String(res.result?.md)).toContain('Hello')
+    expect(String(res.result?.html)).toContain('<strong>')
+    expect(res.result?.docType).toBe('doc')
+    expect(res.result?.version).toBe(1)
+  })
+
+  it('does not inject utils that were not requested', async () => {
+    const utils = buildSandboxUtils([])
+    const handler = createSafeHandlerFromString(
+      `async (_input) => {
+        return {
+          hasHtml: typeof utils.html === 'object',
+          hasAdf: typeof utils.adf === 'object',
+        }
+      }`,
+      () => ({}),
+      utils,
+    )
+    const res = await handler({})
+    expect(res.success).toBe(true)
+    expect(res.result?.hasHtml).toBe(false)
+    expect(res.result?.hasAdf).toBe(false)
   })
 })
 

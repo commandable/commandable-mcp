@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "fromObjectType": {
+      "type": "string",
+      "description": "Object type of the source record (e.g. contacts, companies, deals, tickets)."
+    },
+    "fromObjectId": {
+      "type": "string",
+      "description": "Object ID of the source record."
+    },
+    "toObjectType": {
+      "type": "string",
+      "description": "Object type of the associated records to list (e.g. companies, contacts, deals, tickets, notes, tasks)."
+    },
+    "after": {
+      "type": "string",
+      "description": "Paging cursor token."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500,
+      "description": "Max results per page."
+    }
+  },
+  "required": ["fromObjectType", "fromObjectId", "toObjectType"],
+  "additionalProperties": false
+}
+

@@ -4,6 +4,7 @@ import { loadIntegrationDisplayCards, loadIntegrationTools } from './dataLoader.
 import { makeIntegrationToolName, sanitizeJsonSchema } from './tools.js'
 import { createSafeHandlerFromString } from './sandbox.js'
 import { createGetIntegration } from './getIntegration.js'
+import { buildSandboxUtils } from './sandboxUtils.js'
 
 type Scope = 'read' | 'write' | 'admin'
 
@@ -42,8 +43,10 @@ export function buildToolsByIntegration(
       const schemaObj = sanitizeJsonSchema(rawSchema)
       const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
+
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
-      const safeHandler = createSafeHandlerFromString(wrapper, getIntegration)
+      const utils = buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined)
+      const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
       return {
         name: toolName,
         displayName: `${t.displayName || humanize(t.name)}`,

@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    },
+    "transitionId": {
+      "type": "string",
+      "description": "Transition ID to apply. If omitted, provide transitionName."
+    },
+    "transitionName": {
+      "type": "string",
+      "description": "Human-readable transition name (case-insensitive). If provided, the handler will resolve it to an ID via get_transitions."
+    },
+    "commentText": {
+      "type": "string",
+      "description": "Optional comment to add during the transition (plain text, converted to ADF)."
+    },
+    "fields": {
+      "type": "object",
+      "description": "Optional Jira fields to set during the transition.",
+      "additionalProperties": true
+    },
+    "update": {
+      "type": "object",
+      "description": "Optional Jira update operations to apply during the transition.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["issueIdOrKey"],
+  "anyOf": [
+    { "required": ["transitionId"] },
+    { "required": ["transitionName"] }
+  ],
+  "additionalProperties": false
+}
+

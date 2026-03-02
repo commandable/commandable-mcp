@@ -103,6 +103,21 @@ The #1 anti-pattern in MCP tool design is exposing encoding details to the agent
 
 **Pattern**: if the API requires a transform (base64, MIME, URL encoding, JSON tree walking), do it in the handler. The agent should only deal with human-readable strings and simple key-value inputs.
 
+#### Sandbox globals: use `btoa`/`atob`, not `Buffer`
+
+Handlers run inside a locked-down VM sandbox. `Buffer` is explicitly set to `undefined` in the context — using it will throw `Cannot read properties of undefined (reading 'from')` at runtime. Use the Web-standard equivalents instead:
+
+- **Encoding to base64url** (e.g. RFC822 MIME for Gmail):
+  ```js
+  const raw = btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+  ```
+- **Decoding base64url to UTF-8** (e.g. Gmail message body parts):
+  ```js
+  const text = decodeURIComponent(escape(atob(data.replace(/-/g, '+').replace(/_/g, '/'))))
+  ```
+
+`btoa`/`atob`, `URL`, `URLSearchParams`, `encodeURIComponent`, `decodeURIComponent`, `unescape`, and `escape` are all available in the sandbox. `Buffer`, `process`, `require`, `fetch`, `eval`, `Function`, `setTimeout`, and `global` are not.
+
 ### 6. Rich tool descriptions are critical
 
 Every tool description should include: what it does, when to use it (vs alternatives), key parameter hints, and cross-references to related tools. Examples:
@@ -195,3 +210,7 @@ Complex conversion logic (like Docs-to-Markdown) can fail on edge cases. Always 
 ### 11. Future: native API format exports
 
 Google Drive's `files.export` API now supports `text/markdown` as an export MIME type for Docs. We currently use custom Docs API -> Markdown conversion to keep the integration self-contained (no cross-API dependency on Drive scopes). A `todo.md` in `google-docs/` tracks this for future investigation when we add cross-provider fetch support.
+
+
+
+Important hint - when researching a new integration - it can be really useful to read existing MCP servers for that integration. they may be open source and freely avaialable. This should give you an idea of the right kind of abstractions to use and tools to provide.

@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "boardId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Board ID."
+    },
+    "state": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["future", "active", "closed"] },
+      "description": "Optional sprint states to include. If omitted, Jira returns all."
+    },
+    "startAt": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0
+    },
+    "maxResults": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 50
+    }
+  },
+  "required": ["boardId"],
+  "additionalProperties": false
+}
+

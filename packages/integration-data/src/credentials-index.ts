@@ -102,6 +102,127 @@ Note: Fine-grained PATs do not support creating or deleting repositories.`,
     },
   },
 
+  jira: {
+    variants: {
+      variants: {
+        api_token: {
+          label: 'API Token (Email + Token)',
+          schema: {
+            type: 'object',
+            properties: {
+              domain: {
+                type: 'string',
+                title: 'Jira site domain',
+                description: 'The subdomain of your Jira Cloud site. Example: for https://mycompany.atlassian.net, enter "mycompany".',
+              },
+              email: {
+                type: 'string',
+                title: 'Atlassian account email',
+                description: 'Email address of the Atlassian account that owns the API token.',
+              },
+              apiToken: {
+                type: 'string',
+                title: 'Atlassian API token',
+                description: 'Atlassian API token for Jira Cloud. The server will convert this into the required Basic auth header.',
+              },
+            },
+            required: ['domain', 'email', 'apiToken'],
+            additionalProperties: false,
+          },
+          baseUrlTemplate: 'https://{{domain}}.atlassian.net',
+          injection: { headers: { Authorization: 'Basic {{basicAuth}}', Accept: 'application/json' } },
+          preprocess: 'jira_api_token',
+        },
+      },
+      default: 'api_token',
+    },
+    hints: {
+      api_token: `Set up Jira Cloud API token auth:
+
+1. Open your Jira site (it looks like https://YOUR_DOMAIN.atlassian.net)
+2. Copy YOUR_DOMAIN (the subdomain) and use it as \`domain\`
+3. Create an Atlassian API token: https://id.atlassian.com/manage-profile/security/api-tokens
+4. Use the Atlassian account email as \`email\` and paste the token as \`apiToken\`
+
+Note: The server computes the required Basic auth header for you.`,
+    },
+  },
+
+  confluence: {
+    variants: {
+      variants: {
+        api_token: {
+          label: 'API Token (Email + Token)',
+          schema: {
+            type: 'object',
+            properties: {
+              domain: {
+                type: 'string',
+                title: 'Confluence site domain',
+                description: 'The subdomain of your Confluence Cloud site. Example: for https://mycompany.atlassian.net/wiki, enter "mycompany".',
+              },
+              email: {
+                type: 'string',
+                title: 'Atlassian account email',
+                description: 'Email address of the Atlassian account that owns the API token.',
+              },
+              apiToken: {
+                type: 'string',
+                title: 'Atlassian API token',
+                description: 'Atlassian API token for Confluence Cloud. The server will convert this into the required Basic auth header.',
+              },
+            },
+            required: ['domain', 'email', 'apiToken'],
+            additionalProperties: false,
+          },
+          baseUrlTemplate: 'https://{{domain}}.atlassian.net',
+          injection: { headers: { Authorization: 'Basic {{basicAuth}}', Accept: 'application/json' } },
+          preprocess: 'confluence_api_token',
+        },
+        oauth_token: {
+          label: 'OAuth Access Token (3LO)',
+          schema: {
+            type: 'object',
+            properties: {
+              cloudId: {
+                type: 'string',
+                title: 'Atlassian Cloud ID',
+                description: 'Your Atlassian Cloud resource ID (cloudId). Discover it via GET https://api.atlassian.com/oauth/token/accessible-resources using your access token.',
+              },
+              token: {
+                type: 'string',
+                title: 'OAuth access token',
+                description: 'OAuth 2.0 access token with Confluence scopes (read:page:confluence, write:page:confluence, read:space:confluence, etc.).',
+              },
+            },
+            required: ['cloudId', 'token'],
+            additionalProperties: false,
+          },
+          baseUrlTemplate: 'https://api.atlassian.com/ex/confluence/{{cloudId}}',
+          injection: { headers: { Authorization: 'Bearer {{token}}', Accept: 'application/json' } },
+        },
+      },
+      default: 'api_token',
+    },
+    hints: {
+      api_token: `Set up Confluence Cloud API token auth:
+
+1. Open your Confluence site (it looks like https://YOUR_DOMAIN.atlassian.net/wiki)
+2. Copy YOUR_DOMAIN (the subdomain) and use it as \`domain\`
+3. Create an Atlassian API token: https://id.atlassian.com/manage-profile/security/api-tokens
+4. Use the Atlassian account email as \`email\` and paste the token as \`apiToken\`
+
+Note: The server computes the required Basic auth header for you.`,
+      oauth_token: `Set up Confluence Cloud OAuth (3LO):
+
+1. Create an OAuth 2.0 (3LO) app in the Atlassian developer console
+2. Add Confluence scopes (typical minimum): read:page:confluence, write:page:confluence, read:space:confluence (plus offline_access if you want refresh tokens)
+3. Complete the OAuth flow to obtain an access token
+4. Call GET https://api.atlassian.com/oauth/token/accessible-resources with Authorization: Bearer <access_token> to get \`cloudId\`
+5. Paste \`cloudId\` and the OAuth access \`token\` here`,
+    },
+  },
+
   'google-calendar': {
     variants: {
       variants: {

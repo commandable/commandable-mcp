@@ -1,0 +1,204 @@
+{
+  "name": "jira",
+  "version": "0.1.0",
+  "utils": ["adf"],
+  "toolsets": {
+    "issues": {
+      "label": "Issues",
+      "description": "Search, read, create, and manage Jira issues"
+    },
+    "boards": {
+      "label": "Boards & Sprints",
+      "description": "Work with Jira Software boards, sprints, and backlogs"
+    }
+  },
+  "tools": [
+    {
+      "name": "search_issues",
+      "description": "Search for issues using JQL. Returns a compact list of issues with key fields. Uses the modern /search/jql endpoint with nextPageToken pagination.",
+      "inputSchema": "schemas/search_issues.json",
+      "handler": "handlers/search_issues.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "get_issue",
+      "description": "Get details for a Jira issue by key (e.g. PROJ-123). Converts the issue description from Jira ADF into Markdown for easier reading.",
+      "inputSchema": "schemas/get_issue.json",
+      "handler": "handlers/get_issue.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "get_issue_comments",
+      "description": "List comments on an issue. Converts each comment body from Jira ADF into Markdown.",
+      "inputSchema": "schemas/get_issue_comments.json",
+      "handler": "handlers/get_issue_comments.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "list_projects",
+      "description": "List accessible Jira projects (key, name, type). Use this before creating issues to discover valid project keys.",
+      "inputSchema": "schemas/list_projects.json",
+      "handler": "handlers/list_projects.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "get_project",
+      "description": "Get a project by key or ID. Includes issue types when expandIssueTypes=true, which is useful to choose a valid issue type name before create_issue.",
+      "inputSchema": "schemas/get_project.json",
+      "handler": "handlers/get_project.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "get_transitions",
+      "description": "List available workflow transitions for an issue. Use this to discover valid transition names/IDs before calling transition_issue.",
+      "inputSchema": "schemas/get_transitions.json",
+      "handler": "handlers/get_transitions.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "get_myself",
+      "description": "Get the authenticated Jira user profile for the current credentials.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/get_myself.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+    {
+      "name": "search_users",
+      "description": "Search for users and return accountIds for assignment. Use this to find assigneeAccountId values for create_issue/update_issue/assign_issue.",
+      "inputSchema": "schemas/search_users.json",
+      "handler": "handlers/search_users.js",
+      "scope": "read",
+      "toolset": "issues"
+    },
+
+    {
+      "name": "create_issue",
+      "description": "Create a new Jira issue. Provide descriptionText as Markdown; the handler converts it to Jira ADF automatically. Use get_project to discover valid issue types.",
+      "inputSchema": "schemas/create_issue.json",
+      "handler": "handlers/create_issue.js",
+      "scope": "write",
+      "toolset": "issues"
+    },
+    {
+      "name": "update_issue",
+      "description": "Update a Jira issue. You can use simple fields like summary/descriptionText/labels/priorityName/assigneeAccountId, or pass advanced Jira 'fields'/'update' objects for complex updates. descriptionText is treated as Markdown and converted to ADF automatically.",
+      "inputSchema": "schemas/update_issue.json",
+      "handler": "handlers/update_issue.js",
+      "scope": "write",
+      "toolset": "issues"
+    },
+    {
+      "name": "transition_issue",
+      "description": "Transition an issue to a new workflow status. Provide transitionId or transitionName. If transitionName is provided, the handler resolves it by fetching transitions first. Optionally add a comment during the transition (commentText is treated as Markdown and converted to ADF).",
+      "inputSchema": "schemas/transition_issue.json",
+      "handler": "handlers/transition_issue.js",
+      "scope": "write",
+      "toolset": "issues"
+    },
+    {
+      "name": "add_comment",
+      "description": "Add a comment to an issue. Provide bodyText as Markdown; the handler converts it to Jira ADF automatically.",
+      "inputSchema": "schemas/add_comment.json",
+      "handler": "handlers/add_comment.js",
+      "scope": "write",
+      "toolset": "issues"
+    },
+    {
+      "name": "assign_issue",
+      "description": "Assign an issue to a user (by accountId) or unassign it (accountId=null). Use search_users to find accountIds.",
+      "inputSchema": "schemas/assign_issue.json",
+      "handler": "handlers/assign_issue.js",
+      "scope": "write",
+      "toolset": "issues"
+    },
+    {
+      "name": "delete_issue",
+      "description": "Delete an issue. This is irreversible. Use with care.",
+      "inputSchema": "schemas/delete_issue.json",
+      "handler": "handlers/delete_issue.js",
+      "scope": "write",
+      "toolset": "issues"
+    },
+
+    {
+      "name": "list_boards",
+      "description": "List Jira Software boards. Filter by projectKeyOrId and board type (scrum/kanban).",
+      "inputSchema": "schemas/list_boards.json",
+      "handler": "handlers/list_boards.js",
+      "scope": "read",
+      "toolset": "boards"
+    },
+    {
+      "name": "get_board",
+      "description": "Get details for a Jira Software board by boardId.",
+      "inputSchema": "schemas/get_board.json",
+      "handler": "handlers/get_board.js",
+      "scope": "read",
+      "toolset": "boards"
+    },
+    {
+      "name": "list_sprints",
+      "description": "List sprints for a board. Optionally filter by sprint state (future/active/closed).",
+      "inputSchema": "schemas/list_sprints.json",
+      "handler": "handlers/list_sprints.js",
+      "scope": "read",
+      "toolset": "boards"
+    },
+    {
+      "name": "get_sprint",
+      "description": "Get sprint details by sprintId (name, state, start/end dates, goal).",
+      "inputSchema": "schemas/get_sprint.json",
+      "handler": "handlers/get_sprint.js",
+      "scope": "read",
+      "toolset": "boards"
+    },
+    {
+      "name": "get_sprint_issues",
+      "description": "List issues in a sprint. Useful for sprint status reports and review preparation.",
+      "inputSchema": "schemas/get_sprint_issues.json",
+      "handler": "handlers/get_sprint_issues.js",
+      "scope": "read",
+      "toolset": "boards"
+    },
+    {
+      "name": "get_backlog_issues",
+      "description": "List issues in the backlog for a board.",
+      "inputSchema": "schemas/get_backlog_issues.json",
+      "handler": "handlers/get_backlog_issues.js",
+      "scope": "read",
+      "toolset": "boards"
+    },
+    {
+      "name": "move_issues_to_sprint",
+      "description": "Move one or more issues into a sprint (agile API).",
+      "inputSchema": "schemas/move_issues_to_sprint.json",
+      "handler": "handlers/move_issues_to_sprint.js",
+      "scope": "write",
+      "toolset": "boards"
+    },
+    {
+      "name": "create_sprint",
+      "description": "Create a sprint in a board (agile API). Use this for sprint-planning workflows and for integration test setup.",
+      "inputSchema": "schemas/create_sprint.json",
+      "handler": "handlers/create_sprint.js",
+      "scope": "write",
+      "toolset": "boards"
+    },
+    {
+      "name": "update_sprint",
+      "description": "Update a sprint (agile API). Use to rename, set/change goal, start a sprint (state: active, requires startDate + endDate), or close it (state: closed). Partial update — only provided fields are changed.",
+      "inputSchema": "schemas/update_sprint.json",
+      "handler": "handlers/update_sprint.js",
+      "scope": "write",
+      "toolset": "boards"
+    }
+  ]
+}
+

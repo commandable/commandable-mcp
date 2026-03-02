@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "issueIdOrKey": {
+      "type": "string",
+      "description": "Issue key like \"PROJ-123\" or numeric issue ID."
+    }
+  },
+  "required": ["issueIdOrKey"],
+  "additionalProperties": false
+}
+

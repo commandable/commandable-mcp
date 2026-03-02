@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "sprintId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Sprint ID to update."
+    },
+    "name": {
+      "type": "string",
+      "description": "New sprint name."
+    },
+    "goal": {
+      "type": "string",
+      "description": "Sprint goal."
+    },
+    "state": {
+      "type": "string",
+      "enum": ["future", "active", "closed"],
+      "description": "Sprint state. Use 'active' to start a sprint, 'closed' to end it. Transitioning to 'active' requires startDate."
+    },
+    "startDate": {
+      "type": "string",
+      "description": "Sprint start date (ISO 8601, e.g. 2024-01-15). Required when starting a sprint (state: active)."
+    },
+    "endDate": {
+      "type": "string",
+      "description": "Sprint end date (ISO 8601, e.g. 2024-01-29). Required when starting a sprint (state: active)."
+    }
+  },
+  "required": ["sprintId"],
+  "additionalProperties": false
+}

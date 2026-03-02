@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "objectType": {
+      "type": "string",
+      "title": "Object type",
+      "description": "HubSpot object type to list pipelines for (commonly deals or tickets)."
+    }
+  },
+  "required": ["objectType"],
+  "additionalProperties": false
+}
+

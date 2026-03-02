@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "fromObjectType": {
+      "type": "string",
+      "description": "Object type of the source record (e.g. contacts, companies, deals, tickets)."
+    },
+    "fromObjectId": {
+      "type": "string",
+      "description": "Object ID of the source record."
+    },
+    "toObjectType": {
+      "type": "string",
+      "description": "Object type of the target record."
+    },
+    "toObjectId": {
+      "type": "string",
+      "description": "Object ID of the target record."
+    }
+  },
+  "required": ["fromObjectType", "fromObjectId", "toObjectType", "toObjectId"],
+  "additionalProperties": false
+}
+

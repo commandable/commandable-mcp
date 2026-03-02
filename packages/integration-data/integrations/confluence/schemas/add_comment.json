@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "pageId": {
+      "type": "string",
+      "title": "Page ID",
+      "description": "The Confluence page ID to comment on."
+    },
+    "bodyStorage": {
+      "type": "string",
+      "title": "Comment body (storage XHTML)",
+      "description": "Confluence storage format (XHTML) comment body."
+    },
+    "parentCommentId": {
+      "type": ["string", "null"],
+      "description": "Optional parent footer comment ID to create a threaded reply."
+    }
+  },
+  "required": ["pageId", "bodyStorage"],
+  "additionalProperties": false
+}
+
