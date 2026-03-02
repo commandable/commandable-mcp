@@ -15,7 +15,7 @@ async (input) => {
     lines.push('Content-Type: text/plain; charset=UTF-8')
     lines.push('', input.body || '')
   }
-  const raw = Buffer.from(lines.join('\r\n')).toString('base64url')
+  const raw = btoa(unescape(encodeURIComponent(lines.join('\r\n')))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   const message = { raw }
   if (input.threadId) message.threadId = input.threadId
 
