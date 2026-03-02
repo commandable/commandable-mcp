@@ -33,6 +33,7 @@ const integrations = [
   { name: 'airtable',        label: 'Airtable'       },
   { name: 'trello',          label: 'Trello'         },
   { name: 'hubspot',         label: 'HubSpot'        },
+  { name: 'confluence',      label: 'Confluence'     },
   { name: 'google-calendar', label: 'Google Calendar'},
   { name: 'google-docs',     label: 'Google Docs'   },
   { name: 'google-drive',    label: 'Google Drive'  },
@@ -58,7 +59,7 @@ function buildBadge(label, data) {
   const total   = data.numTotalTests   ?? 0
 
   if (total === 0 || (passed === 0 && failed === 0 && skipped > 0)) {
-    return { schemaVersion: 1, label, message: 'skipped', color: 'lightgrey' }
+    return { schemaVersion: 1, label, message: 'untested', color: 'lightgrey' }
   }
   if (failed > 0) {
     return { schemaVersion: 1, label, message: `${passed}/${passed + failed} passed`, color: 'red' }

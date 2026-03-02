@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
 
@@ -13,6 +13,7 @@ interface Ctx {
   baseId?: string
   tableId?: string
   recordId?: string
+  ownedRecordId?: string
 }
 
 const env = process.env as Record<string, string>
@@ -26,6 +27,7 @@ const suite = hasEnv(
 suite('airtable read handlers (live)', () => {
   const ctx: Ctx = {}
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
+  let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
     const credentialStore = {
@@ -56,6 +58,16 @@ suite('airtable read handlers (live)', () => {
       return build(integration) as (input: any) => Promise<any>
     }
 
+    buildWriteHandler = (name: string) => {
+      const tool = tools!.write.find(t => t.name === name)
+      expect(tool, `write tool ${name} exists`).toBeTruthy()
+      const integration = {
+        fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init),
+      }
+      const build = new Function('integration', `return (${tool!.handlerCode});`)
+      return build(integration) as (input: any) => Promise<any>
+    }
+
     // Use explicit test base/table if provided, otherwise auto-discover from first base
     if (env.AIRTABLE_TEST_WRITE_BASE_ID && env.AIRTABLE_TEST_WRITE_TABLE_ID) {
       ctx.baseId = env.AIRTABLE_TEST_WRITE_BASE_ID
@@ -74,13 +86,39 @@ suite('airtable read handlers (live)', () => {
       }
     }
 
+    // Create a dedicated record so get_record has a stable ID that the concurrent
+    // write suite cannot accidentally delete out from under us.
     if (ctx.baseId && ctx.tableId) {
-      const list_records = buildHandler('list_records')
-      const recs = await list_records({ baseId: ctx.baseId, tableId: ctx.tableId, pageSize: 1 })
-      const records = recs?.records || recs
-      ctx.recordId = records?.[0]?.id
+      try {
+        const create_record = buildWriteHandler('create_record')
+        const created = await create_record({
+          baseId: ctx.baseId,
+          tableId: ctx.tableId,
+          fields: { Name: `ReadTest ${Date.now()}` },
+        })
+        const rec = created?.records?.[0] || created
+        ctx.ownedRecordId = rec?.id
+        ctx.recordId = rec?.id
+      }
+      catch {
+        // If create fails (e.g. no write permission), fall back to discovering a record
+        const list_records = buildHandler('list_records')
+        const recs = await list_records({ baseId: ctx.baseId, tableId: ctx.tableId, pageSize: 1 })
+        const records = recs?.records || recs
+        ctx.recordId = records?.[0]?.id
+      }
     }
   }, 60000)
+
+  afterAll(async () => {
+    if (ctx.ownedRecordId && ctx.baseId && ctx.tableId) {
+      try {
+        const delete_record = buildWriteHandler('delete_record')
+        await delete_record({ baseId: ctx.baseId, tableId: ctx.tableId, recordId: ctx.ownedRecordId })
+      }
+      catch {}
+    }
+  })
 
   it('list_bases returns bases', async () => {
     const handler = buildHandler('list_bases')
