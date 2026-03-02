@@ -6,12 +6,6 @@
       "title": "Page ID",
       "description": "The Confluence page ID."
     },
-    "includeBodyFormat": {
-      "type": "string",
-      "enum": ["storage", "atlas_doc_format"],
-      "default": "storage",
-      "description": "Which body representation to request for comment bodies. Confluence API v2 expects PrimaryBodyRepresentation values: STORAGE or ATLAS_DOC_FORMAT."
-    },
     "limit": {
       "type": "integer",
       "minimum": 1,
