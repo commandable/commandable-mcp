@@ -1,4 +1,4 @@
-export default (integration) => async (input) => {
+async (input) => {
   const params = new URLSearchParams()
   if (Array.isArray(input.state) && input.state.length)
     params.set('state', input.state.join(','))

@@ -1,6 +1,4 @@
-import { markdownToAdf } from './adf_helpers.js'
-
-export default (integration) => async (input) => {
+async (input) => {
   const fields = { ...(input.fields || {}) }
   const update = input.update ? { ...(input.update || {}) } : undefined
 
@@ -8,7 +6,7 @@ export default (integration) => async (input) => {
     fields.summary = input.summary
 
   if (typeof input.descriptionText === 'string')
-    fields.description = markdownToAdf(input.descriptionText)
+    fields.description = utils.adf?.fromMarkdown(input.descriptionText)
 
   if (Array.isArray(input.labels))
     fields.labels = input.labels

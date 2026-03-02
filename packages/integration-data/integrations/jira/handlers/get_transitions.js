@@ -1,4 +1,4 @@
-export default (integration) => async (input) => {
+async (input) => {
   const path = `/rest/api/3/issue/${encodeURIComponent(input.issueIdOrKey)}/transitions`
   const res = await integration.fetch(path)
   const data = await res.json()

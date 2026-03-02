@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { loadIntegrationTools } from '../integrations/dataLoader.js'
+import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
 
 const integrationDataDir = fileURLToPath(new URL('../../../integration-data/integrations', import.meta.url))
 
@@ -23,6 +24,24 @@ describe('integration engine ports', () => {
     expect(res.success).toBe(true)
     expect(res.result).toBe(2)
     expect(res.logs.join('\\n')).toContain('hi')
+  })
+
+  it('injects sandbox utils', async () => {
+    const utils = buildSandboxUtils(['adf'])
+    const handler = createSafeHandlerFromString(
+      `async (_input) => {
+        const md = utils.htmlToMarkdown('<p>Hello</p>')
+        const doc = utils.adf.fromMarkdown('# Title')
+        return { md, docType: doc?.type, version: doc?.version }
+      }`,
+      () => ({}),
+      utils,
+    )
+    const res = await handler({})
+    expect(res.success).toBe(true)
+    expect(String(res.result?.md)).toContain('Hello')
+    expect(res.result?.docType).toBe('doc')
+    expect(res.result?.version).toBe(1)
   })
 })
 

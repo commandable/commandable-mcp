@@ -1,18 +1,69 @@
-function escapeMarkdown(text) {
+import TurndownService from 'turndown'
+import { marked } from 'marked'
+
+export type SandboxUtils = {
+  htmlToMarkdown: (html: string) => string
+  htmlToText: (html: string) => string
+  adf?: {
+    toMarkdown: (adf: any) => string
+    toPlainText: (adf: any) => string
+    fromText: (text: string) => any
+    fromMarkdown: (markdown: string) => any
+  }
+}
+
+const turndown = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+})
+
+function decodeHtmlEntities(s: any) {
+  if (!s)
+    return ''
+  return String(s)
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, '\'')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, hex) => {
+      try { return String.fromCodePoint(parseInt(hex, 16)) } catch { return '' }
+    })
+    .replace(/&#([0-9]+);/g, (_m, dec) => {
+      try { return String.fromCodePoint(parseInt(dec, 10)) } catch { return '' }
+    })
+}
+
+function stripTagsToText(html: any) {
+  const raw = String(html || '')
+  const noTags = raw
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|section|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+  return decodeHtmlEntities(noTags)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function escapeMarkdown(text: any) {
   return String(text ?? '')
     .replace(/\\/g, '\\\\')
     .replace(/`/g, '\\`')
 }
 
-function escapeLinkTarget(url) {
+function escapeLinkTarget(url: any) {
   return String(url ?? '').replace(/\)/g, '%29')
 }
 
-function normalizeNewlines(s) {
+function normalizeNewlines(s: any) {
   return String(s ?? '').replace(/\r\n/g, '\n')
 }
 
-function joinBlocks(blocks) {
+function joinBlocks(blocks: any[]) {
   const out = blocks
     .map(s => String(s ?? '').trimEnd())
     .filter(Boolean)
@@ -21,7 +72,7 @@ function joinBlocks(blocks) {
   return out
 }
 
-function adfTextContent(node) {
+function adfTextContent(node: any): string {
   if (!node || typeof node !== 'object')
     return ''
   if (node.type === 'text')
@@ -30,7 +81,7 @@ function adfTextContent(node) {
   return content.map(adfTextContent).join('')
 }
 
-function renderInline(node) {
+function renderInline(node: any): string {
   if (!node || typeof node !== 'object')
     return ''
 
@@ -75,14 +126,14 @@ function renderInline(node) {
   return content.map(renderInline).join('')
 }
 
-function renderList(items, ordered, depth) {
-  const lines = []
+function renderList(items: any[], ordered: boolean, depth: number) {
+  const lines: string[] = []
   const indent = '  '.repeat(depth)
   let idx = 1
 
   for (const item of items) {
     const itemContent = Array.isArray(item?.content) ? item.content : []
-    const itemLines = []
+    const itemLines: string[] = []
 
     for (const c of itemContent) {
       if (c?.type === 'paragraph') {
@@ -110,24 +161,22 @@ function renderList(items, ordered, depth) {
     const bullet = ordered ? `${idx}. ` : '- '
     const first = itemLines.shift() || ''
     lines.push(`${indent}${bullet}${first}`)
-    for (const rest of itemLines) {
-      // continuation lines for the list item
+    for (const rest of itemLines)
       lines.push(`${indent}  ${rest}`)
-    }
     idx++
   }
 
   return lines.join('\n').trimEnd()
 }
 
-function renderTable(tableNode) {
+function renderTable(tableNode: any) {
   const rows = Array.isArray(tableNode?.content) ? tableNode.content : []
-  const mdRows = []
-  const rowCells = rows.map((row) => {
+  const mdRows: string[] = []
+  const rowCells = rows.map((row: any) => {
     const cells = Array.isArray(row?.content) ? row.content : []
-    return cells.map((cell) => {
+    return cells.map((cell: any) => {
       const cellContent = Array.isArray(cell?.content) ? cell.content : []
-      const text = joinBlocks(cellContent.map(c => renderBlock(c, 0))).replace(/\n+/g, '<br/>')
+      const text = joinBlocks(cellContent.map((c: any) => renderBlock(c, 0))).replace(/\n+/g, '<br/>')
       return text || ''
     })
   })
@@ -136,25 +185,23 @@ function renderTable(tableNode) {
     return ''
 
   const header = rowCells[0]
-  mdRows.push(`| ${header.map(c => c.replace(/\|/g, '\\|')).join(' | ')} |`)
+  mdRows.push(`| ${header.map((c: string) => c.replace(/\|/g, '\\|')).join(' | ')} |`)
   mdRows.push(`| ${header.map(() => '---').join(' | ')} |`)
 
-  for (const row of rowCells.slice(1)) {
-    mdRows.push(`| ${row.map(c => c.replace(/\|/g, '\\|')).join(' | ')} |`)
-  }
+  for (const row of rowCells.slice(1))
+    mdRows.push(`| ${row.map((c: string) => c.replace(/\|/g, '\\|')).join(' | ')} |`)
   return mdRows.join('\n')
 }
 
-function renderBlock(node, depth = 0) {
+function renderBlock(node: any, depth = 0): string {
   if (!node || typeof node !== 'object')
     return ''
 
   const type = node.type
   const content = Array.isArray(node.content) ? node.content : []
 
-  if (type === 'paragraph') {
+  if (type === 'paragraph')
     return renderInline({ content })
-  }
 
   if (type === 'heading') {
     const level = Number(node.attrs?.level || 1)
@@ -164,7 +211,7 @@ function renderBlock(node, depth = 0) {
   }
 
   if (type === 'blockquote') {
-    const inner = joinBlocks(content.map(c => renderBlock(c, depth)))
+    const inner = joinBlocks(content.map((c: any) => renderBlock(c, depth)))
     if (!inner)
       return ''
     return inner.split('\n').map(line => `> ${line}`).join('\n')
@@ -172,7 +219,7 @@ function renderBlock(node, depth = 0) {
 
   if (type === 'expand' || type === 'nestedExpand') {
     const title = node.attrs?.title || 'Details'
-    const inner = joinBlocks(content.map(c => renderBlock(c, depth)))
+    const inner = joinBlocks(content.map((c: any) => renderBlock(c, depth)))
     if (!inner)
       return ''
     return `<details>\n<summary>${escapeMarkdown(title)}</summary>\n\n${inner}\n</details>`
@@ -185,7 +232,7 @@ function renderBlock(node, depth = 0) {
     return renderList(content, true, depth)
 
   if (type === 'taskList') {
-    const rendered = content.map(c => renderBlock(c, depth)).filter(Boolean).join('\n')
+    const rendered = content.map((c: any) => renderBlock(c, depth)).filter(Boolean).join('\n')
     return rendered.trimEnd()
   }
 
@@ -214,47 +261,43 @@ function renderBlock(node, depth = 0) {
   }
 
   if (type === 'panel') {
-    const inner = joinBlocks(content.map(c => renderBlock(c, depth)))
+    const inner = joinBlocks(content.map((c: any) => renderBlock(c, depth)))
     if (!inner)
       return ''
     return `> ${inner.split('\n').join('\n> ')}`
   }
 
-  // Fallback: attempt to render children as blocks or inline
-  const asBlocks = joinBlocks(content.map(c => renderBlock(c, depth)))
+  const asBlocks = joinBlocks(content.map((c: any) => renderBlock(c, depth)))
   if (asBlocks)
     return asBlocks
-  const asInline = renderInline(node)
-  return asInline
+  return renderInline(node)
 }
 
-function adfToMarkdown(adf) {
+function adfToMarkdown(adf: any) {
   try {
     if (!adf || typeof adf !== 'object')
       return ''
     const content = Array.isArray(adf.content) ? adf.content : []
-    const out = joinBlocks(content.map(c => renderBlock(c, 0)))
-    return out
+    return joinBlocks(content.map((c: any) => renderBlock(c, 0)))
   }
   catch {
     return ''
   }
 }
 
-function adfToPlainText(adf) {
+function adfToPlainText(adf: any) {
   try {
     if (!adf || typeof adf !== 'object')
       return ''
     const content = Array.isArray(adf.content) ? adf.content : []
-    const out = joinBlocks(content.map(c => adfTextContent(c)))
-    return out
+    return joinBlocks(content.map((c: any) => adfTextContent(c)))
   }
   catch {
     return ''
   }
 }
 
-function textToAdf(text) {
+function textToAdf(text: any) {
   const s = normalizeNewlines(text || '').trim()
   if (!s) {
     return {
@@ -275,22 +318,20 @@ function textToAdf(text) {
   }
 }
 
-import { marked } from 'marked'
+function inlineTokensToAdf(inlineTokens: any[]) {
+  const out: any[] = []
 
-function inlineTokensToAdf(inlineTokens) {
-  const out = []
-
-  const pushText = (text, marks) => {
+  const pushText = (text: any, marks?: any[]) => {
     const t = String(text ?? '')
     if (!t)
       return
-    const node = { type: 'text', text: t }
+    const node: any = { type: 'text', text: t }
     if (marks?.length)
       node.marks = marks
     out.push(node)
   }
 
-  const walk = (tokens, marks = []) => {
+  const walk = (tokens: any[], marks: any[] = []) => {
     for (const tok of tokens || []) {
       if (!tok)
         continue
@@ -318,7 +359,6 @@ function inlineTokensToAdf(inlineTokens) {
         walk(tok.tokens || [{ type: 'text', text: tok.text }], nextMarks)
       }
       else if (tok.type === 'image') {
-        // ADF media requires uploads; keep the alt text (and URL if present).
         const alt = tok.text ? String(tok.text) : ''
         const href = tok.href ? String(tok.href) : ''
         const label = alt || href
@@ -338,17 +378,16 @@ function inlineTokensToAdf(inlineTokens) {
   return out
 }
 
-function blockTokensToAdf(tokens) {
-  const out = []
+function blockTokensToAdf(tokens: any[]) {
+  const out: any[] = []
 
-  const walk = (toks) => {
+  const walk = (toks: any[]) => {
     for (const tok of toks || []) {
       if (!tok)
         continue
 
-      if (tok.type === 'space') {
+      if (tok.type === 'space')
         continue
-      }
 
       if (tok.type === 'heading') {
         out.push({
@@ -380,18 +419,17 @@ function blockTokensToAdf(tokens) {
 
       if (tok.type === 'code') {
         const lang = tok.lang ? String(tok.lang) : undefined
-        const codeNode = {
+        out.push({
           type: 'codeBlock',
           attrs: lang ? { language: lang } : {},
           content: [{ type: 'text', text: normalizeNewlines(tok.text || '') }],
-        }
-        out.push(codeNode)
+        })
         continue
       }
 
       if (tok.type === 'list') {
         const listType = tok.ordered ? 'orderedList' : 'bulletList'
-        const listItems = (tok.items || []).map((item) => {
+        const listItems = (tok.items || []).map((item: any) => {
           const itemBlocks = blockTokensToAdf(item.tokens || [])
           return {
             type: 'listItem',
@@ -403,9 +441,9 @@ function blockTokensToAdf(tokens) {
       }
 
       if (tok.type === 'table') {
-        const makeRow = (cells, isHeader) => ({
+        const makeRow = (cells: any[], isHeader: boolean) => ({
           type: 'tableRow',
-          content: (cells || []).map((cell) => ({
+          content: (cells || []).map((cell: any) => ({
             type: isHeader ? 'tableHeader' : 'tableCell',
             content: [{
               type: 'paragraph',
@@ -415,13 +453,12 @@ function blockTokensToAdf(tokens) {
         })
 
         const headerRow = makeRow(tok.header || [], true)
-        const bodyRows = (tok.rows || []).map(r => makeRow(r, false))
+        const bodyRows = (tok.rows || []).map((r: any) => makeRow(r, false))
         out.push({ type: 'table', content: [headerRow, ...bodyRows] })
         continue
       }
 
       if (tok.type === 'html') {
-        // Keep raw HTML as text (Jira may or may not accept it; safest is text).
         const raw = String(tok.text || tok.raw || '').trim()
         if (raw) {
           out.push({
@@ -433,7 +470,6 @@ function blockTokensToAdf(tokens) {
       }
 
       if (tok.type === 'text') {
-        // Marked sometimes emits 'text' tokens containing inline content and/or additional nested tokens.
         const hasNested = Array.isArray(tok.tokens) && tok.tokens.length
         if (hasNested) {
           out.push({ type: 'paragraph', content: inlineTokensToAdf(tok.tokens) })
@@ -461,10 +497,10 @@ function blockTokensToAdf(tokens) {
   return out
 }
 
-function markdownToAdf(markdown) {
+function markdownToAdf(markdown: any) {
   const src = String(markdown ?? '')
   const tokens = marked.lexer(src)
-  const content = blockTokensToAdf(tokens)
+  const content = blockTokensToAdf(tokens as any[])
   return {
     type: 'doc',
     version: 1,
@@ -472,5 +508,27 @@ function markdownToAdf(markdown) {
   }
 }
 
-export { adfToMarkdown, adfToPlainText, textToAdf, markdownToAdf }
+export function buildSandboxUtils(bundles?: string[]): SandboxUtils {
+  const enabled = new Set((bundles || []).filter(Boolean))
+
+  const utils: SandboxUtils = {
+    htmlToMarkdown: (html: string) => {
+      try { return turndown.turndown(String(html ?? '')) } catch { return '' }
+    },
+    htmlToText: (html: string) => {
+      try { return stripTagsToText(html) } catch { return '' }
+    },
+  }
+
+  if (enabled.has('adf')) {
+    utils.adf = {
+      toMarkdown: adfToMarkdown,
+      toPlainText: adfToPlainText,
+      fromText: textToAdf,
+      fromMarkdown: markdownToAdf,
+    }
+  }
+
+  return utils
+}
 

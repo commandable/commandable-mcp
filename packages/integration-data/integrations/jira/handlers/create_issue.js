@@ -1,13 +1,11 @@
-import { markdownToAdf } from './adf_helpers.js'
-
-export default (integration) => async (input) => {
+async (input) => {
   const fields = {
     project: { key: input.projectKey },
     summary: input.summary,
   }
 
   if (input.descriptionText)
-    fields.description = markdownToAdf(input.descriptionText)
+    fields.description = utils.adf?.fromMarkdown(input.descriptionText)
 
   if (input.issueTypeId) {
     fields.issuetype = { id: String(input.issueTypeId) }

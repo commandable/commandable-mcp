@@ -1,6 +1,4 @@
-import { adfToMarkdown, adfToPlainText } from './adf_helpers.js'
-
-export default (integration) => async (input) => {
+async (input) => {
   const defaultFields = [
     'summary',
     'status',
@@ -26,8 +24,8 @@ export default (integration) => async (input) => {
   const data = await res.json()
 
   const descAdf = data?.fields?.description
-  const descMarkdown = adfToMarkdown(descAdf)
-  const descText = descMarkdown ? '' : adfToPlainText(descAdf)
+  const descMarkdown = utils.adf?.toMarkdown(descAdf) || ''
+  const descText = descMarkdown ? '' : (utils.adf?.toPlainText(descAdf) || '')
 
   return {
     id: data.id ?? null,

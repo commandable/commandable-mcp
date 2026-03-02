@@ -29,9 +29,7 @@
     "access": "public"
   },
   "dependencies": {
-    "json-schema": "^0.4.0",
-    "marked": "^17.0.3",
-    "turndown": "^7.2.2"
+    "json-schema": "^0.4.0"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

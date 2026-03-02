@@ -1,7 +1,7 @@
 {
   "name": "jira",
   "version": "0.1.0",
-  "handlerMode": "module",
+  "utils": ["adf"],
   "toolsets": {
     "issues": {
       "label": "Issues",

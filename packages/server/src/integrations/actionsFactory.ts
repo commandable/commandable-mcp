@@ -4,7 +4,7 @@ import { loadIntegrationDisplayCards, loadIntegrationTools } from './dataLoader.
 import { makeIntegrationToolName, sanitizeJsonSchema } from './tools.js'
 import { createSafeHandlerFromString } from './sandbox.js'
 import { createGetIntegration } from './getIntegration.js'
-import { pathToFileURL } from 'node:url'
+import { buildSandboxUtils } from './sandboxUtils.js'
 
 type Scope = 'read' | 'write' | 'admin'
 
@@ -44,44 +44,9 @@ export function buildToolsByIntegration(
       const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
 
-      // Module handlers run in-process (real ES modules). Everything else runs sandboxed.
-      if (t.handlerMode === 'module' && typeof t.handlerPath === 'string' && t.handlerPath.length) {
-        let moduleFactory: any | null = null
-        const run: ExecutableTool['run'] = async (input: any) => {
-          try {
-            if (!moduleFactory) {
-              const mod: any = await import(pathToFileURL(t.handlerPath).href)
-              moduleFactory = mod?.default
-              if (typeof moduleFactory !== 'function')
-                throw new Error(`Invalid module handler: missing default export factory (${t.handlerPath})`)
-            }
-
-            const integration = getIntegration(integ.id)
-            const handler = moduleFactory(integration)
-            if (typeof handler !== 'function')
-              throw new Error(`Invalid module handler: default export did not return a function (${t.handlerPath})`)
-
-            const result = await handler(input)
-            return { success: true, result, logs: [] }
-          }
-          catch (err: any) {
-            return { success: false, result: err, logs: [err?.stack || String(err)] }
-          }
-        }
-
-        return {
-          name: toolName,
-          displayName: `${t.displayName || humanize(t.name)}`,
-          description,
-          inputSchema: schemaObj,
-          run,
-          integrations: [integ],
-          requireConfirmation: scope === 'write' && requireWriteConfirmation,
-        }
-      }
-
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
-      const safeHandler = createSafeHandlerFromString(wrapper, getIntegration)
+      const utils = buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined)
+      const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
       return {
         name: toolName,
         displayName: `${t.displayName || humanize(t.name)}`,

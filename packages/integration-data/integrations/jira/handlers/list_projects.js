@@ -1,4 +1,4 @@
-export default (integration) => async (input) => {
+async (input) => {
   const params = new URLSearchParams()
   if (input?.query)
     params.set('query', input.query)

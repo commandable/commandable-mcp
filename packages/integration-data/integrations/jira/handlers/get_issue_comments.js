@@ -1,6 +1,4 @@
-import { adfToMarkdown, adfToPlainText } from './adf_helpers.js'
-
-export default (integration) => async (input) => {
+async (input) => {
   const params = new URLSearchParams()
   params.set('startAt', String(input.startAt ?? 0))
   params.set('maxResults', String(input.maxResults ?? 50))
@@ -15,8 +13,8 @@ export default (integration) => async (input) => {
     maxResults: data.maxResults ?? (input.maxResults ?? 50),
     total: data.total ?? comments.length,
     comments: comments.map((c) => {
-      const md = adfToMarkdown(c.body)
-      const text = md ? '' : adfToPlainText(c.body)
+      const md = utils.adf?.toMarkdown(c.body) || ''
+      const text = md ? '' : (utils.adf?.toPlainText(c.body) || '')
       return {
         id: c.id ?? null,
         created: c.created ?? null,

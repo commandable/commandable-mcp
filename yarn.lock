@@ -383,8 +383,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:^24.3.0"
     json-schema: "npm:^0.4.0"
-    marked: "npm:^17.0.3"
-    turndown: "npm:^7.2.2"
     typescript: "npm:^5.9.3"
     vitest: "npm:^3.2.4"
   languageName: unknown
@@ -428,8 +426,10 @@ __metadata:
     google-auth-library: "npm:^10.3.0"
     js-yaml: "npm:^4.1.0"
     json-schema: "npm:^0.4.0"
+    marked: "npm:^17.0.3"
     pg: "npm:^8.16.3"
     picocolors: "npm:^1.1.1"
+    turndown: "npm:^7.2.2"
     typescript: "npm:^5.9.3"
     vitest: "npm:^3.2.4"
     zod: "npm:^4.1.5"

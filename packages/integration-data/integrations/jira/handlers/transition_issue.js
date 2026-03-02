@@ -1,21 +1,19 @@
-import { markdownToAdf } from './adf_helpers.js'
+async (input) => {
+  const resolveTransitionId = async (issueIdOrKey, transitionId, transitionName) => {
+    if (transitionId)
+      return String(transitionId)
+    const name = String(transitionName || '').trim().toLowerCase()
+    if (!name)
+      return null
 
-async function resolveTransitionId(integration, issueIdOrKey, transitionId, transitionName) {
-  if (transitionId)
-    return String(transitionId)
-  const name = String(transitionName || '').trim().toLowerCase()
-  if (!name)
-    return null
+    const res = await integration.fetch(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/transitions`)
+    const data = await res.json()
+    const transitions = Array.isArray(data.transitions) ? data.transitions : []
+    const match = transitions.find(t => String(t?.name || '').trim().toLowerCase() === name)
+    return match?.id ? String(match.id) : null
+  }
 
-  const res = await integration.fetch(`/rest/api/3/issue/${encodeURIComponent(issueIdOrKey)}/transitions`)
-  const data = await res.json()
-  const transitions = Array.isArray(data.transitions) ? data.transitions : []
-  const match = transitions.find(t => String(t?.name || '').trim().toLowerCase() === name)
-  return match?.id ? String(match.id) : null
-}
-
-export default (integration) => async (input) => {
-  const id = await resolveTransitionId(integration, input.issueIdOrKey, input.transitionId, input.transitionName)
+  const id = await resolveTransitionId(input.issueIdOrKey, input.transitionId, input.transitionName)
   if (!id)
     throw new Error(`Could not resolve transition. Provide a valid transitionId or transitionName (call get_transitions to see available transitions).`)
 
@@ -31,7 +29,7 @@ export default (integration) => async (input) => {
   if (input.commentText) {
     body.update = body.update || {}
     body.update.comment = body.update.comment || []
-    body.update.comment.push({ add: { body: markdownToAdf(input.commentText) } })
+    body.update.comment.push({ add: { body: utils.adf?.fromMarkdown(input.commentText) } })
   }
 
   const res = await integration.fetch(`/rest/api/3/issue/${encodeURIComponent(input.issueIdOrKey)}/transitions`, {

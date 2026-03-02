@@ -1,4 +1,4 @@
-export default (integration) => async (input) => {
+async (input) => {
   const body = {}
   if (input.name !== undefined)
     body.name = input.name

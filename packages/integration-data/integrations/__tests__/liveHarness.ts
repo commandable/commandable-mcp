@@ -1,12 +1,12 @@
 import { IntegrationProxy } from '../../../server/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../server/src/integrations/dataLoader.js'
-import { pathToFileURL } from 'node:url'
+import { createSafeHandlerFromString } from '../../../server/src/integrations/sandbox.js'
+import { buildSandboxUtils } from '../../../server/src/integrations/sandboxUtils.js'
 
 type ToolDef = {
   name: string
   handlerCode: string
-  handlerMode?: 'sandbox' | 'module'
-  handlerPath?: string
+  utils?: string[]
 }
 
 type ToolSet = {
@@ -55,26 +55,15 @@ function getTools(type: string, credentialVariant?: string): ToolSet {
 
 function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(node, path, init) }
-
-  if (tool.handlerMode === 'module' && typeof tool.handlerPath === 'string' && tool.handlerPath.length) {
-    let compiled: null | ((input: any) => Promise<any>) = null
-    return async (input: any) => {
-      if (!compiled) {
-        const mod: any = await import(pathToFileURL(tool.handlerPath!).href)
-        const factory = mod?.default
-        if (typeof factory !== 'function')
-          throw new Error(`Invalid module handler: missing default export factory (${tool.handlerPath})`)
-        const handler = factory(integration)
-        if (typeof handler !== 'function')
-          throw new Error(`Invalid module handler: factory did not return a function (${tool.handlerPath})`)
-        compiled = handler
-      }
-      return await compiled(input)
-    }
+  const wrapper = `async (input) => {\n  const integration = getIntegration('${String(node?.id || 'node')}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
+  const utils = buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined)
+  const safeHandler = createSafeHandlerFromString(wrapper, () => integration, utils)
+  return async (input: any) => {
+    const res = await safeHandler(input)
+    if (!res.success)
+      throw res.result
+    return res.result
   }
-
-  const build = new Function('integration', `return (${tool.handlerCode});`)
-  return build(integration) as (input: any) => Promise<any>
 }
 
 export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string) {
