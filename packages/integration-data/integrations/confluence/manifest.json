@@ -26,7 +26,7 @@
     },
     {
       "name": "read_page",
-      "description": "Read a page and return agent-friendly Markdown extracted from Confluence storage format (XHTML). Use this to understand page content.",
+      "description": "Read a page and return its content in Confluence storage format (XHTML). Set `outputMarkdown: true` to get Markdown instead — useful for quick reading or summarisation but lossy, do not use it if you plan to edit the page.",
       "inputSchema": "schemas/read_page.json",
       "handler": "handlers/read_page.js",
       "scope": "read"

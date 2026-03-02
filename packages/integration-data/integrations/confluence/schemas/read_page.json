@@ -15,6 +15,11 @@
       "type": "boolean",
       "default": false,
       "description": "Include content properties (may be verbose)."
+    },
+    "outputMarkdown": {
+      "type": "boolean",
+      "default": false,
+      "description": "Return content as Markdown instead of Confluence storage XHTML. Useful for quick reading or summarisation. Lossy — macros and rich formatting are stripped. Do not use this format if you intend to edit the page."
     }
   },
   "required": ["pageId"],

@@ -25,10 +25,7 @@ async (input) => {
     ? storage
     : (typeof storage?.value === 'string' ? storage.value : '')
 
-  const contentMarkdown = storageValue ? utils.htmlToMarkdown(storageValue) : ''
-  const contentText = storageValue ? utils.htmlToText(storageValue) : ''
-
-  return {
+  const meta = {
     id: data?.id,
     title: data?.title,
     spaceId: data?.spaceId,
@@ -38,9 +35,15 @@ async (input) => {
     createdAt: data?.createdAt,
     webUrl: buildWebUrl(data?._links),
     labels: data?.labels?.results,
-    contentMarkdown: contentMarkdown || null,
-    contentText: contentText || null,
     links: data?._links || {},
   }
+
+  if (input.outputMarkdown) {
+    const md = storageValue ? (utils.html?.toMarkdown(storageValue) || '') : ''
+    const note = '\n\n---\n_System note: this is a Markdown representation of the page. If you intend to edit it, re-fetch without `outputMarkdown` to get the storage XHTML and avoid accidentally deleting macros or hidden content._'
+    return { ...meta, contentMarkdown: md ? md + note : null }
+  }
+
+  return { ...meta, contentStorage: storageValue || null }
 }
 

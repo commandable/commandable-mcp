@@ -4,8 +4,27 @@
 
 1. Use `list_spaces` (or `search_pages`) to discover where content lives.
 2. Use `search_pages` with CQL to find the right page ID(s).
-3. Use `read_page` to get the content as Markdown.
-4. For edits, use `update_page` (it automatically handles version increments).
+3. Use `read_page` to get the page content as Confluence storage format (XHTML).
+4. For edits, use `update_page` with storage XHTML in `bodyStorage` (it automatically handles version increments).
+
+## Content format
+
+All content is exchanged in **Confluence storage format (XHTML)**. This applies to both reads (`contentStorage` field in `read_page`) and writes (`bodyStorage` field in `create_page`, `update_page`, `add_comment`).
+
+Common markup:
+
+- Headings: `<h1>Title</h1>`, `<h2>Section</h2>`
+- Paragraphs: `<p>Text</p>`
+- Lists: `<ul><li>Item</li></ul>`, `<ol><li>Item</li></ol>`
+- Inline code: `<code>const x = 1</code>`
+- Code blocks: `<pre><code>...</code></pre>`
+- Links: `<a href="https://example.com">Example</a>`
+- Tables: `<table><tr><th>A</th></tr><tr><td>1</td></tr></table>`
+- Macros: `<ac:structured-macro ac:name="info"><ac:rich-text-body><p>Note</p></ac:rich-text-body></ac:structured-macro>`
+
+Using XHTML natively means round-tripping pages preserves all formatting, macros, and Confluence-specific markup.
+
+`read_page` accepts `outputMarkdown: true` to return content as Markdown instead of XHTML. 
 
 ## CQL (Confluence Query Language) quick reference
 
@@ -27,22 +46,6 @@ Common patterns for `search_pages.cql`:
 Tips:
 - Prefer small `limit` (e.g. 10) and paginate with `start`.
 - Use labels as a stable way to group pages for later discovery.
-
-## Confluence storage format (XHTML) basics
-
-Write tools (`create_page`, `update_page`, `add_comment`) use **Confluence storage format** in `bodyStorage`.
-
-For most agent use cases, simple HTML-like markup is enough:
-
-- Headings: `<h1>Title</h1>`, `<h2>Section</h2>`
-- Paragraphs: `<p>Text</p>`
-- Lists: `<ul><li>Item</li></ul>`, `<ol><li>Item</li></ol>`
-- Inline code: `<code>const x = 1</code>`
-- Code blocks: `<pre><code>...</code></pre>`
-- Links: `<a href="https://example.com">Example</a>`
-- Tables (basic): `<table><tr><th>A</th></tr><tr><td>1</td></tr></table>`
-
-Note: Confluence also supports rich macros like `<ac:structured-macro>...</ac:structured-macro>`. If you encounter macro-heavy pages, `read_page` will still extract useful text, but editing while preserving complex macro structure may require fetching the storage XHTML and updating carefully.
 
 ## Page hierarchy
 

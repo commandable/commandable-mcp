@@ -2,8 +2,11 @@ import TurndownService from 'turndown'
 import { marked } from 'marked'
 
 export type SandboxUtils = {
-  htmlToMarkdown?: (html: string) => string
-  htmlToText?: (html: string) => string
+  html?: {
+    toMarkdown: (html: string) => string
+    toText: (html: string) => string
+    fromMarkdown: (markdown: string) => string
+  }
   adf?: {
     toMarkdown: (adf: any) => string
     toPlainText: (adf: any) => string
@@ -513,11 +516,16 @@ export function buildSandboxUtils(bundles?: string[]): SandboxUtils {
   const utils: SandboxUtils = {}
 
   if (enabled.has('html')) {
-    utils.htmlToMarkdown = (html: string) => {
-      try { return turndown.turndown(String(html ?? '')) } catch { return '' }
-    }
-    utils.htmlToText = (html: string) => {
-      try { return stripTagsToText(html) } catch { return '' }
+    utils.html = {
+      toMarkdown: (html: string) => {
+        try { return turndown.turndown(String(html ?? '')) } catch { return '' }
+      },
+      toText: (html: string) => {
+        try { return stripTagsToText(html) } catch { return '' }
+      },
+      fromMarkdown: (md: string) => {
+        try { return marked.parse(String(md ?? ''), { async: false }) as string } catch { return '' }
+      },
     }
   }
 

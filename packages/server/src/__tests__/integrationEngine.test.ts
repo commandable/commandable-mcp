@@ -30,9 +30,10 @@ describe('integration engine ports', () => {
     const utils = buildSandboxUtils(['html', 'adf'])
     const handler = createSafeHandlerFromString(
       `async (_input) => {
-        const md = utils.htmlToMarkdown('<p>Hello</p>')
+        const md = utils.html.toMarkdown('<p>Hello</p>')
+        const html = utils.html.fromMarkdown('**bold**')
         const doc = utils.adf.fromMarkdown('# Title')
-        return { md, docType: doc?.type, version: doc?.version }
+        return { md, html, docType: doc?.type, version: doc?.version }
       }`,
       () => ({}),
       utils,
@@ -40,6 +41,7 @@ describe('integration engine ports', () => {
     const res = await handler({})
     expect(res.success).toBe(true)
     expect(String(res.result?.md)).toContain('Hello')
+    expect(String(res.result?.html)).toContain('<strong>')
     expect(res.result?.docType).toBe('doc')
     expect(res.result?.version).toBe(1)
   })
@@ -49,7 +51,7 @@ describe('integration engine ports', () => {
     const handler = createSafeHandlerFromString(
       `async (_input) => {
         return {
-          hasHtml: typeof utils.htmlToMarkdown === 'function',
+          hasHtml: typeof utils.html === 'object',
           hasAdf: typeof utils.adf === 'object',
         }
       }`,
