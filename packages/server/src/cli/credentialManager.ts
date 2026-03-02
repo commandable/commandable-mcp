@@ -25,7 +25,7 @@ export function getCommandableDir(): string {
 }
 
 export function getOrCreateEncryptionSecret(): string {
-  const envSecret = process.env.COMMANDABLE_ENCRYPTION_SECRET || process.env.COMMANDABLE_MCP_ENCRYPTION_SECRET
+  const envSecret = process.env.COMMANDABLE_ENCRYPTION_SECRET
   if (envSecret && envSecret.trim().length)
     return envSecret.trim()
 

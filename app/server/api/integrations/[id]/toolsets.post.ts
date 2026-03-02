@@ -17,8 +17,11 @@ export default defineEventHandler(async (event) => {
   if (!integration)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  integration.enabledToolsets = body.enabledToolsets.map((value: unknown) => String(value))
+  // Empty array means "all toolsets enabled" -> store null to avoid filtering out all tools.
+  integration.enabledToolsets = Array.isArray(body.enabledToolsets) && body.enabledToolsets.length
+    ? body.enabledToolsets.map((value: unknown) => String(value))
+    : null
   await upsertIntegration(db, integration)
 
-  return { ok: true, enabledToolsets: integration.enabledToolsets }
+  return { ok: true, enabledToolsets: integration.enabledToolsets ?? null }
 })

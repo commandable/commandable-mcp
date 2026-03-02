@@ -2,7 +2,7 @@ import { createDbFromEnv, ensureSchema } from '@commandable/mcp'
 import { createError } from 'h3'
 
 const REQUIRED_INTEGRATION_COLUMNS = [
-  'id', 'space_id', 'type', 'reference_id', 'label',
+  'id', 'space_id', 'type', 'reference_id', 'label', 'enabled',
   'connection_method', 'connection_id', 'credential_id', 'credential_variant',
   'config_json', 'enabled_toolsets', 'max_scope', 'disabled_tools', 'created_at',
 ]

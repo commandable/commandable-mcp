@@ -30,6 +30,8 @@ export async function ensureSchema(client: DbClient): Promise<void> {
       client.raw.exec('ALTER TABLE integrations ADD COLUMN max_scope TEXT;')
     if (!colNames.has('disabled_tools'))
       client.raw.exec('ALTER TABLE integrations ADD COLUMN disabled_tools TEXT;')
+    if (!colNames.has('enabled'))
+      client.raw.exec('ALTER TABLE integrations ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;')
 
     client.raw.exec(`
       CREATE TABLE IF NOT EXISTS credentials (
@@ -89,6 +91,9 @@ export async function ensureSchema(client: DbClient): Promise<void> {
   `)
   await client.raw.query(`
     ALTER TABLE integrations ADD COLUMN IF NOT EXISTS disabled_tools TEXT;
+  `)
+  await client.raw.query(`
+    ALTER TABLE integrations ADD COLUMN IF NOT EXISTS enabled TEXT NOT NULL DEFAULT '1';
   `)
 
   await client.raw.query(`

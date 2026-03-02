@@ -23,6 +23,9 @@ export function buildToolsByIntegration(
   const toolsByIntegration: Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> = {}
 
   for (const integ of integrations) {
+    if (integ.enabled === false)
+      continue
+
     const loaded = loadIntegrationTools(integ.type, {
       credentialVariant: integ.credentialVariant ?? undefined,
       toolsets: integ.enabledToolsets ?? undefined,
