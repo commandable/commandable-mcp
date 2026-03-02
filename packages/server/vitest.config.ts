@@ -39,10 +39,7 @@ export default defineConfig({
     environment: 'node',
     include: integration
       ? [`../integration-data/integrations/${integration}/__tests__/**/*.test.ts`]
-      : [
-          'src/__tests__/**/*.test.ts',
-          '../integration-data/integrations/**/__tests__/**/*.test.ts',
-        ],
+      : ['src/__tests__/**/*.test.ts'],
   },
 })
 

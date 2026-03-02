@@ -21,6 +21,9 @@ export * from './db/integrationStore.js'
 
 export * from './mcp/toolAdapter.js'
 export * from './mcp/handlers.js'
+export * from './mcp/abilityCatalog.js'
+export * from './mcp/sessionState.js'
+export * from './mcp/metaTools.js'
 export * from './mcp/auth.js'
 export * from './mcp/server.js'
 

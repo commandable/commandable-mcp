@@ -4,6 +4,8 @@ import { IntegrationProxy } from '../integrations/proxy.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { runStdioMcpServer } from '../mcp/server.js'
 import { createApiKey, generateApiKey } from '../mcp/auth.js'
+import { AbilityCatalog } from '../mcp/abilityCatalog.js'
+import { SessionAbilityState } from '../mcp/sessionState.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
@@ -67,9 +69,20 @@ async function runStdioFromDb() {
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy })
 
+  const staticMode = String(process.env.COMMANDABLE_STATIC_MODE || '').toLowerCase() === 'true'
+    || String(process.env.COMMANDABLE_STATIC_MODE || '') === '1'
+
   await runStdioMcpServer({
     serverInfo: { name: 'commandable', version: '0.0.1' },
     tools: { list: index.tools, byName: index.byName },
+    ...(staticMode
+      ? {}
+      : {
+          abilityMode: {
+            catalog: new AbilityCatalog({ integrations, toolIndex: index.byName }),
+            sessionState: new SessionAbilityState(),
+          },
+        }),
   })
 }
 

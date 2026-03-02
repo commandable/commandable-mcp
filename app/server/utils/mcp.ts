@@ -4,7 +4,9 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { randomUUID } from 'node:crypto'
 import {
+  AbilityCatalog,
   IntegrationProxy,
+  SessionAbilityState,
   SqlCredentialStore,
   buildMcpToolIndex,
   getOrCreateEncryptionSecret,
@@ -16,6 +18,7 @@ import { getDb } from './db'
 type McpState = {
   server: Server
   transports: Map<string, StreamableHTTPServerTransport>
+  sessionState?: SessionAbilityState
 }
 
 declare global {
@@ -48,15 +51,30 @@ async function getOrCreateState(): Promise<McpState> {
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy })
 
+  const staticMode = String(process.env.COMMANDABLE_STATIC_MODE || '').toLowerCase() === 'true'
+    || String(process.env.COMMANDABLE_STATIC_MODE || '') === '1'
+
   const server = new Server(getServerInfo(), {
-    capabilities: { tools: {} },
+    capabilities: { tools: { listChanged: true } },
   })
 
-  registerToolHandlers(server, { list: index.tools, byName: index.byName })
+  const sessionState = staticMode ? undefined : new SessionAbilityState()
+
+  registerToolHandlers(
+    server,
+    { list: index.tools, byName: index.byName },
+    staticMode
+      ? undefined
+      : {
+          catalog: new AbilityCatalog({ integrations, toolIndex: index.byName }),
+          sessionState: sessionState!,
+        },
+  )
 
   const state: McpState = {
     server,
     transports: new Map(),
+    sessionState,
   }
 
   globalThis.__commandableMcpHttpState = state
@@ -122,8 +140,10 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
 
   transport.onclose = () => {
     const sid = transport.sessionId
-    if (sid)
+    if (sid) {
       state.transports.delete(sid)
+      state.sessionState?.cleanup(sid)
+    }
   }
 
   await state.server.connect(transport)

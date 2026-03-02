@@ -264,6 +264,87 @@ See [`TESTING.md`](./TESTING.md).
 
 ---
 
+## Local development with Claude Desktop
+
+To test local source changes against Claude Desktop directly, rather than using the published npm package:
+
+### 1) Build the server package
+
+```bash
+yarn workspace @commandable/mcp build
+```
+
+This compiles TypeScript to `packages/server/dist/`. Repeat this after any changes to the server package.
+
+### 2) Configure Claude Desktop to use your local build
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (create it if it doesn't exist):
+
+```json
+{
+  "mcpServers": {
+    "commandable": {
+      "command": "node",
+      "args": ["/absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js"]
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/commandable-mcp` with the actual path to your cloned repo.
+
+### 3) Set up integrations (first time only)
+
+The stdio server exits immediately if no integrations are configured. Run the setup wizard once to configure at least one integration:
+
+```bash
+node /absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js init
+```
+
+To check what's currently configured:
+
+```bash
+node /absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js status
+```
+
+### 4) Restart Claude Desktop
+
+Restart Claude Desktop after any config change. Claude will spawn the local binary on the next conversation.
+
+### Testing server mode (HTTP + UI) locally
+
+To test the management UI and HTTP MCP endpoint without Docker:
+
+```bash
+# Start the dev server (auto-reloads on changes)
+yarn dev
+```
+
+This serves:
+- Management UI at `http://localhost:3000/`
+- MCP endpoint at `http://localhost:3000/mcp`
+
+Create an API key for the MCP endpoint:
+
+```bash
+node packages/server/dist/cli/bin.js create-api-key dev
+```
+
+Connect Claude Code to the local HTTP endpoint:
+
+```bash
+claude mcp add --transport http commandable http://localhost:3000/mcp \
+  --header "Authorization: Bearer <your-api-key>"
+```
+
+To watch both the server package and the Nuxt app simultaneously (changes to `@commandable/mcp` hot-reload into the app):
+
+```bash
+yarn dev:full
+```
+
+---
+
 
 ## Repo structure
 
