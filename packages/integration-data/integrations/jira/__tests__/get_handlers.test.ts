@@ -8,33 +8,15 @@ import { createCredentialStore, createIntegrationNode, createProxy, createToolbo
 // - JIRA_EMAIL
 // - JIRA_API_TOKEN
 //
-// Variant: oauth_token
-// - JIRA_CLOUD_ID
-// - JIRA_OAUTH_TOKEN
-//
 // Optional (improves coverage):
 // - JIRA_TEST_PROJECT_KEY
 
 const env = process.env as Record<string, string | undefined>
 
-type VariantConfig =
-  | { key: 'api_token', creds: { domain: string, email: string, apiToken: string } }
-  | { key: 'oauth_token', creds: { cloudId: string, token: string } }
-
-const variants: VariantConfig[] = [
-  hasEnv('JIRA_DOMAIN', 'JIRA_EMAIL', 'JIRA_API_TOKEN')
-    ? { key: 'api_token', creds: { domain: env.JIRA_DOMAIN!, email: env.JIRA_EMAIL!, apiToken: env.JIRA_API_TOKEN! } }
-    : null,
-  hasEnv('JIRA_CLOUD_ID', 'JIRA_OAUTH_TOKEN')
-    ? { key: 'oauth_token', creds: { cloudId: env.JIRA_CLOUD_ID!, token: env.JIRA_OAUTH_TOKEN! } }
-    : null,
-].filter(Boolean) as VariantConfig[]
-
-const suiteOrSkip = variants.length > 0 ? describe : describe.skip
+const suiteOrSkip = hasEnv('JIRA_DOMAIN', 'JIRA_EMAIL', 'JIRA_API_TOKEN') ? describe : describe.skip
 
 suiteOrSkip('jira read handlers (live)', () => {
-  for (const variant of variants) {
-    describe(`variant: ${variant.key}`, () => {
+  describe('variant: api_token', () => {
       const ctx: {
         projectKey?: string
         issueKey?: string
@@ -45,9 +27,13 @@ suiteOrSkip('jira read handlers (live)', () => {
       let jira: ReturnType<typeof createToolbox>
 
       beforeAll(async () => {
-        const credentialStore = createCredentialStore(async () => variant.creds)
+        const credentialStore = createCredentialStore(async () => ({
+          domain: env.JIRA_DOMAIN!,
+          email: env.JIRA_EMAIL!,
+          apiToken: env.JIRA_API_TOKEN!,
+        }))
         const proxy = createProxy(credentialStore)
-        jira = createToolbox('jira', proxy, createIntegrationNode('jira', { label: 'Jira', credentialId: 'jira-creds', credentialVariant: variant.key }), variant.key)
+        jira = createToolbox('jira', proxy, createIntegrationNode('jira', { label: 'Jira', credentialId: 'jira-creds', credentialVariant: 'api_token' }), 'api_token')
 
         try {
           const list_projects = jira.read('list_projects')
@@ -202,7 +188,6 @@ suiteOrSkip('jira read handlers (live)', () => {
         const res = await get_backlog_issues({ boardId: ctx.boardId, maxResults: 5 })
         expect(res).toBeTruthy()
       }, 30000)
-    })
-  }
+  })
 })
 

@@ -5,55 +5,48 @@ import { createCredentialStore, createIntegrationNode, createProxy, createToolbo
 //
 // Required for write tests:
 // - JIRA_TEST_PROJECT_KEY
-// - JIRA_TEST_ISSUE_TYPE_NAME
 //
 // Variant: api_token
 // - JIRA_DOMAIN
 // - JIRA_EMAIL
 // - JIRA_API_TOKEN
 //
-// Variant: oauth_token
-// - JIRA_CLOUD_ID
-// - JIRA_OAUTH_TOKEN
-//
 // Optional:
 // - JIRA_TEST_TRANSITION_NAME (enables transition_issue)
-// - JIRA_TEST_SPRINT_ID (enables move_issues_to_sprint)
+// - JIRA_TEST_BOARD_ID (enables sprint roundtrip: create_sprint -> move_issues_to_sprint -> delete_sprint)
 
 const env = process.env as Record<string, string | undefined>
 
-type VariantConfig =
-  | { key: 'api_token', creds: { domain: string, email: string, apiToken: string } }
-  | { key: 'oauth_token', creds: { cloudId: string, token: string } }
-
-const variants: VariantConfig[] = [
-  hasEnv('JIRA_DOMAIN', 'JIRA_EMAIL', 'JIRA_API_TOKEN')
-    ? { key: 'api_token', creds: { domain: env.JIRA_DOMAIN!, email: env.JIRA_EMAIL!, apiToken: env.JIRA_API_TOKEN! } }
-    : null,
-  hasEnv('JIRA_CLOUD_ID', 'JIRA_OAUTH_TOKEN')
-    ? { key: 'oauth_token', creds: { cloudId: env.JIRA_CLOUD_ID!, token: env.JIRA_OAUTH_TOKEN! } }
-    : null,
-].filter(Boolean) as VariantConfig[]
-
-const hasWriteEnv = hasEnv('JIRA_TEST_PROJECT_KEY', 'JIRA_TEST_ISSUE_TYPE_NAME')
-const suiteOrSkip = (variants.length > 0 && hasWriteEnv) ? describe : describe.skip
+const suiteOrSkip = (hasEnv('JIRA_DOMAIN', 'JIRA_EMAIL', 'JIRA_API_TOKEN') && hasEnv('JIRA_TEST_PROJECT_KEY'))
+  ? describe
+  : describe.skip
 
 suiteOrSkip('jira write handlers (live)', () => {
-  for (const variant of variants) {
-    describe(`variant: ${variant.key}`, () => {
+  describe('variant: api_token', () => {
       const ctx: {
         createdIssueKey?: string
+        createdSprintId?: number
       } = {}
 
       let jira: ReturnType<typeof createToolbox>
 
       beforeAll(async () => {
-        const credentialStore = createCredentialStore(async () => variant.creds)
+        const credentialStore = createCredentialStore(async () => ({
+          domain: env.JIRA_DOMAIN!,
+          email: env.JIRA_EMAIL!,
+          apiToken: env.JIRA_API_TOKEN!,
+        }))
         const proxy = createProxy(credentialStore)
-        jira = createToolbox('jira', proxy, createIntegrationNode('jira', { label: 'Jira', credentialId: 'jira-creds', credentialVariant: variant.key }), variant.key)
+        jira = createToolbox('jira', proxy, createIntegrationNode('jira', { label: 'Jira', credentialId: 'jira-creds', credentialVariant: 'api_token' }), 'api_token')
       }, 60000)
 
       afterAll(async () => {
+        await safeCleanup(async () => {
+          if (!ctx.createdSprintId)
+            return
+          const delete_sprint = jira.write('delete_sprint')
+          await delete_sprint({ sprintId: ctx.createdSprintId })
+        })
         await safeCleanup(async () => {
           if (!ctx.createdIssueKey)
             return
@@ -67,10 +60,18 @@ suiteOrSkip('jira write handlers (live)', () => {
         const me = await get_myself({})
         expect(me?.accountId).toBeTruthy()
 
+        const get_project = jira.read('get_project')
+        const project = await get_project({ projectIdOrKey: env.JIRA_TEST_PROJECT_KEY, expandIssueTypes: true })
+        const issueTypes = Array.isArray(project?.issueTypes) ? project.issueTypes : []
+        const picked = issueTypes.find((t: any) => t && t.subtask === false) || issueTypes[0]
+        if (!picked?.id && !picked?.name)
+          return expect(true).toBe(true)
+
         const create_issue = jira.write('create_issue')
         const created = await create_issue({
           projectKey: env.JIRA_TEST_PROJECT_KEY,
-          issueTypeName: env.JIRA_TEST_ISSUE_TYPE_NAME,
+          issueTypeId: picked?.id || undefined,
+          issueTypeName: picked?.id ? undefined : (picked?.name || undefined),
           summary: `CmdTest ${Date.now()}`,
           descriptionText: 'Created by integration tests.',
           assigneeAccountId: me.accountId,
@@ -122,17 +123,30 @@ suiteOrSkip('jira write handlers (live)', () => {
         }
       }, 120000)
 
-      it('move_issues_to_sprint moves issue to sprint (optional)', async () => {
-        if (!env.JIRA_TEST_SPRINT_ID || !ctx.createdIssueKey)
+      it('sprint roundtrip: create_sprint -> move_issues_to_sprint -> delete_sprint (optional)', async () => {
+        if (!env.JIRA_TEST_BOARD_ID || !ctx.createdIssueKey)
           return expect(true).toBe(true)
-        const sprintId = Number(env.JIRA_TEST_SPRINT_ID)
-        if (!Number.isFinite(sprintId))
+        const boardId = Number(env.JIRA_TEST_BOARD_ID)
+        if (!Number.isFinite(boardId))
           return expect(true).toBe(true)
+
+        const create_sprint = jira.write('create_sprint')
+        const name = `CmdTest Sprint ${Date.now()}`
+        const sprint = await create_sprint({ boardId, name })
+        const sprintId = sprint?.id
+        expect(typeof sprintId).toBe('number')
+        ctx.createdSprintId = sprintId
+
         const move_issues_to_sprint = jira.write('move_issues_to_sprint')
-        const res = await move_issues_to_sprint({ sprintId, issueKeys: [ctx.createdIssueKey] })
-        expect(res?.success === true || res).toBeTruthy()
-      }, 90000)
-    })
-  }
+        const moved = await move_issues_to_sprint({ sprintId, issueKeys: [ctx.createdIssueKey] })
+        expect(moved?.success === true || moved).toBeTruthy()
+
+        const delete_sprint = jira.write('delete_sprint')
+        const del = await delete_sprint({ sprintId })
+        expect(del?.success === true || del).toBeTruthy()
+        ctx.createdSprintId = undefined
+      }, 120000)
+
+  })
 })
 

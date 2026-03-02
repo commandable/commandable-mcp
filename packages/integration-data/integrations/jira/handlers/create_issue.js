@@ -9,10 +9,15 @@ export default (integration) => async (input) => {
   if (input.descriptionText)
     fields.description = markdownToAdf(input.descriptionText)
 
-  if (input.issueTypeId)
-    fields.issuetype = { id: input.issueTypeId }
-  else if (input.issueTypeName)
-    fields.issuetype = { name: input.issueTypeName }
+  if (input.issueTypeId) {
+    fields.issuetype = { id: String(input.issueTypeId) }
+  }
+  else if (input.issueTypeName) {
+    fields.issuetype = { name: String(input.issueTypeName) }
+  }
+  else {
+    throw new Error(`Missing issue type. Provide issueTypeId or issueTypeName (call get_project to discover available issue types).`)
+  }
 
   if (input.priorityId)
     fields.priority = { id: input.priorityId }
@@ -32,4 +37,3 @@ export default (integration) => async (input) => {
 
   return await res.json()
 }
-

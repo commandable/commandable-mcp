@@ -11,7 +11,7 @@
     },
     "descriptionText": {
       "type": "string",
-      "description": "Plain-text issue description. The handler converts this to Jira ADF."
+      "description": "Markdown issue description. The handler converts this to Jira ADF."
     },
     "issueTypeName": {
       "type": "string",

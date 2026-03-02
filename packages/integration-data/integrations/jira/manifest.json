@@ -182,6 +182,22 @@
       "handler": "handlers/move_issues_to_sprint.js",
       "scope": "write",
       "toolset": "boards"
+    },
+    {
+      "name": "create_sprint",
+      "description": "Create a sprint in a board (agile API). Use this for sprint-planning workflows and for integration test setup.",
+      "inputSchema": "schemas/create_sprint.json",
+      "handler": "handlers/create_sprint.js",
+      "scope": "write",
+      "toolset": "boards"
+    },
+    {
+      "name": "delete_sprint",
+      "description": "Delete a sprint by sprintId (agile API). Use with care; this is irreversible.",
+      "inputSchema": "schemas/delete_sprint.json",
+      "handler": "handlers/delete_sprint.js",
+      "scope": "write",
+      "toolset": "boards"
     }
   ]
 }

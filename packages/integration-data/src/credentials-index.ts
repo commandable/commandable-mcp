@@ -133,28 +133,6 @@ Note: Fine-grained PATs do not support creating or deleting repositories.`,
           injection: { headers: { Authorization: 'Basic {{basicAuth}}', Accept: 'application/json' } },
           preprocess: 'jira_api_token',
         },
-        oauth_token: {
-          label: 'OAuth Access Token (3LO)',
-          schema: {
-            type: 'object',
-            properties: {
-              cloudId: {
-                type: 'string',
-                title: 'Jira Cloud ID',
-                description: 'Your Jira Cloud resource ID (cloudId). Discover it via GET https://api.atlassian.com/oauth/token/accessible-resources using your access token.',
-              },
-              token: {
-                type: 'string',
-                title: 'OAuth access token',
-                description: 'OAuth 2.0 access token with Jira scopes (read:jira-work, write:jira-work, read:jira-user).',
-              },
-            },
-            required: ['cloudId', 'token'],
-            additionalProperties: false,
-          },
-          baseUrlTemplate: 'https://api.atlassian.com/ex/jira/{{cloudId}}',
-          injection: { headers: { Authorization: 'Bearer {{token}}', Accept: 'application/json' } },
-        },
       },
       default: 'api_token',
     },
@@ -167,13 +145,6 @@ Note: Fine-grained PATs do not support creating or deleting repositories.`,
 4. Use the Atlassian account email as \`email\` and paste the token as \`apiToken\`
 
 Note: The server computes the required Basic auth header for you.`,
-      oauth_token: `Set up Jira Cloud OAuth (3LO):
-
-1. Create an OAuth 2.0 (3LO) app in the Atlassian developer console
-2. Add scopes (typical minimum): read:jira-work, write:jira-work, read:jira-user (plus offline_access if you want refresh tokens)
-3. Complete the OAuth flow to obtain an access token
-4. Call GET https://api.atlassian.com/oauth/token/accessible-resources with Authorization: Bearer <access_token> to get \`cloudId\`
-5. Paste \`cloudId\` and the OAuth access \`token\` here`,
     },
   },
 

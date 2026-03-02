@@ -10,14 +10,5 @@ describe('jira static usage parity', () => {
     })
     expect(missing, `Missing handler usages in tests: ${missing.join(', ')}`).toEqual([])
   })
-
-  it('every oauth_token tool is referenced in tests', () => {
-    const missing = getMissingToolUsages({
-      integrationName: 'jira',
-      importMetaUrl: import.meta.url,
-      credentialVariant: 'oauth_token',
-    })
-    expect(missing, `Missing handler usages in tests: ${missing.join(', ')}`).toEqual([])
-  })
 })
 
