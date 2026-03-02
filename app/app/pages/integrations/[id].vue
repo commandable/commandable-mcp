@@ -42,11 +42,13 @@
       </div>
 
       <!-- Credentials -->
-      <section class="space-y-3">
-        <h2 class="text-lg font-medium">
-          Credentials
-        </h2>
-        <div class="border border-[var(--ui-border)] rounded-lg p-4">
+      <section>
+        <div class="flex items-center justify-between gap-4 mb-1">
+          <h2 class="text-lg font-medium">
+            Connection
+          </h2>
+        </div>
+        <div class="border border-[var(--ui-border)] rounded-lg px-4 py-3">
           <IntegrationCredentials
             :integration-id="integration.id"
             :integration-type="integration.type"

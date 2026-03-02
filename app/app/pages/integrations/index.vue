@@ -51,17 +51,25 @@
               Read-only
             </UBadge>
           </div>
-          <div class="text-xs text-muted mt-0.5 flex items-center gap-2">
+          <div class="mt-1 flex items-center gap-2 flex-wrap">
             <span
-              class="inline-block w-1.5 h-1.5 rounded-full"
-              :class="credentialStatus[integ.id] ? 'bg-green-500' : 'bg-amber-400'"
-            />
-            <span>{{ credentialStatus[integ.id] ? 'Connected' : 'No credentials' }}</span>
-            <span v-if="integ.enabledToolsets?.length" class="text-muted">
-              · {{ integ.enabledToolsets.length }} toolset{{ integ.enabledToolsets.length === 1 ? '' : 's' }}
+              v-if="credentialStatus[integ.id] !== undefined"
+              class="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded"
+              :class="credentialStatus[integ.id]
+                ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400'
+                : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400'"
+            >
+              <span
+                class="inline-block w-1.5 h-1.5 rounded-full"
+                :class="credentialStatus[integ.id] ? 'bg-green-500' : 'bg-red-500'"
+              />
+              {{ credentialStatus[integ.id] ? 'Connected' : 'Not connected' }}
             </span>
-            <span v-if="integ.disabledTools?.length" class="text-muted">
-              · {{ integ.disabledTools.length }} tool{{ integ.disabledTools.length === 1 ? '' : 's' }} blocked
+            <span v-if="integ.enabledToolsets?.length" class="text-xs text-muted">
+              {{ integ.enabledToolsets.length }} toolset{{ integ.enabledToolsets.length === 1 ? '' : 's' }}
+            </span>
+            <span v-if="integ.disabledTools?.length" class="text-xs text-muted">
+              {{ integ.disabledTools.length }} tool{{ integ.disabledTools.length === 1 ? '' : 's' }} blocked
             </span>
           </div>
         </div>

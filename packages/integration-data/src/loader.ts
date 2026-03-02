@@ -62,9 +62,19 @@ export interface ToolsetMeta {
 
 export interface ToolListItem {
   name: string
+  displayName: string
   description: string
   scope: 'read' | 'write' | 'admin'
   toolset?: string
+}
+
+function humanizeName(name: string): string {
+  return name
+    .replace(/_/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w.length ? `${w[0]!.toUpperCase()}${w.slice(1).toLowerCase()}` : w)
+    .join(' ')
 }
 
 export interface DisplayCardData {
@@ -257,6 +267,7 @@ export function loadIntegrationToolList(type: string): ToolListItem[] {
     return []
   return manifest.tools.map(t => ({
     name: t.name,
+    displayName: humanizeName(t.name),
     description: t.description,
     scope: (t.scope || 'read') as 'read' | 'write' | 'admin',
     toolset: t.toolset,
