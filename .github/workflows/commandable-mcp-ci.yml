@@ -120,7 +120,7 @@ jobs:
           yarn workspace @commandable/mcp test -- \
             --reporter=json \
             --outputFile=test-results.json \
-            "../integration-data/integrations/${{ matrix.integration }}/__tests__"
+            "integrations/${{ matrix.integration }}"
 
       - name: Upload test results
         if: always()
