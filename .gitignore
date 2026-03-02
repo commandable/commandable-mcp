@@ -23,6 +23,7 @@ app/.output/
 !.env.example
 !.env.test.example
 !.env.test.managed.example
+!.env.test.google.example
 
 # OS
 .DS_Store

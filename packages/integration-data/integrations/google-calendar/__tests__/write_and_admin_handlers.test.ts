@@ -6,7 +6,7 @@ import { loadIntegrationTools } from '../../../../server/src/integrations/dataLo
 // Required env vars:
 // - Either GOOGLE_TOKEN, OR (GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_IMPERSONATE_SUBJECT)
 // Optional:
-// - GCAL_TEST_CALENDAR_ID (defaults to 'primary')
+// - GOOGLE_CALENDAR_TEST_CALENDAR_ID (defaults to 'primary')
 
 interface Ctx {
   calendarId: string
@@ -27,9 +27,9 @@ suite('google-calendar write & admin handlers (live)', () => {
   let buildAdmin: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const { GCAL_TEST_CALENDAR_ID } = env
+    const { GOOGLE_CALENDAR_TEST_CALENDAR_ID } = env
 
-    ctx.calendarId = GCAL_TEST_CALENDAR_ID || 'primary'
+    ctx.calendarId = GOOGLE_CALENDAR_TEST_CALENDAR_ID || 'primary'
 
     const credentialStore = {
       getCredentials: async () => ({
@@ -114,7 +114,7 @@ suite('google-calendar write & admin handlers (live)', () => {
   }, 30000)
 
   it('insert_acl -> get_acl -> update_acl -> delete_acl (admin)', async () => {
-    if (!process.env.GCAL_TEST_ADMIN_WRITE)
+    if (!process.env.GOOGLE_CALENDAR_TEST_ADMIN_WRITE)
       return expect(true).toBe(true)
     const insert_acl = buildAdmin('insert_acl')
     const created = await insert_acl({ calendarId: ctx.calendarId, rule: { scope: { type: 'default' }, role: 'reader' } })
@@ -132,7 +132,7 @@ suite('google-calendar write & admin handlers (live)', () => {
   }, 90000)
 
   it('quick_add creates a simple event', async () => {
-    if (!process.env.GCAL_TEST_QUICK_ADD)
+    if (!process.env.GOOGLE_CALENDAR_TEST_QUICK_ADD)
       return expect(true).toBe(true)
     const quick_add = buildWrite('quick_add')
     const res = await quick_add({ calendarId: ctx.calendarId, text: `Lunch tomorrow ${Date.now()}` })
@@ -140,7 +140,7 @@ suite('google-calendar write & admin handlers (live)', () => {
   }, 60000)
 
   it('move_event moves an event when provided a source event', async () => {
-    if (!process.env.GCAL_TEST_MOVE_DEST)
+    if (!process.env.GOOGLE_CALENDAR_TEST_MOVE_DEST)
       return expect(true).toBe(true)
     const create_event = buildWrite('create_event')
     const now = new Date()
@@ -149,7 +149,7 @@ suite('google-calendar write & admin handlers (live)', () => {
     const eventId = created?.id
     expect(eventId).toBeTruthy()
     const move_event = buildWrite('move_event')
-    const moved = await move_event({ calendarId: ctx.calendarId, eventId, destinationId: process.env.GCAL_TEST_MOVE_DEST })
+    const moved = await move_event({ calendarId: ctx.calendarId, eventId, destinationId: process.env.GOOGLE_CALENDAR_TEST_MOVE_DEST })
     expect(moved?.id).toBeTruthy()
   }, 90000)
 })
