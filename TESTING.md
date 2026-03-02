@@ -106,9 +106,8 @@ Badges in the README show live test results for each integration, updated on eve
 2. **Create a Personal Access Token** with `gist` scope at
    [github.com/settings/tokens](https://github.com/settings/tokens).
 
-3. **Add repo secrets/variables**:
+3. **Add repo secret**:
    - Secret `GIST_SECRET`: the PAT from step 2
-   - Variable `BADGE_GIST_ID`: the Gist ID from step 1
 
 4. **Update `scripts/badge-config.json`** with your Gist owner username and Gist ID,
    then re-run the doc generator:

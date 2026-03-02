@@ -145,5 +145,4 @@ jobs:
       - name: Update gist badges
         env:
           GIST_SECRET: ${{ secrets.GIST_SECRET }}
-          BADGE_GIST_ID: ${{ vars.BADGE_GIST_ID }}
         run: node scripts/update-badges.js

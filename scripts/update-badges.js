@@ -3,17 +3,26 @@
 
 // Updates per-integration badge JSON files in a GitHub Gist.
 // Called by the update-badges CI job after all integration matrix jobs finish.
-// Requires: GIST_SECRET (PAT with gist scope), BADGE_GIST_ID (target gist ID).
+// Requires: GIST_SECRET (PAT with gist scope).
+// Gist ID and owner are read from scripts/badge-config.json.
 
 const https = require('https')
 const fs    = require('fs')
 const path  = require('path')
 
-const GIST_SECRET  = process.env.GIST_SECRET
-const BADGE_GIST_ID = process.env.BADGE_GIST_ID
+const GIST_SECRET = process.env.GIST_SECRET
 
-if (!GIST_SECRET || !BADGE_GIST_ID) {
-  console.log('GIST_SECRET or BADGE_GIST_ID not set — skipping badge update')
+if (!GIST_SECRET) {
+  console.log('GIST_SECRET not set — skipping badge update')
+  process.exit(0)
+}
+
+const badgeConfigPath = path.join(__dirname, 'badge-config.json')
+const badgeConfig     = JSON.parse(fs.readFileSync(badgeConfigPath, 'utf8'))
+const BADGE_GIST_ID   = badgeConfig.gistId
+
+if (!BADGE_GIST_ID || BADGE_GIST_ID === 'GIST_ID_PLACEHOLDER') {
+  console.log('badge-config.json gistId not configured — skipping badge update')
   process.exit(0)
 }
 
