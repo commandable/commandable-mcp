@@ -125,7 +125,7 @@ jobs:
           COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
           COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
         run: |
-          yarn workspace @commandable/mcp test -- \
+          cd packages/server && yarn vitest run \
             --reporter=json \
             --outputFile=$GITHUB_WORKSPACE/packages/server/test-results.json
 
