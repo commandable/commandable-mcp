@@ -19,6 +19,13 @@ function hasFlag(...flags: string[]): boolean {
   return flags.some(f => process.argv.includes(f))
 }
 
+function resolveMode(): 'static' | 'create' {
+  const explicit = (process.env.COMMANDABLE_MODE || '').toLowerCase().trim()
+  if (explicit === 'create')
+    return 'create'
+  return 'static'
+}
+
 function getFlagValue(flag: string): string | null {
   const idx = process.argv.indexOf(flag)
   if (idx === -1)
@@ -46,6 +53,7 @@ function help(exitCode: number = 0): never {
     picocolors.bold('Notes'),
     `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
     `- MCP clients (Claude Desktop, Cursor) spawn this server process automatically via: ${picocolors.cyan('npx -y @commandable/mcp')}`,
+    `- Set ${picocolors.cyan('COMMANDABLE_MODE=create')} to enable Create Mode (dynamic toolsets + tool list updates).`,
     '',
   ]
   console.error(lines.join('\n'))
@@ -69,20 +77,19 @@ async function runStdioFromDb() {
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy })
 
-  const staticMode = String(process.env.COMMANDABLE_STATIC_MODE || '').toLowerCase() === 'true'
-    || String(process.env.COMMANDABLE_STATIC_MODE || '') === '1'
+  const mode = resolveMode()
 
   await runStdioMcpServer({
     serverInfo: { name: 'commandable', version: '0.0.1' },
     tools: { list: index.tools, byName: index.byName },
-    ...(staticMode
-      ? {}
-      : {
-          abilityMode: {
+    ...(mode === 'create'
+      ? {
+          createMode: {
             catalog: new AbilityCatalog({ integrations, toolIndex: index.byName }),
             sessionState: new SessionAbilityState(),
           },
-        }),
+        }
+      : {}),
   })
 }
 

@@ -9,7 +9,7 @@ import { registerToolHandlers } from './handlers.js'
 export interface StdioMcpServerParams {
   serverInfo: Implementation
   tools: { list: Array<{ name: string, description?: string, inputSchema: any }>, byName: Map<string, ExecutableTool> }
-  abilityMode?: { catalog: AbilityCatalog, sessionState: SessionAbilityState }
+  createMode?: { catalog: AbilityCatalog, sessionState: SessionAbilityState }
 }
 
 export async function runStdioMcpServer(params: StdioMcpServerParams): Promise<void> {
@@ -19,7 +19,7 @@ export async function runStdioMcpServer(params: StdioMcpServerParams): Promise<v
     },
   })
 
-  registerToolHandlers(server, params.tools, params.abilityMode)
+  registerToolHandlers(server, params.tools, params.createMode)
 
   const transport = new StdioServerTransport()
   await server.connect(transport)

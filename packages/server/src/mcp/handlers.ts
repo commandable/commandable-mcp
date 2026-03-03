@@ -24,17 +24,17 @@ function formatAsText(value: any): string {
 export function registerToolHandlers(
   server: Server,
   tools: ToolIndex,
-  abilityMode?: { catalog: AbilityCatalog, sessionState: SessionAbilityState },
+  createMode?: { catalog: AbilityCatalog, sessionState: SessionAbilityState },
 ): void {
   const metaToolDefs = getMetaToolDefinitions()
 
   server.setRequestHandler(ListToolsRequestSchema, async (_req, extra) => {
-    if (!abilityMode)
+    if (!createMode)
       return { tools: tools.list }
 
     const sessionId = extra?.sessionId
-    const active = abilityMode.sessionState.getActiveToolNames(sessionId)
-    const toolDefs = abilityMode.catalog.getToolDefinitions([...active])
+    const active = createMode.sessionState.getActiveToolNames(sessionId)
+    const toolDefs = createMode.catalog.getToolDefinitions([...active])
     return { tools: [...metaToolDefs, ...toolDefs] }
   })
 
@@ -43,13 +43,13 @@ export function registerToolHandlers(
     const args = (req.params.arguments ?? {}) as any
     const sessionId = extra?.sessionId
 
-    if (abilityMode) {
+    if (createMode) {
       const metaRes = handleMetaToolCall({
         name,
         args,
         sessionId,
-        catalog: abilityMode.catalog,
-        sessionState: abilityMode.sessionState,
+        catalog: createMode.catalog,
+        sessionState: createMode.sessionState,
       })
 
       if (metaRes.handled) {
@@ -61,13 +61,13 @@ export function registerToolHandlers(
         }
       }
 
-      if (!abilityMode.sessionState.isToolActive(sessionId, name)) {
+      if (!createMode.sessionState.isToolActive(sessionId, name)) {
         throw new Error(
-          `Tool not enabled in this session: ${name}. Use ${metaToolDefs[0]!.name} + ${metaToolDefs[1]!.name} to load an ability first.`,
+          `Tool not enabled in this session: ${name}. Use ${metaToolDefs[0]!.name} + ${metaToolDefs[1]!.name} to enable a toolset first.`,
         )
       }
 
-      const tool = abilityMode.catalog.getExecutableTool(name)
+      const tool = createMode.catalog.getExecutableTool(name)
       if (!tool)
         throw new Error(`Unknown tool: ${name}`)
 

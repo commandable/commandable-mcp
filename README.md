@@ -221,6 +221,7 @@ See `.env.example` for a full list. The most important ones:
 - **`DATABASE_URL`**: if set, uses Postgres; otherwise uses SQLite
 - **`COMMANDABLE_CONFIG_FILE`**: path to `commandable.config.yaml` (optional)
 - **`COMMANDABLE_DATA_DIR`**: where local state lives (default: `~/.commandable/`)
+- **`COMMANDABLE_MODE`**: `static` (default) or `create`. Create mode enables per-session dynamic tool loading via meta-tools (`commandable_search_tools`, `commandable_enable_toolset`, `commandable_disable_toolset`). Requires a client that supports `notifications/tools/list_changed` (e.g. Claude Code). Static mode loads all configured tools at startup and works with every MCP client.
 - **`COMMANDABLE_INTEGRATION_DATA_DIR`**: override the integration-data directory
 
 ---

@@ -213,7 +213,7 @@ OSS repo has traction (stars, forks, real issues). Hosted version has signups. A
 ### Likely priorities (reorder based on what users actually ask for)
 - [ ] **Linear integration** — the Cursor/AI dev audience will want this immediately
 - [ ] **Gmail / Google Drive** — rounds out the Google suite
-- [ ] **Ability mode / lazy tool loading** — important when tool count exceeds ~50
+- [ ] **Create mode / lazy tool loading** — important when tool count exceeds ~50
 - [ ] **VM sandbox security review** — `node:vm` is leaky; focused review before enterprise adoption
 - [ ] **Opt-in anonymous telemetry** — which integrations are popular, error rates
 - [ ] **Document processing sidecar** (from agentcontext.md) — major differentiator, not urgent

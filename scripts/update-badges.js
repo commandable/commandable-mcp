@@ -64,6 +64,9 @@ function buildBadge(label, data) {
   if (failed > 0) {
     return { schemaVersion: 1, label, message: `${passed}/${passed + failed} passed`, color: 'red' }
   }
+  if (skipped > 0) {
+    return { schemaVersion: 1, label, message: `${passed} passed (partial)`, color: 'yellow' }
+  }
   return { schemaVersion: 1, label, message: `${passed} passed`, color: 'brightgreen' }
 }
 

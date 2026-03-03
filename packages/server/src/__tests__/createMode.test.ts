@@ -29,8 +29,8 @@ function makeGithubIntegration(): IntegrationData {
   }
 }
 
-describe('ability mode (abilities + dynamic tools/list)', () => {
-  it('AbilityCatalog builds toolset abilities and can search them', () => {
+describe('create mode (toolsets + dynamic tools/list)', () => {
+  it('AbilityCatalog builds toolsets and can search them', () => {
     process.env.COMMANDABLE_INTEGRATION_DATA_DIR = integrationDataDir
 
     const integrations = [makeGithubIntegration()]
@@ -46,7 +46,7 @@ describe('ability mode (abilities + dynamic tools/list)', () => {
     expect(res[0]!.id).toContain('__n')
   })
 
-  it('SessionAbilityState unions tools across loaded abilities', () => {
+  it('SessionAbilityState unions tools across enabled toolsets', () => {
     const st = new SessionAbilityState()
     const a1 = { id: 'a1', integrationtype: 'x', integrationLabel: 'X', label: 'A1', description: '', toolNames: ['t1', 't2'] }
     const a2 = { id: 'a2', integrationtype: 'x', integrationLabel: 'X', label: 'A2', description: '', toolNames: ['t2', 't3'] }
@@ -60,7 +60,7 @@ describe('ability mode (abilities + dynamic tools/list)', () => {
     expect([...st.getActiveToolNames(undefined)].sort()).toEqual(['t2', 't3'])
   })
 
-  it('end-to-end: list->search->load triggers list_changed and tools appear, unload removes them', async () => {
+  it('end-to-end: list->search->enable triggers list_changed and tools appear, disable removes them', async () => {
     process.env.COMMANDABLE_INTEGRATION_DATA_DIR = integrationDataDir
 
     const integration = makeGithubIntegration()
@@ -88,24 +88,24 @@ describe('ability mode (abilities + dynamic tools/list)', () => {
 
     const initial = await client.listTools()
     expect(initial.tools.map(t => t.name).sort()).toEqual([
-      META_TOOL_NAMES.loadAbility,
-      META_TOOL_NAMES.searchAbilities,
-      META_TOOL_NAMES.unloadAbility,
+      META_TOOL_NAMES.disableToolset,
+      META_TOOL_NAMES.enableToolset,
+      META_TOOL_NAMES.searchTools,
     ].sort())
 
     const prToolName = makeIntegrationToolName('github', 'list_pull_requests', integration.id)
     await expect(client.callTool({ name: prToolName, arguments: {} } as any)).rejects.toBeTruthy()
 
     const searchRes = await client.callTool({
-      name: META_TOOL_NAMES.searchAbilities,
+      name: META_TOOL_NAMES.searchTools,
       arguments: { query: 'pull requests', limit: 5 },
     } as any)
     const parsedSearch = JSON.parse((searchRes.content as any)[0].text)
-    expect(Array.isArray(parsedSearch.abilities)).toBe(true)
-    expect(parsedSearch.abilities.length).toBeGreaterThan(0)
+    expect(Array.isArray(parsedSearch.toolsets)).toBe(true)
+    expect(parsedSearch.toolsets.length).toBeGreaterThan(0)
 
-    const abilityId = parsedSearch.abilities[0].ability_id
-    const loadRes = await client.callTool({ name: META_TOOL_NAMES.loadAbility, arguments: { ability_id: abilityId } } as any)
+    const toolsetId = parsedSearch.toolsets[0].toolset_id
+    const loadRes = await client.callTool({ name: META_TOOL_NAMES.enableToolset, arguments: { toolset_id: toolsetId } } as any)
     expect(JSON.parse((loadRes.content as any)[0].text).loaded).toBe(true)
 
     // Notification handling is async; give it a tick to arrive.
@@ -115,17 +115,17 @@ describe('ability mode (abilities + dynamic tools/list)', () => {
 
     const afterLoad = await client.listTools()
     const afterNames = afterLoad.tools.map(t => t.name)
-    expect(afterNames).toContain(META_TOOL_NAMES.searchAbilities)
+    expect(afterNames).toContain(META_TOOL_NAMES.searchTools)
     expect(afterNames).toContain(prToolName)
 
-    const unloadRes = await client.callTool({ name: META_TOOL_NAMES.unloadAbility, arguments: { ability_id: abilityId } } as any)
+    const unloadRes = await client.callTool({ name: META_TOOL_NAMES.disableToolset, arguments: { toolset_id: toolsetId } } as any)
     expect(JSON.parse((unloadRes.content as any)[0].text).unloaded).toBe(true)
 
     const afterUnload = await client.listTools()
     expect(afterUnload.tools.map(t => t.name).sort()).toEqual([
-      META_TOOL_NAMES.loadAbility,
-      META_TOOL_NAMES.searchAbilities,
-      META_TOOL_NAMES.unloadAbility,
+      META_TOOL_NAMES.disableToolset,
+      META_TOOL_NAMES.enableToolset,
+      META_TOOL_NAMES.searchTools,
     ].sort())
   })
 })

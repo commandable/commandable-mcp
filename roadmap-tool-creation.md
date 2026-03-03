@@ -6,27 +6,27 @@
 
 ---
 
-## Phase 1: Ability Mode
+## Phase 1: Create Mode
 
 **The foundation. Valuable on its own, required for everything after.**
 
-Right now, every MCP session gets the full tool list — every tool from every integration, all at once. That doesn't scale. Ability Mode makes tool loading per-session and on-demand.
+Right now, every MCP session gets the full tool list — every tool from every integration, all at once. That doesn't scale. Create Mode (`COMMANDABLE_MODE=create`) makes tool loading per-session and on-demand.
 
 ### What the user sees
 
-- New chat opens. Instead of 80+ tools in context, there are just 2-3 meta-tools.
-- The agent calls `search_tools("github pull requests")` and gets back a list of matching tools with names and descriptions.
-- The agent calls `enable_tools(["github__list_pull_requests", "github__get_pull_request", "github__create_pull_request"])` and those tools become available in the current session.
+- New chat opens. Instead of 80+ tools in context, there are just 3 meta-tools.
+- The agent calls `commandable_search_tools("github pull requests")` and gets back a list of matching toolsets with names and descriptions.
+- The agent calls `commandable_enable_toolset("github__pull_requests__n...")` and those tools become available in the current session.
 - The conversation proceeds with only the tools it actually needs. Context window stays clean.
-- If the task shifts ("now help me with my Trello board"), the agent searches again and loads Trello tools.
+- If the task shifts ("now help me with my Trello board"), the agent searches again and enables Trello toolsets.
 
 ### What ships
 
 - Per-session tool state — each MCP session tracks its own set of active tools
-- `search_tools` meta-tool — fuzzy search across all configured integrations and their tools
-- `enable_tools` / `disable_tools` meta-tools — add/remove tools from the current session
+- `commandable_search_tools` meta-tool — fuzzy search across all configured integrations and their toolsets
+- `commandable_enable_toolset` / `commandable_disable_toolset` meta-tools — add/remove toolsets from the current session
 - `notifications/tools/list_changed` emission when session tool set changes
-- Configuration toggle: Ability Mode on/off (off = current behavior, all tools loaded)
+- Configuration: `COMMANDABLE_MODE=create` to opt in (static mode is the default — all tools loaded, works everywhere)
 
 ### Why this comes first
 
@@ -48,8 +48,8 @@ This is Open Gloves itself. The agent gets meta-tools that let it create new int
 - User asks their AI to do something with an API that isn't connected.
 - The agent says "I don't have a tool for that — let me create one."
 - The agent creates a new integration and adds one or more tools to it.
-- In Discovery Mode (Ability Mode on), the tools are immediately available in the current session.
-- In Static Mode (Ability Mode off), the agent tells the user to start a new chat to use the new tools.
+- In Create Mode (`COMMANDABLE_MODE=create`), the tools are immediately available in the current session.
+- In Static Mode (default), the agent tells the user to start a new chat to use the new tools.
 - The next time any chat searches for tools related to that API, the agent-created tools show up.
 
 ### What ships
@@ -59,7 +59,7 @@ This is Open Gloves itself. The agent gets meta-tools that let it create new int
 - `test_tool` meta-tool — dry-run a handler in the sandbox, see the result and logs before committing
 - Storage layer for agent-created integrations (persisted alongside built-in integrations, but marked as agent-created)
 - Validation — JSON schema validation, handler syntax checking, sandbox test execution
-- Agent-created tools appear in `search_tools` results and `tools/list` like any other tool
+- Agent-created tools appear in `commandable_search_tools` results and `tools/list` like any other tool
 - Management UI shows agent-created integrations, clearly labeled
 
 ### What this doesn't include yet
@@ -146,7 +146,7 @@ This is what makes Open Gloves enterprise-ready and what differentiates it from 
 
 | Phase | Ships | Depends On | User Value |
 |---|---|---|---|
-| **1. Ability Mode** | Per-session tool loading, search, enable/disable | Nothing | Cleaner context, faster chats |
+| **1. Create Mode** | Per-session tool loading, search, enable/disable | Nothing | Cleaner context, faster chats |
 | **2. Agent-Created Tools** | create_integration, add_tool, test_tool | Phase 1 | Agent builds its own tools |
 | **3. Credential Handoff** | Credential config, setup UI, proxy integration | Phase 2 | Secure auth for agent-created tools |
 | **4. Extend & Manage** | Edit tools, extend built-ins, audit trail | Phase 2-3 | Full control and flexibility |

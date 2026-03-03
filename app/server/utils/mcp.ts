@@ -34,6 +34,13 @@ function getServerInfo(): Implementation {
   return { name: 'commandable', version: '0.0.1' }
 }
 
+function resolveMode(): 'static' | 'create' {
+  const explicit = (process.env.COMMANDABLE_MODE || '').toLowerCase().trim()
+  if (explicit === 'create')
+    return 'create'
+  return 'static'
+}
+
 async function getOrCreateState(): Promise<McpState> {
   if (globalThis.__commandableMcpHttpState)
     return globalThis.__commandableMcpHttpState
@@ -51,24 +58,23 @@ async function getOrCreateState(): Promise<McpState> {
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy })
 
-  const staticMode = String(process.env.COMMANDABLE_STATIC_MODE || '').toLowerCase() === 'true'
-    || String(process.env.COMMANDABLE_STATIC_MODE || '') === '1'
+  const mode = resolveMode()
 
   const server = new Server(getServerInfo(), {
     capabilities: { tools: { listChanged: true } },
   })
 
-  const sessionState = staticMode ? undefined : new SessionAbilityState()
+  const sessionState = mode === 'create' ? new SessionAbilityState() : undefined
 
   registerToolHandlers(
     server,
     { list: index.tools, byName: index.byName },
-    staticMode
-      ? undefined
-      : {
+    mode === 'create'
+      ? {
           catalog: new AbilityCatalog({ integrations, toolIndex: index.byName }),
           sessionState: sessionState!,
-        },
+        }
+      : undefined,
   )
 
   const state: McpState = {
