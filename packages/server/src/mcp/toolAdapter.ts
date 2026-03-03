@@ -14,8 +14,11 @@ export function buildMcpToolIndex(params: {
   spaceId: string
   integrations: IntegrationData[]
   proxy: IntegrationProxy
+  integrationsRef?: { current: IntegrationData[] }
 }): { tools: McpToolDefinition[], byName: Map<string, ExecutableTool> } {
-  const toolsByIntegration = buildToolsByIntegration(params.spaceId, params.integrations, params.proxy)
+  const toolsByIntegration = buildToolsByIntegration(params.spaceId, params.integrations, params.proxy, {
+    integrationsRef: params.integrationsRef,
+  })
 
   const byName = new Map<string, ExecutableTool>()
   const tools: McpToolDefinition[] = []
@@ -32,5 +35,14 @@ export function buildMcpToolIndex(params: {
   }
 
   return { tools, byName }
+}
+
+export function buildMcpToolIndexForIntegrations(params: {
+  spaceId: string
+  integrations: IntegrationData[]
+  proxy: IntegrationProxy
+  integrationsRef?: { current: IntegrationData[] }
+}): { tools: McpToolDefinition[], byName: Map<string, ExecutableTool> } {
+  return buildMcpToolIndex(params)
 }
 

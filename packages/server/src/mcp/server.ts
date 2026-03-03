@@ -5,11 +5,12 @@ import type { ExecutableTool } from '../types.js'
 import type { AbilityCatalog } from './abilityCatalog.js'
 import type { SessionAbilityState } from './sessionState.js'
 import { registerToolHandlers } from './handlers.js'
+import type { MetaToolContext } from './metaTools.js'
 
 export interface StdioMcpServerParams {
   serverInfo: Implementation
   tools: { list: Array<{ name: string, description?: string, inputSchema: any }>, byName: Map<string, ExecutableTool> }
-  createMode?: { catalog: AbilityCatalog, sessionState: SessionAbilityState }
+  createMode?: { catalogRef: { current: AbilityCatalog }, sessionState: SessionAbilityState, ctx?: MetaToolContext }
 }
 
 export async function runStdioMcpServer(params: StdioMcpServerParams): Promise<void> {

@@ -10,6 +10,7 @@ type Scope = 'read' | 'write' | 'admin'
 
 export interface BuildToolsOptions {
   requireWriteConfirmation?: boolean
+  integrationsRef?: { current: IntegrationData[] }
 }
 
 export function buildToolsByIntegration(
@@ -18,8 +19,8 @@ export function buildToolsByIntegration(
   proxy: IntegrationProxy,
   opts: BuildToolsOptions = {},
 ): Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> {
-  const { requireWriteConfirmation = false } = opts
-  const getIntegration = createGetIntegration(integrations, proxy)
+  const { requireWriteConfirmation = false, integrationsRef } = opts
+  const getIntegration = createGetIntegration(integrationsRef || { current: integrations }, proxy)
   const toolsByIntegration: Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> = {}
 
   for (const integ of integrations) {

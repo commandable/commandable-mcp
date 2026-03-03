@@ -124,6 +124,26 @@ export class AbilityCatalog {
     return this.toolIndex.get(name)
   }
 
+  /**
+   * Dynamically add abilities for a newly added integration.
+   * The integration's tools must already exist in this.toolIndex.
+   */
+  addIntegration(integration: IntegrationData): AbilityEntry[] {
+    const added = this.buildAbilities([integration])
+    if (!added.length)
+      return []
+
+    const newOnes: AbilityEntry[] = []
+    for (const a of added) {
+      if (this.byId.has(a.id))
+        continue
+      this.abilities.push(a)
+      this.byId.set(a.id, a)
+      newOnes.push(a)
+    }
+    return newOnes
+  }
+
   getToolDefinitions(toolNames: string[]): McpToolDefinition[] {
     const out: McpToolDefinition[] = []
     for (const n of toolNames) {

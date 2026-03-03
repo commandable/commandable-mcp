@@ -4,6 +4,7 @@ import type { ExecutableTool } from '../types.js'
 import type { AbilityCatalog } from './abilityCatalog.js'
 import type { SessionAbilityState } from './sessionState.js'
 import { getMetaToolDefinitions, handleMetaToolCall } from './metaTools.js'
+import type { MetaToolContext } from './metaTools.js'
 
 export interface ToolIndex {
   list: Array<{ name: string, description?: string, inputSchema: any }>
@@ -24,7 +25,7 @@ function formatAsText(value: any): string {
 export function registerToolHandlers(
   server: Server,
   tools: ToolIndex,
-  createMode?: { catalog: AbilityCatalog, sessionState: SessionAbilityState },
+  createMode?: { catalogRef: { current: AbilityCatalog }, sessionState: SessionAbilityState, ctx?: MetaToolContext },
 ): void {
   const metaToolDefs = getMetaToolDefinitions()
 
@@ -34,7 +35,7 @@ export function registerToolHandlers(
 
     const sessionId = extra?.sessionId
     const active = createMode.sessionState.getActiveToolNames(sessionId)
-    const toolDefs = createMode.catalog.getToolDefinitions([...active])
+    const toolDefs = createMode.catalogRef.current.getToolDefinitions([...active])
     return { tools: [...metaToolDefs, ...toolDefs] }
   })
 
@@ -44,12 +45,13 @@ export function registerToolHandlers(
     const sessionId = extra?.sessionId
 
     if (createMode) {
-      const metaRes = handleMetaToolCall({
+      const metaRes = await handleMetaToolCall({
         name,
         args,
         sessionId,
-        catalog: createMode.catalog,
+        catalog: createMode.catalogRef.current,
         sessionState: createMode.sessionState,
+        ctx: createMode.ctx,
       })
 
       if (metaRes.handled) {
@@ -67,7 +69,7 @@ export function registerToolHandlers(
         )
       }
 
-      const tool = createMode.catalog.getExecutableTool(name)
+      const tool = createMode.catalogRef.current.getExecutableTool(name)
       if (!tool)
         throw new Error(`Unknown tool: ${name}`)
 

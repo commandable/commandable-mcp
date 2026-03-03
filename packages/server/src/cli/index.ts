@@ -6,6 +6,8 @@ import { runStdioMcpServer } from '../mcp/server.js'
 import { createApiKey, generateApiKey } from '../mcp/auth.js'
 import { AbilityCatalog } from '../mcp/abilityCatalog.js'
 import { SessionAbilityState } from '../mcp/sessionState.js'
+import type { MetaToolContext } from '../mcp/metaTools.js'
+import { startCredentialServer } from '../web/credentialServer.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
@@ -76,19 +78,57 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
     trelloApiKey: process.env.TRELLO_API_KEY,
   })
 
-  const index = buildMcpToolIndex({ spaceId, integrations, proxy })
+  const integrationsRef = { current: integrations }
+  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
+  const toolIndex = { list: index.tools, byName: index.byName }
 
   const mode = forceMode ?? resolveMode()
+  const credentialPortRaw = process.env.COMMANDABLE_CREDENTIAL_PORT
+  const credentialPort = credentialPortRaw && /^\d+$/.test(credentialPortRaw) ? Number(credentialPortRaw) : 23432
+
+  const credentialServer = mode === 'create'
+    ? await startCredentialServer({
+        host: '127.0.0.1',
+        port: credentialPort,
+        spaceId,
+        db,
+        credentialStore,
+        integrationsRef,
+      })
+    : null
+
+  if (credentialServer) {
+    let shuttingDown = false
+    const cleanup = async () => {
+      if (shuttingDown) return
+      shuttingDown = true
+      try { await credentialServer.close() } catch {}
+    }
+    process.on('SIGINT', () => { void cleanup().then(() => process.exit(0)) })
+    process.on('SIGTERM', () => { void cleanup().then(() => process.exit(0)) })
+    process.on('exit', () => { void cleanup() })
+  }
 
   await runStdioMcpServer({
     serverInfo: { name: 'commandable', version: '0.0.1' },
-    tools: { list: index.tools, byName: index.byName },
+    tools: toolIndex,
     ...(mode === 'create'
       ? {
-          createMode: {
-            catalog: new AbilityCatalog({ integrations, toolIndex: index.byName }),
-            sessionState: new SessionAbilityState(),
-          },
+          createMode: (() => {
+            const catalogRef = { current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndex.byName }) }
+            const sessionState = new SessionAbilityState()
+            const ctx: MetaToolContext = {
+              spaceId,
+              db,
+              credentialStore,
+              proxy,
+              credentialSetupBaseUrl: credentialServer?.baseUrl,
+              integrationsRef,
+              toolIndexRef: toolIndex,
+              catalogRef,
+            }
+            return { catalogRef, sessionState, ctx }
+          })(),
         }
       : {}),
   })

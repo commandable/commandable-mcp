@@ -54,10 +54,9 @@ This is Open Gloves itself. The agent gets meta-tools that let it create new int
 
 ### What ships
 
-- `create_integration` meta-tool — agent defines a new integration (name, description, base URL)
+- `add_integration meta tool (adds an integration from the existing list)` 
 - `add_tool` meta-tool — agent defines a tool on an integration (name, description, input schema, handler code)
-- `test_tool` meta-tool — dry-run a handler in the sandbox, see the result and logs before committing
-- Storage layer for agent-created integrations (persisted alongside built-in integrations, but marked as agent-created)
+- Storage layer for agent-created tools (persisted alongside built-in integrations, but marked as agent-created)
 - Validation — JSON schema validation, handler syntax checking, sandbox test execution
 - Agent-created tools appear in `commandable_search_tools` results and `tools/list` like any other tool
 - Management UI shows agent-created integrations, clearly labeled
@@ -144,13 +143,15 @@ This is what makes Open Gloves enterprise-ready and what differentiates it from 
 
 ## Phase Summary
 
-| Phase | Ships | Depends On | User Value |
-|---|---|---|---|
-| **1. Create Mode** | Per-session tool loading, search, enable/disable | Nothing | Cleaner context, faster chats |
-| **2. Agent-Created Tools** | create_integration, add_tool, test_tool | Phase 1 | Agent builds its own tools |
-| **3. Credential Handoff** | Credential config, setup UI, proxy integration | Phase 2 | Secure auth for agent-created tools |
-| **4. Extend & Manage** | Edit tools, extend built-ins, audit trail | Phase 2-3 | Full control and flexibility |
-| **5. Community** | Export, import, share, promote | Phase 2-3 | The catalogue grows itself |
+
+| Phase                      | Ships                                            | Depends On | User Value                          |
+| -------------------------- | ------------------------------------------------ | ---------- | ----------------------------------- |
+| **1. Create Mode**         | Per-session tool loading, search, enable/disable | Nothing    | Cleaner context, faster chats       |
+| **2. Agent-Created Tools** | create_integration, add_tool, test_tool          | Phase 1    | Agent builds its own tools          |
+| **3. Credential Handoff**  | Credential config, setup UI, proxy integration   | Phase 2    | Secure auth for agent-created tools |
+| **4. Extend & Manage**     | Edit tools, extend built-ins, audit trail        | Phase 2-3  | Full control and flexibility        |
+| **5. Community**           | Export, import, share, promote                   | Phase 2-3  | The catalogue grows itself          |
+
 
 ---
 

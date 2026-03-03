@@ -198,7 +198,12 @@ export class IntegrationProxy {
 
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
       if (!creds)
-        throw new HttpError(400, 'No credentials are configured for this integration.')
+        throw new HttpError(400, (() => {
+          const portRaw = process.env.COMMANDABLE_CREDENTIAL_PORT
+          const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
+          const url = `http://127.0.0.1:${port}/credentials/${encodeURIComponent(integration.id)}`
+          return `No credentials are configured for this integration. Open ${url} to configure them.`
+        })())
 
       if (credCfg.preprocess === 'google_service_account') {
         const serviceAccountJson = (creds as any).serviceAccountJson

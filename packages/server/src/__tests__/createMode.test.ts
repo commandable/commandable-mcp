@@ -72,7 +72,7 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
     const sessionState = new SessionAbilityState()
 
     const server = new Server({ name: 'test', version: '0.0.0' }, { capabilities: { tools: { listChanged: true } } })
-    registerToolHandlers(server, { list: index.tools, byName: index.byName }, { catalog, sessionState })
+    registerToolHandlers(server, { list: index.tools, byName: index.byName }, { catalogRef: { current: catalog }, sessionState })
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
     await server.connect(serverTransport as any)
@@ -91,6 +91,8 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
       META_TOOL_NAMES.disableToolset,
       META_TOOL_NAMES.enableToolset,
       META_TOOL_NAMES.searchTools,
+      META_TOOL_NAMES.listIntegrations,
+      META_TOOL_NAMES.addIntegration,
     ].sort())
 
     const prToolName = makeIntegrationToolName('github', 'list_pull_requests', integration.id)
@@ -126,6 +128,8 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
       META_TOOL_NAMES.disableToolset,
       META_TOOL_NAMES.enableToolset,
       META_TOOL_NAMES.searchTools,
+      META_TOOL_NAMES.listIntegrations,
+      META_TOOL_NAMES.addIntegration,
     ].sort())
   })
 })
