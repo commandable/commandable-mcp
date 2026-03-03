@@ -221,7 +221,7 @@ See `.env.example` for a full list. The most important ones:
 - **`DATABASE_URL`**: if set, uses Postgres; otherwise uses SQLite
 - **`COMMANDABLE_CONFIG_FILE`**: path to `commandable.config.yaml` (optional)
 - **`COMMANDABLE_DATA_DIR`**: where local state lives (default: `~/.commandable/`)
-- **`COMMANDABLE_MODE`**: `static` (default) or `create`. Create mode enables per-session dynamic tool loading via meta-tools (`commandable_search_tools`, `commandable_enable_toolset`, `commandable_disable_toolset`). Requires a client that supports `notifications/tools/list_changed` (e.g. Claude Code). Static mode loads all configured tools at startup and works with every MCP client.
+- **`COMMANDABLE_MODE`**: `static` (default) or `create`. Prefer the `commandable-mcp create` subcommand over this env var for stdio usage. Useful when running in HTTP/Docker mode: set `COMMANDABLE_MODE=create` to enable per-session dynamic toolsets for Create Mode.
 - **`COMMANDABLE_INTEGRATION_DATA_DIR`**: override the integration-data directory
 
 ---
@@ -236,7 +236,8 @@ See `.env.example` for a full list. The most important ones:
 | `commandable-mcp add` | Add more integrations interactively, including toolset selection |
 | `commandable-mcp status` | Show enabled integrations |
 | `commandable-mcp create-api-key [name]` | Create an API key for HTTP `/mcp` |
-| `commandable-mcp` | Start stdio MCP server (spawned by MCP clients) |
+| `commandable-mcp` | Start stdio MCP server in static mode (all tools at startup) |
+| `commandable-mcp create-mode` | Start stdio MCP server in create mode (dynamic toolsets, for Claude Code) |
 | `commandable-mcp --help` | Show usage |
 
 ---

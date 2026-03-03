@@ -48,19 +48,20 @@ function help(exitCode: number = 0): never {
     `  ${picocolors.cyan('commandable-mcp status')}`,
     `  ${picocolors.cyan('commandable-mcp apply')} ${picocolors.dim('[--config ./commandable.config.yaml]')}`,
     `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
-    `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server via stdio)')}`,
+    `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server, static mode)')}`,
+    `  ${picocolors.cyan('commandable-mcp create-mode')} ${picocolors.dim('(start MCP server in create mode — for use with Claude Code)')}`,
     '',
     picocolors.bold('Notes'),
     `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
-    `- MCP clients (Claude Desktop, Cursor) spawn this server process automatically via: ${picocolors.cyan('npx -y @commandable/mcp')}`,
-    `- Set ${picocolors.cyan('COMMANDABLE_MODE=create')} to enable Create Mode (dynamic toolsets + tool list updates).`,
+    `- Static mode: all tools available at startup. Works with every MCP client.`,
+    `- Create mode: per-session dynamic toolsets via meta-tools. Requires ${picocolors.cyan('notifications/tools/list_changed')} support (e.g. Claude Code).`,
     '',
   ]
   console.error(lines.join('\n'))
   process.exit(exitCode)
 }
 
-async function runStdioFromDb() {
+async function runStdioFromDb(forceMode?: 'static' | 'create') {
   const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
   const { db, credentialStore } = await openLocalState()
   const integrations = await listIntegrations(db, spaceId)
@@ -77,7 +78,7 @@ async function runStdioFromDb() {
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy })
 
-  const mode = resolveMode()
+  const mode = forceMode ?? resolveMode()
 
   await runStdioMcpServer({
     serverInfo: { name: 'commandable', version: '0.0.1' },
@@ -187,6 +188,9 @@ export async function main() {
 
   if (cmd === 'create-api-key')
     return await runCreateApiKey()
+
+  if (cmd === 'create-mode')
+    return await runStdioFromDb('create')
 
   if (cmd && !cmd.startsWith('-'))
     help(1)
