@@ -27,6 +27,7 @@ export default defineEventHandler(() => {
   return {
     ok: true,
     service: 'commandable-management-ui',
+    version: (process.env.COMMANDABLE_VERSION || '').trim() || null,
     spaceId: getSpaceId(),
     db: getDbIdentity(),
   }
