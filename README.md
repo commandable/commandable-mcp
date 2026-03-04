@@ -61,6 +61,55 @@ Restart Claude Desktop or reload the Cursor window. Your assistant can now use t
 
 ---
 
+## Updating
+
+### If you use `npx` (recommended)
+
+If your MCP client is configured to run Commandable via:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "@commandable/mcp"]
+}
+```
+
+…then updates are usually automatic: your MCP client starts a fresh `npx` process each time it needs the server.
+
+If you want to avoid surprise breaking changes, pin an exact version:
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "@commandable/mcp@<version>"]
+}
+```
+
+### If you installed globally
+
+Update manually:
+
+```bash
+npm update -g @commandable/mcp
+```
+
+### What about the background management UI (daemon)?
+
+In create mode, Commandable runs the management UI as a background daemon.
+
+- When a new CLI version runs, it will **automatically restart the daemon** if it detects a version mismatch.
+- To inspect or control it directly, use:
+  - `commandable-mcp daemon status`
+  - `commandable-mcp daemon stop`
+  - `commandable-mcp daemon start`
+
+### After updating: possible database reset (early development)
+
+During early development we may make breaking changes to the local SQLite schema.
+If you see a “database is out of date” error, follow the printed instructions (typically: delete the SQLite file and re-run `commandable-mcp init`).
+
+---
+
 ## Quick start: Server mode (Management UI + MCP over HTTP)
 
 Server mode is for when you want to connect by URL (agent frameworks) and/or manage integrations in a browser.
@@ -238,7 +287,9 @@ See `.env.example` for a full list. The most important ones:
 | `commandable-mcp create-api-key [name]` | Create an API key for HTTP `/mcp` |
 | `commandable-mcp` | Start stdio MCP server in static mode (all tools at startup) |
 | `commandable-mcp create-mode` | Start stdio MCP server in create mode (dynamic toolsets, for Claude Code) |
+| `commandable-mcp daemon [status\|start\|stop]` | Manage the background management UI daemon (create mode) |
 | `commandable-mcp --help` | Show usage |
+| `commandable-mcp --version` | Print version |
 
 ---
 

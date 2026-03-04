@@ -12,6 +12,7 @@ import { createApiKey, generateApiKey } from '../mcp/auth.js'
 import { AbilityCatalog } from '../mcp/abilityCatalog.js'
 import { SessionAbilityState } from '../mcp/sessionState.js'
 import type { MetaToolContext } from '../mcp/metaTools.js'
+import { COMMANDABLE_VERSION } from '../version.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getCommandableDir, getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
@@ -121,6 +122,24 @@ async function startBundledManagementUi(params: { port: number }): Promise<{ bas
         )
       }
 
+      const runningVersion = typeof status?.version === 'string' && status.version.trim().length ? status.version.trim() : null
+      if (runningVersion !== COMMANDABLE_VERSION) {
+        console.error(`[commandable] restarting management UI due to version mismatch (running=${runningVersion ?? 'unknown'}, installed=${COMMANDABLE_VERSION})`)
+        const info = readDaemonPid()
+        if (info?.pid && isProcessAlive(info.pid)) {
+          try { process.kill(info.pid, 'SIGTERM') } catch {}
+          try { unlinkSync(daemonPidPath()) } catch {}
+          // Wait briefly for the port to be released.
+          await new Promise(resolve => setTimeout(resolve, 250))
+        }
+        else {
+          throw new Error(
+            `A Commandable management UI is running at ${baseUrl} with version=${runningVersion ?? 'unknown'}, but the daemon PID could not be determined. ` +
+            `Stop the process using ${baseUrl} (or change COMMANDABLE_UI_PORT) to continue.`,
+          )
+        }
+      }
+
       console.error(`[commandable] reusing existing management UI at ${baseUrl}`)
       return { baseUrl, stop: async () => {} }
     }
@@ -155,6 +174,7 @@ async function startBundledManagementUi(params: { port: number }): Promise<{ bas
       HOST: '127.0.0.1',
       PORT: String(port),
       COMMANDABLE_MODE: 'create',
+      COMMANDABLE_VERSION,
       COMMANDABLE_INTEGRATION_DATA_DIR: process.env.COMMANDABLE_INTEGRATION_DATA_DIR || integrationDataRoot(),
       COMMANDABLE_MCP_SQLITE_PATH: process.env.COMMANDABLE_MCP_SQLITE_PATH || resolve(getCommandableDir(), 'credentials.sqlite'),
     },
@@ -165,7 +185,10 @@ async function startBundledManagementUi(params: { port: number }): Promise<{ bas
 
   const pidPath = resolve(getCommandableDir(), 'daemon.pid')
   try {
-    writeFileSync(pidPath, `${child.pid}\n`, { mode: 0o600 })
+    // Format:
+    // <pid>
+    // <version>
+    writeFileSync(pidPath, `${child.pid}\n${COMMANDABLE_VERSION}\n`, { mode: 0o600 })
     try { chmodSync(pidPath, 0o600) } catch {}
   }
   catch {}
@@ -187,8 +210,9 @@ async function startBundledManagementUi(params: { port: number }): Promise<{ bas
       const pidFile = resolve(getCommandableDir(), 'daemon.pid')
       let pid: number | null = null
       try {
-        const raw = readFileSync(pidFile, 'utf8').trim()
-        pid = raw && /^\d+$/.test(raw) ? Number(raw) : null
+        const raw = readFileSync(pidFile, 'utf8')
+        const first = raw.split('\n')[0]?.trim() || ''
+        pid = first && /^\d+$/.test(first) ? Number(first) : null
       }
       catch {}
       if (pid) {
@@ -203,10 +227,14 @@ function daemonPidPath(): string {
   return resolve(getCommandableDir(), 'daemon.pid')
 }
 
-function readDaemonPid(): number | null {
+function readDaemonPid(): { pid: number, version: string | null } | null {
   try {
-    const raw = readFileSync(daemonPidPath(), 'utf8').trim()
-    return raw && /^\d+$/.test(raw) ? Number(raw) : null
+    const raw = readFileSync(daemonPidPath(), 'utf8')
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean)
+    const pidRaw = lines[0] || ''
+    const versionRaw = lines[1] || null
+    const pid = pidRaw && /^\d+$/.test(pidRaw) ? Number(pidRaw) : null
+    return pid ? { pid, version: versionRaw } : null
   }
   catch {
     return null
@@ -237,6 +265,7 @@ function help(exitCode: number = 0): never {
   const lines = [
     '',
     `${picocolors.bold('Commandable MCP')} — connect your apps to MCP clients`,
+    picocolors.dim(`v${COMMANDABLE_VERSION}`),
     '',
     picocolors.bold('Usage'),
     `  ${picocolors.cyan('commandable-mcp init')}`,
@@ -247,6 +276,7 @@ function help(exitCode: number = 0): never {
     `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
     `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server, static mode)')}`,
     `  ${picocolors.cyan('commandable-mcp create-mode')} ${picocolors.dim('(start MCP server in create mode — for use with Claude Code)')}`,
+    `  ${picocolors.cyan('commandable-mcp --version')}`,
     '',
     picocolors.bold('Notes'),
     `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
@@ -285,8 +315,10 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
     ? await startBundledManagementUi({ port: uiPort })
     : null
 
+  console.error(`[commandable] v${COMMANDABLE_VERSION}`)
+
   await runStdioMcpServer({
-    serverInfo: { name: 'commandable', version: '0.0.1' },
+    serverInfo: { name: 'commandable', version: COMMANDABLE_VERSION },
     tools: toolIndex,
     ...(mode === 'create'
       ? {
@@ -368,6 +400,11 @@ async function runCreateApiKey() {
 export async function main() {
   const cmd = process.argv[2]
 
+  if (hasFlag('--version', '-v')) {
+    console.error(COMMANDABLE_VERSION)
+    process.exit(0)
+  }
+
   if (hasFlag('--help', '-h'))
     help(0)
 
@@ -416,17 +453,27 @@ export async function main() {
 
     if (sub === 'status' || !sub) {
       const pid = readDaemonPid()
-      const alive = pid ? isProcessAlive(pid) : false
+      const alive = pid ? isProcessAlive(pid.pid) : false
       const probe = await fetchJsonWithTimeout(`${baseUrl}/api/_commandable/status`, 400).catch(() => null)
       const ok = !!probe?.ok
-      console.error(JSON.stringify({ running: alive && ok, pid, baseUrl, status: probe?.json ?? null }, null, 2))
+      const probeVersion = typeof probe?.json?.version === 'string' && probe.json.version.trim().length ? probe.json.version.trim() : null
+      const runningVersion = probeVersion || pid?.version || null
+      console.error(JSON.stringify({
+        running: alive && ok,
+        pid,
+        baseUrl,
+        installedVersion: COMMANDABLE_VERSION,
+        runningVersion,
+        versionMatch: !!runningVersion && runningVersion === COMMANDABLE_VERSION,
+        status: probe?.json ?? null,
+      }, null, 2))
       return
     }
 
     if (sub === 'stop') {
       const pid = readDaemonPid()
       if (pid) {
-        try { process.kill(pid, 'SIGTERM') } catch {}
+        try { process.kill(pid.pid, 'SIGTERM') } catch {}
       }
       try { unlinkSync(daemonPidPath()) } catch {}
       return
