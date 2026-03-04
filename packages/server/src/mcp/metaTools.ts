@@ -30,7 +30,7 @@ export type MetaToolContext = {
   proxy: IntegrationProxy
   /**
    * Optional. If set, meta-tools can return URLs like:
-   *   `${credentialSetupBaseUrl}/credentials/<integrationId>`
+   *   `${credentialSetupBaseUrl}/integrations/<integrationId>`
    */
   credentialSetupBaseUrl?: string
   /**
@@ -284,20 +284,21 @@ export async function handleMetaToolCall(params: {
       ? args.credential_variant.trim()
       : null
 
+    const referenceId = `${type}-${shortId}`
     const integration: IntegrationData = {
       spaceId: ctx.spaceId,
       id,
       type,
-      referenceId: `${type}-${shortId}`,
+      referenceId,
       label,
       enabled: true,
       enabledToolsets: enabledToolsets?.length ? enabledToolsets : undefined,
       maxScope,
       disabledTools: disabledTools?.length ? disabledTools : undefined,
       credentialVariant,
-      // credentials are configured out-of-band; leave these unset for now
-      connectionMethod: undefined,
-      credentialId: undefined,
+      // mark as credentials-based immediately; values are entered out-of-band via management UI
+      connectionMethod: 'credentials',
+      credentialId: `${referenceId}-creds`,
     }
 
     await upsertIntegration(ctx.db, integration)
@@ -312,9 +313,9 @@ export async function handleMetaToolCall(params: {
       ? Object.keys((credCfg.schema as any).properties || {})
       : []
 
-    const credentialUrl = ctx.credentialSetupBaseUrl
-      ? `${ctx.credentialSetupBaseUrl.replace(/\/+$/, '')}/credentials/${encodeURIComponent(id)}`
-      : null
+    const baseUrl = ctx.credentialSetupBaseUrl ? ctx.credentialSetupBaseUrl.replace(/\/+$/, '') : null
+    const managementUrl = baseUrl ? `${baseUrl}/integrations` : null
+    const credentialUrl = baseUrl ? `${baseUrl}/integrations/${encodeURIComponent(id)}` : null
 
     // Dynamic tool registration (create mode): materialize tools for this integration
     // and register them into the live tool index + ability catalog.
@@ -364,11 +365,12 @@ export async function handleMetaToolCall(params: {
         registered_tools: registeredTools,
         toolsets: registeredToolsets,
         credentials_needed: !!credCfg,
+        management_url: managementUrl,
         credential_url: credentialUrl,
         credential_fields: credentialFields,
         next_steps: credentialUrl
           ? ['Open credential_url to enter credentials, then enable a toolset and use tools.']
-          : ['Start the credential server (create mode) to get a credential URL, then enable a toolset and use tools.'],
+          : ['Start the management UI (create mode) to get a credential URL, then enable a toolset and use tools.'],
       },
     }
   }

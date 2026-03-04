@@ -199,9 +199,9 @@ export class IntegrationProxy {
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
       if (!creds)
         throw new HttpError(400, (() => {
-          const portRaw = process.env.COMMANDABLE_CREDENTIAL_PORT
+          const portRaw = process.env.COMMANDABLE_UI_PORT
           const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
-          const url = `http://127.0.0.1:${port}/credentials/${encodeURIComponent(integration.id)}`
+          const url = `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integration.id)}`
           return `No credentials are configured for this integration. Open ${url} to configure them.`
         })())
 

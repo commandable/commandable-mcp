@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
   const db = await getDb()
-  const integrations = await listIntegrations(db, 'local')
+  const spaceId = (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local'
+  const integrations = await listIntegrations(db, spaceId)
   const integration = integrations.find(i => i.id === id)
   if (!integration)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })

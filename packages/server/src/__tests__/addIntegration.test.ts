@@ -76,7 +76,8 @@ describe('meta: add integration from catalog', () => {
     const parsedAdd = JSON.parse((addRes.content as any)[0].text)
     expect(parsedAdd.added).toBe(true)
     expect(parsedAdd.integration?.type).toBe('trello')
-    expect(parsedAdd.credential_url).toContain('/credentials/')
+    expect(parsedAdd.credential_url).toContain('/integrations/')
+    expect(parsedAdd.management_url).toContain('/integrations')
     expect(Array.isArray(parsedAdd.toolsets)).toBe(true)
     expect(parsedAdd.toolsets.length).toBeGreaterThan(0)
 

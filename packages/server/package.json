@@ -60,7 +60,8 @@
     "build": "npm run clean && tsc -p tsconfig.json",
     "postbuild": "node -e \"require('node:fs').chmodSync('dist/cli/bin.js', 0o755)\"",
     "dev": "tsc -p tsconfig.json --watch",
-    "prepack": "npm run build",
+    "bundle-ui": "yarn workspace commandable-mcp-app build && node scripts/bundle-ui.mjs",
+    "prepack": "npm run build && npm run bundle-ui",
     "test": "vitest run"
   }
 }

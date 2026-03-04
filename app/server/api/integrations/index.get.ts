@@ -4,6 +4,7 @@ import { getDb } from '../../utils/db'
 
 export default defineEventHandler(async () => {
   const db = await getDb()
-  return await listIntegrations(db, 'local')
+  const spaceId = (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local'
+  return await listIntegrations(db, spaceId)
 })
 

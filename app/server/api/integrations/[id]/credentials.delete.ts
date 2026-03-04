@@ -18,12 +18,13 @@ export default defineEventHandler(async (event) => {
 
   const credentialId = row.credentialId as string | null | undefined
   if (credentialId) {
+    const spaceId = row.spaceId ?? 'local'
     const encryptionSecret = getOrCreateEncryptionSecret()
     const store = new SqlCredentialStore(db, encryptionSecret)
-    await store.deleteCredentials('local', credentialId)
+    await store.deleteCredentials(spaceId, credentialId)
 
     const integration: IntegrationData = {
-      spaceId: row.spaceId ?? 'local',
+      spaceId,
       id: row.id,
       type: row.type,
       referenceId: row.referenceId,

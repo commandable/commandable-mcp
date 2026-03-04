@@ -25,8 +25,9 @@ export default defineEventHandler(async (event) => {
   if (!credentialId)
     return { hasCredentials: false, fieldNames }
 
+  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
   const store = new SqlCredentialStore(db, encryptionSecret)
-  const hasCredentials = await store.hasCredentials('local', credentialId)
+  const hasCredentials = await store.hasCredentials(spaceId, credentialId)
   return { hasCredentials, fieldNames }
 })
 

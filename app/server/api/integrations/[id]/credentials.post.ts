@@ -25,8 +25,9 @@ export default defineEventHandler(async (event) => {
   // Extract credentialVariant from the payload (not part of the credential values themselves)
   const { credentialVariant, ...credentialValues } = body
 
+  const spaceId = row.spaceId ?? 'local'
   const integration: IntegrationData = {
-    spaceId: row.spaceId ?? 'local',
+    spaceId,
     id: row.id,
     type: row.type,
     referenceId: row.referenceId,
@@ -39,7 +40,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const store = new SqlCredentialStore(db, encryptionSecret)
-  await store.saveCredentials('local', integration.credentialId!, credentialValues as any)
+  await store.saveCredentials(spaceId, integration.credentialId!, credentialValues as any)
 
   await upsertIntegration(db, integration)
 

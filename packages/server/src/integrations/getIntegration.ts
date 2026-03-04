@@ -17,9 +17,9 @@ export function createGetIntegration(
     const isCredentialsConnected = integration.connectionMethod === 'credentials' && !!integration.credentialId
     if (!isHttp && !integration.connectionId && !isCredentialsConnected)
       throw new Error((() => {
-        const portRaw = process.env.COMMANDABLE_CREDENTIAL_PORT
+        const portRaw = process.env.COMMANDABLE_UI_PORT
         const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
-        const url = `http://127.0.0.1:${port}/credentials/${encodeURIComponent(integration.id)}`
+        const url = `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integration.id)}`
         return `Integration is not connected. If this integration uses credentials, open ${url} to configure them.`
       })())
 
