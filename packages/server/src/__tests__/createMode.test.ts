@@ -88,6 +88,7 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
 
     const initial = await client.listTools()
     expect(initial.tools.map(t => t.name).sort()).toEqual([
+      META_TOOL_NAMES.readme,
       META_TOOL_NAMES.disableToolset,
       META_TOOL_NAMES.enableToolset,
       META_TOOL_NAMES.searchTools,
@@ -125,6 +126,7 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
 
     const afterUnload = await client.listTools()
     expect(afterUnload.tools.map(t => t.name).sort()).toEqual([
+      META_TOOL_NAMES.readme,
       META_TOOL_NAMES.disableToolset,
       META_TOOL_NAMES.enableToolset,
       META_TOOL_NAMES.searchTools,

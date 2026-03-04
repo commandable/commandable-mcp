@@ -58,7 +58,7 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "postbuild": "node -e \"require('node:fs').chmodSync('dist/cli/bin.js', 0o755)\"",
+    "postbuild": "node -e \"require('node:fs').chmodSync('dist/cli/bin.js', 0o755)\" && node scripts/copy-readme.mjs",
     "dev": "tsc -p tsconfig.json --watch",
     "bundle-ui": "yarn workspace commandable-mcp-app build && node scripts/bundle-ui.mjs",
     "prepack": "npm run build && npm run bundle-ui",

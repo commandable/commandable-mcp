@@ -2,9 +2,11 @@ import type { AbilityCatalog } from './abilityCatalog.js'
 import type { SessionAbilityState } from './sessionState.js'
 import type { McpToolDefinition } from './toolAdapter.js'
 import { buildMcpToolIndexForIntegrations } from './toolAdapter.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import crypto from 'node:crypto'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
-import { loadIntegrationCredentialConfig, loadIntegrationManifest } from '../integrations/dataLoader.js'
+import { loadIntegrationCredentialConfig, loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
 import type { DbClient } from '../db/client.js'
 import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { SqlCredentialStore } from '../db/credentialStore.js'
@@ -12,6 +14,7 @@ import type { IntegrationData } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
 
 export const META_TOOL_NAMES = {
+  readme: 'commandable_readme',
   searchTools: 'commandable_search_tools',
   enableToolset: 'commandable_enable_toolset',
   disableToolset: 'commandable_disable_toolset',
@@ -22,6 +25,11 @@ export const META_TOOL_NAMES = {
 export type MetaToolName = typeof META_TOOL_NAMES[keyof typeof META_TOOL_NAMES]
 
 export type { McpToolDefinition } from './toolAdapter.js'
+
+function buildCommandableReadme(): string {
+  const path = fileURLToPath(new URL('./commandable_readme.md', import.meta.url))
+  return readFileSync(path, 'utf8')
+}
 
 export type MetaToolContext = {
   spaceId: string
@@ -54,8 +62,13 @@ export type MetaToolContext = {
 export function getMetaToolDefinitions(): McpToolDefinition[] {
   return [
     {
+      name: META_TOOL_NAMES.readme,
+      description: 'Read this first. Returns a guide explaining how Commandable works and how to discover/add integrations safely.',
+      inputSchema: { type: 'object', additionalProperties: false, properties: {}, required: [] },
+    },
+    {
       name: META_TOOL_NAMES.searchTools,
-      description: 'Search available toolsets (integration/toolset bundles) you can enable in this session.',
+      description: `Search available toolsets (integration/toolset bundles) you can enable in this session. Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -68,7 +81,7 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
     },
     {
       name: META_TOOL_NAMES.enableToolset,
-      description: 'Enable a toolset in the current session, making its tools available.',
+      description: `Enable a toolset in the current session, making its tools available. Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -80,7 +93,7 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
     },
     {
       name: META_TOOL_NAMES.disableToolset,
-      description: 'Disable a toolset from the current session, removing its tools.',
+      description: `Disable a toolset from the current session, removing its tools. Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -92,7 +105,7 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
     },
     {
       name: META_TOOL_NAMES.listIntegrations,
-      description: 'List available pre-built integrations you can add (from the integration catalog) and show which are already configured.',
+      description: `List available pre-built integrations you can add (from the integration catalog) and show which are already configured. Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -105,7 +118,7 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
     },
     {
       name: META_TOOL_NAMES.addIntegration,
-      description: 'Add a pre-built integration from the catalog to this Commandable instance (credentials are entered out-of-band).',
+      description: `Add a pre-built integration from the catalog to this Commandable instance (credentials are entered out-of-band). Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -137,6 +150,10 @@ export async function handleMetaToolCall(params: {
 }): Promise<MetaToolCallResult> {
   const { name, args, sessionId, catalog, sessionState, ctx } = params
 
+  if (name === META_TOOL_NAMES.readme) {
+    return { handled: true, listChanged: false, result: { markdown: buildCommandableReadme() } }
+  }
+
   if (name === META_TOOL_NAMES.searchTools) {
     const query = String(args?.query || '').trim()
     const limitRaw = args?.limit
@@ -167,6 +184,9 @@ export async function handleMetaToolCall(params: {
       throw new Error(`Unknown toolset_id: ${toolsetId}`)
 
     const { newTools } = sessionState.loadAbility(sessionId, ability)
+    const integrationGuide = (() => {
+      try { return loadIntegrationPrompt(ability.integrationtype) } catch { return null }
+    })()
     return {
       handled: true,
       listChanged: newTools.length > 0,
@@ -176,6 +196,7 @@ export async function handleMetaToolCall(params: {
         label: ability.label,
         tool_count: ability.toolNames.length,
         new_tools: newTools,
+        integration_guide: integrationGuide,
       },
     }
   }
