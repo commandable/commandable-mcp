@@ -55,7 +55,7 @@
     <UModal
       v-model:open="modalOpen"
       :title="hasCredentials ? 'Reconfigure Credentials' : 'Connect Integration'"
-      description="Enter your credentials. Values can reference environment variables using the env:VARNAME syntax."
+      description="Enter your credentials to connect this integration."
     >
       <template #body>
         <div class="space-y-4">
@@ -72,9 +72,8 @@
               />
             </UFormField>
 
-            <div v-if="activeVariant?.hintMarkdown" class="text-sm text-muted bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2">
-              {{ activeVariant.hintMarkdown }}
-            </div>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div v-if="activeVariant?.hintMarkdown" class="hint-markdown text-sm bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2" v-html="renderedHint" />
 
             <div class="space-y-3">
               <UFormField
@@ -82,12 +81,10 @@
                 :key="key"
                 :label="(prop as any).title || key"
                 :description="(prop as any).description"
-                hint="env:VARNAME or actual value"
               >
                 <UInput
                   v-model="form[key]"
                   :type="isSecretField(key) ? 'password' : 'text'"
-                  placeholder="env:MY_TOKEN or actual value"
                   class="w-full"
                 />
               </UFormField>
@@ -111,6 +108,8 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
+
 type CredentialVariant = {
   key: string
   label: string
@@ -159,6 +158,12 @@ const activeVariant = computed(() =>
 const schemaFields = computed((): [string, unknown][] => {
   const properties = activeVariant.value?.schema?.properties || {}
   return Object.entries(properties)
+})
+
+const renderedHint = computed((): string => {
+  const md = activeVariant.value?.hintMarkdown
+  if (!md) return ''
+  return marked.parse(md) as string
 })
 
 function isSecretField(key: string): boolean {
@@ -236,3 +241,43 @@ async function disconnect() {
 
 load()
 </script>
+
+<style scoped>
+.hint-markdown :deep(p) {
+  margin-bottom: 0.5rem;
+}
+.hint-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.hint-markdown :deep(ul),
+.hint-markdown :deep(ol) {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.hint-markdown :deep(ul) {
+  list-style-type: disc;
+}
+.hint-markdown :deep(ol) {
+  list-style-type: decimal;
+}
+.hint-markdown :deep(li) {
+  margin-bottom: 0.2rem;
+}
+.hint-markdown :deep(code) {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8em;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+}
+.dark .hint-markdown :deep(code) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.hint-markdown :deep(strong) {
+  font-weight: 600;
+}
+.hint-markdown :deep(a) {
+  color: var(--ui-primary);
+  text-decoration: underline;
+}
+</style>
