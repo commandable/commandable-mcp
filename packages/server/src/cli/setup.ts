@@ -13,7 +13,10 @@ import {
 import { listIntegrationCatalog } from '../integrations/catalog.js'
 import { loadIntegrationCredentialConfig, loadIntegrationHint, loadIntegrationToolsets, loadIntegrationVariants } from '../integrations/dataLoader.js'
 import { getCommandableDir, openLocalState } from './credentialManager.js'
-import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
+import { listIntegrations, updateIntegrationHealth, upsertIntegration } from '../db/integrationStore.js'
+import { checkIntegrationHealth } from '../integrations/health.js'
+import { IntegrationProxy } from '../integrations/proxy.js'
+import { SqlCredentialStore } from '../db/credentialStore.js'
 import type { IntegrationData } from '../types.js'
 
 function isTruthyString(v: unknown): v is string {
@@ -286,6 +289,56 @@ async function configureIntegration(type: string): Promise<{ variantKey: string,
   return { variantKey, credentials, enabledToolsets: enabledToolsets ?? undefined, maxScope }
 }
 
+/**
+ * Verify credentials by running a health check, looping until valid or the user cancels.
+ * Returns the final validated credentials, or null if the user cancelled.
+ */
+async function verifyCredentialsWithRetry(params: {
+  type: string
+  variantKey: string
+  integration: IntegrationData
+  initialCredentials: Record<string, string>
+  credentialStore: SqlCredentialStore
+}): Promise<Record<string, string> | null> {
+  const { type, variantKey, integration, credentialStore } = params
+  let credentials = params.initialCredentials
+
+  while (true) {
+    // Temporarily save credentials for proxy to resolve them
+    await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
+
+    const proxy = new IntegrationProxy({ credentialStore, trelloApiKey: process.env.TRELLO_API_KEY })
+    log.step(`Verifying ${picocolors.cyan(type)} credentials…`)
+
+    const result = await checkIntegrationHealth({ integration, proxy })
+
+    if (result.skipped || result.status === 'connected') {
+      if (!result.skipped)
+        log.success(`Connected to ${picocolors.cyan(type)} successfully.`)
+      return credentials
+    }
+
+    log.error(`Credential verification failed for ${picocolors.cyan(type)}: invalid or expired credentials.`)
+
+    const retry = await select({
+      message: 'What would you like to do?',
+      options: [
+        { value: 'retry', label: 'Re-enter credentials' },
+        { value: 'cancel', label: 'Cancel setup for this integration' },
+      ],
+    })
+
+    if (isCancel(retry) || retry === 'cancel')
+      return null
+
+    const newCredentials = await promptCredentialsForVariant(type, variantKey)
+    if (newCredentials === null)
+      return null
+
+    credentials = newCredentials
+  }
+}
+
 export async function runInitInteractive() {
   intro('Commandable MCP')
 
@@ -306,10 +359,25 @@ export async function runInitInteractive() {
         return
       }
 
-      const { variantKey, credentials, enabledToolsets, maxScope } = result
+      const { variantKey, enabledToolsets, maxScope } = result
       const integration = makeIntegrationRecord(type, variantKey, enabledToolsets, maxScope)
-      await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
+
+      const verifiedCredentials = await verifyCredentialsWithRetry({
+        type,
+        variantKey,
+        integration,
+        initialCredentials: result.credentials,
+        credentialStore,
+      })
+
+      if (verifiedCredentials === null) {
+        outro('Cancelled.')
+        return
+      }
+
+      // Credentials are already saved by verifyCredentialsWithRetry; persist the integration record
       await upsertIntegration(db, integration)
+      await updateIntegrationHealth(db, integration.id, 'connected')
     }
 
     log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
@@ -348,10 +416,25 @@ export async function runAddInteractive() {
         return
       }
 
-      const { variantKey, credentials, enabledToolsets, maxScope } = result
+      const { variantKey, enabledToolsets, maxScope } = result
       const integration = makeIntegrationRecord(type, variantKey, enabledToolsets, maxScope)
-      await credentialStore.saveCredentials('local', integration.credentialId!, credentials)
+
+      const verifiedCredentials = await verifyCredentialsWithRetry({
+        type,
+        variantKey,
+        integration,
+        initialCredentials: result.credentials,
+        credentialStore,
+      })
+
+      if (verifiedCredentials === null) {
+        outro('Cancelled.')
+        return
+      }
+
+      // Credentials are already saved by verifyCredentialsWithRetry; persist the integration record
       await upsertIntegration(db, integration)
+      await updateIntegrationHealth(db, integration.id, 'connected')
       added.push(type)
     }
 

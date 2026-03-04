@@ -1,6 +1,15 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { SqlCredentialStore, getOrCreateEncryptionSecret, upsertIntegration, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import {
+  SqlCredentialStore,
+  IntegrationProxy,
+  getOrCreateEncryptionSecret,
+  updateIntegrationCredentials,
+  updateIntegrationHealth,
+  checkIntegrationHealth,
+  pgIntegrations,
+  sqliteIntegrations,
+} from '@commandable/mcp'
 import type { IntegrationData } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
@@ -26,23 +35,47 @@ export default defineEventHandler(async (event) => {
   const { credentialVariant, ...credentialValues } = body
 
   const spaceId = row.spaceId ?? 'local'
-  const integration: IntegrationData = {
+  const credentialId: string = row.credentialId || `${row.referenceId}-creds`
+  const resolvedVariant: string | null = credentialVariant || row.credentialVariant || null
+
+  const store = new SqlCredentialStore(db, encryptionSecret)
+  await store.saveCredentials(spaceId, credentialId, credentialValues as any)
+
+  // Update only credential linkage fields — preserves toolsets/permissions
+  await updateIntegrationCredentials(db, id, {
+    connectionMethod: 'credentials',
+    credentialId,
+    credentialVariant: resolvedVariant,
+  })
+
+  // Run health check against the newly saved credentials
+  const integrationForCheck: IntegrationData = {
     spaceId,
-    id: row.id,
+    id,
     type: row.type,
     referenceId: row.referenceId,
     label: row.label,
-    config: db.dialect === 'sqlite' ? (row.configJson ? JSON.parse(row.configJson) : undefined) : (row.configJson ?? undefined),
     connectionMethod: 'credentials',
-    connectionId: null,
-    credentialId: row.credentialId || `${row.referenceId}-creds`,
-    credentialVariant: credentialVariant || row.credentialVariant || null,
+    credentialId,
+    credentialVariant: resolvedVariant,
   }
 
-  const store = new SqlCredentialStore(db, encryptionSecret)
-  await store.saveCredentials(spaceId, integration.credentialId!, credentialValues as any)
+  const proxy = new IntegrationProxy({
+    credentialStore: store,
+    trelloApiKey: process.env.TRELLO_API_KEY,
+  })
 
-  await upsertIntegration(db, integration)
+  const healthResult = await checkIntegrationHealth({ integration: integrationForCheck, proxy })
 
-  return { ok: true, credentialId: integration.credentialId }
+  // Persist health status (skip if the provider has no health endpoint)
+  if (!healthResult.skipped) {
+    await updateIntegrationHealth(db, id, healthResult.status, healthResult.checkedAt)
+  }
+
+  return {
+    ok: true,
+    credentialId,
+    health_status: healthResult.status,
+    health_checked_at: healthResult.skipped ? null : healthResult.checkedAt?.toISOString(),
+  }
 })

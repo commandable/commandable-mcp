@@ -231,6 +231,12 @@ export async function handleMetaToolCall(params: {
         const hasCreds = inst.connectionMethod === 'credentials' && inst.credentialId
           ? await ctx.credentialStore.hasCredentials(ctx.spaceId, inst.credentialId)
           : false
+
+        const baseUrl = ctx.credentialSetupBaseUrl ? ctx.credentialSetupBaseUrl.replace(/\/+$/, '') : null
+        const credentialUrl = baseUrl && inst.connectionMethod === 'credentials'
+          ? `${baseUrl}/integrations/${encodeURIComponent(inst.id)}`
+          : null
+
         return {
           id: inst.id,
           label: inst.label,
@@ -238,6 +244,9 @@ export async function handleMetaToolCall(params: {
           connection_method: inst.connectionMethod ?? null,
           credential_variant: inst.credentialVariant ?? null,
           has_credentials: hasCreds,
+          health_status: inst.healthStatus ?? null,
+          health_checked_at: inst.healthCheckedAt ? inst.healthCheckedAt.toISOString() : null,
+          credential_url: credentialUrl,
         }
       }))
 

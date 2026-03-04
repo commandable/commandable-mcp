@@ -12,6 +12,7 @@ export * from './integrations/sandbox.js'
 export * from './integrations/getIntegration.js'
 export * from './integrations/actionsFactory.js'
 export * from './integrations/proxy.js'
+export * from './integrations/health.js'
 
 export * from './db/client.js'
 export * from './db/migrate.js'

@@ -103,12 +103,16 @@ describe('meta: add integration from catalog', () => {
     const afterNames = afterLoad.tools.map(t => t.name)
     expect(afterNames).toContain(parsedLoad.new_tools[0])
 
-    // Catalog listing includes configured instance
+    // Catalog listing includes configured instance with health fields
     const listRes = await client.callTool({ name: META_TOOL_NAMES.listIntegrations, arguments: { query: 'trello' } } as any)
     const parsedList = JSON.parse((listRes.content as any)[0].text)
     const trelloItem = parsedList.integrations.find((x: any) => x.type === 'trello')
     expect(trelloItem.configured).toBe(true)
     expect(trelloItem.instances.length).toBeGreaterThan(0)
+    // health_status should be present (null until a health check is run)
+    expect('health_status' in trelloItem.instances[0]).toBe(true)
+    // credential_url should be present when credentialSetupBaseUrl is configured
+    expect(trelloItem.instances[0].credential_url).toContain('/integrations/')
 
     db.close()
   })

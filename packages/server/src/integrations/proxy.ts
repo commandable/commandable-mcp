@@ -53,6 +53,12 @@ function getErrorHint(status: number, provider: string, bodyText: string): strin
   return ''
 }
 
+function buildCredentialUrl(integrationId: string): string {
+  const portRaw = process.env.COMMANDABLE_UI_PORT
+  const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
+  return `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integrationId)}`
+}
+
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 
@@ -197,13 +203,13 @@ export class IntegrationProxy {
         throw new HttpError(501, `Provider '${provider}' does not support credentials-based auth yet.`)
 
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
-      if (!creds)
-        throw new HttpError(400, (() => {
-          const portRaw = process.env.COMMANDABLE_UI_PORT
-          const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
-          const url = `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integration.id)}`
-          return `No credentials are configured for this integration. Open ${url} to configure them.`
-        })())
+      if (!creds) {
+        const credentialUrl = buildCredentialUrl(integration.id)
+        throw new HttpError(400, `No credentials are configured for this integration. Open ${credentialUrl} to configure them.`, {
+          reason: 'missing_credentials',
+          credential_url: credentialUrl,
+        })
+      }
 
       if (credCfg.preprocess === 'google_service_account') {
         const serviceAccountJson = (creds as any).serviceAccountJson
@@ -317,11 +323,17 @@ export class IntegrationProxy {
         catch {}
         const hint = getErrorHint(response.status, provider, bodyText)
         const hintSuffix = hint ? ` ${hint}` : ''
-        throw new HttpError(response.status, `Failed to proxy request to ${provider} (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.${hintSuffix}`, {
+        const credentialUrl = buildCredentialUrl(integration.id)
+        const hintWithUrl = response.status === 401
+          ? `${hint} Open ${credentialUrl} to reconfigure.`
+          : hint
+        const hintWithUrlSuffix = hintWithUrl ? ` ${hintWithUrl}` : ''
+        throw new HttpError(response.status, `Failed to proxy request to ${provider} (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.${response.status === 401 ? hintWithUrlSuffix : hintSuffix}`, {
           status: response.status,
           url: redact(finalUrl),
           contentType,
           body: bodyText?.slice(0, 4000),
+          ...(response.status === 401 ? { reason: 'invalid_credentials', credential_url: credentialUrl } : {}),
         })
       }
       return response

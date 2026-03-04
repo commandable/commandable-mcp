@@ -16,6 +16,16 @@ export interface CredentialVariantConfig {
     query?: Record<string, string>
   }
   preprocess?: string
+  /**
+   * Optional lightweight health-check call that verifies credentials are valid.
+   * The server will call this path via proxy.call() and classify the response:
+   *   2xx → connected, 401 → invalid_credentials
+   * Omit if no cheap auth-gated endpoint exists for this variant.
+   */
+  healthCheck?: {
+    path: string
+    method?: string
+  }
 }
 
 export interface CredentialVariantsFile {
@@ -34,6 +44,10 @@ export interface IntegrationCredentialConfig {
     query?: Record<string, string>
   }
   preprocess?: string
+  healthCheck?: {
+    path: string
+    method?: string
+  }
 }
 
 interface ToolRef {
@@ -319,6 +333,7 @@ export function loadIntegrationCredentialConfig(
       query: variant.injection?.query || undefined,
     },
     preprocess: variant.preprocess,
+    healthCheck: (variant as any).healthCheck ?? undefined,
   }
 }
 

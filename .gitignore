@@ -25,6 +25,9 @@ app/.output/
 !.env.test.managed.example
 !.env.test.google.example
 
+# Local dev data directory (created when running yarn dev with app/.env)
+.commandable-dev/
+
 # OS
 .DS_Store
 Thumbs.db

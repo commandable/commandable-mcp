@@ -53,17 +53,23 @@
           </div>
           <div class="mt-1 flex items-center gap-2 flex-wrap">
             <span
-              v-if="credentialStatus[integ.id] !== undefined"
+              v-if="healthStatus[integ.id] !== undefined"
               class="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded"
-              :class="credentialStatus[integ.id]
-                ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400'
-                : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400'"
+              :class="{
+                'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400': healthStatus[integ.id] === 'connected',
+                'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400': healthStatus[integ.id] === 'invalid_credentials' || healthStatus[integ.id] === 'disconnected',
+              }"
             >
               <span
                 class="inline-block w-1.5 h-1.5 rounded-full"
-                :class="credentialStatus[integ.id] ? 'bg-green-500' : 'bg-red-500'"
+                :class="{
+                  'bg-green-500': healthStatus[integ.id] === 'connected',
+                  'bg-red-500': healthStatus[integ.id] === 'invalid_credentials' || healthStatus[integ.id] === 'disconnected',
+                }"
               />
-              {{ credentialStatus[integ.id] ? 'Connected' : 'Not connected' }}
+              <template v-if="healthStatus[integ.id] === 'connected'">Connected</template>
+              <template v-else-if="healthStatus[integ.id] === 'invalid_credentials'">Invalid credentials</template>
+              <template v-else>Not connected</template>
             </span>
             <span v-if="integ.enabledToolsets?.length" class="text-xs text-muted">
               {{ integ.enabledToolsets.length }} toolset{{ integ.enabledToolsets.length === 1 ? '' : 's' }}
@@ -106,15 +112,15 @@ type Integration = {
 }
 
 const { data: integrations, pending, error, refresh } = await useFetch<Integration[]>('/api/integrations')
-const credentialStatus = reactive<Record<string, boolean>>({})
+const healthStatus = reactive<Record<string, string>>({})
 const showAddModal = ref(false)
 
 watchEffect(async () => {
   if (!integrations.value) return
   for (const i of integrations.value) {
-    if (credentialStatus[i.id] !== undefined) continue
-    const res = await $fetch<{ hasCredentials: boolean }>(`/api/integrations/${i.id}/credentials-status`).catch(() => null)
-    credentialStatus[i.id] = !!res?.hasCredentials
+    if (healthStatus[i.id] !== undefined) continue
+    const res = await $fetch<{ health_status: string | null }>(`/api/integrations/${i.id}/credentials-status`).catch(() => null)
+    healthStatus[i.id] = res?.health_status ?? 'disconnected'
   }
 })
 

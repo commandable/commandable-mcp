@@ -13,12 +13,26 @@
     </div>
 
     <!-- Connected state -->
-    <div v-else-if="hasCredentials" class="flex items-center gap-3 flex-wrap">
+    <div v-else-if="healthStatus === 'connected'" class="flex items-center gap-3 flex-wrap">
       <div class="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
         <span class="inline-block w-2 h-2 rounded-full bg-green-500" />
         Connected
       </div>
       <UButton size="xs" variant="soft" color="neutral" icon="i-lucide-refresh-cw" @click="openModal">
+        Reconfigure
+      </UButton>
+      <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
+        Disconnect
+      </UButton>
+    </div>
+
+    <!-- Invalid credentials state -->
+    <div v-else-if="healthStatus === 'invalid_credentials'" class="flex items-center gap-3 flex-wrap">
+      <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
+        Invalid credentials
+      </div>
+      <UButton size="sm" icon="i-lucide-refresh-cw" color="primary" @click="openModal">
         Reconfigure
       </UButton>
       <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
@@ -125,6 +139,7 @@ const credConfig = ref<CredConfig | null>(null)
 const loading = ref(true)
 const loadError = ref(false)
 const hasCredentials = ref(false)
+const healthStatus = ref<string | null>(null)
 const selectedVariant = ref<string | undefined>(undefined)
 const form = reactive<Record<string, string>>({})
 const saving = ref(false)
@@ -168,10 +183,11 @@ async function load() {
   try {
     const [config, status] = await Promise.all([
       $fetch<CredConfig>(`/api/integrations/${props.integrationId}/credentials-config`),
-      $fetch<{ hasCredentials: boolean }>(`/api/integrations/${props.integrationId}/credentials-status`),
+      $fetch<{ hasCredentials: boolean, health_status: string | null }>(`/api/integrations/${props.integrationId}/credentials-status`),
     ])
     credConfig.value = config
     hasCredentials.value = !!status?.hasCredentials
+    healthStatus.value = status?.health_status ?? null
     selectedVariant.value = props.currentVariant || config?.defaultVariant || config?.variants?.[0]?.key || undefined
   }
   catch {
@@ -192,8 +208,9 @@ async function save() {
     }
     if (selectedVariant.value)
       body.credentialVariant = selectedVariant.value
-    await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'POST', body })
+    const res = await $fetch<{ ok: boolean, health_status: string }>(`/api/integrations/${props.integrationId}/credentials`, { method: 'POST', body })
     hasCredentials.value = true
+    healthStatus.value = res.health_status ?? 'connected'
     modalOpen.value = false
     for (const k of Object.keys(form))
       delete form[k]
@@ -209,6 +226,7 @@ async function disconnect() {
   try {
     await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'DELETE' as any })
     hasCredentials.value = false
+    healthStatus.value = 'disconnected'
     emit('disconnected')
   }
   finally {

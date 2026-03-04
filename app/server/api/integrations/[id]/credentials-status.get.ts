@@ -22,12 +22,23 @@ export default defineEventHandler(async (event) => {
   const fieldNames = Object.keys((credCfg?.schema as any)?.properties || {})
 
   const credentialId = integ.credentialId as string | null | undefined
-  if (!credentialId)
-    return { hasCredentials: false, fieldNames }
+  if (!credentialId) {
+    return {
+      hasCredentials: false,
+      fieldNames,
+      health_status: (integ.healthStatus as string | null) ?? 'disconnected',
+      health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null,
+    }
+  }
 
   const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
   const store = new SqlCredentialStore(db, encryptionSecret)
   const hasCredentials = await store.hasCredentials(spaceId, credentialId)
-  return { hasCredentials, fieldNames }
-})
 
+  return {
+    hasCredentials,
+    fieldNames,
+    health_status: (integ.healthStatus as string | null) ?? null,
+    health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null,
+  }
+})
