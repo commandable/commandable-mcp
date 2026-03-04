@@ -31,6 +31,8 @@ export interface IntegrationData {
   connectionMethod?: 'managed' | 'credentials'
   credentialId?: string | null
   credentialVariant?: string | null
+  healthStatus?: 'disconnected' | 'connected' | 'invalid_credentials' | null
+  healthCheckedAt?: Date | null
 }
 
 export interface ExecutableTool {

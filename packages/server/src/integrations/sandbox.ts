@@ -221,7 +221,17 @@ function withLogging(handler: (args: any) => Promise<any>, vmConsole: any) {
     }
     catch (err: any) {
       logs.push(err?.stack || String(err))
-      return { success: false, result: err, logs }
+      // Serialize Error objects into plain objects so JSON.stringify captures all fields
+      // including message (which is non-enumerable on Error).
+      const result = (err && typeof err === 'object')
+        ? {
+            ...err,
+            message: err.message,
+            ...(err.statusCode !== undefined ? { statusCode: err.statusCode } : {}),
+            ...(err.data !== undefined ? { data: err.data } : {}),
+          }
+        : err
+      return { success: false, result, logs }
     }
     finally {
       vmConsole.log = originalLog

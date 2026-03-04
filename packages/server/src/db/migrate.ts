@@ -32,6 +32,10 @@ export async function ensureSchema(client: DbClient): Promise<void> {
       client.raw.exec('ALTER TABLE integrations ADD COLUMN disabled_tools TEXT;')
     if (!colNames.has('enabled'))
       client.raw.exec('ALTER TABLE integrations ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;')
+    if (!colNames.has('health_status'))
+      client.raw.exec('ALTER TABLE integrations ADD COLUMN health_status TEXT;')
+    if (!colNames.has('health_checked_at'))
+      client.raw.exec('ALTER TABLE integrations ADD COLUMN health_checked_at INTEGER;')
 
     client.raw.exec(`
       CREATE TABLE IF NOT EXISTS credentials (
@@ -94,6 +98,12 @@ export async function ensureSchema(client: DbClient): Promise<void> {
   `)
   await client.raw.query(`
     ALTER TABLE integrations ADD COLUMN IF NOT EXISTS enabled TEXT NOT NULL DEFAULT '1';
+  `)
+  await client.raw.query(`
+    ALTER TABLE integrations ADD COLUMN IF NOT EXISTS health_status TEXT;
+  `)
+  await client.raw.query(`
+    ALTER TABLE integrations ADD COLUMN IF NOT EXISTS health_checked_at TIMESTAMPTZ;
   `)
 
   await client.raw.query(`

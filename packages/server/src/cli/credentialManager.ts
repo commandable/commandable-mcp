@@ -52,7 +52,10 @@ const REQUIRED_INTEGRATION_COLUMNS = [
 
 export async function openLocalDb(): Promise<{ db: DbClient, close: () => Promise<void> }> {
   const dir = getCommandableDir()
-  const sqlitePath = resolve(dir, 'credentials.sqlite')
+  const envSqlite = process.env.COMMANDABLE_MCP_SQLITE_PATH
+  const sqlitePath = envSqlite && envSqlite.trim().length
+    ? resolve(envSqlite.trim())
+    : resolve(dir, 'credentials.sqlite')
   const client = createDb({ sqlitePath })
   await ensureSchema(client)
 

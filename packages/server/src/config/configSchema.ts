@@ -20,6 +20,7 @@ export const IntegrationConfigSchema = z.object({
 
 export const CommandableConfigSchema = z.object({
   spaceId: z.string().min(1).optional(),
+  mode: z.enum(['static', 'create']).optional().default('static'),
   integrations: z.array(IntegrationConfigSchema).default([]),
 })
 

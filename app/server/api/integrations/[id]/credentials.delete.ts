@@ -1,7 +1,13 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { SqlCredentialStore, getOrCreateEncryptionSecret, upsertIntegration, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
-import type { IntegrationData } from '@commandable/mcp'
+import {
+  SqlCredentialStore,
+  getOrCreateEncryptionSecret,
+  updateIntegrationCredentials,
+  updateIntegrationHealth,
+  pgIntegrations,
+  sqliteIntegrations,
+} from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -18,23 +24,21 @@ export default defineEventHandler(async (event) => {
 
   const credentialId = row.credentialId as string | null | undefined
   if (credentialId) {
+    const spaceId = row.spaceId ?? 'local'
     const encryptionSecret = getOrCreateEncryptionSecret()
     const store = new SqlCredentialStore(db, encryptionSecret)
-    await store.deleteCredentials('local', credentialId)
-
-    const integration: IntegrationData = {
-      spaceId: row.spaceId ?? 'local',
-      id: row.id,
-      type: row.type,
-      referenceId: row.referenceId,
-      label: row.label,
-      connectionMethod: undefined,
-      connectionId: null,
-      credentialId: null,
-      credentialVariant: null,
-    }
-    await upsertIntegration(db, integration)
+    await store.deleteCredentials(spaceId, credentialId)
   }
+
+  // Clear credential linkage — preserves toolsets/permissions
+  await updateIntegrationCredentials(db, id, {
+    connectionMethod: null,
+    credentialId: null,
+    credentialVariant: null,
+  })
+
+  // Mark as disconnected
+  await updateIntegrationHealth(db, id, 'disconnected')
 
   return { ok: true }
 })

@@ -7,9 +7,10 @@ import { getDb } from '../../utils/db'
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const id = body?.id || randomUUID()
+  const spaceId = (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local'
 
   const integration: IntegrationData = {
-    spaceId: 'local',
+    spaceId,
     id,
     type: body?.type,
     referenceId: body?.referenceId || body?.type,

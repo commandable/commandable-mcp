@@ -17,6 +17,8 @@ export const sqliteIntegrations = sqliteTable('integrations', {
   enabledToolsets: text('enabled_toolsets'),
   maxScope: text('max_scope'),
   disabledTools: text('disabled_tools'),
+  healthStatus: text('health_status'),
+  healthCheckedAt: integer('health_checked_at', { mode: 'timestamp_ms' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
@@ -61,6 +63,8 @@ export const pgIntegrations = pgTable('integrations', {
   enabledToolsets: pgText('enabled_toolsets'),
   maxScope: pgText('max_scope'),
   disabledTools: pgText('disabled_tools'),
+  healthStatus: pgText('health_status'),
+  healthCheckedAt: timestamp('health_checked_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 })
 

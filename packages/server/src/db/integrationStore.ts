@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { IntegrationData } from '../types.js'
 import type { DbClient } from './client.js'
 import { pgIntegrations, sqliteIntegrations } from './schema.js'
@@ -23,6 +23,10 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
 
     void createdAt
 
+    const healthCheckedAt = r.healthCheckedAt
+      ? (r.healthCheckedAt instanceof Date ? r.healthCheckedAt : new Date(r.healthCheckedAt))
+      : null
+
     const integ: IntegrationData = {
       id: r.id,
       spaceId: r.spaceId ?? undefined,
@@ -38,6 +42,8 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
       enabledToolsets,
       maxScope: (r.maxScope as 'read' | 'write' | null) ?? undefined,
       disabledTools,
+      healthStatus: (r.healthStatus as IntegrationData['healthStatus']) ?? null,
+      healthCheckedAt,
     }
     return integ
   })
@@ -92,5 +98,41 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
         disabledTools: disabledToolsValue,
       },
     })
+}
+
+/** Update only credential linkage fields — does not clobber toolsets/permissions. */
+export async function updateIntegrationCredentials(
+  client: DbClient,
+  integrationId: string,
+  fields: {
+    connectionMethod: 'credentials' | null
+    credentialId: string | null
+    credentialVariant: string | null
+  },
+): Promise<void> {
+  const table: any = client.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations
+  await (client.db as any)
+    .update(table)
+    .set({
+      connectionMethod: fields.connectionMethod ?? null,
+      credentialId: fields.credentialId ?? null,
+      credentialVariant: fields.credentialVariant ?? null,
+    })
+    .where(eq(table.id, integrationId))
+}
+
+export async function updateIntegrationHealth(
+  client: DbClient,
+  integrationId: string,
+  healthStatus: 'disconnected' | 'connected' | 'invalid_credentials',
+  checkedAt?: Date,
+): Promise<void> {
+  const table: any = client.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations
+  const now = checkedAt ?? new Date()
+
+  await (client.db as any)
+    .update(table)
+    .set({ healthStatus, healthCheckedAt: now })
+    .where(and(eq(table.id, integrationId)))
 }
 

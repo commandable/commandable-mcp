@@ -12,7 +12,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'enabledToolsets must be an array' })
 
   const db = await getDb()
-  const integrations = await listIntegrations(db, 'local')
+  const spaceId = (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local'
+  const integrations = await listIntegrations(db, spaceId)
   const integration = integrations.find(i => i.id === id)
   if (!integration)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })

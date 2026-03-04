@@ -110,7 +110,7 @@ The open-source project exists to:
 ## What's explicitly NOT in v1?
 
 - Managed OAuth (planned for hosted version)
-- Ability mode / lazy tool loading (planned — important when tool count gets large)
+- Create mode / lazy tool loading (planned — important when tool count gets large)
 - Multi-user / multi-tenant
 - Billing / usage limits
 

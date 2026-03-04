@@ -13,12 +13,26 @@
     </div>
 
     <!-- Connected state -->
-    <div v-else-if="hasCredentials" class="flex items-center gap-3 flex-wrap">
+    <div v-else-if="healthStatus === 'connected'" class="flex items-center gap-3 flex-wrap">
       <div class="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
         <span class="inline-block w-2 h-2 rounded-full bg-green-500" />
         Connected
       </div>
       <UButton size="xs" variant="soft" color="neutral" icon="i-lucide-refresh-cw" @click="openModal">
+        Reconfigure
+      </UButton>
+      <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
+        Disconnect
+      </UButton>
+    </div>
+
+    <!-- Invalid credentials state -->
+    <div v-else-if="healthStatus === 'invalid_credentials'" class="flex items-center gap-3 flex-wrap">
+      <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
+        Invalid credentials
+      </div>
+      <UButton size="sm" icon="i-lucide-refresh-cw" color="primary" @click="openModal">
         Reconfigure
       </UButton>
       <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
@@ -41,7 +55,7 @@
     <UModal
       v-model:open="modalOpen"
       :title="hasCredentials ? 'Reconfigure Credentials' : 'Connect Integration'"
-      description="Enter your credentials. Values can reference environment variables using the env:VARNAME syntax."
+      description="Enter your credentials to connect this integration."
     >
       <template #body>
         <div class="space-y-4">
@@ -58,9 +72,8 @@
               />
             </UFormField>
 
-            <div v-if="activeVariant?.hintMarkdown" class="text-sm text-muted bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2">
-              {{ activeVariant.hintMarkdown }}
-            </div>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div v-if="activeVariant?.hintMarkdown" class="hint-markdown text-sm bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2" v-html="renderedHint" />
 
             <div class="space-y-3">
               <UFormField
@@ -68,12 +81,10 @@
                 :key="key"
                 :label="(prop as any).title || key"
                 :description="(prop as any).description"
-                hint="env:VARNAME or actual value"
               >
                 <UInput
                   v-model="form[key]"
                   :type="isSecretField(key) ? 'password' : 'text'"
-                  placeholder="env:MY_TOKEN or actual value"
                   class="w-full"
                 />
               </UFormField>
@@ -97,6 +108,8 @@
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
+
 type CredentialVariant = {
   key: string
   label: string
@@ -125,6 +138,7 @@ const credConfig = ref<CredConfig | null>(null)
 const loading = ref(true)
 const loadError = ref(false)
 const hasCredentials = ref(false)
+const healthStatus = ref<string | null>(null)
 const selectedVariant = ref<string | undefined>(undefined)
 const form = reactive<Record<string, string>>({})
 const saving = ref(false)
@@ -144,6 +158,12 @@ const activeVariant = computed(() =>
 const schemaFields = computed((): [string, unknown][] => {
   const properties = activeVariant.value?.schema?.properties || {}
   return Object.entries(properties)
+})
+
+const renderedHint = computed((): string => {
+  const md = activeVariant.value?.hintMarkdown
+  if (!md) return ''
+  return marked.parse(md) as string
 })
 
 function isSecretField(key: string): boolean {
@@ -168,10 +188,11 @@ async function load() {
   try {
     const [config, status] = await Promise.all([
       $fetch<CredConfig>(`/api/integrations/${props.integrationId}/credentials-config`),
-      $fetch<{ hasCredentials: boolean }>(`/api/integrations/${props.integrationId}/credentials-status`),
+      $fetch<{ hasCredentials: boolean, health_status: string | null }>(`/api/integrations/${props.integrationId}/credentials-status`),
     ])
     credConfig.value = config
     hasCredentials.value = !!status?.hasCredentials
+    healthStatus.value = status?.health_status ?? null
     selectedVariant.value = props.currentVariant || config?.defaultVariant || config?.variants?.[0]?.key || undefined
   }
   catch {
@@ -192,8 +213,9 @@ async function save() {
     }
     if (selectedVariant.value)
       body.credentialVariant = selectedVariant.value
-    await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'POST', body })
+    const res = await $fetch<{ ok: boolean, health_status: string }>(`/api/integrations/${props.integrationId}/credentials`, { method: 'POST', body })
     hasCredentials.value = true
+    healthStatus.value = res.health_status ?? 'connected'
     modalOpen.value = false
     for (const k of Object.keys(form))
       delete form[k]
@@ -209,6 +231,7 @@ async function disconnect() {
   try {
     await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'DELETE' as any })
     hasCredentials.value = false
+    healthStatus.value = 'disconnected'
     emit('disconnected')
   }
   finally {
@@ -218,3 +241,43 @@ async function disconnect() {
 
 load()
 </script>
+
+<style scoped>
+.hint-markdown :deep(p) {
+  margin-bottom: 0.5rem;
+}
+.hint-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.hint-markdown :deep(ul),
+.hint-markdown :deep(ol) {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.hint-markdown :deep(ul) {
+  list-style-type: disc;
+}
+.hint-markdown :deep(ol) {
+  list-style-type: decimal;
+}
+.hint-markdown :deep(li) {
+  margin-bottom: 0.2rem;
+}
+.hint-markdown :deep(code) {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8em;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+}
+.dark .hint-markdown :deep(code) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.hint-markdown :deep(strong) {
+  font-weight: 600;
+}
+.hint-markdown :deep(a) {
+  color: var(--ui-primary);
+  text-decoration: underline;
+}
+</style>
