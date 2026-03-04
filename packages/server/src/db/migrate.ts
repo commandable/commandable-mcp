@@ -67,6 +67,26 @@ export async function ensureSchema(client: DbClient): Promise<void> {
       );
     `)
 
+    client.raw.exec(`
+      CREATE TABLE IF NOT EXISTS custom_tools (
+        id TEXT PRIMARY KEY NOT NULL,
+        space_id TEXT NOT NULL,
+        integration_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        label TEXT,
+        description TEXT,
+        input_schema TEXT NOT NULL,
+        handler_code TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `)
+    client.raw.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS custom_tools__space_integration_name
+      ON custom_tools(space_id, integration_id, name);
+    `)
+
     return
   }
 
@@ -134,6 +154,26 @@ export async function ensureSchema(client: DbClient): Promise<void> {
       password_hash TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `)
+
+  await client.raw.query(`
+    CREATE TABLE IF NOT EXISTS custom_tools (
+      id TEXT PRIMARY KEY,
+      space_id TEXT NOT NULL,
+      integration_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      label TEXT,
+      description TEXT,
+      input_schema TEXT NOT NULL,
+      handler_code TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `)
+  await client.raw.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS custom_tools__space_integration_name
+    ON custom_tools(space_id, integration_id, name);
   `)
 }
 

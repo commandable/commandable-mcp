@@ -12,16 +12,19 @@ import { createApiKey, generateApiKey } from '../mcp/auth.js'
 import { AbilityCatalog } from '../mcp/abilityCatalog.js'
 import { SessionAbilityState } from '../mcp/sessionState.js'
 import type { MetaToolContext } from '../mcp/metaTools.js'
+import { getBuilderToolDefinitions } from '../mcp/metaTools.js'
 import { COMMANDABLE_VERSION } from '../version.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getCommandableDir, getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
+import { listCustomTools } from '../db/customToolStore.js'
 import { createDbFromEnv } from '../db/client.js'
 import { ensureSchema } from '../db/migrate.js'
 import { SqlCredentialStore } from '../db/credentialStore.js'
 import { applyConfig } from '../config/configApply.js'
 import { loadConfig } from '../config/configLoader.js'
 import { integrationDataRoot } from '../integrations/dataLoader.js'
+import { buildExecutableToolFromCustomTool } from '../integrations/customToolFactory.js'
 
 function hasFlag(...flags: string[]): boolean {
   return flags.some(f => process.argv.includes(f))
@@ -292,6 +295,7 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
   const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
   const { db, credentialStore } = await openLocalState()
   const integrations = await listIntegrations(db, spaceId)
+  const customTools = await listCustomTools(db, spaceId)
 
   const proxy = new IntegrationProxy({
     credentialStore,
@@ -306,6 +310,29 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
 
   const integrationsRef = { current: integrations }
   const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
+
+  // Materialize persisted custom tools (agent-created) into the executable tool index.
+  for (const t of customTools) {
+    const integration = integrationsRef.current.find(i => i.id === t.integrationId)
+    if (!integration)
+      continue
+    const executable = buildExecutableToolFromCustomTool({
+      spaceId,
+      integration,
+      tool: t,
+      proxy,
+      integrationsRef,
+    })
+    if (!index.byName.has(executable.name)) {
+      index.byName.set(executable.name, executable)
+      index.tools.push({
+        name: executable.name,
+        description: executable.description,
+        inputSchema: executable.inputSchema,
+      })
+    }
+  }
+
   const toolIndex = { list: index.tools, byName: index.byName }
 
   const uiPortRaw = process.env.COMMANDABLE_UI_PORT
@@ -323,7 +350,15 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
     ...(mode === 'create'
       ? {
           createMode: (() => {
-            const catalogRef = { current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndex.byName }) }
+            const builderDefs = getBuilderToolDefinitions()
+            const extraToolDefinitions = new Map(builderDefs.map(d => [d.name, d]))
+            const catalogRef = {
+              current: new AbilityCatalog({
+                integrations: integrationsRef.current,
+                toolIndex: toolIndex.byName,
+                extraToolDefinitions,
+              }),
+            }
             const sessionState = new SessionAbilityState()
             const ctx: MetaToolContext = {
               spaceId,

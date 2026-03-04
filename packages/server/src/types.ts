@@ -45,3 +45,19 @@ export interface ExecutableTool {
   run: (args: any) => Promise<{ success: boolean, result: any, logs: string[] }>
 }
 
+export type CustomToolScope = 'read' | 'write' | 'admin'
+
+export interface CustomToolData {
+  id: string
+  spaceId: string
+  integrationId: string
+  name: string
+  label?: string | null
+  description?: string | null
+  inputSchema: JSONSchema7
+  handlerCode: string
+  scope: CustomToolScope
+  createdAt?: Date
+  updatedAt?: Date
+}
+

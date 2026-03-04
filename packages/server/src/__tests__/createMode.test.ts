@@ -92,8 +92,6 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
       META_TOOL_NAMES.disableToolset,
       META_TOOL_NAMES.enableToolset,
       META_TOOL_NAMES.searchTools,
-      META_TOOL_NAMES.listIntegrations,
-      META_TOOL_NAMES.addIntegration,
     ].sort())
 
     const prToolName = makeIntegrationToolName('github', 'list_pull_requests', integration.id)
@@ -130,8 +128,6 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
       META_TOOL_NAMES.disableToolset,
       META_TOOL_NAMES.enableToolset,
       META_TOOL_NAMES.searchTools,
-      META_TOOL_NAMES.listIntegrations,
-      META_TOOL_NAMES.addIntegration,
     ].sort())
   })
 })

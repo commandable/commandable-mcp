@@ -1,4 +1,5 @@
 import type { AbilityCatalog } from './abilityCatalog.js'
+import { BUILDER_ABILITY_ID } from './abilityCatalog.js'
 import type { SessionAbilityState } from './sessionState.js'
 import type { McpToolDefinition } from './toolAdapter.js'
 import { buildMcpToolIndexForIntegrations } from './toolAdapter.js'
@@ -6,12 +7,18 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import crypto from 'node:crypto'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
+import { createGetIntegration } from '../integrations/getIntegration.js'
 import { loadIntegrationCredentialConfig, loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
 import type { DbClient } from '../db/client.js'
 import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { SqlCredentialStore } from '../db/credentialStore.js'
 import type { IntegrationData } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
+import { PROVIDERS } from '../integrations/providerRegistry.js'
+import { createSafeHandlerFromString } from '../integrations/sandbox.js'
+import { sanitizeJsonSchema } from '../integrations/tools.js'
+import { getCustomToolByName, upsertCustomTool } from '../db/customToolStore.js'
+import { buildExecutableToolFromCustomTool } from '../integrations/customToolFactory.js'
 
 export const META_TOOL_NAMES = {
   readme: 'commandable_readme',
@@ -20,6 +27,8 @@ export const META_TOOL_NAMES = {
   disableToolset: 'commandable_disable_toolset',
   listIntegrations: 'commandable_list_integrations',
   addIntegration: 'commandable_add_integration',
+  addTool: 'commandable_add_tool',
+  testTool: 'commandable_test_tool',
 } as const
 
 export type MetaToolName = typeof META_TOOL_NAMES[keyof typeof META_TOOL_NAMES]
@@ -29,6 +38,30 @@ export type { McpToolDefinition } from './toolAdapter.js'
 function buildCommandableReadme(): string {
   const path = fileURLToPath(new URL('./commandable_readme.md', import.meta.url))
   return readFileSync(path, 'utf8')
+}
+
+function buildBuilderGuide(): string {
+  const path = fileURLToPath(new URL('./builder_guide.md', import.meta.url))
+  return readFileSync(path, 'utf8')
+}
+
+function providerBaseUrl(integration: IntegrationData): string {
+  if (integration?.type === 'http')
+    return String(integration?.config?.baseUrl || '(no baseUrl)')
+  const provider = PROVIDERS[integration.type]
+  const base = provider?.baseUrl
+  if (typeof base === 'function') {
+    try { return String(base(integration, undefined) || '') } catch { return '(dynamic baseUrl)' }
+  }
+  return String(base || '')
+}
+
+function requireBuilderEnabled(sessionState: SessionAbilityState, sessionId: string | undefined, toolName: string) {
+  if (!sessionState.isToolActive(sessionId, toolName)) {
+    throw new Error(
+      `Tool not enabled in this session: ${toolName}. Enable the builder toolset (${BUILDER_ABILITY_ID}) via commandable_search_tools → commandable_enable_toolset first.`,
+    )
+  }
 }
 
 export type MetaToolContext = {
@@ -103,9 +136,14 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
         required: ['toolset_id'],
       },
     },
+  ]
+}
+
+export function getBuilderToolDefinitions(): McpToolDefinition[] {
+  return [
     {
       name: META_TOOL_NAMES.listIntegrations,
-      description: `List available pre-built integrations you can add (from the integration catalog) and show which are already configured. Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
+      description: `Builder tool. List available pre-built integrations you can add (from the integration catalog) and show which are already configured.`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -118,7 +156,7 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
     },
     {
       name: META_TOOL_NAMES.addIntegration,
-      description: `Add a pre-built integration from the catalog to this Commandable instance (credentials are entered out-of-band). Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
+      description: `Builder tool. Add a pre-built integration from the catalog to this Commandable instance (credentials are entered out-of-band).`,
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -131,6 +169,39 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
           disabled_tools: { type: 'array', items: { type: 'string' } },
         },
         required: ['type'],
+      },
+    },
+    {
+      name: META_TOOL_NAMES.testTool,
+      description: 'Builder tool. Run a sandboxed tool handler with a test input (does not persist). Use this to iterate before saving a tool.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          integration_id: { type: 'string', minLength: 1 },
+          handler_code: { type: 'string', minLength: 1 },
+          input_schema: { type: 'object' },
+          test_input: { type: 'object' },
+        },
+        required: ['integration_id', 'handler_code'],
+      },
+    },
+    {
+      name: META_TOOL_NAMES.addTool,
+      description: 'Builder tool. Persist a new custom tool on an existing integration, and register it so it can be used immediately.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          integration_id: { type: 'string', minLength: 1 },
+          name: { type: 'string', minLength: 1 },
+          label: { type: 'string' },
+          description: { type: 'string' },
+          scope: { type: 'string', enum: ['read', 'write', 'admin'] },
+          input_schema: { type: 'object' },
+          handler_code: { type: 'string', minLength: 1 },
+        },
+        required: ['integration_id', 'name', 'handler_code'],
       },
     },
   ]
@@ -185,6 +256,15 @@ export async function handleMetaToolCall(params: {
 
     const { newTools } = sessionState.loadAbility(sessionId, ability)
     const integrationGuide = (() => {
+      if (ability.id === BUILDER_ABILITY_ID) {
+        const base = buildBuilderGuide()
+        const integrations = ctx?.integrationsRef?.current || []
+        const lines = integrations.map((i) => {
+          const baseUrl = providerBaseUrl(i) || '(unknown baseUrl)'
+          return `- \`${i.referenceId || i.id}\`: ${i.label} (${i.type}), baseUrl: ${baseUrl}`
+        }).join('\n')
+        return `${base}\n\n${lines ? `${lines}\n` : 'No integrations configured yet.\n'}`
+      }
       try { return loadIntegrationPrompt(ability.integrationtype) } catch { return null }
     })()
     return {
@@ -223,6 +303,7 @@ export async function handleMetaToolCall(params: {
   }
 
   if (name === META_TOOL_NAMES.listIntegrations) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.listIntegrations)
     if (!ctx)
       throw new Error('Integration management is not available in this server mode.')
 
@@ -286,6 +367,7 @@ export async function handleMetaToolCall(params: {
   }
 
   if (name === META_TOOL_NAMES.addIntegration) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.addIntegration)
     if (!ctx)
       throw new Error('Integration management is not available in this server mode.')
 
@@ -401,6 +483,136 @@ export async function handleMetaToolCall(params: {
         next_steps: credentialUrl
           ? ['Open credential_url to enter credentials, then enable a toolset and use tools.']
           : ['Start the management UI (create mode) to get a credential URL, then enable a toolset and use tools.'],
+      },
+    }
+  }
+
+  if (name === META_TOOL_NAMES.testTool) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.testTool)
+    if (!ctx)
+      throw new Error('Tool building is not available in this server mode.')
+
+    const integrationId = String(args?.integration_id || '').trim()
+    const handlerCode = String(args?.handler_code || '').trim()
+    const inputSchemaRaw = args?.input_schema
+    const testInput = (args?.test_input && typeof args.test_input === 'object') ? args.test_input : {}
+
+    if (!integrationId)
+      throw new Error('integration_id is required')
+    if (!handlerCode)
+      throw new Error('handler_code is required')
+
+    const integration = ctx.integrationsRef?.current?.find(i => i.id === integrationId || i.referenceId === integrationId)
+    if (!integration)
+      throw new Error(`Unknown integration_id: ${integrationId}`)
+
+    const getIntegration = createGetIntegration(ctx.integrationsRef, ctx.proxy)
+    const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${handlerCode};\n  return await __inner(input);\n}`
+    const safe = createSafeHandlerFromString(wrapper, getIntegration)
+    const res = await safe(testInput)
+    return { handled: true, listChanged: false, result: res }
+  }
+
+  if (name === META_TOOL_NAMES.addTool) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.addTool)
+    if (!ctx)
+      throw new Error('Tool building is not available in this server mode.')
+
+    const integrationId = String(args?.integration_id || '').trim()
+    const toolNameRaw = String(args?.name || '').trim()
+    const label = typeof args?.label === 'string' ? args.label.trim() : ''
+    const description = typeof args?.description === 'string' ? args.description.trim() : ''
+    const handlerCode = String(args?.handler_code || '').trim()
+    const scope = (args?.scope === 'read' || args?.scope === 'write' || args?.scope === 'admin') ? args.scope : 'write'
+    const inputSchemaObj = (args?.input_schema && typeof args.input_schema === 'object') ? args.input_schema : {
+      type: 'object',
+      additionalProperties: true,
+    }
+
+    if (!integrationId)
+      throw new Error('integration_id is required')
+    if (!toolNameRaw)
+      throw new Error('name is required')
+    if (!handlerCode)
+      throw new Error('handler_code is required')
+    if (!/^async\s*\(\s*input\s*\)\s*=>/.test(handlerCode))
+      throw new Error('handler_code must start with: async (input) => { ... }')
+
+    const integration = ctx.integrationsRef?.current?.find(i => i.id === integrationId || i.referenceId === integrationId)
+    if (!integration)
+      throw new Error(`Unknown integration_id: ${integrationId}`)
+
+    const existing = await getCustomToolByName(ctx.db, ctx.spaceId, integration.id, toolNameRaw)
+    const id = existing?.id || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'))
+
+    const inputSchema = sanitizeJsonSchema(inputSchemaObj)
+
+    await upsertCustomTool(ctx.db, {
+      id,
+      spaceId: ctx.spaceId,
+      integrationId: integration.id,
+      name: toolNameRaw,
+      label: label || null,
+      description: description || null,
+      inputSchema,
+      handlerCode,
+      scope,
+    } as any)
+
+    // Materialize executable tool and register into the live index.
+    const executable = buildExecutableToolFromCustomTool({
+      spaceId: ctx.spaceId,
+      integration,
+      tool: {
+        id,
+        spaceId: ctx.spaceId,
+        integrationId: integration.id,
+        name: toolNameRaw,
+        label: label || null,
+        description: description || null,
+        inputSchema,
+        handlerCode,
+        scope,
+      } as any,
+      proxy: ctx.proxy,
+      integrationsRef: ctx.integrationsRef,
+    })
+
+    if (ctx.toolIndexRef) {
+      ctx.toolIndexRef.byName.set(executable.name, executable)
+      if (ctx.toolIndexRef.list && !ctx.toolIndexRef.list.find(t => t.name === executable.name)) {
+        ctx.toolIndexRef.list.push({
+          name: executable.name,
+          description: executable.description,
+          inputSchema: executable.inputSchema,
+        })
+      }
+    }
+
+    let customAbilityId: string | null = null
+    if (ctx.catalogRef) {
+      const ability = ctx.catalogRef.current.addCustomTool({ integration, toolName: executable.name })
+      customAbilityId = ability.id
+      // Auto-load the custom tools ability so the newly created tool is immediately callable.
+      if (sessionId)
+        sessionState.loadAbility(sessionId, ability)
+    }
+
+    return {
+      handled: true,
+      listChanged: true,
+      result: {
+        added: true,
+        tool: {
+          id,
+          name: executable.name,
+          display_name: executable.displayName,
+          scope,
+        },
+        custom_toolset_id: customAbilityId,
+        next_steps: [
+          'Call the newly registered tool by name (it is now enabled in this session).',
+        ],
       },
     }
   }

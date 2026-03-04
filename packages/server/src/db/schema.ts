@@ -47,6 +47,20 @@ export const sqliteUsers = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
+export const sqliteCustomTools = sqliteTable('custom_tools', {
+  id: text('id').notNull().primaryKey(),
+  spaceId: text('space_id').notNull(),
+  integrationId: text('integration_id').notNull(),
+  name: text('name').notNull(),
+  label: text('label'),
+  description: text('description'),
+  inputSchema: text('input_schema').notNull(),
+  handlerCode: text('handler_code').notNull(),
+  scope: text('scope').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
 // Postgres tables (hosted/production)
 export const pgIntegrations = pgTable('integrations', {
   id: pgText('id').notNull().primaryKey(),
@@ -91,5 +105,19 @@ export const pgUsers = pgTable('users', {
   email: pgText('email').notNull(),
   passwordHash: pgText('password_hash'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+})
+
+export const pgCustomTools = pgTable('custom_tools', {
+  id: pgText('id').notNull().primaryKey(),
+  spaceId: pgText('space_id').notNull(),
+  integrationId: pgText('integration_id').notNull(),
+  name: pgText('name').notNull(),
+  label: pgText('label'),
+  description: pgText('description'),
+  inputSchema: pgText('input_schema').notNull(),
+  handlerCode: pgText('handler_code').notNull(),
+  scope: pgText('scope').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 })
 

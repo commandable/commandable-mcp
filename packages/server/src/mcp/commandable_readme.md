@@ -11,8 +11,10 @@ You are connected to **Commandable**, which provides integrations (toolsets) to 
 
 1. Search configured toolsets with `commandable_search_tools` to find what is already configured 
 2. Enable a toolset in this session with `commandable_enable_toolset` to enable any toolsets you want to use
-3. If the integration you need isn't configured yet use `commandable_list_integrations` → `commandable_add_integration` to add an existing pre built integration.
-4. If credentials are required, open the provided credential URL in your browser and enter them there (the model never sees secrets).
+3. If you need to add integrations or create new custom tools, first enable the **Commandable Builder** toolset (search for "builder", then `commandable_enable_toolset`).
+4. From the Builder toolset you can use `commandable_list_integrations` → `commandable_add_integration` to add a pre-built integration.
+5. From the Builder toolset you can use `commandable_add_tool` to vibe-code a new custom tool against an existing integration (handler code runs in a sandbox; credentials are injected by Commandable).
+6. If credentials are required, open the provided credential URL in your browser and enter them there (the model never sees secrets).
 
 ## Common failure mode: missing credentials
 
