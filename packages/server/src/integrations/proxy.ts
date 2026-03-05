@@ -117,75 +117,6 @@ export class IntegrationProxy {
       }
     }
 
-    if (provider === 'http') {
-      const cfg = integration.config || {}
-      const baseUrl = cfg.baseUrl
-      if (!baseUrl)
-        throw new HttpError(400, 'HTTP integration requires a baseUrl in its config.')
-
-      const authType = cfg.authType || 'none'
-      const preparedInit: RequestInit = { ...init }
-      if (preparedInit.body !== undefined && typeof preparedInit.body !== 'string') {
-        preparedInit.body = JSON.stringify(preparedInit.body)
-        preparedInit.headers = {
-          'Content-Type': 'application/json',
-          ...preparedInit.headers,
-        }
-      }
-
-      const authHeaders: Record<string, string> = {}
-      const authQuery = new URLSearchParams()
-      if (authType === 'api_key_header' && cfg.apiKeyHeaderName && cfg.apiKey) {
-        authHeaders[cfg.apiKeyHeaderName] = cfg.apiKey
-      }
-      else if (authType === 'api_key_query' && cfg.apiKeyQueryParam && cfg.apiKey) {
-        authQuery.set(cfg.apiKeyQueryParam, cfg.apiKey)
-      }
-      else if (authType === 'basic' && cfg.basicUsername !== undefined && cfg.basicPassword !== undefined) {
-        const token = Buffer.from(`${cfg.basicUsername}:${cfg.basicPassword}`).toString('base64')
-        authHeaders.Authorization = `Basic ${token}`
-      }
-      else if (authType === 'custom') {
-        if (cfg.customHeaders)
-          Object.assign(authHeaders, cfg.customHeaders)
-        if (cfg.customQuery) {
-          for (const [k, v] of Object.entries(cfg.customQuery))
-            authQuery.set(k, v as string)
-        }
-      }
-
-      const authQueryString = authQuery.toString()
-      let finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
-      if (authQueryString)
-        finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + authQueryString
-
-      const response = await fetch(finalUrl, {
-        ...preparedInit,
-        method: preparedInit.method || 'GET',
-        headers: {
-          ...preparedInit.headers,
-          ...authHeaders,
-        },
-      })
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type') || ''
-        let bodyText = ''
-        try {
-          bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
-        }
-        catch {}
-        const redactedUrl = cfg.apiKey ? finalUrl.replace(cfg.apiKey, '***') : finalUrl
-        throw new HttpError(response.status, 'Failed to proxy request to http integration.', {
-          status: response.status,
-          url: redactedUrl,
-          contentType,
-          body: bodyText?.slice(0, 4000),
-        })
-      }
-      return response
-    }
-
     const usesCredentials = integration.connectionMethod === 'credentials'
     if (usesCredentials) {
       if (!this.opts.credentialStore)
@@ -387,7 +318,7 @@ export class IntegrationProxy {
 
     // Managed OAuth branch: used by hosted deployments / CI.
     if (!connectionId)
-      throw new HttpError(400, 'connectionId is required for non-http providers.')
+      throw new HttpError(400, 'connectionId is required.')
     if (!this.opts.managedOAuthBaseUrl || !this.opts.managedOAuthSecretKey)
       throw new HttpError(501, 'Managed OAuth is not configured for this server.')
 

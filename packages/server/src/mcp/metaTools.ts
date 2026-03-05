@@ -49,8 +49,6 @@ function buildBuilderGuide(): string {
 }
 
 function providerBaseUrl(integration: IntegrationData): string {
-  if (integration?.type === 'http')
-    return String(integration?.config?.baseUrl || '(no baseUrl)')
   const provider = PROVIDERS[integration.type]
   const base = provider?.baseUrl
   if (typeof base === 'function') {

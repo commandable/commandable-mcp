@@ -1,5 +1,3 @@
-import { createServer } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { checkIntegrationHealth } from '../integrations/health.js'
@@ -30,24 +28,6 @@ function makeNotionIntegration(overrides: Partial<IntegrationData> = {}): Integr
   }
 }
 
-/** Start a minimal HTTP server that responds with `statusCode` for all requests. */
-function startStubServer(statusCode: number): Promise<{ url: string, close: () => Promise<void> }> {
-  return new Promise((resolve, reject) => {
-    const server = createServer((_req, res) => {
-      res.writeHead(statusCode, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ ok: statusCode < 300 }))
-    })
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address() as AddressInfo
-      resolve({
-        url: `http://127.0.0.1:${port}`,
-        close: () => new Promise((res) => server.close(() => res())),
-      })
-    })
-    server.on('error', reject)
-  })
-}
-
 describe('checkIntegrationHealth', () => {
   let db: any
   let credentialStore: SqlCredentialStore
@@ -65,54 +45,28 @@ describe('checkIntegrationHealth', () => {
   })
 
   it('returns connected when provider endpoint returns 2xx', async () => {
-    const { url, close } = await startStubServer(200)
-    try {
-      // Override the notion baseUrl by using an http integration pointing at the stub
-      const integration: IntegrationData = {
-        id: 'http-test',
-        referenceId: 'http-test',
-        type: 'http',
-        label: 'HTTP stub',
-        connectionMethod: 'credentials',
-        credentialId: 'http-test-creds',
-        spaceId: 'local',
-        config: { baseUrl: url, authType: 'none' },
-      }
-      const proxy = new IntegrationProxy({ credentialStore })
-      // http type has null health path → skipped=true, treated as connected
-      const result = await checkIntegrationHealth({ integration, proxy })
-      expect(result.status).toBe('connected')
-    }
-    finally {
-      await close()
-    }
+    const mockProxy = {
+      call: async () => new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    } as any
+
+    const integration = makeNotionIntegration()
+    const result = await checkIntegrationHealth({ integration, proxy: mockProxy })
+    expect(result.status).toBe('connected')
+    expect(result.skipped).toBeFalsy()
   })
 
   it('returns invalid_credentials when provider endpoint returns 401', async () => {
-    const { url, close } = await startStubServer(401)
-    try {
-      // Fake the notion integration by pointing to a stub via http integration
-      // (direct notion call would hit real API; we test via a type not in HEALTH_PATHS)
-      // Use 'github' as proxy target and stub the credential lookup
-      await credentialStore.saveCredentials('local', 'github-creds', { token: 'bad-token' })
+    const mockProxy = {
+      call: async () => {
+        const err: any = new Error('Authentication failed.')
+        err.statusCode = 401
+        throw err
+      },
+    } as any
 
-      // We'll test via the proxy.call error path instead — simulate by creating a
-      // mock proxy that throws with statusCode 401
-      const mockProxy = {
-        call: async () => {
-          const err: any = new Error('Authentication failed.')
-          err.statusCode = 401
-          throw err
-        },
-      } as any
-
-      const integration = makeNotionIntegration()
-      const result = await checkIntegrationHealth({ integration, proxy: mockProxy })
-      expect(result.status).toBe('invalid_credentials')
-    }
-    finally {
-      await close()
-    }
+    const integration = makeNotionIntegration()
+    const result = await checkIntegrationHealth({ integration, proxy: mockProxy })
+    expect(result.status).toBe('invalid_credentials')
   })
 
   it('returns disconnected when no credentials are configured', async () => {
@@ -131,15 +85,15 @@ describe('checkIntegrationHealth', () => {
   })
 
   it('returns connected (skipped) for providers without a health endpoint', async () => {
+    // google-sheet has no healthCheck in its credentials.json so health is always skipped
     const integration: IntegrationData = {
-      id: 'http-int',
-      referenceId: 'http-int',
-      type: 'http',
-      label: 'HTTP',
+      id: 'gsheet-test',
+      referenceId: 'gsheet-test',
+      type: 'google-sheet',
+      label: 'Google Sheets',
       connectionMethod: 'credentials',
-      credentialId: 'http-creds',
+      credentialId: 'gsheet-test-creds',
       spaceId: 'local',
-      config: { baseUrl: 'http://example.com', authType: 'none' },
     }
     const proxy = new IntegrationProxy({ credentialStore })
     const result = await checkIntegrationHealth({ integration, proxy })

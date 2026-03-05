@@ -14,7 +14,6 @@ export const IntegrationConfigSchema = z.object({
   maxScope: z.enum(['read', 'write']).optional(),
   /** Individual tool names to block regardless of toolset or scope. */
   disabledTools: z.array(z.string()).optional(),
-  config: z.record(z.string(), z.any()).optional(),
   credentials: z.record(z.string(), z.string()).optional(),
 })
 

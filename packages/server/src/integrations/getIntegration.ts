@@ -14,9 +14,8 @@ export function createGetIntegration(
     if (!integration)
       throw new Error('Invalid or unauthorized integration reference/id')
 
-    const isHttp = integration.type === 'http'
     const isCredentialsConnected = integration.connectionMethod === 'credentials' && !!integration.credentialId
-    if (!isHttp && !integration.connectionId && !isCredentialsConnected) {
+    if (!integration.connectionId && !isCredentialsConnected) {
       const portRaw = process.env.COMMANDABLE_UI_PORT
       const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
       const credentialUrl = `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integration.id)}`

@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `integrations` (
   `connection_id` TEXT,
   `credential_id` TEXT,
   `credential_variant` TEXT,
-  `config_json` TEXT,
   `enabled_toolsets` TEXT,
   `max_scope` TEXT,
   `disabled_tools` TEXT,
