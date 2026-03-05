@@ -67,10 +67,11 @@ export type { McpToolDefinition } from './toolAdapter.js'
 export const BUILDER_ABILITY_ID: AbilityId = 'commandable__builder'
 
 const BUILDER_TOOL_NAMES = [
-  'commandable_list_integrations',
-  'commandable_add_integration',
-  'commandable_add_tool',
-  'commandable_test_tool',
+  'commandable_list_prebuilt_integrations',
+  'commandable_add_prebuilt_integration',
+  'commandable_create_custom_integration',
+  'commandable_create_custom_tool',
+  'commandable_test_custom_tool',
 ] as const
 
 function makeAbilityId(integ: IntegrationData, toolsetKey?: string): AbilityId {

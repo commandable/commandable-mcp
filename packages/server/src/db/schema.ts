@@ -47,16 +47,30 @@ export const sqliteUsers = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })
 
-export const sqliteCustomTools = sqliteTable('custom_tools', {
+export const sqliteIntegrationTypeConfigs = sqliteTable('integration_type_configs', {
+  id: text('id').notNull().primaryKey(),
+  spaceId: text('space_id').notNull(),
+  typeSlug: text('type_slug').notNull(),
+  label: text('label').notNull(),
+  baseUrl: text('base_url').notNull(),
+  authJson: text('auth_json').notNull(),
+  credentialSchemaJson: text('credential_schema_json').notNull(),
+  healthCheckPath: text('health_check_path'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+export const sqliteToolDefinitions = sqliteTable('tool_definitions', {
   id: text('id').notNull().primaryKey(),
   spaceId: text('space_id').notNull(),
   integrationId: text('integration_id').notNull(),
   name: text('name').notNull(),
-  label: text('label'),
-  description: text('description'),
-  inputSchema: text('input_schema').notNull(),
-  handlerCode: text('handler_code').notNull(),
+  displayName: text('display_name'),
+  description: text('description').notNull(),
   scope: text('scope').notNull(),
+  inputSchemaJson: text('input_schema_json').notNull(),
+  handlerCode: text('handler_code').notNull(),
+  utilsJson: text('utils_json'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -107,16 +121,30 @@ export const pgUsers = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
 })
 
-export const pgCustomTools = pgTable('custom_tools', {
+export const pgIntegrationTypeConfigs = pgTable('integration_type_configs', {
+  id: pgText('id').notNull().primaryKey(),
+  spaceId: pgText('space_id').notNull(),
+  typeSlug: pgText('type_slug').notNull(),
+  label: pgText('label').notNull(),
+  baseUrl: pgText('base_url').notNull(),
+  authJson: jsonb('auth_json').notNull(),
+  credentialSchemaJson: jsonb('credential_schema_json').notNull(),
+  healthCheckPath: pgText('health_check_path'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+})
+
+export const pgToolDefinitions = pgTable('tool_definitions', {
   id: pgText('id').notNull().primaryKey(),
   spaceId: pgText('space_id').notNull(),
   integrationId: pgText('integration_id').notNull(),
   name: pgText('name').notNull(),
-  label: pgText('label'),
-  description: pgText('description'),
-  inputSchema: pgText('input_schema').notNull(),
-  handlerCode: pgText('handler_code').notNull(),
+  displayName: pgText('display_name'),
+  description: pgText('description').notNull(),
   scope: pgText('scope').notNull(),
+  inputSchemaJson: jsonb('input_schema_json').notNull(),
+  handlerCode: pgText('handler_code').notNull(),
+  utilsJson: jsonb('utils_json'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
 })

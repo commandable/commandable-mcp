@@ -17,7 +17,38 @@ Your job is to write four things for each tool:
 - an **input schema** — a JSON Schema object that defines the arguments the caller passes
 - **handler code** — raw JavaScript that calls the integration and returns data
 
-When you're done with a tool, call `commandable_add_tool`. It persists the tool and triggers a live `tools/list_changed` notification — the tool is callable immediately.
+When you're done with a tool, call `commandable_create_custom_tool`. It persists the tool and triggers a live `tools/list_changed` notification — the tool is callable immediately.
+
+## Creating brand new integrations (full vibe-coded integrations)
+
+If the user needs an API that isn't connected yet, you can create a brand new integration type from scratch using:
+
+- `commandable_create_custom_integration`
+
+This creates:
+
+- a new **integration type slug** (auto-generated like `stripe-a3f2`)
+- a new **integration instance** (with an `integration_id`)
+- a **credential form schema** (so the user can enter credentials out-of-band)
+- an **auth injection rule** (so Commandable injects credentials into API calls)
+
+After creation, the user must open the returned `credential_url` and enter credentials. Then you can add tools to the new integration with `commandable_create_custom_tool`.
+
+### `commandable_create_custom_integration` inputs
+
+- **`label`**: display name, e.g. `"Stripe"`
+- **`base_url`**: API base URL, e.g. `"https://api.stripe.com/v1"`
+- **`auth_type`**: `"custom"` or `"basic"`
+- **`credential_fields`**: fields the user will enter (name + label, optional description)
+- **`credential_injection`** (required for `auth_type: "custom"`): headers/query templates using `{{fieldName}}`
+- **`basic_username_field` / `basic_password_field`** (required for `auth_type: "basic"`): which credential fields map to username/password
+
+#### Auth types
+
+| `auth_type` | When to use | How it works |
+|---|---|---|
+| `custom` | Bearer tokens, API keys, custom headers/query params | You provide template strings like `Authorization: Bearer {{apiKey}}` and Commandable injects them |
+| `basic` | APIs that use HTTP Basic Auth | Commandable base64 encodes `username:password` from the mapped credential fields and injects `Authorization: Basic <token>` |
 
 ## The mental model
 
@@ -120,14 +151,89 @@ Every integration has a base URL baked in. Your paths are appended to it. If the
 1. **Understand** what the user wants the tool to do
 2. **Explore first** — use existing read tools (or build a quick `list_*` tool) to understand the API shape, field names, and ID formats
 3. **Draft** the write tool with the correct input schema and handler
-4. **Test** with `commandable_test_tool` — run it with representative input before persisting
-5. **Persist** with `commandable_add_tool` — the tool is live immediately
+4. **Test** with `commandable_test_custom_tool` — run it with representative input before persisting
+5. **Persist** with `commandable_create_custom_tool` — the tool is live immediately
 
 ---
 
 ## Examples
 
 The following are real tools taken from the Commandable integration library. Use these as reference for style, shape, and handler patterns.
+
+---
+
+### Worked example — Create a Stripe integration + add `list_customers`
+
+**Step 1: Create the integration**
+
+Call `commandable_create_custom_integration`:
+
+```json
+{
+  "label": "Stripe",
+  "base_url": "https://api.stripe.com/v1",
+  "auth_type": "custom",
+  "credential_fields": [
+    { "name": "apiKey", "label": "API Key", "description": "Stripe secret key (starts with sk_)", "sensitive": true }
+  ],
+  "credential_injection": {
+    "headers": {
+      "Authorization": "Bearer {{apiKey}}"
+    }
+  },
+  "health_check_path": "/customers?limit=1"
+}
+```
+
+This returns an `integration_id` and `credential_url`.
+
+**Step 2: User enters credentials**
+
+The user opens `credential_url` and enters `apiKey`. The model never sees it.
+
+**Step 3: Add a tool against the new integration**
+
+Call `commandable_create_custom_tool`:
+
+```json
+{
+  "integration_id": "<integration_id_from_create_integration>",
+  "name": "list_customers",
+  "label": "List Customers",
+  "description": "List Stripe customers (optionally limit the count).",
+  "scope": "read",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "limit": { "type": "number", "minimum": 1, "maximum": 100 }
+    },
+    "required": [],
+    "additionalProperties": false
+  },
+  "handler_code": "async (input) => {\\n  const params = new URLSearchParams();\\n  if (input.limit) params.set('limit', String(input.limit));\\n  const q = params.toString() ? `?${params.toString()}` : '';\\n  const res = await integration.fetch(`/customers${q}`);\\n  return await res.json();\\n}"
+}
+```
+
+---
+
+### Worked example — Create a Basic Auth integration
+
+If an API uses Basic Auth, do:
+
+```json
+{
+  "label": "My Internal API",
+  "base_url": "https://internal.example.com/api",
+  "auth_type": "basic",
+  "credential_fields": [
+    { "name": "username", "label": "Username" },
+    { "name": "password", "label": "Password", "sensitive": true }
+  ],
+  "basic_username_field": "username",
+  "basic_password_field": "password",
+  "health_check_path": "/health"
+}
+```
 
 ---
 

@@ -17,18 +17,21 @@ import type { IntegrationProxy } from '../integrations/proxy.js'
 import { PROVIDERS } from '../integrations/providerRegistry.js'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { sanitizeJsonSchema } from '../integrations/tools.js'
-import { getCustomToolByName, upsertCustomTool } from '../db/customToolStore.js'
-import { buildExecutableToolFromCustomTool } from '../integrations/customToolFactory.js'
+import { getToolDefinitionByName, upsertToolDefinition } from '../db/toolDefinitionStore.js'
+import { buildExecutableToolFromDefinition } from '../integrations/customToolFactory.js'
+import { upsertIntegrationTypeConfig } from '../db/integrationTypeConfigStore.js'
+import type { IntegrationTypeConfig } from '../types.js'
 
 export const META_TOOL_NAMES = {
   readme: 'commandable_readme',
   searchTools: 'commandable_search_tools',
   enableToolset: 'commandable_enable_toolset',
   disableToolset: 'commandable_disable_toolset',
-  listIntegrations: 'commandable_list_integrations',
-  addIntegration: 'commandable_add_integration',
-  addTool: 'commandable_add_tool',
-  testTool: 'commandable_test_tool',
+  listPrebuiltIntegrations: 'commandable_list_prebuilt_integrations',
+  addPrebuiltIntegration: 'commandable_add_prebuilt_integration',
+  createCustomIntegration: 'commandable_create_custom_integration',
+  createCustomTool: 'commandable_create_custom_tool',
+  testCustomTool: 'commandable_test_custom_tool',
 } as const
 
 export type MetaToolName = typeof META_TOOL_NAMES[keyof typeof META_TOOL_NAMES]
@@ -79,6 +82,7 @@ export type MetaToolContext = {
    * it after adding integrations (e.g., push new record or reload from DB).
    */
   integrationsRef?: { current: IntegrationData[] }
+  integrationTypeConfigsRef?: { current: IntegrationTypeConfig[] }
   /**
    * Mutable reference to tool index + catalog. If supplied, meta-tools may
    * dynamically register new tools and rebuild the catalog.
@@ -142,7 +146,7 @@ export function getMetaToolDefinitions(): McpToolDefinition[] {
 export function getBuilderToolDefinitions(): McpToolDefinition[] {
   return [
     {
-      name: META_TOOL_NAMES.listIntegrations,
+      name: META_TOOL_NAMES.listPrebuiltIntegrations,
       description: `Builder tool. List available pre-built integrations you can add (from the integration catalog) and show which are already configured.`,
       inputSchema: {
         type: 'object',
@@ -155,7 +159,7 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
       },
     },
     {
-      name: META_TOOL_NAMES.addIntegration,
+      name: META_TOOL_NAMES.addPrebuiltIntegration,
       description: `Builder tool. Add a pre-built integration from the catalog to this Commandable instance (credentials are entered out-of-band).`,
       inputSchema: {
         type: 'object',
@@ -172,7 +176,48 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
       },
     },
     {
-      name: META_TOOL_NAMES.testTool,
+      name: META_TOOL_NAMES.createCustomIntegration,
+      description: 'Builder tool. Create a brand new integration type from scratch (base URL + credential schema + auth injection rules). Returns a credential URL and a new integration_id you can add tools to.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          label: { type: 'string', minLength: 1 },
+          base_url: { type: 'string', minLength: 1 },
+          auth_type: { type: 'string', enum: ['basic', 'custom'] },
+          credential_fields: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                name: { type: 'string', minLength: 1 },
+                label: { type: 'string', minLength: 1 },
+                description: { type: 'string' },
+                sensitive: { type: 'boolean' },
+              },
+              required: ['name', 'label'],
+            },
+          },
+          credential_injection: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              headers: { type: 'object', additionalProperties: { type: 'string' } },
+              query: { type: 'object', additionalProperties: { type: 'string' } },
+            },
+            required: [],
+          },
+          basic_username_field: { type: 'string' },
+          basic_password_field: { type: 'string' },
+          health_check_path: { type: 'string' },
+        },
+        required: ['label', 'base_url', 'auth_type', 'credential_fields'],
+      },
+    },
+    {
+      name: META_TOOL_NAMES.testCustomTool,
       description: 'Builder tool. Run a sandboxed tool handler with a test input (does not persist). Use this to iterate before saving a tool.',
       inputSchema: {
         type: 'object',
@@ -187,7 +232,7 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
       },
     },
     {
-      name: META_TOOL_NAMES.addTool,
+      name: META_TOOL_NAMES.createCustomTool,
       description: 'Builder tool. Persist a new custom tool on an existing integration, and register it so it can be used immediately.',
       inputSchema: {
         type: 'object',
@@ -302,8 +347,8 @@ export async function handleMetaToolCall(params: {
     }
   }
 
-  if (name === META_TOOL_NAMES.listIntegrations) {
-    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.listIntegrations)
+  if (name === META_TOOL_NAMES.listPrebuiltIntegrations) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.listPrebuiltIntegrations)
     if (!ctx)
       throw new Error('Integration management is not available in this server mode.')
 
@@ -366,8 +411,8 @@ export async function handleMetaToolCall(params: {
     return { handled: true, listChanged: false, result: { integrations: items } }
   }
 
-  if (name === META_TOOL_NAMES.addIntegration) {
-    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.addIntegration)
+  if (name === META_TOOL_NAMES.addPrebuiltIntegration) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.addPrebuiltIntegration)
     if (!ctx)
       throw new Error('Integration management is not available in this server mode.')
 
@@ -487,8 +532,156 @@ export async function handleMetaToolCall(params: {
     }
   }
 
-  if (name === META_TOOL_NAMES.testTool) {
-    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.testTool)
+  if (name === META_TOOL_NAMES.createCustomIntegration) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.createCustomIntegration)
+    if (!ctx)
+      throw new Error('Integration management is not available in this server mode.')
+
+    if (!ctx.integrationsRef)
+      throw new Error('integrationsRef is required for builder mode.')
+    if (!ctx.integrationTypeConfigsRef)
+      throw new Error('integrationTypeConfigsRef is required for custom integrations.')
+
+    const label = String(args?.label || '').trim()
+    const baseUrl = String(args?.base_url || '').trim()
+    const authType = (args?.auth_type === 'basic' || args?.auth_type === 'custom') ? String(args.auth_type) : null
+    const credentialFields = Array.isArray(args?.credential_fields) ? args.credential_fields : []
+    const credentialInjection = (args?.credential_injection && typeof args.credential_injection === 'object') ? args.credential_injection : null
+    const basicUsernameField = typeof args?.basic_username_field === 'string' ? args.basic_username_field.trim() : ''
+    const basicPasswordField = typeof args?.basic_password_field === 'string' ? args.basic_password_field.trim() : ''
+    const healthCheckPath = typeof args?.health_check_path === 'string' ? args.health_check_path.trim() : ''
+
+    if (!label)
+      throw new Error('label is required')
+    if (!baseUrl)
+      throw new Error('base_url is required')
+    if (!authType)
+      throw new Error('auth_type must be basic or custom')
+    if (!credentialFields.length)
+      throw new Error('credential_fields is required')
+
+    if (authType === 'custom') {
+      const hasAny = credentialInjection && (credentialInjection.headers || credentialInjection.query)
+      if (!hasAny)
+        throw new Error('credential_injection is required when auth_type is custom')
+    }
+    else {
+      if (!basicUsernameField || !basicPasswordField)
+        throw new Error('basic_username_field and basic_password_field are required when auth_type is basic')
+    }
+
+    const toKebab = (s: string) => (s || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 32) || 'integration'
+    const suffix = () => crypto.randomBytes(2).toString('hex')
+
+    const existingSlugs = new Set(ctx.integrationTypeConfigsRef.current
+      .filter(c => c.spaceId === ctx.spaceId)
+      .map(c => c.typeSlug))
+    let typeSlug = ''
+    for (let i = 0; i < 20; i++) {
+      const candidate = `${toKebab(label)}-${suffix()}`
+      if (!existingSlugs.has(candidate)) {
+        typeSlug = candidate
+        break
+      }
+    }
+    if (!typeSlug)
+      throw new Error('Failed to generate a unique type slug')
+
+    const schemaProps: Record<string, any> = {}
+    const required: string[] = []
+    for (const f of credentialFields) {
+      const name = String(f?.name || '').trim()
+      const title = String(f?.label || '').trim()
+      if (!name || !title)
+        continue
+      const description = typeof f?.description === 'string' ? f.description : undefined
+      const sensitive = !!f?.sensitive
+      schemaProps[name] = {
+        type: 'string',
+        title,
+        ...(description ? { description } : {}),
+        ...(sensitive ? { format: 'password' } : {}),
+      }
+      required.push(name)
+    }
+    if (!Object.keys(schemaProps).length)
+      throw new Error('credential_fields must include at least one valid field')
+
+    const credentialSchema = sanitizeJsonSchema({
+      type: 'object',
+      properties: schemaProps,
+      required,
+      additionalProperties: false,
+    })
+
+    const id = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
+    const cfgId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
+
+    const customCfg: IntegrationTypeConfig = {
+      id: cfgId,
+      spaceId: ctx.spaceId,
+      typeSlug,
+      label,
+      baseUrl,
+      credentialSchema,
+      auth: authType === 'basic'
+        ? { kind: 'basic', usernameField: basicUsernameField, passwordField: basicPasswordField }
+        : { kind: 'template', injection: credentialInjection || {} },
+      healthCheckPath: healthCheckPath || null,
+    }
+
+    await upsertIntegrationTypeConfig(ctx.db, customCfg as any)
+
+    // Keep the proxy cache hot for immediate use (no restart needed).
+    ctx.integrationTypeConfigsRef.current.push(customCfg)
+
+    const shortId = id.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
+    const referenceId = `${typeSlug}-${shortId}`
+    const integration: IntegrationData = {
+      spaceId: ctx.spaceId,
+      id,
+      type: typeSlug,
+      referenceId,
+      label,
+      enabled: true,
+      connectionMethod: 'credentials',
+      credentialId: `${referenceId}-creds`,
+    }
+
+    await upsertIntegration(ctx.db, integration)
+    try { ctx.integrationsRef.current = await listIntegrations(ctx.db, ctx.spaceId) } catch {}
+
+    const base = ctx.credentialSetupBaseUrl ? ctx.credentialSetupBaseUrl.replace(/\/+$/, '') : null
+    const managementUrl = base ? `${base}/integrations` : null
+    const credentialUrl = base ? `${base}/integrations/${encodeURIComponent(id)}` : null
+
+    return {
+      handled: true,
+      listChanged: false,
+      result: {
+        created: true,
+        integration: {
+          id,
+          type: typeSlug,
+          label,
+          reference_id: referenceId,
+          auth_type: authType,
+        },
+        management_url: managementUrl,
+        credential_url: credentialUrl,
+        next_steps: credentialUrl
+          ? ['Open credential_url to enter credentials, then create tools with commandable_create_custom_tool.']
+          : ['Start the management UI (create mode) to get a credential URL, then create tools with commandable_create_custom_tool.'],
+      },
+    }
+  }
+
+  if (name === META_TOOL_NAMES.testCustomTool) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.testCustomTool)
     if (!ctx)
       throw new Error('Tool building is not available in this server mode.')
 
@@ -513,8 +706,8 @@ export async function handleMetaToolCall(params: {
     return { handled: true, listChanged: false, result: res }
   }
 
-  if (name === META_TOOL_NAMES.addTool) {
-    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.addTool)
+  if (name === META_TOOL_NAMES.createCustomTool) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.createCustomTool)
     if (!ctx)
       throw new Error('Tool building is not available in this server mode.')
 
@@ -542,25 +735,25 @@ export async function handleMetaToolCall(params: {
     if (!integration)
       throw new Error(`Unknown integration_id: ${integrationId}`)
 
-    const existing = await getCustomToolByName(ctx.db, ctx.spaceId, integration.id, toolNameRaw)
+    const existing = await getToolDefinitionByName(ctx.db, ctx.spaceId, integration.id, toolNameRaw)
     const id = existing?.id || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'))
 
     const inputSchema = sanitizeJsonSchema(inputSchemaObj)
 
-    await upsertCustomTool(ctx.db, {
+    await upsertToolDefinition(ctx.db, {
       id,
       spaceId: ctx.spaceId,
       integrationId: integration.id,
       name: toolNameRaw,
-      label: label || null,
-      description: description || null,
+      displayName: label || null,
+      description: description || toolNameRaw,
       inputSchema,
       handlerCode,
       scope,
     } as any)
 
     // Materialize executable tool and register into the live index.
-    const executable = buildExecutableToolFromCustomTool({
+    const executable = buildExecutableToolFromDefinition({
       spaceId: ctx.spaceId,
       integration,
       tool: {
@@ -568,8 +761,8 @@ export async function handleMetaToolCall(params: {
         spaceId: ctx.spaceId,
         integrationId: integration.id,
         name: toolNameRaw,
-        label: label || null,
-        description: description || null,
+        displayName: label || null,
+        description: description || toolNameRaw,
         inputSchema,
         handlerCode,
         scope,

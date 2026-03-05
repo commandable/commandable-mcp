@@ -1,4 +1,4 @@
-import type { ExecutableTool, IntegrationData, CustomToolData, CustomToolScope } from '../types.js'
+import type { ExecutableTool, IntegrationData, ToolDefinition, ToolScope } from '../types.js'
 import type { IntegrationProxy } from './proxy.js'
 import { createSafeHandlerFromString } from './sandbox.js'
 import { createGetIntegration } from './getIntegration.js'
@@ -13,10 +13,10 @@ function humanize(s: string): string {
     .join(' ')
 }
 
-export function buildExecutableToolFromCustomTool(params: {
+export function buildExecutableToolFromDefinition(params: {
   spaceId: string
   integration: IntegrationData
-  tool: CustomToolData
+  tool: ToolDefinition
   proxy: IntegrationProxy
   integrationsRef?: { current: IntegrationData[] }
   requireWriteConfirmation?: boolean
@@ -24,10 +24,10 @@ export function buildExecutableToolFromCustomTool(params: {
   const { integration, tool, proxy, integrationsRef, requireWriteConfirmation = false } = params
 
   const getIntegration = createGetIntegration(integrationsRef || { current: [integration] }, proxy)
-  const scope: CustomToolScope = tool.scope || 'write'
+  const scope: ToolScope = tool.scope || 'write'
 
   const toolName = makeIntegrationToolName(integration.type, tool.name, integration.id)
-  const description = `[${integration.label} | ${integration.type}] ${tool.description || tool.label || tool.name}`
+  const description = `[${integration.label} | ${integration.type}] ${tool.description || tool.displayName || tool.name}`
   const inputSchema = sanitizeJsonSchema(tool.inputSchema || { type: 'object', additionalProperties: true })
 
   const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
@@ -35,7 +35,7 @@ export function buildExecutableToolFromCustomTool(params: {
 
   return {
     name: toolName,
-    displayName: `${tool.label || humanize(tool.name)}`,
+    displayName: `${tool.displayName || humanize(tool.name)}`,
     description,
     inputSchema,
     run: safeHandler,

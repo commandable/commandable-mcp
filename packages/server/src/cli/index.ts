@@ -17,14 +17,14 @@ import { COMMANDABLE_VERSION } from '../version.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getCommandableDir, getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
-import { listCustomTools } from '../db/customToolStore.js'
+import { listToolDefinitions } from '../db/toolDefinitionStore.js'
+import { listIntegrationTypeConfigs } from '../db/integrationTypeConfigStore.js'
 import { createDbFromEnv } from '../db/client.js'
 import { ensureSchema } from '../db/migrate.js'
 import { SqlCredentialStore } from '../db/credentialStore.js'
 import { applyConfig } from '../config/configApply.js'
 import { loadConfig } from '../config/configLoader.js'
 import { integrationDataRoot } from '../integrations/dataLoader.js'
-import { buildExecutableToolFromCustomTool } from '../integrations/customToolFactory.js'
 
 function hasFlag(...flags: string[]): boolean {
   return flags.some(f => process.argv.includes(f))
@@ -295,11 +295,15 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
   const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
   const { db, credentialStore } = await openLocalState()
   const integrations = await listIntegrations(db, spaceId)
-  const customTools = await listCustomTools(db, spaceId)
+  const toolDefinitions = await listToolDefinitions(db, spaceId)
+  const integrationTypeConfigs = await listIntegrationTypeConfigs(db, spaceId)
+
+  const integrationTypeConfigsRef = { current: integrationTypeConfigs }
 
   const proxy = new IntegrationProxy({
     credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
+    integrationTypeConfigsRef,
   })
 
   const mode = forceMode ?? resolveMode()
@@ -309,29 +313,7 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
   }
 
   const integrationsRef = { current: integrations }
-  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
-
-  // Materialize persisted custom tools (agent-created) into the executable tool index.
-  for (const t of customTools) {
-    const integration = integrationsRef.current.find(i => i.id === t.integrationId)
-    if (!integration)
-      continue
-    const executable = buildExecutableToolFromCustomTool({
-      spaceId,
-      integration,
-      tool: t,
-      proxy,
-      integrationsRef,
-    })
-    if (!index.byName.has(executable.name)) {
-      index.byName.set(executable.name, executable)
-      index.tools.push({
-        name: executable.name,
-        description: executable.description,
-        inputSchema: executable.inputSchema,
-      })
-    }
-  }
+  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef, toolDefinitions })
 
   const toolIndex = { list: index.tools, byName: index.byName }
 
@@ -367,6 +349,7 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
               proxy,
               credentialSetupBaseUrl: managementUi?.baseUrl,
               integrationsRef,
+                integrationTypeConfigsRef,
               toolIndexRef: toolIndex,
               catalogRef,
             }

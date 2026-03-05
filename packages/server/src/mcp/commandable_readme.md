@@ -12,9 +12,9 @@ You are connected to **Commandable**, which provides integrations (toolsets) to 
 1. `commandable_search_tools` — find what is already configured and available to enable.
 2. `commandable_enable_toolset` — load the toolset into this session. Tools are now callable.
 3. **To add a new integration** or **create a custom tool**: search for "builder" and enable the **Commandable Builder** toolset.
-   - `commandable_list_integrations` → `commandable_add_integration` to add a pre-built integration (credentials entered out-of-band via the management UI).
-   - `commandable_test_tool` to dry-run handler code before committing.
-   - `commandable_add_tool` to write and persist a new custom tool against an existing integration. Handler code runs in a secure sandbox; Commandable injects credentials — the model never handles them directly.
+   - `commandable_list_prebuilt_integrations` → `commandable_add_prebuilt_integration` to add a pre-built integration (credentials entered out-of-band via the management UI).
+   - `commandable_test_custom_tool` to dry-run handler code before committing.
+   - `commandable_create_custom_tool` to write and persist a new custom tool against an existing integration. Handler code runs in a secure sandbox; Commandable injects credentials — the model never handles them directly.
 4. Open any provided credential URL in your browser to enter credentials. Then retry.
 
 ## Building custom tools

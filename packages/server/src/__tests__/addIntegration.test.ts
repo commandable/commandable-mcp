@@ -87,11 +87,11 @@ describe('meta: add integration from catalog', () => {
 
     const afterBuilder = await client.listTools()
     const afterBuilderNames = afterBuilder.tools.map(t => t.name)
-    expect(afterBuilderNames).toContain(META_TOOL_NAMES.listIntegrations)
-    expect(afterBuilderNames).toContain(META_TOOL_NAMES.addIntegration)
+    expect(afterBuilderNames).toContain(META_TOOL_NAMES.listPrebuiltIntegrations)
+    expect(afterBuilderNames).toContain(META_TOOL_NAMES.addPrebuiltIntegration)
 
     const addRes = await client.callTool({
-      name: META_TOOL_NAMES.addIntegration,
+      name: META_TOOL_NAMES.addPrebuiltIntegration,
       arguments: { type: 'trello' },
     } as any)
     const parsedAdd = JSON.parse((addRes.content as any)[0].text)
@@ -125,7 +125,7 @@ describe('meta: add integration from catalog', () => {
     expect(afterNames).toContain(parsedLoad.new_tools[0])
 
     // Catalog listing includes configured instance with health fields
-    const listRes = await client.callTool({ name: META_TOOL_NAMES.listIntegrations, arguments: { query: 'trello' } } as any)
+    const listRes = await client.callTool({ name: META_TOOL_NAMES.listPrebuiltIntegrations, arguments: { query: 'trello' } } as any)
     const parsedList = JSON.parse((listRes.content as any)[0].text)
     const trelloItem = parsedList.integrations.find((x: any) => x.type === 'trello')
     expect(trelloItem.configured).toBe(true)

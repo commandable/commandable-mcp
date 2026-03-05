@@ -45,18 +45,38 @@ export interface ExecutableTool {
   run: (args: any) => Promise<{ success: boolean, result: any, logs: string[] }>
 }
 
-export type CustomToolScope = 'read' | 'write' | 'admin'
+export type ToolScope = 'read' | 'write' | 'admin'
 
-export interface CustomToolData {
-  id: string
-  spaceId: string
-  integrationId: string
+export interface ToolDefinition {
+  /** Optional for built-in tools; required for DB persisted tool definitions. */
+  id?: string
+  spaceId?: string
+  integrationId?: string
   name: string
-  label?: string | null
-  description?: string | null
+  displayName?: string | null
+  description: string
+  scope: ToolScope
   inputSchema: JSONSchema7
   handlerCode: string
-  scope: CustomToolScope
+  utils?: string[] | null
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export type IntegrationAuth =
+  | { kind: 'template', injection: { headers?: Record<string, string>, query?: Record<string, string> } }
+  | { kind: 'basic', usernameField: string, passwordField: string }
+
+export interface IntegrationTypeConfig {
+  /** Optional for built-in types; required for DB persisted configs. */
+  id?: string
+  spaceId?: string
+  typeSlug: string
+  label: string
+  baseUrl: string
+  auth: IntegrationAuth
+  credentialSchema: JSONSchema7
+  healthCheckPath?: string | null
   createdAt?: Date
   updatedAt?: Date
 }

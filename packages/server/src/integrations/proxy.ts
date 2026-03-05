@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { HttpError } from '../errors/httpError.js'
-import type { IntegrationData } from '../types.js'
+import type { IntegrationData, IntegrationTypeConfig } from '../types.js'
 import { PROVIDERS } from './providerRegistry.js'
 import { loadIntegrationCredentialConfig } from './dataLoader.js'
 import { getGoogleAccessToken } from './googleServiceAccount.js'
@@ -16,6 +16,7 @@ export interface IntegrationProxyOptions {
 
   trelloApiKey?: string
   credentialStore?: CredentialStore
+  integrationTypeConfigsRef?: { current: IntegrationTypeConfig[] }
 }
 
 function getErrorHint(status: number, provider: string, bodyText: string): string {
@@ -199,7 +200,10 @@ export class IntegrationProxy {
         throw new HttpError(400, 'credentialId is required for credentials-based integrations.')
 
       const credCfg = loadIntegrationCredentialConfig(provider, integration.credentialVariant)
-      if (!credCfg)
+      const dbCfg: IntegrationTypeConfig | null = (!credCfg && this.opts.integrationTypeConfigsRef)
+        ? (this.opts.integrationTypeConfigsRef.current.find(c => c.spaceId === spaceId && c.typeSlug === provider) || null)
+        : null
+      if (!credCfg && !dbCfg)
         throw new HttpError(501, `Provider '${provider}' does not support credentials-based auth yet.`)
 
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
@@ -211,7 +215,54 @@ export class IntegrationProxy {
         })
       }
 
-      if (credCfg.preprocess === 'google_service_account') {
+      const resolveTemplate = (template: string): string => {
+        return String(template).replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key) => {
+          const v = (creds as any)[key]
+          if (v === undefined || v === null)
+            throw new HttpError(400, `Missing credential field '${key}'.`)
+          return String(v)
+        })
+      }
+
+      // Resolve a unified type config for this provider.
+      const typeConfig: {
+        baseUrl: string
+        auth: IntegrationTypeConfig['auth']
+        preprocess?: string | null
+      } = (() => {
+        // Built-in: integration-data + providerRegistry + optional preprocess.
+        if (credCfg) {
+          const providerCfg = PROVIDERS[provider]
+          if (!providerCfg)
+            throw new HttpError(501, `Provider '${provider}' is not configured in the server proxy.`)
+
+          const baseUrl = credCfg.baseUrlTemplate
+            ? resolveTemplate(credCfg.baseUrlTemplate)
+            : (typeof providerCfg.baseUrl === 'function'
+                ? providerCfg.baseUrl(integration, creds, credCfg)
+                : providerCfg.baseUrl)
+
+          return {
+            baseUrl,
+            auth: { kind: 'template', injection: credCfg.injection || {} },
+            preprocess: credCfg.preprocess || null,
+          }
+        }
+
+        // DB: already canonical (baseUrl + auth union).
+        if (dbCfg) {
+          return {
+            baseUrl: dbCfg.baseUrl,
+            auth: dbCfg.auth,
+            preprocess: null,
+          }
+        }
+
+        throw new HttpError(500, 'Internal error: missing provider config resolution.')
+      })()
+
+      // Built-in preprocess steps (db configs do not support preprocess).
+      if (typeConfig.preprocess === 'google_service_account') {
         const serviceAccountJson = (creds as any).serviceAccountJson
         if (!serviceAccountJson)
           throw new HttpError(400, `Integration '${provider}' requires a 'serviceAccountJson' credential for the service_account variant.`)
@@ -240,49 +291,44 @@ export class IntegrationProxy {
         const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
         ;(creds as any).token = token
       }
-      else if (credCfg.preprocess === 'jira_api_token') {
+      else if (typeConfig.preprocess === 'jira_api_token') {
         const email = (creds as any).email
         const apiToken = (creds as any).apiToken
         if (!email || !apiToken)
           throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
         ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
       }
-      else if (credCfg.preprocess === 'confluence_api_token') {
+      else if (typeConfig.preprocess === 'confluence_api_token') {
         const email = (creds as any).email
         const apiToken = (creds as any).apiToken
         if (!email || !apiToken)
           throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
         ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
-      }
-
-      const resolveTemplate = (template: string): string => {
-        return String(template).replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key) => {
-          const v = (creds as any)[key]
-          if (v === undefined || v === null)
-            throw new HttpError(400, `Missing credential field '${key}'.`)
-          return String(v)
-        })
       }
 
       const resolvedHeaders: Record<string, string> = {}
       const resolvedQuery = new URLSearchParams()
 
-      for (const [k, v] of Object.entries(credCfg.injection?.headers || {}))
-        resolvedHeaders[k] = resolveTemplate(v as any)
+      if (typeConfig.auth.kind === 'basic') {
+        const username = (creds as any)[typeConfig.auth.usernameField]
+        const password = (creds as any)[typeConfig.auth.passwordField]
+        if (username == null || password == null) {
+          throw new HttpError(
+            400,
+            `Missing credential fields for basic auth: '${typeConfig.auth.usernameField}' and/or '${typeConfig.auth.passwordField}'.`,
+          )
+        }
+        const token = Buffer.from(`${username}:${password}`).toString('base64')
+        resolvedHeaders.Authorization = `Basic ${token}`
+      }
+      else {
+        for (const [k, v] of Object.entries(typeConfig.auth.injection?.headers || {}))
+          resolvedHeaders[k] = resolveTemplate(v as any)
+        for (const [k, v] of Object.entries(typeConfig.auth.injection?.query || {}))
+          resolvedQuery.set(k, resolveTemplate(v as any))
+      }
 
-      for (const [k, v] of Object.entries(credCfg.injection?.query || {}))
-        resolvedQuery.set(k, resolveTemplate(v as any))
-
-      const providerCfg = PROVIDERS[provider]
-      if (!providerCfg)
-        throw new HttpError(501, `Provider '${provider}' is not configured in the server proxy.`)
-
-      const baseUrl = credCfg.baseUrlTemplate
-        ? resolveTemplate(credCfg.baseUrlTemplate)
-        : (typeof providerCfg.baseUrl === 'function'
-            ? providerCfg.baseUrl(integration, creds, credCfg)
-            : providerCfg.baseUrl)
-      let finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
+      let finalUrl = joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
 
       const queryString = resolvedQuery.toString()
       if (queryString)
