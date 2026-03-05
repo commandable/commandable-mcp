@@ -3,6 +3,14 @@ import type { DbClient } from './client.js'
 import { pgToolDefinitions, sqliteToolDefinitions } from './schema.js'
 import type { ToolDefinition, ToolScope } from '../types.js'
 
+function t(client: DbClient) {
+  return client.dialect === 'sqlite' ? sqliteToolDefinitions : pgToolDefinitions
+}
+
+function db(client: DbClient): any {
+  return client.db
+}
+
 function normalizeScope(raw: any): ToolScope {
   const s = String(raw || '').toLowerCase().trim()
   if (s === 'read' || s === 'write' || s === 'admin')
@@ -19,14 +27,7 @@ function parseJson(raw: any): any {
   return raw
 }
 
-function rowToToolDefinition(client: DbClient, r: any): ToolDefinition {
-  const createdAt = client.dialect === 'sqlite'
-    ? (r.createdAt ? new Date(r.createdAt) : undefined)
-    : (r.createdAt ?? undefined)
-  const updatedAt = client.dialect === 'sqlite'
-    ? (r.updatedAt ? new Date(r.updatedAt) : undefined)
-    : (r.updatedAt ?? undefined)
-
+function rowToToolDefinition(r: any): ToolDefinition {
   return {
     id: r.id,
     spaceId: r.spaceId,
@@ -38,18 +39,14 @@ function rowToToolDefinition(client: DbClient, r: any): ToolDefinition {
     inputSchema: parseJson(r.inputSchemaJson) || { type: 'object', additionalProperties: true },
     handlerCode: r.handlerCode,
     utils: parseJson(r.utilsJson),
-    createdAt,
-    updatedAt,
+    createdAt: r.createdAt instanceof Date ? r.createdAt : (r.createdAt ? new Date(r.createdAt) : undefined),
+    updatedAt: r.updatedAt instanceof Date ? r.updatedAt : (r.updatedAt ? new Date(r.updatedAt) : undefined),
   }
 }
 
 export async function listToolDefinitions(client: DbClient, spaceId: string): Promise<ToolDefinition[]> {
-  const table: any = client.dialect === 'sqlite' ? sqliteToolDefinitions : pgToolDefinitions
-  const rows = await (client.db as any)
-    .select()
-    .from(table)
-    .where(eq(table.spaceId, spaceId))
-  return rows.map((r: any) => rowToToolDefinition(client, r))
+  const rows: any[] = await db(client).select().from(t(client)).where(eq(t(client).spaceId, spaceId))
+  return rows.map(rowToToolDefinition)
 }
 
 export async function getToolDefinitionByName(
@@ -58,28 +55,27 @@ export async function getToolDefinitionByName(
   integrationId: string,
   name: string,
 ): Promise<ToolDefinition | null> {
-  const table: any = client.dialect === 'sqlite' ? sqliteToolDefinitions : pgToolDefinitions
-  const rows = await (client.db as any)
+  const table = t(client)
+  const rows: any[] = await db(client)
     .select()
     .from(table)
     .where(and(eq(table.spaceId, spaceId), eq(table.integrationId, integrationId), eq(table.name, name)))
     .limit(1)
-  return rows?.[0] ? rowToToolDefinition(client, rows[0]) : null
+  return rows[0] ? rowToToolDefinition(rows[0]) : null
 }
 
 export async function upsertToolDefinition(
   client: DbClient,
   tool: Required<Pick<ToolDefinition, 'id' | 'spaceId' | 'integrationId'>> & Omit<ToolDefinition, 'createdAt' | 'updatedAt'>,
 ): Promise<void> {
-  const table: any = client.dialect === 'sqlite' ? sqliteToolDefinitions : pgToolDefinitions
+  const table = t(client)
   const now = new Date()
-
   const schemaValue = client.dialect === 'sqlite' ? JSON.stringify(tool.inputSchema ?? {}) : (tool.inputSchema ?? {})
   const utilsValue = tool.utils?.length
     ? (client.dialect === 'sqlite' ? JSON.stringify(tool.utils) : tool.utils)
     : null
 
-  await (client.db as any)
+  await db(client)
     .insert(table)
     .values({
       id: tool.id,
@@ -110,4 +106,3 @@ export async function upsertToolDefinition(
       },
     })
 }
-

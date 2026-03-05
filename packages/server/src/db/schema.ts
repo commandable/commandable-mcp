@@ -1,5 +1,5 @@
 import { integer, sqliteTable, text, primaryKey as sqlitePrimaryKey } from 'drizzle-orm/sqlite-core'
-import { jsonb, pgTable, primaryKey as pgPrimaryKey, timestamp, text as pgText } from 'drizzle-orm/pg-core'
+import { integer as pgInteger, jsonb, pgTable, primaryKey as pgPrimaryKey, timestamp, text as pgText } from 'drizzle-orm/pg-core'
 
 // SQLite tables (self-hosted default)
 export const sqliteIntegrations = sqliteTable('integrations', {
@@ -82,7 +82,7 @@ export const pgIntegrations = pgTable('integrations', {
   type: pgText('type').notNull(),
   referenceId: pgText('reference_id').notNull(),
   label: pgText('label').notNull(),
-  enabled: pgText('enabled').notNull().default('1'),
+  enabled: pgInteger('enabled').notNull().default(1),
   connectionMethod: pgText('connection_method'),
   connectionId: pgText('connection_id'),
   credentialId: pgText('credential_id'),

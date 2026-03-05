@@ -1,7 +1,15 @@
-import { eq, and } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { DbClient } from './client.js'
 import { pgIntegrationTypeConfigs, sqliteIntegrationTypeConfigs } from './schema.js'
 import type { IntegrationAuth, IntegrationTypeConfig } from '../types.js'
+
+function t(client: DbClient) {
+  return client.dialect === 'sqlite' ? sqliteIntegrationTypeConfigs : pgIntegrationTypeConfigs
+}
+
+function db(client: DbClient): any {
+  return client.db
+}
 
 function parseJson(raw: any): any {
   if (raw == null)
@@ -12,38 +20,24 @@ function parseJson(raw: any): any {
   return raw
 }
 
-function rowToIntegrationTypeConfig(client: DbClient, r: any): IntegrationTypeConfig {
-  const createdAt = client.dialect === 'sqlite'
-    ? (r.createdAt ? new Date(r.createdAt) : undefined)
-    : (r.createdAt ?? undefined)
-  const updatedAt = client.dialect === 'sqlite'
-    ? (r.updatedAt ? new Date(r.updatedAt) : undefined)
-    : (r.updatedAt ?? undefined)
-
-  const auth = parseJson(r.authJson) as IntegrationAuth
-  const credentialSchema = parseJson(r.credentialSchemaJson) || { type: 'object', additionalProperties: true }
-
+function rowToIntegrationTypeConfig(r: any): IntegrationTypeConfig {
   return {
     id: r.id,
     spaceId: r.spaceId,
     typeSlug: r.typeSlug,
     label: r.label,
     baseUrl: r.baseUrl,
-    auth,
-    credentialSchema,
+    auth: parseJson(r.authJson) as IntegrationAuth,
+    credentialSchema: parseJson(r.credentialSchemaJson) || { type: 'object', additionalProperties: true },
     healthCheckPath: r.healthCheckPath ?? null,
-    createdAt,
-    updatedAt,
+    createdAt: r.createdAt instanceof Date ? r.createdAt : (r.createdAt ? new Date(r.createdAt) : undefined),
+    updatedAt: r.updatedAt instanceof Date ? r.updatedAt : (r.updatedAt ? new Date(r.updatedAt) : undefined),
   }
 }
 
 export async function listIntegrationTypeConfigs(client: DbClient, spaceId: string): Promise<IntegrationTypeConfig[]> {
-  const table: any = client.dialect === 'sqlite' ? sqliteIntegrationTypeConfigs : pgIntegrationTypeConfigs
-  const rows = await (client.db as any)
-    .select()
-    .from(table)
-    .where(eq(table.spaceId, spaceId))
-  return rows.map((r: any) => rowToIntegrationTypeConfig(client, r))
+  const rows: any[] = await db(client).select().from(t(client)).where(eq(t(client).spaceId, spaceId))
+  return rows.map(rowToIntegrationTypeConfig)
 }
 
 export async function getIntegrationTypeConfig(
@@ -51,25 +45,25 @@ export async function getIntegrationTypeConfig(
   spaceId: string,
   typeSlug: string,
 ): Promise<IntegrationTypeConfig | null> {
-  const table: any = client.dialect === 'sqlite' ? sqliteIntegrationTypeConfigs : pgIntegrationTypeConfigs
-  const rows = await (client.db as any)
+  const table = t(client)
+  const rows: any[] = await db(client)
     .select()
     .from(table)
     .where(and(eq(table.spaceId, spaceId), eq(table.typeSlug, typeSlug)))
     .limit(1)
-  return rows?.[0] ? rowToIntegrationTypeConfig(client, rows[0]) : null
+  return rows[0] ? rowToIntegrationTypeConfig(rows[0]) : null
 }
 
 export async function upsertIntegrationTypeConfig(
   client: DbClient,
   cfg: Required<Pick<IntegrationTypeConfig, 'id' | 'spaceId'>> & Omit<IntegrationTypeConfig, 'createdAt' | 'updatedAt'>,
 ): Promise<void> {
-  const table: any = client.dialect === 'sqlite' ? sqliteIntegrationTypeConfigs : pgIntegrationTypeConfigs
+  const table = t(client)
   const now = new Date()
   const authValue = client.dialect === 'sqlite' ? JSON.stringify(cfg.auth ?? {}) : (cfg.auth ?? {})
   const schemaValue = client.dialect === 'sqlite' ? JSON.stringify(cfg.credentialSchema ?? {}) : (cfg.credentialSchema ?? {})
 
-  await (client.db as any)
+  await db(client)
     .insert(table)
     .values({
       id: cfg.id,
@@ -96,4 +90,3 @@ export async function upsertIntegrationTypeConfig(
       },
     })
 }
-
