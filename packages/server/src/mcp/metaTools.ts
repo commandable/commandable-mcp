@@ -213,7 +213,7 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
           health_check_path: { type: 'string' },
           connection_hint: {
             type: 'string',
-            description: 'Markdown shown in the credential form. Explain what credentials are needed and where to find them.',
+            description: 'Markdown shown in the credential form. Must be a numbered list of every step the user needs to follow to obtain the credentials — starting from navigating to the correct web page..',
           },
         },
         required: ['label', 'base_url', 'auth_type', 'credential_fields'],

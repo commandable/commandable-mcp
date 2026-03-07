@@ -42,7 +42,7 @@ After creation, the user must open the returned `credential_url` and enter crede
 - **`credential_fields`**: fields the user will enter (name + label, optional description)
 - **`credential_injection`** (required for `auth_type: "custom"`): headers/query templates using `{{fieldName}}`
 - **`basic_username_field` / `basic_password_field`** (required for `auth_type: "basic"`): which credential fields map to username/password
-- **`connection_hint`**: markdown shown in the credential form. Always include this and explain exactly what the user needs to copy and where to find it.
+- **`connection_hint`**: markdown shown in the credential form. **Always include this.** Write it as a numbered list of every step the user must follow to obtain the credentials — starting from opening the right website, navigating to the correct settings page, creating or copying the token/key/secret, and pasting it into the field. Leave nothing implicit. See the Stripe example below.
 
 #### Auth types
 
