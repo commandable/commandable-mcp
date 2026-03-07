@@ -75,8 +75,10 @@ export interface IntegrationCredentialVariant {
   baseUrlTemplate?: string | null
   healthCheck?: { path: string, method?: string } | null
   hintMarkdown?: string | null
-  /** Named server-side preprocessing hook, e.g. 'google_service_account'. */
-  preprocess?: string | null
+  /** Named server-side hook for credential transforms that require async work (e.g. JWT signing).
+   *  Currently only 'google_service_account' is supported. For simple transforms like Basic auth
+   *  encoding, use template expressions in the injection config instead (e.g. {{base64(email + ":" + apiToken)}}). */
+  preprocess?: 'google_service_account' | null
 }
 
 export interface IntegrationTypeConfig {

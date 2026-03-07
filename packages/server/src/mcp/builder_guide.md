@@ -51,6 +51,28 @@ After creation, the user must open the returned `credential_url` and enter crede
 | `custom` | Bearer tokens, API keys, custom headers/query params | You provide template strings like `Authorization: Bearer {{apiKey}}` and Commandable injects them |
 | `basic` | APIs that use HTTP Basic Auth | Commandable base64 encodes `username:password` from the mapped credential fields and injects `Authorization: Basic <token>` |
 
+#### Template expressions in `credential_injection`
+
+Inside `custom` injection templates you can use more than just plain `{{fieldName}}` references. The following expressions are supported:
+
+| Expression | What it produces |
+|---|---|
+| `{{fieldName}}` | The raw value of that credential field |
+| `{{base64(expr)}}` | Base64-encodes the result of `expr`. `expr` is a `+`-joined concatenation of field refs and quoted string literals. |
+
+**Example — Atlassian API token (email + token combined into Basic auth):**
+
+```json
+"credential_injection": {
+  "headers": {
+    "Authorization": "Basic {{base64(email + \":\" + apiToken)}}",
+    "Accept": "application/json"
+  }
+}
+```
+
+Use this pattern whenever an API takes a `username:password` style Basic auth but exposes them as two separate credential fields. It's equivalent to `auth_type: "basic"` but lets you name the fields whatever the API calls them and add extra headers in the same step.
+
 ## The mental model
 
 Think of each tool as a tiny, focused action. One API call, one clear purpose.

@@ -154,10 +154,28 @@ export class IntegrationProxy {
       }
 
       const resolveTemplate = (template: string): string => {
-        return String(template).replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key) => {
-          const v = (creds as any)[key]
+        return String(template).replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m, expr) => {
+          const trimmed = expr.trim()
+          // base64(...) transform: supports field refs and string literals joined with +
+          // e.g. {{base64(email + ":" + apiToken)}}
+          const base64Match = trimmed.match(/^base64\((.+)\)$/)
+          if (base64Match) {
+            const parts = base64Match[1].split(/\s*\+\s*/)
+            const resolved = parts.map(part => {
+              const p = part.trim()
+              if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'")))
+                return p.slice(1, -1)
+              const v = (creds as any)[p]
+              if (v === undefined || v === null)
+                throw new HttpError(400, `Missing credential field '${p}'.`)
+              return String(v)
+            }).join('')
+            return Buffer.from(resolved).toString('base64')
+          }
+          // Simple field reference
+          const v = (creds as any)[trimmed]
           if (v === undefined || v === null)
-            throw new HttpError(400, `Missing credential field '${key}'.`)
+            throw new HttpError(400, `Missing credential field '${trimmed}'.`)
           return String(v)
         })
       }
@@ -209,20 +227,6 @@ export class IntegrationProxy {
 
         const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
         ;(creds as any).token = token
-      }
-      else if (typeConfig.preprocess === 'jira_api_token') {
-        const email = (creds as any).email
-        const apiToken = (creds as any).apiToken
-        if (!email || !apiToken)
-          throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
-        ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
-      }
-      else if (typeConfig.preprocess === 'confluence_api_token') {
-        const email = (creds as any).email
-        const apiToken = (creds as any).apiToken
-        if (!email || !apiToken)
-          throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
-        ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
       }
 
       const resolvedHeaders: Record<string, string> = {}
