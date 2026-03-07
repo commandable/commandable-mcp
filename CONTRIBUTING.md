@@ -35,6 +35,12 @@ yarn workspace @commandable/mcp prepack
 yarn dev:serve
 ```
 
+or if you have want a completely fresh database:
+
+```bash
+yarn dev:reset
+```
+
 This starts the management UI at `http://127.0.0.1:23433/`, the read MCP endpoint at `http://127.0.0.1:23433/mcp`, and the create MCP endpoint at `http://127.0.0.1:23433/mcp/create`. It always restarts the daemon so you are always on the latest build.
 
 ### 3) Connect Claude Code

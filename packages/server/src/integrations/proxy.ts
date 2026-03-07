@@ -154,13 +154,16 @@ export class IntegrationProxy {
       }
 
       const resolveTemplate = (template: string): string => {
-        return String(template).replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m, expr) => {
+        return String(template).replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m: string, expr: string) => {
           const trimmed = expr.trim()
           // base64(...) transform: supports field refs and string literals joined with +
           // e.g. {{base64(email + ":" + apiToken)}}
           const base64Match = trimmed.match(/^base64\((.+)\)$/)
           if (base64Match) {
-            const parts = base64Match[1].split(/\s*\+\s*/)
+            const base64Expr = base64Match[1]
+            if (base64Expr === undefined)
+              throw new HttpError(400, `Invalid base64 template expression '${trimmed}'.`)
+            const parts = base64Expr.split(/\s*\+\s*/)
             const resolved = parts.map(part => {
               const p = part.trim()
               if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'")))

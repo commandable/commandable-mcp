@@ -12,6 +12,11 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
 
   const variants: Record<string, IntegrationCredentialVariant> = {}
   for (const [key, variant] of Object.entries(variantsFile.variants)) {
+    const preprocess = variant.preprocess ?? null
+    if (preprocess !== null && preprocess !== 'google_service_account') {
+      throw new Error(`Unsupported preprocess '${preprocess}' for built-in integration '${typeSlug}/${key}'. Only 'google_service_account' is allowed.`)
+    }
+
     variants[key] = {
       label: variant.label,
       credentialSchema: variant.schema,
@@ -20,7 +25,7 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
       baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : null,
       healthCheck: (variant as any).healthCheck ?? null,
       hintMarkdown: loadIntegrationHint(typeSlug, key),
-      preprocess: variant.preprocess ?? null,
+      preprocess,
     }
   }
 
