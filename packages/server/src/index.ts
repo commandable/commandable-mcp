@@ -19,6 +19,7 @@ export * from './db/migrate.js'
 export * from './db/schema.js'
 export * from './db/credentialStore.js'
 export * from './db/integrationStore.js'
+export * from './db/integrationTypeConfigStore.js'
 
 export * from './mcp/toolAdapter.js'
 export * from './mcp/handlers.js'

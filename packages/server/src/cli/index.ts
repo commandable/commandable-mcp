@@ -448,6 +448,14 @@ async function runServeLocal(opts: { restart: boolean }) {
   const baseUrl = `http://127.0.0.1:${uiPort}`
   if (opts.restart)
     stopDaemonProcess()
+
+  // Run migrations once here before the app server starts. Both the app server
+  // and create-mode open the DB without running migrations themselves, so this
+  // is the single authoritative place schema is applied.
+  const migrateClient = createDbFromEnv()
+  await ensureSchema(migrateClient)
+  migrateClient.close()
+
   const ui = await startBundledManagementUi({ port: uiPort })
   if (!ui)
     throw new Error(`Failed to ${opts.restart ? 'restart' : 'start'} local Commandable instance`)

@@ -1,6 +1,12 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { loadIntegrationVariants, loadIntegrationHint, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import {
+  loadIntegrationVariants,
+  loadIntegrationHint,
+  pgIntegrations,
+  sqliteIntegrations,
+  getIntegrationTypeConfig,
+} from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -16,21 +22,38 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
   const type = integ.type as string
+  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
+
+  // Try file-system bundled integration data first (pre-built integrations)
   const variantsFile = loadIntegrationVariants(type)
-  if (!variantsFile) {
-    return { supportsCredentials: false, variants: [], defaultVariant: null }
+  if (variantsFile) {
+    const variants = Object.entries(variantsFile.variants).map(([key, variant]) => ({
+      key,
+      label: variant.label,
+      schema: variant.schema,
+      hintMarkdown: loadIntegrationHint(type, key),
+    }))
+    return {
+      supportsCredentials: true,
+      variants,
+      defaultVariant: variantsFile.default,
+    }
   }
 
-  const variants = Object.entries(variantsFile.variants).map(([key, variant]) => ({
-    key,
-    label: variant.label,
-    schema: variant.schema,
-    hintMarkdown: loadIntegrationHint(type, key),
-  }))
-
-  return {
-    supportsCredentials: true,
-    variants,
-    defaultVariant: variantsFile.default,
+  // Fall back to DB-stored config for custom integrations
+  const customCfg = await getIntegrationTypeConfig(db, spaceId, type)
+  if (customCfg) {
+    return {
+      supportsCredentials: true,
+      variants: [{
+        key: 'default',
+        label: customCfg.label,
+        schema: customCfg.credentialSchema,
+        hintMarkdown: null,
+      }],
+      defaultVariant: 'default',
+    }
   }
+
+  return { supportsCredentials: false, variants: [], defaultVariant: null }
 })
