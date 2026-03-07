@@ -1,12 +1,8 @@
-# Commandable Agent MCP
+# Commandable MCP
 
-Build an app-connected MCP server, then expose it to any client.
+Commandable is one MCP server for connecting to ANY app or service. 
 
-Commandable has three top-level jobs:
-
-- `serve`: start or reuse a Commandable instance
-- `create`: connect Claude Code for the authoring workflow
-- `connect`: print read-client connection details for the MCP server you built
+Instead of directly providing all connection, commandable providers your agents the tools to create and use their own MCP tools securely.
 
 ## How it works
 
