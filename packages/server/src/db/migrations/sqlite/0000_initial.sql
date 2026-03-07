@@ -46,10 +46,8 @@ CREATE TABLE IF NOT EXISTS `integration_type_configs` (
   `space_id` TEXT NOT NULL,
   `type_slug` TEXT NOT NULL,
   `label` TEXT NOT NULL,
-  `base_url` TEXT NOT NULL,
-  `auth_json` TEXT NOT NULL,
-  `credential_schema_json` TEXT NOT NULL,
-  `health_check_path` TEXT,
+  `default_variant` TEXT NOT NULL,
+  `variants_json` TEXT NOT NULL,
   `created_at` INTEGER NOT NULL,
   `updated_at` INTEGER NOT NULL
 );

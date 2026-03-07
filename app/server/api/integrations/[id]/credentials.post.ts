@@ -4,10 +4,10 @@ import {
   SqlCredentialStore,
   IntegrationProxy,
   getOrCreateEncryptionSecret,
-  getIntegrationTypeConfig,
   updateIntegrationCredentials,
   updateIntegrationHealth,
   checkIntegrationHealth,
+  findIntegrationTypeConfig,
   pgIntegrations,
   sqliteIntegrations,
 } from '@commandable/mcp'
@@ -50,8 +50,11 @@ export default defineEventHandler(async (event) => {
     credentialVariant: resolvedVariant,
   })
 
-  // For custom integrations, look up the health check path from the DB config
-  const customCfg = await getIntegrationTypeConfig(db, spaceId, row.type)
+  const typeConfig = await findIntegrationTypeConfig({
+    db,
+    spaceId,
+    typeSlug: row.type,
+  })
 
   const integrationForCheck: IntegrationData = {
     spaceId,
@@ -67,12 +70,15 @@ export default defineEventHandler(async (event) => {
   const proxy = new IntegrationProxy({
     credentialStore: store,
     trelloApiKey: process.env.TRELLO_API_KEY,
+    integrationTypeConfigsRef: typeConfig
+      ? { current: [typeConfig] }
+      : undefined,
   })
 
   const healthResult = await checkIntegrationHealth({
     integration: integrationForCheck,
     proxy,
-    healthCheckPath: customCfg?.healthCheckPath ?? null,
+    db,
   })
 
   // Always persist health status — even skipped checks resolve as 'connected'

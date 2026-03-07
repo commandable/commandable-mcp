@@ -7,12 +7,13 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import crypto from 'node:crypto'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
+import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegrationTypeConfigStore.js'
 import { createGetIntegration } from '../integrations/getIntegration.js'
-import { loadIntegrationCredentialConfig, loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
+import { loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
 import type { DbClient } from '../db/client.js'
 import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { SqlCredentialStore } from '../db/credentialStore.js'
-import type { IntegrationData } from '../types.js'
+import type { IntegrationCredentialVariant, IntegrationData } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
 import { PROVIDERS } from '../integrations/providerRegistry.js'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
@@ -210,6 +211,10 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
           basic_username_field: { type: 'string' },
           basic_password_field: { type: 'string' },
           health_check_path: { type: 'string' },
+          connection_hint: {
+            type: 'string',
+            description: 'Markdown shown in the credential form. Explain what credentials are needed and where to find them.',
+          },
         },
         required: ['label', 'base_url', 'auth_type', 'credential_fields'],
       },
@@ -400,7 +405,7 @@ export async function handleMetaToolCall(params: {
         name: it.name,
         configured: instances.length > 0,
         instances: instanceInfos,
-        supports_credentials: !!loadIntegrationCredentialConfig(it.type, null),
+        supports_credentials: !!getBuiltInIntegrationTypeConfig(it.type),
       })
       if (items.length >= limit)
         break
@@ -468,9 +473,11 @@ export async function handleMetaToolCall(params: {
       try { ctx.integrationsRef.current = await listIntegrations(ctx.db, ctx.spaceId) } catch {}
     }
 
-    const credCfg = loadIntegrationCredentialConfig(type, credentialVariant)
-    const credentialFields = credCfg?.schema && typeof credCfg.schema === 'object'
-      ? Object.keys((credCfg.schema as any).properties || {})
+    const typeConfig = getBuiltInIntegrationTypeConfig(type)
+    const selectedVariantKey = credentialVariant || typeConfig?.defaultVariant || null
+    const selectedVariant = selectedVariantKey ? typeConfig?.variants[selectedVariantKey] : null
+    const credentialFields = selectedVariant?.credentialSchema && typeof selectedVariant.credentialSchema === 'object'
+      ? Object.keys((selectedVariant.credentialSchema as any).properties || {})
       : []
 
     const baseUrl = ctx.credentialSetupBaseUrl ? ctx.credentialSetupBaseUrl.replace(/\/+$/, '') : null
@@ -524,7 +531,7 @@ export async function handleMetaToolCall(params: {
         },
         registered_tools: registeredTools,
         toolsets: registeredToolsets,
-        credentials_needed: !!credCfg,
+        credentials_needed: !!typeConfig,
         management_url: managementUrl,
         credential_url: credentialUrl,
         credential_fields: credentialFields,
@@ -559,6 +566,7 @@ export async function handleMetaToolCall(params: {
     const basicUsernameField = typeof args?.basic_username_field === 'string' ? args.basic_username_field.trim() : ''
     const basicPasswordField = typeof args?.basic_password_field === 'string' ? args.basic_password_field.trim() : ''
     const healthCheckPath = typeof args?.health_check_path === 'string' ? args.health_check_path.trim() : ''
+    const connectionHint = typeof args?.connection_hint === 'string' ? args.connection_hint.trim() : ''
 
     if (!label)
       throw new Error('label is required')
@@ -630,17 +638,24 @@ export async function handleMetaToolCall(params: {
     const id = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
     const cfgId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
 
+    const defaultVariantConfig: IntegrationCredentialVariant = {
+      label,
+      credentialSchema,
+      auth: authType === 'basic'
+        ? { kind: 'basic', usernameField: basicUsernameField, passwordField: basicPasswordField }
+        : { kind: 'template', injection: credentialInjection || {} },
+      baseUrl,
+      healthCheck: healthCheckPath ? { path: healthCheckPath } : null,
+      hintMarkdown: connectionHint || null,
+    }
+
     const customCfg: IntegrationTypeConfig = {
       id: cfgId,
       spaceId: ctx.spaceId,
       typeSlug,
       label,
-      baseUrl,
-      credentialSchema,
-      auth: authType === 'basic'
-        ? { kind: 'basic', usernameField: basicUsernameField, passwordField: basicPasswordField }
-        : { kind: 'template', injection: credentialInjection || {} },
-      healthCheckPath: healthCheckPath || null,
+      defaultVariant: 'default',
+      variants: { default: defaultVariantConfig },
     }
 
     await upsertIntegrationTypeConfig(ctx.db, customCfg as any)

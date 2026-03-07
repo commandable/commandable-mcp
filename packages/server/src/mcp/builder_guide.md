@@ -42,6 +42,7 @@ After creation, the user must open the returned `credential_url` and enter crede
 - **`credential_fields`**: fields the user will enter (name + label, optional description)
 - **`credential_injection`** (required for `auth_type: "custom"`): headers/query templates using `{{fieldName}}`
 - **`basic_username_field` / `basic_password_field`** (required for `auth_type: "basic"`): which credential fields map to username/password
+- **`connection_hint`**: markdown shown in the credential form. Always include this and explain exactly what the user needs to copy and where to find it.
 
 #### Auth types
 
@@ -181,7 +182,8 @@ Call `commandable_create_custom_integration`:
       "Authorization": "Bearer {{apiKey}}"
     }
   },
-  "health_check_path": "/customers?limit=1"
+  "health_check_path": "/customers?limit=1",
+  "connection_hint": "1. Open https://dashboard.stripe.com/apikeys\\n2. In **Standard keys**, copy your **Secret key** (`sk_...`)\\n3. Paste it here as `apiKey`"
 }
 ```
 
@@ -231,7 +233,8 @@ If an API uses Basic Auth, do:
   ],
   "basic_username_field": "username",
   "basic_password_field": "password",
-  "health_check_path": "/health"
+  "health_check_path": "/health",
+  "connection_hint": "Please enter the user name and password provided on the my account page https://internal.example.com/my-account"
 }
 ```
 

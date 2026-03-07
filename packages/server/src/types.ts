@@ -65,16 +65,29 @@ export type IntegrationAuth =
   | { kind: 'template', injection: { headers?: Record<string, string>, query?: Record<string, string> } }
   | { kind: 'basic', usernameField: string, passwordField: string }
 
+export interface IntegrationCredentialVariant {
+  label: string
+  credentialSchema: JSONSchema7
+  auth: IntegrationAuth
+  /** Fixed base URL for API requests. */
+  baseUrl?: string | null
+  /** Template for constructing the base URL from credential fields, e.g. "https://{{domain}}.atlassian.net". */
+  baseUrlTemplate?: string | null
+  healthCheck?: { path: string, method?: string } | null
+  hintMarkdown?: string | null
+  /** Named server-side preprocessing hook, e.g. 'google_service_account'. */
+  preprocess?: string | null
+}
+
 export interface IntegrationTypeConfig {
-  /** Optional for built-in types; required for DB persisted configs. */
+  /** Only set for DB-persisted configs. */
   id?: string
+  /** Only set for DB-persisted configs. */
   spaceId?: string
   typeSlug: string
   label: string
-  baseUrl: string
-  auth: IntegrationAuth
-  credentialSchema: JSONSchema7
-  healthCheckPath?: string | null
+  defaultVariant: string
+  variants: Record<string, IntegrationCredentialVariant>
   createdAt?: Date
   updatedAt?: Date
 }

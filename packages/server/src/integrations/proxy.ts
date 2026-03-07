@@ -1,8 +1,8 @@
 import { Buffer } from 'node:buffer'
 import { HttpError } from '../errors/httpError.js'
-import type { IntegrationData, IntegrationTypeConfig } from '../types.js'
+import type { IntegrationCredentialVariant, IntegrationData, IntegrationTypeConfig } from '../types.js'
 import { PROVIDERS } from './providerRegistry.js'
-import { loadIntegrationCredentialConfig } from './dataLoader.js'
+import { getBuiltInIntegrationTypeConfig } from './fileIntegrationTypeConfigStore.js'
 import { getGoogleAccessToken } from './googleServiceAccount.js'
 
 export interface CredentialStore {
@@ -130,12 +130,19 @@ export class IntegrationProxy {
       if (!credentialId)
         throw new HttpError(400, 'credentialId is required for credentials-based integrations.')
 
-      const credCfg = loadIntegrationCredentialConfig(provider, integration.credentialVariant)
-      const dbCfg: IntegrationTypeConfig | null = (!credCfg && this.opts.integrationTypeConfigsRef)
-        ? (this.opts.integrationTypeConfigsRef.current.find(c => c.spaceId === spaceId && c.typeSlug === provider) || null)
-        : null
-      if (!credCfg && !dbCfg)
+      // Resolve integration type config — file-backed built-ins first, then in-memory DB cache.
+      const fileTypeCfg = getBuiltInIntegrationTypeConfig(provider)
+      const typeCfg: IntegrationTypeConfig | null = fileTypeCfg
+        ?? (this.opts.integrationTypeConfigsRef?.current.find(
+          c => c.spaceId === spaceId && c.typeSlug === provider) ?? null)
+      if (!typeCfg)
         throw new HttpError(501, `Provider '${provider}' does not support credentials-based auth yet.`)
+
+      const variantKey = integration.credentialVariant || typeCfg.defaultVariant
+      const variant: IntegrationCredentialVariant | undefined = typeCfg.variants[variantKey]
+        ?? typeCfg.variants[typeCfg.defaultVariant]
+      if (!variant)
+        throw new HttpError(501, `Variant '${variantKey}' not found for provider '${provider}'.`)
 
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
       if (!creds) {
@@ -155,44 +162,25 @@ export class IntegrationProxy {
         })
       }
 
-      // Resolve a unified type config for this provider.
-      const typeConfig: {
-        baseUrl: string
-        auth: IntegrationTypeConfig['auth']
-        preprocess?: string | null
-      } = (() => {
-        // Built-in: integration-data + providerRegistry + optional preprocess.
-        if (credCfg) {
-          const providerCfg = PROVIDERS[provider]
-          if (!providerCfg)
-            throw new HttpError(501, `Provider '${provider}' is not configured in the server proxy.`)
-
-          const baseUrl = credCfg.baseUrlTemplate
-            ? resolveTemplate(credCfg.baseUrlTemplate)
-            : (typeof providerCfg.baseUrl === 'function'
-                ? providerCfg.baseUrl(integration, creds, credCfg)
-                : providerCfg.baseUrl)
-
-          return {
-            baseUrl,
-            auth: { kind: 'template', injection: credCfg.injection || {} },
-            preprocess: credCfg.preprocess || null,
-          }
+      // Resolve base URL: template takes priority over fixed URL, then PROVIDERS registry fallback.
+      const baseUrl = (() => {
+        if (variant.baseUrlTemplate)
+          return resolveTemplate(variant.baseUrlTemplate)
+        if (variant.baseUrl)
+          return variant.baseUrl
+        // Fallback: PROVIDERS registry (used by built-ins that derive URL from provider config).
+        const providerCfg = PROVIDERS[provider]
+        if (providerCfg) {
+          return typeof providerCfg.baseUrl === 'function'
+            ? providerCfg.baseUrl(integration, creds, variant as any)
+            : providerCfg.baseUrl
         }
-
-        // DB: already canonical (baseUrl + auth union).
-        if (dbCfg) {
-          return {
-            baseUrl: dbCfg.baseUrl,
-            auth: dbCfg.auth,
-            preprocess: null,
-          }
-        }
-
-        throw new HttpError(500, 'Internal error: missing provider config resolution.')
+        throw new HttpError(501, `No base URL configured for provider '${provider}'.`)
       })()
 
-      // Built-in preprocess steps (db configs do not support preprocess).
+      const typeConfig = { baseUrl, auth: variant.auth, preprocess: variant.preprocess ?? null }
+
+      // Preprocess steps (e.g. service account token exchange, Basic Auth encoding).
       if (typeConfig.preprocess === 'google_service_account') {
         const serviceAccountJson = (creds as any).serviceAccountJson
         if (!serviceAccountJson)

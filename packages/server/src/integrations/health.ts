@@ -1,14 +1,16 @@
+import type { DbClient } from '../db/client.js'
 import type { IntegrationData } from '../types.js'
 import type { IntegrationProxy } from './proxy.js'
-import { loadIntegrationCredentialConfig } from './dataLoader.js'
+import { getIntegrationTypeConfig } from '../db/integrationTypeConfigStore.js'
+import { getBuiltInIntegrationTypeConfig } from './fileIntegrationTypeConfigStore.js'
 
 export type HealthStatus = 'disconnected' | 'connected' | 'invalid_credentials'
 
 export interface HealthResult {
   status: HealthStatus
   /**
-   * true when the provider has no `healthCheck` endpoint defined in its
-   * credentials.json — no network call was made, so we cannot confirm validity.
+   * true when the integration type has no healthCheck endpoint defined — no
+   * network call was made, so we cannot confirm credential validity.
    */
   skipped?: boolean
   checkedAt: Date
@@ -18,23 +20,25 @@ export interface HealthResult {
 export async function checkIntegrationHealth(params: {
   integration: IntegrationData
   proxy: IntegrationProxy
-  healthCheckPath?: string | null
+  db?: DbClient
 }): Promise<HealthResult> {
-  const { integration, proxy, healthCheckPath: overridePath } = params
+  const { integration, proxy, db } = params
   const checkedAt = new Date()
 
-  // Load the health check path from the integration-data credentials config,
-  // falling back to the override supplied by the caller (custom integrations).
-  const credCfg = loadIntegrationCredentialConfig(integration.type, integration.credentialVariant)
-  const healthCheck = credCfg?.healthCheck
-  const path = healthCheck?.path ?? (overridePath || null)
+  // Try file-based lookup first (sync, no DB needed), then fall back to DB for custom integrations.
+  const typeCfg = getBuiltInIntegrationTypeConfig(integration.type)
+    ?? (db && integration.spaceId
+      ? await getIntegrationTypeConfig(db, integration.spaceId, integration.type)
+      : null)
+
+  const variantKey = integration.credentialVariant || typeCfg?.defaultVariant || null
+  const variant = variantKey ? typeCfg?.variants[variantKey] : null
+  const path = variant?.healthCheck?.path ?? null
+  const method = variant?.healthCheck?.method ?? 'GET'
 
   if (!path) {
-    // No health endpoint defined for this provider/variant — skip
     return { status: 'connected', skipped: true, checkedAt }
   }
-
-  const method = healthCheck?.method ?? 'GET'
 
   try {
     await proxy.call(integration, path, { method })

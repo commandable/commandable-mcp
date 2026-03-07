@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import type { DbClient } from './client.js'
 import { pgIntegrationTypeConfigs, sqliteIntegrationTypeConfigs } from './schema.js'
-import type { IntegrationAuth, IntegrationTypeConfig } from '../types.js'
+import type { IntegrationCredentialVariant, IntegrationTypeConfig } from '../types.js'
 
 function t(client: DbClient) {
   return client.dialect === 'sqlite' ? sqliteIntegrationTypeConfigs : pgIntegrationTypeConfigs
@@ -26,10 +26,8 @@ function rowToIntegrationTypeConfig(r: any): IntegrationTypeConfig {
     spaceId: r.spaceId,
     typeSlug: r.typeSlug,
     label: r.label,
-    baseUrl: r.baseUrl,
-    auth: parseJson(r.authJson) as IntegrationAuth,
-    credentialSchema: parseJson(r.credentialSchemaJson) || { type: 'object', additionalProperties: true },
-    healthCheckPath: r.healthCheckPath ?? null,
+    defaultVariant: r.defaultVariant,
+    variants: parseJson(r.variantsJson) as Record<string, IntegrationCredentialVariant> || {},
     createdAt: r.createdAt instanceof Date ? r.createdAt : (r.createdAt ? new Date(r.createdAt) : undefined),
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt : (r.updatedAt ? new Date(r.updatedAt) : undefined),
   }
@@ -60,8 +58,9 @@ export async function upsertIntegrationTypeConfig(
 ): Promise<void> {
   const table = t(client)
   const now = new Date()
-  const authValue = client.dialect === 'sqlite' ? JSON.stringify(cfg.auth ?? {}) : (cfg.auth ?? {})
-  const schemaValue = client.dialect === 'sqlite' ? JSON.stringify(cfg.credentialSchema ?? {}) : (cfg.credentialSchema ?? {})
+  const variantsValue = client.dialect === 'sqlite'
+    ? JSON.stringify(cfg.variants ?? {})
+    : (cfg.variants ?? {})
 
   await db(client)
     .insert(table)
@@ -70,10 +69,8 @@ export async function upsertIntegrationTypeConfig(
       spaceId: cfg.spaceId,
       typeSlug: cfg.typeSlug,
       label: cfg.label,
-      baseUrl: cfg.baseUrl,
-      authJson: authValue,
-      credentialSchemaJson: schemaValue,
-      healthCheckPath: cfg.healthCheckPath ?? null,
+      defaultVariant: cfg.defaultVariant,
+      variantsJson: variantsValue,
       createdAt: now,
       updatedAt: now,
     })
@@ -82,10 +79,8 @@ export async function upsertIntegrationTypeConfig(
       set: {
         typeSlug: cfg.typeSlug,
         label: cfg.label,
-        baseUrl: cfg.baseUrl,
-        authJson: authValue,
-        credentialSchemaJson: schemaValue,
-        healthCheckPath: cfg.healthCheckPath ?? null,
+        defaultVariant: cfg.defaultVariant,
+        variantsJson: variantsValue,
         updatedAt: now,
       },
     })
