@@ -18,23 +18,26 @@ export interface HealthResult {
 export async function checkIntegrationHealth(params: {
   integration: IntegrationData
   proxy: IntegrationProxy
+  healthCheckPath?: string | null
 }): Promise<HealthResult> {
-  const { integration, proxy } = params
+  const { integration, proxy, healthCheckPath: overridePath } = params
   const checkedAt = new Date()
 
-  // Load the health check path from the integration-data credentials config
+  // Load the health check path from the integration-data credentials config,
+  // falling back to the override supplied by the caller (custom integrations).
   const credCfg = loadIntegrationCredentialConfig(integration.type, integration.credentialVariant)
   const healthCheck = credCfg?.healthCheck
+  const path = healthCheck?.path ?? (overridePath || null)
 
-  if (!healthCheck?.path) {
+  if (!path) {
     // No health endpoint defined for this provider/variant — skip
     return { status: 'connected', skipped: true, checkedAt }
   }
 
-  const method = healthCheck.method ?? 'GET'
+  const method = healthCheck?.method ?? 'GET'
 
   try {
-    await proxy.call(integration, healthCheck.path, { method })
+    await proxy.call(integration, path, { method })
     return { status: 'connected', checkedAt }
   }
   catch (err: any) {

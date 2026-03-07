@@ -4,6 +4,7 @@ import {
   SqlCredentialStore,
   IntegrationProxy,
   getOrCreateEncryptionSecret,
+  getIntegrationTypeConfig,
   updateIntegrationCredentials,
   updateIntegrationHealth,
   checkIntegrationHealth,
@@ -49,7 +50,9 @@ export default defineEventHandler(async (event) => {
     credentialVariant: resolvedVariant,
   })
 
-  // Run health check against the newly saved credentials
+  // For custom integrations, look up the health check path from the DB config
+  const customCfg = await getIntegrationTypeConfig(db, spaceId, row.type)
+
   const integrationForCheck: IntegrationData = {
     spaceId,
     id,
@@ -66,18 +69,21 @@ export default defineEventHandler(async (event) => {
     trelloApiKey: process.env.TRELLO_API_KEY,
   })
 
-  const healthResult = await checkIntegrationHealth({ integration: integrationForCheck, proxy })
+  const healthResult = await checkIntegrationHealth({
+    integration: integrationForCheck,
+    proxy,
+    healthCheckPath: customCfg?.healthCheckPath ?? null,
+  })
 
-  // Persist health status (skip if the provider has no health endpoint)
-  if (!healthResult.skipped) {
-    await updateIntegrationHealth(db, id, healthResult.status, healthResult.checkedAt)
-  }
+  // Always persist health status — even skipped checks resolve as 'connected'
+  await updateIntegrationHealth(db, id, healthResult.status, healthResult.checkedAt)
+
   await refreshMcpState()
 
   return {
     ok: true,
     credentialId,
     health_status: healthResult.status,
-    health_checked_at: healthResult.skipped ? null : healthResult.checkedAt?.toISOString(),
+    health_checked_at: healthResult.checkedAt?.toISOString(),
   }
 })
