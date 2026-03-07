@@ -1,8 +1,8 @@
 # Commandable MCP
 
-Commandable is one MCP server for connecting to ANY app or service. 
+Commandable MCP is the recursive mcp server. 
 
-Instead of directly providing all connection, commandable providers your agents the tools to create and use their own MCP tools securely.
+An mcp server which allows your agents create new mcp servers and tools securely. One MCP, any app.
 
 ## How it works
 
