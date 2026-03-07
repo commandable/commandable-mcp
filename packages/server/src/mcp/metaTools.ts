@@ -432,8 +432,13 @@ export async function handleMetaToolCall(params: {
     const shortId = id.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
     const label = String(args?.label || '').trim() || defaultLabel
 
-    const enabledToolsets = Array.isArray(args?.enabled_toolsets) ? args.enabled_toolsets.map((s: any) => String(s)).filter(Boolean) : undefined
-    const disabledTools = Array.isArray(args?.disabled_tools) ? args.disabled_tools.map((s: any) => String(s)).filter(Boolean) : undefined
+    const parseStringArray = (v: any): string[] | undefined => {
+      if (Array.isArray(v)) return v.map((s: any) => String(s)).filter(Boolean)
+      if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p.map((s: any) => String(s)).filter(Boolean) : undefined } catch { return undefined } }
+      return undefined
+    }
+    const enabledToolsets = parseStringArray(args?.enabled_toolsets)
+    const disabledTools = parseStringArray(args?.disabled_tools)
     const maxScope = args?.max_scope === 'read' || args?.max_scope === 'write' ? args.max_scope : undefined
     const credentialVariant = typeof args?.credential_variant === 'string' && args.credential_variant.trim().length
       ? args.credential_variant.trim()
@@ -543,8 +548,14 @@ export async function handleMetaToolCall(params: {
     const label = String(args?.label || '').trim()
     const baseUrl = String(args?.base_url || '').trim()
     const authType = (args?.auth_type === 'basic' || args?.auth_type === 'custom') ? String(args.auth_type) : null
-    const credentialFields = Array.isArray(args?.credential_fields) ? args.credential_fields : []
-    const credentialInjection = (args?.credential_injection && typeof args.credential_injection === 'object') ? args.credential_injection : null
+    const rawCredFields = args?.credential_fields
+    const credentialFields = Array.isArray(rawCredFields)
+      ? rawCredFields
+      : (typeof rawCredFields === 'string' ? (() => { try { const p = JSON.parse(rawCredFields); return Array.isArray(p) ? p : [] } catch { return [] } })() : [])
+    const rawCredInjection = args?.credential_injection
+    const credentialInjection = rawCredInjection && typeof rawCredInjection === 'object' && !Array.isArray(rawCredInjection)
+      ? rawCredInjection
+      : (typeof rawCredInjection === 'string' ? (() => { try { const p = JSON.parse(rawCredInjection); return (p && typeof p === 'object' && !Array.isArray(p)) ? p : null } catch { return null } })() : null)
     const basicUsernameField = typeof args?.basic_username_field === 'string' ? args.basic_username_field.trim() : ''
     const basicPasswordField = typeof args?.basic_password_field === 'string' ? args.basic_password_field.trim() : ''
     const healthCheckPath = typeof args?.health_check_path === 'string' ? args.health_check_path.trim() : ''
