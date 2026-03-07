@@ -20,14 +20,38 @@ function parseJson(raw: any): any {
   return raw
 }
 
+function normalizeHintMarkdown(value: string): string {
+  return value
+    .replace(/\r\n/g, '\n')
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+}
+
+function normalizeVariants(
+  variants: Record<string, IntegrationCredentialVariant>,
+): Record<string, IntegrationCredentialVariant> {
+  return Object.fromEntries(
+    Object.entries(variants).map(([key, variant]) => [
+      key,
+      {
+        ...variant,
+        hintMarkdown: typeof variant.hintMarkdown === 'string'
+          ? normalizeHintMarkdown(variant.hintMarkdown)
+          : variant.hintMarkdown,
+      },
+    ]),
+  )
+}
+
 function rowToIntegrationTypeConfig(r: any): IntegrationTypeConfig {
+  const variants = parseJson(r.variantsJson) as Record<string, IntegrationCredentialVariant> || {}
   return {
     id: r.id,
     spaceId: r.spaceId,
     typeSlug: r.typeSlug,
     label: r.label,
     defaultVariant: r.defaultVariant,
-    variants: parseJson(r.variantsJson) as Record<string, IntegrationCredentialVariant> || {},
+    variants: normalizeVariants(variants),
     createdAt: r.createdAt instanceof Date ? r.createdAt : (r.createdAt ? new Date(r.createdAt) : undefined),
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt : (r.updatedAt ? new Date(r.updatedAt) : undefined),
   }

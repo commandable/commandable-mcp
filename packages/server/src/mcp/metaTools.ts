@@ -39,6 +39,13 @@ export type MetaToolName = typeof META_TOOL_NAMES[keyof typeof META_TOOL_NAMES]
 
 export type { McpToolDefinition } from './toolAdapter.js'
 
+function normalizeHintMarkdown(value: string): string {
+  return value
+    .replace(/\r\n/g, '\n')
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+}
+
 function buildCommandableReadme(): string {
   const path = fileURLToPath(new URL('./commandable_readme.md', import.meta.url))
   return readFileSync(path, 'utf8')
@@ -566,7 +573,7 @@ export async function handleMetaToolCall(params: {
     const basicUsernameField = typeof args?.basic_username_field === 'string' ? args.basic_username_field.trim() : ''
     const basicPasswordField = typeof args?.basic_password_field === 'string' ? args.basic_password_field.trim() : ''
     const healthCheckPath = typeof args?.health_check_path === 'string' ? args.health_check_path.trim() : ''
-    const connectionHint = typeof args?.connection_hint === 'string' ? args.connection_hint.trim() : ''
+    const connectionHint = typeof args?.connection_hint === 'string' ? normalizeHintMarkdown(args.connection_hint).trim() : ''
 
     if (!label)
       throw new Error('label is required')
