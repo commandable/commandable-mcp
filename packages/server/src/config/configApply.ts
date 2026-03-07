@@ -48,7 +48,6 @@ function toIntegrationData(spaceId: string, it: IntegrationConfig): IntegrationD
     referenceId,
     label,
     enabled: it.enabled ?? true,
-    config: it.config,
     enabledToolsets: it.toolsets ?? undefined,
     maxScope: it.maxScope ?? undefined,
     disabledTools: it.disabledTools?.length ? it.disabledTools : undefined,

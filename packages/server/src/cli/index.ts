@@ -1,6 +1,6 @@
 import picocolors from 'picocolors'
 import crypto from 'node:crypto'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { chmodSync, existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
@@ -12,16 +12,23 @@ import { createApiKey, generateApiKey } from '../mcp/auth.js'
 import { AbilityCatalog } from '../mcp/abilityCatalog.js'
 import { SessionAbilityState } from '../mcp/sessionState.js'
 import type { MetaToolContext } from '../mcp/metaTools.js'
+import { getBuilderToolDefinitions } from '../mcp/metaTools.js'
 import { COMMANDABLE_VERSION } from '../version.js'
 import { runAddInteractive, runInitInteractive } from './setup.js'
 import { getCommandableDir, getOrCreateEncryptionSecret, openLocalState } from './credentialManager.js'
 import { listIntegrations } from '../db/integrationStore.js'
+import { listToolDefinitions } from '../db/toolDefinitionStore.js'
+import { listIntegrationTypeConfigs } from '../db/integrationTypeConfigStore.js'
 import { createDbFromEnv } from '../db/client.js'
 import { ensureSchema } from '../db/migrate.js'
 import { SqlCredentialStore } from '../db/credentialStore.js'
 import { applyConfig } from '../config/configApply.js'
 import { loadConfig } from '../config/configLoader.js'
 import { integrationDataRoot } from '../integrations/dataLoader.js'
+
+type CommandableSource = 'package' | 'local'
+type CommandableTransport = 'stdio' | 'http'
+type ReadClient = 'claude-desktop' | 'cursor'
 
 function hasFlag(...flags: string[]): boolean {
   return flags.some(f => process.argv.includes(f))
@@ -83,7 +90,7 @@ async function waitForHttp(baseUrl: string, timeoutMs: number = 12_000): Promise
   throw new Error(`Timed out waiting for management UI at ${baseUrl}`)
 }
 
-async function startBundledManagementUi(params: { port: number }): Promise<{ baseUrl: string, stop: () => Promise<void> } | null> {
+async function startBundledManagementUi(params: { port: number }): Promise<{ baseUrl: string, stop: () => Promise<void>, reused: boolean } | null> {
   const port = params.port
   const baseUrl = `http://127.0.0.1:${port}`
 
@@ -141,7 +148,7 @@ async function startBundledManagementUi(params: { port: number }): Promise<{ bas
       }
 
       console.error(`[commandable] reusing existing management UI at ${baseUrl}`)
-      return { baseUrl, stop: async () => {} }
+      return { baseUrl, stop: async () => {}, reused: true }
     }
     else if (probe?.status && probe.status !== 404) {
       throw new Error(
@@ -206,6 +213,7 @@ async function startBundledManagementUi(params: { port: number }): Promise<{ bas
 
   return {
     baseUrl,
+    reused: false,
     stop: async () => {
       const pidFile = resolve(getCommandableDir(), 'daemon.pid')
       let pid: number | null = null
@@ -261,27 +269,352 @@ function getFlagValue(flag: string): string | null {
   return val
 }
 
+function getUiPort(): number {
+  const uiPortRaw = process.env.COMMANDABLE_UI_PORT
+  return uiPortRaw && /^\d+$/.test(uiPortRaw) ? Number(uiPortRaw) : 23432
+}
+
+function getSqlitePathForLocalState(): string {
+  const forced = process.env.COMMANDABLE_MCP_SQLITE_PATH
+  if (forced && forced.trim().length)
+    return resolve(forced.trim())
+  return resolve(getCommandableDir(), 'credentials.sqlite')
+}
+
+function getSourceValue(): CommandableSource {
+  const raw = (getFlagValue('--source') || 'package').trim().toLowerCase()
+  if (raw === 'local' || raw === 'package')
+    return raw
+  console.error(`Invalid --source value: ${raw}. Use ${picocolors.cyan('package')} or ${picocolors.cyan('local')}.`)
+  process.exit(1)
+}
+
+function getTransportValue(): CommandableTransport {
+  const raw = (getFlagValue('--transport') || 'stdio').trim().toLowerCase()
+  if (raw === 'stdio' || raw === 'http')
+    return raw
+  console.error(`Invalid --transport value: ${raw}. Use ${picocolors.cyan('stdio')} or ${picocolors.cyan('http')}.`)
+  process.exit(1)
+}
+
+function getReadClientValue(): ReadClient {
+  const raw = (getFlagValue('--client') || 'claude-desktop').trim().toLowerCase()
+  if (raw === 'claude-desktop' || raw === 'cursor')
+    return raw
+  console.error(`Invalid --client value: ${raw}. Use ${picocolors.cyan('claude-desktop')} or ${picocolors.cyan('cursor')}.`)
+  process.exit(1)
+}
+
+function stopDaemonProcess(): { stopped: boolean, pid: number | null } {
+  const pid = readDaemonPid()
+  if (pid?.pid) {
+    try { process.kill(pid.pid, 'SIGTERM') } catch {}
+  }
+  try { unlinkSync(daemonPidPath()) } catch {}
+  return { stopped: !!pid?.pid, pid: pid?.pid ?? null }
+}
+
+export function makeClaudeCodeAddCommand(source: CommandableSource): string {
+  const envArgs = getClaudeCodeEnvEntries()
+    .map(value => `-e ${quoteShellArg(value)}`)
+    .join(' ')
+  if (source === 'package')
+    return `claude mcp add commandable${envArgs ? ` ${envArgs}` : ''} -- npx -y @commandable/mcp create-mode`
+  const localBin = process.argv[1] && process.argv[1].trim().length
+    ? resolve(process.argv[1])
+    : '/absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js'
+  return `claude mcp add commandable${envArgs ? ` ${envArgs}` : ''} -- node ${localBin} create-mode`
+}
+
+function execClaudeMcpAdd(args: string[]): void {
+  const result = spawnSync('claude', args, { stdio: 'inherit' })
+  if (result.error) {
+    // claude CLI not available — print the command as fallback
+    console.error(`claude ${args.join(' ')}`)
+    return
+  }
+  if (result.status !== 0)
+    process.exit(result.status ?? 1)
+}
+
+const CLAUDE_CODE_STDIO_ENV_KEYS = [
+  'COMMANDABLE_SPACE_ID',
+  'COMMANDABLE_DATA_DIR',
+  'COMMANDABLE_MCP_SQLITE_PATH',
+  'COMMANDABLE_UI_PORT',
+  'DATABASE_URL',
+  'COMMANDABLE_CONFIG_FILE',
+  'COMMANDABLE_INTEGRATION_DATA_DIR',
+] as const
+
+function getClaudeCodeEnvEntries(): string[] {
+  return CLAUDE_CODE_STDIO_ENV_KEYS
+    .map((key) => {
+      const value = process.env[key]
+      return value && value.trim().length ? `${key}=${value}` : null
+    })
+    .filter((value): value is string => !!value)
+}
+
+function quoteShellArg(value: string): string {
+  if (/^[A-Za-z0-9_./:=@-]+$/.test(value))
+    return value
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`
+}
+
+export function makeReadModeConfig(source: CommandableSource): { mcpServers: Record<string, { command: string, args: string[] }> } {
+  if (source === 'package') {
+    return {
+      mcpServers: {
+        commandable: {
+          command: 'npx',
+          args: ['-y', '@commandable/mcp'],
+        },
+      },
+    }
+  }
+
+  const localBin = process.argv[1] && process.argv[1].trim().length
+    ? resolve(process.argv[1])
+    : '/absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js'
+  return {
+    mcpServers: {
+      commandable: {
+        command: 'node',
+        args: [localBin],
+      },
+    },
+  }
+}
+
+export function makeHttpConnectionDetails(): { url: string, headers: { Authorization: string } } {
+  const url = getFlagValue('--url') || 'https://your-host/mcp'
+  const apiKey = getFlagValue('--api-key') || '<api-key>'
+  return {
+    url,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  }
+}
+
+function makeClaudeCodeHttpAddCommand(): string {
+  const details = makeHttpConnectionDetails()
+  return `claude mcp add --transport http commandable ${details.url} --header "Authorization: ${details.headers.Authorization}"`
+}
+
+function runCreate() {
+  const source = getSourceValue()
+  const transport = getTransportValue()
+  const shouldApply = hasFlag('--apply')
+
+  const command = transport === 'http'
+    ? makeClaudeCodeHttpAddCommand()
+    : makeClaudeCodeAddCommand(source)
+
+  if (!shouldApply) {
+    console.error(command)
+    console.error('Run that, then restart Claude Code.')
+    return
+  }
+
+  if (transport === 'http') {
+    const url = getFlagValue('--url')
+    const apiKey = getFlagValue('--api-key')
+    if (!url || !apiKey) {
+      console.error(`For ${picocolors.cyan('--apply')} with HTTP, pass ${picocolors.cyan('--url')} and ${picocolors.cyan('--api-key')}.`)
+      process.exit(1)
+    }
+    execClaudeMcpAdd(['mcp', 'add', '--transport', 'http', 'commandable', url, '--header', `Authorization: Bearer ${apiKey}`])
+    console.error(`${picocolors.green('Done.')} Restart Claude Code.`)
+    return
+  }
+
+  const envArgs = getClaudeCodeEnvEntries().flatMap(value => ['-e', value])
+
+  if (source === 'package')
+    execClaudeMcpAdd(['mcp', 'add', 'commandable', ...envArgs, '--', 'npx', '-y', '@commandable/mcp', 'create-mode'])
+  else {
+    const localBin = process.argv[1] && process.argv[1].trim().length
+      ? resolve(process.argv[1])
+      : '/absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js'
+    execClaudeMcpAdd(['mcp', 'add', 'commandable', ...envArgs, '--', 'node', localBin, 'create-mode'])
+  }
+  console.error(`${picocolors.green('Done.')} Restart Claude Code.`)
+}
+
+async function runServeLocal(opts: { restart: boolean }) {
+  const uiPort = getUiPort()
+  const baseUrl = `http://127.0.0.1:${uiPort}`
+  if (opts.restart)
+    stopDaemonProcess()
+
+  // Run migrations once here before the app server starts. Both the app server
+  // and create-mode open the DB without running migrations themselves, so this
+  // is the single authoritative place schema is applied.
+  const migrateClient = createDbFromEnv()
+  await ensureSchema(migrateClient)
+  migrateClient.close()
+
+  const ui = await startBundledManagementUi({ port: uiPort })
+  if (!ui)
+    throw new Error(`Failed to ${opts.restart ? 'restart' : 'start'} local Commandable instance`)
+
+  const sqlitePath = getSqlitePathForLocalState()
+  console.error(picocolors.green(`Commandable local instance ${ui.reused && !opts.restart ? 'ready' : 'running'}.`))
+  console.error(`${picocolors.dim('Base URL:')} ${baseUrl}`)
+  console.error(`${picocolors.dim('Management UI:')} ${baseUrl}/`)
+  console.error(`${picocolors.dim('MCP endpoint:')} ${baseUrl}/mcp`)
+  console.error(`${picocolors.dim('Data dir:')} ${getCommandableDir()}`)
+  console.error(`${picocolors.dim('SQLite:')} ${sqlitePath}`)
+  console.error(`${picocolors.dim('State:')} ${ui.reused ? 'reused existing instance' : 'started fresh instance'}`)
+  console.error(`Next: ${picocolors.cyan('commandable-mcp create')} or ${picocolors.cyan('commandable-mcp connect --client claude-desktop')}`)
+}
+
+async function runServe() {
+  const transport = getFlagValue('--transport')
+  if (transport && transport.trim().toLowerCase() === 'http') {
+    console.error('HTTP deployment is served by the app runtime, not this CLI.')
+    console.error(`Use ${picocolors.cyan('yarn dev')} locally or deploy the app, then run ${picocolors.cyan('commandable-mcp create --transport http --url <url> --api-key <key>')}.`)
+    return
+  }
+  return await runServeLocal({ restart: hasFlag('--restart') })
+}
+
+function runConnect() {
+  const source = getSourceValue()
+  const transport = getTransportValue()
+  const client = getReadClientValue()
+
+  if (transport === 'http') {
+    console.error(JSON.stringify(makeHttpConnectionDetails(), null, 2))
+    return
+  }
+
+  if (client === 'cursor' || client === 'claude-desktop') {
+    console.error(JSON.stringify(makeReadModeConfig(source), null, 2))
+  }
+}
+
+async function runDoctor() {
+  const uiPort = getUiPort()
+  const baseUrl = `http://127.0.0.1:${uiPort}`
+  const pid = readDaemonPid()
+  const pidAlive = pid ? isProcessAlive(pid.pid) : false
+  const probe = await fetchJsonWithTimeout(`${baseUrl}/api/_commandable/status`, 500).catch(() => null)
+  const probeVersion = typeof probe?.json?.version === 'string' && probe.json.version.trim().length
+    ? probe.json.version.trim()
+    : null
+  const runningVersion = probeVersion || pid?.version || null
+  const databaseUrl = process.env.DATABASE_URL
+  const sqlitePath = databaseUrl && databaseUrl.trim().length ? null : getSqlitePathForLocalState()
+
+  const report = {
+    ok: true,
+    installedVersion: COMMANDABLE_VERSION,
+    mode: resolveMode(),
+    env: {
+      COMMANDABLE_SPACE_ID: (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local',
+      COMMANDABLE_DATA_DIR: process.env.COMMANDABLE_DATA_DIR || null,
+      COMMANDABLE_MCP_SQLITE_PATH: process.env.COMMANDABLE_MCP_SQLITE_PATH || null,
+      COMMANDABLE_UI_PORT: uiPort,
+      DATABASE_URL: databaseUrl && databaseUrl.trim().length ? '[set]' : null,
+    },
+    localState: {
+      dataDir: getCommandableDir(),
+      sqlitePath,
+      daemonPidPath: daemonPidPath(),
+      encryptionKeyPath: resolve(getCommandableDir(), 'encryption.key'),
+    },
+    daemon: {
+      running: !!(pidAlive && probe?.ok),
+      pid: pid ?? null,
+      baseUrl,
+      runningVersion,
+      versionMatch: !!runningVersion && runningVersion === COMMANDABLE_VERSION,
+      status: probe?.json ?? null,
+    },
+    hints: [
+      'Use "commandable-mcp reset local --yes" for a full local wipe.',
+      'Use "commandable-mcp serve" to start the local Commandable instance.',
+      'Use "commandable-mcp create" for the Claude Code authoring flow.',
+      'Use "commandable-mcp connect --client claude-desktop" for a read-client config snippet.',
+    ],
+  }
+
+  console.error(JSON.stringify(report, null, 2))
+}
+
+function runResetLocal() {
+  const confirm = hasFlag('--yes')
+  const keepKey = hasFlag('--keep-key')
+  if (!confirm) {
+    console.error(`This command deletes local Commandable state.`)
+    console.error(`Re-run with ${picocolors.cyan('--yes')} to confirm.`)
+    process.exit(1)
+  }
+
+  const dataDir = getCommandableDir()
+  const sqlitePath = getSqlitePathForLocalState()
+  const keyPath = resolve(dataDir, 'encryption.key')
+  const daemonPath = daemonPidPath()
+  const stopped = stopDaemonProcess()
+
+  const removed: string[] = []
+  const missing: string[] = []
+  for (const file of [sqlitePath, daemonPath, ...(keepKey ? [] : [keyPath])]) {
+    if (!existsSync(file)) {
+      missing.push(file)
+      continue
+    }
+    try {
+      unlinkSync(file)
+      removed.push(file)
+    }
+    catch (err: any) {
+      console.error(`Failed to remove ${file}: ${err?.message || err}`)
+      process.exit(1)
+    }
+  }
+
+  console.error(picocolors.green('Local reset complete.'))
+  console.error(`${picocolors.dim('Data dir:')} ${dataDir}`)
+  console.error(`${picocolors.dim('Daemon stopped:')} ${stopped.stopped ? 'yes' : 'no (no PID found)'}`)
+  if (removed.length)
+    console.error(`${picocolors.dim('Removed:')} ${removed.join(', ')}`)
+  if (missing.length)
+    console.error(`${picocolors.dim('Already absent:')} ${missing.join(', ')}`)
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length)
+    console.error(`${picocolors.yellow('Warning:')} DATABASE_URL is set; remote Postgres data was not modified.`)
+  console.error(`Next step: ${picocolors.cyan('commandable-mcp create')}`)
+  console.error(`Legacy bootstrap: ${picocolors.cyan('commandable-mcp static-init')}`)
+}
+
+async function runRefreshLocalDev() {
+  await runServeLocal({ restart: true })
+}
+
 function help(exitCode: number = 0): never {
   const lines = [
     '',
-    `${picocolors.bold('Commandable MCP')} — connect your apps to MCP clients`,
+    `${picocolors.bold('Commandable MCP')} — build and serve app-connected MCP tools`,
     picocolors.dim(`v${COMMANDABLE_VERSION}`),
     '',
     picocolors.bold('Usage'),
-    `  ${picocolors.cyan('commandable-mcp init')}`,
-    `  ${picocolors.cyan('commandable-mcp init')} ${picocolors.dim('--config ./commandable.config.yaml')}`,
-    `  ${picocolors.cyan('commandable-mcp add')}`,
-    `  ${picocolors.cyan('commandable-mcp status')}`,
+    `  ${picocolors.cyan('commandable-mcp serve')} ${picocolors.dim('[--restart]')}`,
+    `  ${picocolors.cyan('commandable-mcp create')} ${picocolors.dim('[--transport stdio|http] [--source package|local] [--apply] [--url] [--api-key]')}`,
+    `  ${picocolors.cyan('commandable-mcp connect')} ${picocolors.dim('[--client claude-desktop|cursor] [--transport stdio|http] [--source package|local] [--url] [--api-key]')}`,
+    `  ${picocolors.cyan('commandable-mcp doctor')}`,
+    `  ${picocolors.cyan('commandable-mcp reset local')} ${picocolors.dim('[--yes] [--keep-key]')}`,
     `  ${picocolors.cyan('commandable-mcp apply')} ${picocolors.dim('[--config ./commandable.config.yaml]')}`,
     `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
-    `  ${picocolors.cyan('commandable-mcp')} ${picocolors.dim('(start MCP server, static mode)')}`,
-    `  ${picocolors.cyan('commandable-mcp create-mode')} ${picocolors.dim('(start MCP server in create mode — for use with Claude Code)')}`,
     `  ${picocolors.cyan('commandable-mcp --version')}`,
     '',
     picocolors.bold('Notes'),
     `- Credentials entered via the CLI are stored encrypted at ${picocolors.dim('~/.commandable/')} (override with ${picocolors.cyan('COMMANDABLE_DATA_DIR')}).`,
-    `- Static mode: all tools available at startup. Works with every MCP client.`,
-    `- Create mode: per-session dynamic toolsets via meta-tools. Requires ${picocolors.cyan('notifications/tools/list_changed')} support (e.g. Claude Code).`,
+    `- ${picocolors.bold('Serve')}: starts or reuses the local Commandable instance.`,
+    `- ${picocolors.bold('Create')}: Claude Code authoring flow. Prints or applies the ${picocolors.cyan('claude mcp add')} command.`,
+    `- ${picocolors.bold('Connect')}: prints read-client connection details for the MCP server you already configured.`,
     '',
   ]
   console.error(lines.join('\n'))
@@ -292,20 +625,28 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
   const spaceId = process.env.COMMANDABLE_SPACE_ID || 'local'
   const { db, credentialStore } = await openLocalState()
   const integrations = await listIntegrations(db, spaceId)
+  const toolDefinitions = await listToolDefinitions(db, spaceId)
+  const integrationTypeConfigs = await listIntegrationTypeConfigs(db, spaceId)
+
+  const integrationTypeConfigsRef = { current: integrationTypeConfigs }
 
   const proxy = new IntegrationProxy({
     credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
+    integrationTypeConfigsRef,
   })
 
   const mode = forceMode ?? resolveMode()
   if (!integrations.length && mode !== 'create') {
-    console.error(`No integrations configured yet. Run ${picocolors.cyan('commandable-mcp init')}.`)
+    console.error(`No integrations configured yet.`)
+    console.error(`Preferred: ${picocolors.cyan('commandable-mcp create')} then configure tools in Claude Code.`)
+    console.error(`Legacy read-mode bootstrap: ${picocolors.cyan('commandable-mcp static-init')}.`)
     process.exit(0)
   }
 
   const integrationsRef = { current: integrations }
-  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
+  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef, toolDefinitions })
+
   const toolIndex = { list: index.tools, byName: index.byName }
 
   const uiPortRaw = process.env.COMMANDABLE_UI_PORT
@@ -323,7 +664,15 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
     ...(mode === 'create'
       ? {
           createMode: (() => {
-            const catalogRef = { current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndex.byName }) }
+            const builderDefs = getBuilderToolDefinitions()
+            const extraToolDefinitions = new Map(builderDefs.map(d => [d.name, d]))
+            const catalogRef = {
+              current: new AbilityCatalog({
+                integrations: integrationsRef.current,
+                toolIndex: toolIndex.byName,
+                extraToolDefinitions,
+              }),
+            }
             const sessionState = new SessionAbilityState()
             const ctx: MetaToolContext = {
               spaceId,
@@ -332,6 +681,7 @@ async function runStdioFromDb(forceMode?: 'static' | 'create') {
               proxy,
               credentialSetupBaseUrl: managementUi?.baseUrl,
               integrationsRef,
+                integrationTypeConfigsRef,
               toolIndexRef: toolIndex,
               catalogRef,
             }
@@ -408,7 +758,16 @@ export async function main() {
   if (hasFlag('--help', '-h'))
     help(0)
 
-  if (cmd === 'init') {
+  if (cmd === 'serve')
+    return await runServe()
+
+  if (cmd === 'create')
+    return runCreate()
+
+  if (cmd === 'connect')
+    return runConnect()
+
+  if (cmd === 'static-init') {
     const cfgPath = getFlagValue('--config') || process.env.COMMANDABLE_CONFIG_FILE || null
     if (cfgPath)
       return await runApplyHeadless()
@@ -439,6 +798,30 @@ export async function main() {
   if (cmd === 'apply')
     return await runApplyHeadless()
 
+  if (cmd === 'doctor')
+    return await runDoctor()
+
+  if (cmd === 'reset') {
+    const sub = (process.argv[3] || '').trim().toLowerCase()
+    if (sub === 'local')
+      return runResetLocal()
+    help(1)
+  }
+
+  if (cmd === 'setup') {
+    const sub = (process.argv[3] || '').trim().toLowerCase()
+    if (sub === 'claude-code')
+      return runCreate()
+    help(1)
+  }
+
+  if (cmd === 'refresh') {
+    const sub = (process.argv[3] || '').trim().toLowerCase()
+    if (sub === 'local-dev')
+      return await runRefreshLocalDev()
+    help(1)
+  }
+
   if (cmd === 'create-api-key')
     return await runCreateApiKey()
 
@@ -447,8 +830,7 @@ export async function main() {
 
   if (cmd === 'daemon') {
     const sub = (process.argv[3] || '').trim().toLowerCase()
-    const uiPortRaw = process.env.COMMANDABLE_UI_PORT
-    const uiPort = uiPortRaw && /^\d+$/.test(uiPortRaw) ? Number(uiPortRaw) : 23432
+    const uiPort = getUiPort()
     const baseUrl = `http://127.0.0.1:${uiPort}`
 
     if (sub === 'status' || !sub) {
@@ -471,19 +853,20 @@ export async function main() {
     }
 
     if (sub === 'stop') {
-      const pid = readDaemonPid()
-      if (pid) {
-        try { process.kill(pid.pid, 'SIGTERM') } catch {}
-      }
-      try { unlinkSync(daemonPidPath()) } catch {}
+      const stopped = stopDaemonProcess()
+      console.error(stopped.stopped
+        ? `Stopped daemon${stopped.pid ? ` (pid ${stopped.pid})` : ''}.`
+        : 'No daemon PID found; nothing to stop.')
       return
     }
 
     if (sub === 'start') {
-      const ui = await startBundledManagementUi({ port: uiPort })
-      if (!ui)
-        throw new Error('Failed to start daemon')
-      console.error(`Daemon running at ${baseUrl}`)
+      await runServeLocal({ restart: false })
+      return
+    }
+
+    if (sub === 'restart') {
+      await runServeLocal({ restart: true })
       return
     }
 

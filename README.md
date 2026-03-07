@@ -1,220 +1,96 @@
-# Commandable MCP
+# Commandable Agent MCP
 
-One MCP server for all of your apps.
+Build an app-connected MCP server, then expose it to any client.
 
-Commandable MCP is a secure, open-source MCP server supporting 10 integrations and 200+ tools. We aim to support many many more than this in the near future.
+Commandable has three top-level jobs:
 
-## Warning: Rapidly Changing Project
+- `serve`: start or reuse a Commandable instance
+- `create`: connect Claude Code for the authoring workflow
+- `connect`: print read-client connection details for the MCP server you built
 
-This repository is currently in flux and may include frequent breaking changes between versions until the first stable release.
+## How it works
 
-For now, please:
+Commandable is the layer that stores your integrations, credentials, and tool definitions.
 
-- Save your keys somewhere safe outside this project.
-- Re-run `commandable-mcp init` after each new version update.
+- Use `create` with Claude Code to configure integrations and build tools.
+- Use `connect` to wire Claude Desktop, Cursor, or any other read client to the resulting MCP server.
 
-**Ways to use:** 
-- **Desktop mode (stdio)**: run a local MCP server that Claude Desktop / Cursor spawns for you. Great for personal use and “set it and forget it”.
-- **Server mode (HTTP + UI)**: a docker file that serves **(1)** a management UI and **(2)** an MCP Streamable HTTP endpoint. Great for agent frameworks, shared environments, and CI-friendly config-as-code.
+## Quick start: local package flow
 
----
+This is the main path for trying Commandable from the published package.
 
-## Quick start: Desktop mode (Claude Desktop / Cursor)
-
-### 1) Run the setup wizard
+### 1) Start the local Commandable instance
 
 ```bash
-npx -y @commandable/mcp init
+npx -y @commandable/mcp serve
 ```
 
-This walks you through selecting integrations and entering credentials. Credentials are encrypted immediately and stored outside your project (default: `~/.commandable/`).
-
-If you prefer a global install (no `npx`), you can also do:
+### 2) Connect Claude Code for create
 
 ```bash
-npm install -g @commandable/mcp
-commandable-mcp init
+npx -y @commandable/mcp create
 ```
 
-### 2) Add the snippet to your MCP client
+That prints the exact `claude mcp add ...` command. Run it, then restart Claude Code.
 
-**Claude Desktop** — edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+### 3) Start building
 
-```json
-{
-  "mcpServers": {
-    "commandable": {
-      "command": "npx",
-      "args": ["-y", "@commandable/mcp"]
-    }
-  }
-}
-```
+Open Claude Code and configure integrations, toolsets, and custom tools in your create session.
 
-If your setup wizard prints a snippet without `-y`, add it — it avoids interactive install prompts on first run.
+### 4) Connect a read client
 
-**Cursor** — open Settings → MCP → Add server, then paste the same JSON block.
-
-### 3) Restart your MCP client
-
-Restart Claude Desktop or reload the Cursor window. Your assistant can now use the tools you configured.
-
----
-
-## Updating
-
-### If you use `npx` (recommended)
-
-If your MCP client is configured to run Commandable via:
-
-```json
-{
-  "command": "npx",
-  "args": ["-y", "@commandable/mcp"]
-}
-```
-
-…then updates are usually automatic: your MCP client starts a fresh `npx` process each time it needs the server.
-
-If you want to avoid surprise breaking changes, pin an exact version:
-
-```json
-{
-  "command": "npx",
-  "args": ["-y", "@commandable/mcp@<version>"]
-}
-```
-
-### If you installed globally
-
-Update manually:
+After your create session has configured the server, print a read-client snippet:
 
 ```bash
-npm update -g @commandable/mcp
+npx -y @commandable/mcp connect --client claude-desktop
 ```
 
-### What about the background management UI (daemon)?
-
-In create mode, Commandable runs the management UI as a background daemon.
-
-- When a new CLI version runs, it will **automatically restart the daemon** if it detects a version mismatch.
-- To inspect or control it directly, use:
-  - `commandable-mcp daemon status`
-  - `commandable-mcp daemon stop`
-  - `commandable-mcp daemon start`
-
-### After updating: possible database reset (early development)
-
-During early development we may make breaking changes to the local SQLite schema.
-If you see a “database is out of date” error, follow the printed instructions (typically: delete the SQLite file and re-run `commandable-mcp init`).
-
----
-
-## Quick start: Server mode (Management UI + MCP over HTTP)
-
-Server mode is for when you want to connect by URL (agent frameworks) and/or manage integrations in a browser.
-
-### 1) Create a config file (config-as-code)
-
-Create `commandable.config.yaml`:
-
-```yaml
-integrations:
-  - type: github
-    toolsets: [code, pull_requests, ci]
-    credentials:
-      token: ${GITHUB_TOKEN}
-
-  - type: trello
-    credentials:
-      apiKey: ${TRELLO_API_KEY}
-      apiToken: ${TRELLO_API_TOKEN}
-```
-
-`${VAR_NAME}` values are resolved from your environment at startup.
-
-### 2) Run the server (Docker)
-
-#### Option A: Use prebuilt Docker image (GHCR)
+For Cursor:
 
 ```bash
-docker pull ghcr.io/commandable/commandable-mcp:latest
-docker run --rm -p 3000:3000 \
-  -e COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
-  -e DATABASE_URL="$DATABASE_URL" \
-  -e COMMANDABLE_CONFIG_FILE=/app/commandable.config.yaml \
-  -v "$PWD/commandable.config.yaml:/app/commandable.config.yaml:ro" \
-  ghcr.io/commandable/commandable-mcp:latest
+npx -y @commandable/mcp connect --client cursor
 ```
 
-#### Option B: Build locally
+Restart the client after adding the snippet. Read clients only see the tools that already exist on the server, so reconnect or restart them after create-side changes.
+
+## Quick start: deployed HTTP flow
+
+Use this when Commandable is running as a shared or remote service.
+
+### 1) Run the app deployment
+
+Locally, from this repo:
 
 ```bash
-docker build -t commandable-mcp .
-docker run --rm -p 3000:3000 \
-  -e COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
-  -e DATABASE_URL="$DATABASE_URL" \
-  -e COMMANDABLE_CONFIG_FILE=/app/commandable.config.yaml \
-  -v "$PWD/commandable.config.yaml:/app/commandable.config.yaml:ro" \
-  commandable-mcp
+yarn dev
 ```
 
-#### Image tags
+For Docker and deployment examples, see the app section below and `app/README.md`.
 
-- `latest`: most recent tagged release (`v*`)
-- `main`: latest build from the `main` branch
-- `vX.Y.Z`: exact release tag
-
-This starts an app that serves:
-
-- **Management UI**: `http://localhost:3000/`
-- **MCP Streamable HTTP**: `http://localhost:3000/mcp`
-- **Health check**: `http://localhost:3000/health`
-
-### 3) Create an API key for `/mcp`
-
-`/mcp` requires `Authorization: Bearer <api-key>`. Create a key against the same DB:
+### 2) Create an API key
 
 ```bash
 DATABASE_URL="$DATABASE_URL" COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPTION_SECRET" \
   npx -y @commandable/mcp create-api-key my-app
 ```
 
-Store the printed key somewhere safe (it is only shown once).
-
----
-
-## Using with OpenAI Agents SDK (HTTP)
-
-```python
-from agents.mcp import MCPServerStreamableHttp
-
-mcp = MCPServerStreamableHttp(
-    name="commandable",
-    params={
-        "url": "http://localhost:3000/mcp",
-        "headers": {"Authorization": "Bearer <your-api-key>"},
-    },
-)
-```
-
----
-
-## Declarative / headless setup (CI-friendly)
-
-Apply config without interactive prompts:
+### 3) Connect Claude Code to the remote instance
 
 ```bash
-npx -y @commandable/mcp apply --config ./commandable.config.yaml
+npx -y @commandable/mcp create --transport http --url http://localhost:3000/mcp/create --api-key <your-api-key>
 ```
 
-You can also make `init` headless by passing `--config`:
+Run the printed command, then restart Claude Code.
+
+### 4) Print read-client connection details
 
 ```bash
-npx -y @commandable/mcp init --config ./commandable.config.yaml
+npx -y @commandable/mcp connect --transport http --url http://localhost:3000/mcp --api-key <your-api-key>
 ```
 
----
+## Local-source development
+
+If you are working from this repo and want the same `serve/create/connect` model against local source, use the flow in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Supported integrations
 
@@ -240,38 +116,20 @@ npx -y @commandable/mcp init --config ./commandable.config.yaml
 
 ## Configuration
 
-### Config file discovery
-
 Commandable looks for config in this order:
 
 1. `--config <path>`
 2. `COMMANDABLE_CONFIG_FILE`
 3. `./commandable.config.yaml`, `./commandable.config.yml`, `./commandable.config.json`
 
-### Toolsets
+Key environment variables:
 
-Toolsets let you expose only the tool groups you want for an integration. This keeps the MCP tool list focused and reduces context usage for coding agents.
-
-Example:
-
-```yaml
-integrations:
-  - type: github
-    toolsets: [code, pull_requests, ci]
-    credentials:
-      token: ${GITHUB_TOKEN}
-```
-
-### Environment variables
-
-See `.env.example` for a full list. The most important ones:
-
-- **`COMMANDABLE_ENCRYPTION_SECRET`**: stable secret used to encrypt credentials
-- **`DATABASE_URL`**: if set, uses Postgres; otherwise uses SQLite
-- **`COMMANDABLE_CONFIG_FILE`**: path to `commandable.config.yaml` (optional)
-- **`COMMANDABLE_DATA_DIR`**: where local state lives (default: `~/.commandable/`)
-- **`COMMANDABLE_MODE`**: `static` (default) or `create`. Prefer the `commandable-mcp create` subcommand over this env var for stdio usage. Useful when running in HTTP/Docker mode: set `COMMANDABLE_MODE=create` to enable per-session dynamic toolsets for Create Mode.
-- **`COMMANDABLE_INTEGRATION_DATA_DIR`**: override the integration-data directory
+- `COMMANDABLE_ENCRYPTION_SECRET`
+- `DATABASE_URL`
+- `COMMANDABLE_CONFIG_FILE`
+- `COMMANDABLE_DATA_DIR`
+- `COMMANDABLE_MODE` (stdio/local create-mode only; HTTP uses `/mcp` and `/mcp/create`)
+- `COMMANDABLE_INTEGRATION_DATA_DIR`
 
 ---
 
@@ -279,15 +137,13 @@ See `.env.example` for a full list. The most important ones:
 
 | Command | What it does |
 |---------|--------------|
-| `commandable-mcp init` | Interactive setup wizard (desktop mode), including toolset selection |
-| `commandable-mcp init --config <file>` | Headless apply (alias of `apply`) |
+| `commandable-mcp serve [--restart]` | Start or reuse the local Commandable instance |
+| `commandable-mcp create [--transport stdio\|http] [--source package\|local] [--apply] [--url] [--api-key]` | Print or apply the Claude Code create-flow registration command |
+| `commandable-mcp connect [--client claude-desktop\|cursor] [--transport stdio\|http] [--source package\|local] [--url] [--api-key]` | Print read-client connection details |
 | `commandable-mcp apply [--config <file>]` | Apply config-as-code idempotently (CI-friendly) |
-| `commandable-mcp add` | Add more integrations interactively, including toolset selection |
-| `commandable-mcp status` | Show enabled integrations |
-| `commandable-mcp create-api-key [name]` | Create an API key for HTTP `/mcp` |
-| `commandable-mcp` | Start stdio MCP server in static mode (all tools at startup) |
-| `commandable-mcp create-mode` | Start stdio MCP server in create mode (dynamic toolsets, for Claude Code) |
-| `commandable-mcp daemon [status\|start\|stop]` | Manage the background management UI daemon (create mode) |
+| `commandable-mcp doctor` | Print diagnostic info for local state, daemon, and active env wiring |
+| `commandable-mcp reset local [--yes] [--keep-key]` | Stop daemon and wipe local SQLite/pid (and key unless `--keep-key`) |
+| `commandable-mcp create-api-key [name]` | Create an API key for the HTTP MCP endpoints |
 | `commandable-mcp --help` | Show usage |
 | `commandable-mcp --version` | Print version |
 
@@ -295,137 +151,21 @@ See `.env.example` for a full list. The most important ones:
 
 ## Security
 
-Most MCP setups ask you to put API keys directly in a config file — which then lives in your project folder, gets committed to git, and ends up in backups, logs, and teammates' laptops.
+Commandable encrypts credentials immediately and stores them in your home directory (`~/.commandable/`), outside any project.
 
-Commandable MCP doesn't work that way in desktop mode. When you enter a credential, it's encrypted immediately and stored in your home directory, outside any project. No secrets files. No “oops I committed a key.” Just secure-by-default.
-
-In server mode, use `commandable.config.yaml` with `${ENV_VAR}` references and inject secrets via your deployment environment.
+In deployed HTTP setups, use `commandable.config.yaml` with `${ENV_VAR}` references and inject secrets through your deployment environment.
 
 ---
 
-## Deploying
+## Legacy / advanced flows
 
-- **Docker**: use the root `Dockerfile` and mount `commandable.config.yaml` (see Quick start)
-- **docker-compose**: see `docker-compose.yml` for a Postgres + Commandable example
-- **CI**: run `commandable-mcp apply --config ...` to reconcile integration + credential state
+- `commandable-mcp static-init`: legacy wizard-first bootstrap
+- `commandable-mcp add`: add integrations interactively outside the create flow
+- `commandable-mcp apply --config ...`: headless config reconciliation
 
----
+## Contributing
 
-## Testing
-
-See [`TESTING.md`](./TESTING.md).
-
----
-
-## Local development with Claude Desktop
-
-To test local source changes against Claude Desktop directly, rather than using the published npm package:
-
-### 1) Build the server package
-
-```bash
-yarn workspace @commandable/mcp build
-```
-
-This compiles TypeScript to `packages/server/dist/`. Repeat this after any changes to the server package.
-
-### 2) Configure Claude Desktop to use your local build
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (create it if it doesn't exist):
-
-```json
-{
-  "mcpServers": {
-    "commandable": {
-      "command": "node",
-      "args": ["/absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js"]
-    }
-  }
-}
-```
-
-Replace `/absolute/path/to/commandable-mcp` with the actual path to your cloned repo.
-
-### 3) Set up integrations (first time only)
-
-The stdio server exits immediately if no integrations are configured. Run the setup wizard once to configure at least one integration:
-
-```bash
-node /absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js init
-```
-
-To check what's currently configured:
-
-```bash
-node /absolute/path/to/commandable-mcp/packages/server/dist/cli/bin.js status
-```
-
-### 4) Restart Claude Desktop
-
-Restart Claude Desktop after any config change. Claude will spawn the local binary on the next conversation.
-
-### Testing server mode (HTTP + UI) locally
-
-To test the management UI and HTTP MCP endpoint without Docker:
-
-```bash
-# Start the dev server (auto-reloads on changes)
-yarn dev
-```
-
-This serves:
-- Management UI at `http://localhost:3000/`
-- MCP endpoint at `http://localhost:3000/mcp`
-
-Create an API key for the MCP endpoint:
-
-```bash
-node packages/server/dist/cli/bin.js create-api-key dev
-```
-
-Connect Claude Code to the local HTTP endpoint:
-
-```bash
-claude mcp add --transport http commandable http://localhost:3000/mcp \
-  --header "Authorization: Bearer <your-api-key>"
-```
-
-To watch both the server package and the Nuxt app simultaneously (changes to `@commandable/mcp` hot-reload into the app):
-
-```bash
-yarn dev:full
-```
-
----
-
-
-## Repo structure
-
-```
-commandable-mcp/
-├── packages/server/                  # @commandable/mcp — core server + CLI
-├── packages/server/integration-data/ # tool manifests/schemas/handlers per integration
-└── app/                              # server mode UI + MCP endpoint (Nuxt/Nitro)
-```
-
----
-
-## Publishing to npm
-
-Packages must be published in dependency order. `@commandable/mcp` depends on `@commandable/integration-data`, so publish integration-data first.
-
-```bash
-# Authenticate (opens browser)
-yarn npm login
-
-# 1. Publish integration-data
-yarn workspace @commandable/integration-data npm publish
-
-# 2. Publish the server
-yarn workspace @commandable/mcp npm publish
-```
-
----
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for local-source development, testing, and publishing.
 
 ## License
 

@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { loadIntegrationVariants, loadIntegrationHint, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import { findIntegrationTypeConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -15,22 +15,19 @@ export default defineEventHandler(async (event) => {
   if (!integ)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  const type = integ.type as string
-  const variantsFile = loadIntegrationVariants(type)
-  if (!variantsFile) {
+  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
+  const typeConfig = await findIntegrationTypeConfig({ db, spaceId, typeSlug: integ.type as string })
+  if (!typeConfig)
     return { supportsCredentials: false, variants: [], defaultVariant: null }
-  }
-
-  const variants = Object.entries(variantsFile.variants).map(([key, variant]) => ({
-    key,
-    label: variant.label,
-    schema: variant.schema,
-    hintMarkdown: loadIntegrationHint(type, key),
-  }))
 
   return {
     supportsCredentials: true,
-    variants,
-    defaultVariant: variantsFile.default,
+    variants: Object.entries(typeConfig.variants).map(([key, variant]: [string, any]) => ({
+      key,
+      label: variant.label,
+      schema: variant.credentialSchema,
+      hintMarkdown: variant.hintMarkdown ?? null,
+    })),
+    defaultVariant: typeConfig.defaultVariant,
   }
 })

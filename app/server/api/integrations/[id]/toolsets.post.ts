@@ -1,6 +1,7 @@
 import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
 import { listIntegrations, upsertIntegration } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
+import { refreshMcpState } from '../../../utils/mcp'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -23,6 +24,7 @@ export default defineEventHandler(async (event) => {
     ? body.enabledToolsets.map((value: unknown) => String(value))
     : null
   await upsertIntegration(db, integration)
+  await refreshMcpState()
 
   return { ok: true, enabledToolsets: integration.enabledToolsets ?? null }
 })

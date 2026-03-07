@@ -1,5 +1,6 @@
 import type { JSONSchema7 } from 'json-schema'
 import type { ExecutableTool, IntegrationData } from '../types.js'
+import type { ToolDefinition } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
 import { buildToolsByIntegration } from '../integrations/actionsFactory.js'
 
@@ -15,9 +16,11 @@ export function buildMcpToolIndex(params: {
   integrations: IntegrationData[]
   proxy: IntegrationProxy
   integrationsRef?: { current: IntegrationData[] }
+  toolDefinitions?: ToolDefinition[]
 }): { tools: McpToolDefinition[], byName: Map<string, ExecutableTool> } {
   const toolsByIntegration = buildToolsByIntegration(params.spaceId, params.integrations, params.proxy, {
     integrationsRef: params.integrationsRef,
+    toolDefinitions: params.toolDefinitions,
   })
 
   const byName = new Map<string, ExecutableTool>()
@@ -42,6 +45,7 @@ export function buildMcpToolIndexForIntegrations(params: {
   integrations: IntegrationData[]
   proxy: IntegrationProxy
   integrationsRef?: { current: IntegrationData[] }
+  toolDefinitions?: ToolDefinition[]
 }): { tools: McpToolDefinition[], byName: Map<string, ExecutableTool> } {
   return buildMcpToolIndex(params)
 }

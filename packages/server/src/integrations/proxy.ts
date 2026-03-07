@@ -1,8 +1,8 @@
 import { Buffer } from 'node:buffer'
 import { HttpError } from '../errors/httpError.js'
-import type { IntegrationData } from '../types.js'
+import type { IntegrationCredentialVariant, IntegrationData, IntegrationTypeConfig } from '../types.js'
 import { PROVIDERS } from './providerRegistry.js'
-import { loadIntegrationCredentialConfig } from './dataLoader.js'
+import { getBuiltInIntegrationTypeConfig } from './fileIntegrationTypeConfigStore.js'
 import { getGoogleAccessToken } from './googleServiceAccount.js'
 
 export interface CredentialStore {
@@ -16,6 +16,7 @@ export interface IntegrationProxyOptions {
 
   trelloApiKey?: string
   credentialStore?: CredentialStore
+  integrationTypeConfigsRef?: { current: IntegrationTypeConfig[] }
 }
 
 function getErrorHint(status: number, provider: string, bodyText: string): string {
@@ -116,75 +117,6 @@ export class IntegrationProxy {
       }
     }
 
-    if (provider === 'http') {
-      const cfg = integration.config || {}
-      const baseUrl = cfg.baseUrl
-      if (!baseUrl)
-        throw new HttpError(400, 'HTTP integration requires a baseUrl in its config.')
-
-      const authType = cfg.authType || 'none'
-      const preparedInit: RequestInit = { ...init }
-      if (preparedInit.body !== undefined && typeof preparedInit.body !== 'string') {
-        preparedInit.body = JSON.stringify(preparedInit.body)
-        preparedInit.headers = {
-          'Content-Type': 'application/json',
-          ...preparedInit.headers,
-        }
-      }
-
-      const authHeaders: Record<string, string> = {}
-      const authQuery = new URLSearchParams()
-      if (authType === 'api_key_header' && cfg.apiKeyHeaderName && cfg.apiKey) {
-        authHeaders[cfg.apiKeyHeaderName] = cfg.apiKey
-      }
-      else if (authType === 'api_key_query' && cfg.apiKeyQueryParam && cfg.apiKey) {
-        authQuery.set(cfg.apiKeyQueryParam, cfg.apiKey)
-      }
-      else if (authType === 'basic' && cfg.basicUsername !== undefined && cfg.basicPassword !== undefined) {
-        const token = Buffer.from(`${cfg.basicUsername}:${cfg.basicPassword}`).toString('base64')
-        authHeaders.Authorization = `Basic ${token}`
-      }
-      else if (authType === 'custom') {
-        if (cfg.customHeaders)
-          Object.assign(authHeaders, cfg.customHeaders)
-        if (cfg.customQuery) {
-          for (const [k, v] of Object.entries(cfg.customQuery))
-            authQuery.set(k, v as string)
-        }
-      }
-
-      const authQueryString = authQuery.toString()
-      let finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
-      if (authQueryString)
-        finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + authQueryString
-
-      const response = await fetch(finalUrl, {
-        ...preparedInit,
-        method: preparedInit.method || 'GET',
-        headers: {
-          ...preparedInit.headers,
-          ...authHeaders,
-        },
-      })
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type') || ''
-        let bodyText = ''
-        try {
-          bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
-        }
-        catch {}
-        const redactedUrl = cfg.apiKey ? finalUrl.replace(cfg.apiKey, '***') : finalUrl
-        throw new HttpError(response.status, 'Failed to proxy request to http integration.', {
-          status: response.status,
-          url: redactedUrl,
-          contentType,
-          body: bodyText?.slice(0, 4000),
-        })
-      }
-      return response
-    }
-
     const usesCredentials = integration.connectionMethod === 'credentials'
     if (usesCredentials) {
       if (!this.opts.credentialStore)
@@ -198,9 +130,19 @@ export class IntegrationProxy {
       if (!credentialId)
         throw new HttpError(400, 'credentialId is required for credentials-based integrations.')
 
-      const credCfg = loadIntegrationCredentialConfig(provider, integration.credentialVariant)
-      if (!credCfg)
+      // Resolve integration type config — file-backed built-ins first, then in-memory DB cache.
+      const fileTypeCfg = getBuiltInIntegrationTypeConfig(provider)
+      const typeCfg: IntegrationTypeConfig | null = fileTypeCfg
+        ?? (this.opts.integrationTypeConfigsRef?.current.find(
+          c => c.spaceId === spaceId && c.typeSlug === provider) ?? null)
+      if (!typeCfg)
         throw new HttpError(501, `Provider '${provider}' does not support credentials-based auth yet.`)
+
+      const variantKey = integration.credentialVariant || typeCfg.defaultVariant
+      const variant: IntegrationCredentialVariant | undefined = typeCfg.variants[variantKey]
+        ?? typeCfg.variants[typeCfg.defaultVariant]
+      if (!variant)
+        throw new HttpError(501, `Variant '${variantKey}' not found for provider '${provider}'.`)
 
       const creds = await this.opts.credentialStore.getCredentials(spaceId, credentialId)
       if (!creds) {
@@ -211,7 +153,56 @@ export class IntegrationProxy {
         })
       }
 
-      if (credCfg.preprocess === 'google_service_account') {
+      const resolveTemplate = (template: string): string => {
+        return String(template).replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m: string, expr: string) => {
+          const trimmed = expr.trim()
+          // base64(...) transform: supports field refs and string literals joined with +
+          // e.g. {{base64(email + ":" + apiToken)}}
+          const base64Match = trimmed.match(/^base64\((.+)\)$/)
+          if (base64Match) {
+            const base64Expr = base64Match[1]
+            if (base64Expr === undefined)
+              throw new HttpError(400, `Invalid base64 template expression '${trimmed}'.`)
+            const parts = base64Expr.split(/\s*\+\s*/)
+            const resolved = parts.map(part => {
+              const p = part.trim()
+              if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'")))
+                return p.slice(1, -1)
+              const v = (creds as any)[p]
+              if (v === undefined || v === null)
+                throw new HttpError(400, `Missing credential field '${p}'.`)
+              return String(v)
+            }).join('')
+            return Buffer.from(resolved).toString('base64')
+          }
+          // Simple field reference
+          const v = (creds as any)[trimmed]
+          if (v === undefined || v === null)
+            throw new HttpError(400, `Missing credential field '${trimmed}'.`)
+          return String(v)
+        })
+      }
+
+      // Resolve base URL: template takes priority over fixed URL, then PROVIDERS registry fallback.
+      const baseUrl = (() => {
+        if (variant.baseUrlTemplate)
+          return resolveTemplate(variant.baseUrlTemplate)
+        if (variant.baseUrl)
+          return variant.baseUrl
+        // Fallback: PROVIDERS registry (used by built-ins that derive URL from provider config).
+        const providerCfg = PROVIDERS[provider]
+        if (providerCfg) {
+          return typeof providerCfg.baseUrl === 'function'
+            ? providerCfg.baseUrl(integration, creds, variant as any)
+            : providerCfg.baseUrl
+        }
+        throw new HttpError(501, `No base URL configured for provider '${provider}'.`)
+      })()
+
+      const typeConfig = { baseUrl, auth: variant.auth, preprocess: variant.preprocess ?? null }
+
+      // Preprocess steps (e.g. service account token exchange, Basic Auth encoding).
+      if (typeConfig.preprocess === 'google_service_account') {
         const serviceAccountJson = (creds as any).serviceAccountJson
         if (!serviceAccountJson)
           throw new HttpError(400, `Integration '${provider}' requires a 'serviceAccountJson' credential for the service_account variant.`)
@@ -240,49 +231,30 @@ export class IntegrationProxy {
         const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
         ;(creds as any).token = token
       }
-      else if (credCfg.preprocess === 'jira_api_token') {
-        const email = (creds as any).email
-        const apiToken = (creds as any).apiToken
-        if (!email || !apiToken)
-          throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
-        ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
-      }
-      else if (credCfg.preprocess === 'confluence_api_token') {
-        const email = (creds as any).email
-        const apiToken = (creds as any).apiToken
-        if (!email || !apiToken)
-          throw new HttpError(400, `Integration '${provider}' requires 'email' and 'apiToken' credentials for the api_token variant.`)
-        ;(creds as any).basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64')
-      }
-
-      const resolveTemplate = (template: string): string => {
-        return String(template).replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, key) => {
-          const v = (creds as any)[key]
-          if (v === undefined || v === null)
-            throw new HttpError(400, `Missing credential field '${key}'.`)
-          return String(v)
-        })
-      }
 
       const resolvedHeaders: Record<string, string> = {}
       const resolvedQuery = new URLSearchParams()
 
-      for (const [k, v] of Object.entries(credCfg.injection?.headers || {}))
-        resolvedHeaders[k] = resolveTemplate(v as any)
+      if (typeConfig.auth.kind === 'basic') {
+        const username = (creds as any)[typeConfig.auth.usernameField]
+        const password = (creds as any)[typeConfig.auth.passwordField]
+        if (username == null || password == null) {
+          throw new HttpError(
+            400,
+            `Missing credential fields for basic auth: '${typeConfig.auth.usernameField}' and/or '${typeConfig.auth.passwordField}'.`,
+          )
+        }
+        const token = Buffer.from(`${username}:${password}`).toString('base64')
+        resolvedHeaders.Authorization = `Basic ${token}`
+      }
+      else {
+        for (const [k, v] of Object.entries(typeConfig.auth.injection?.headers || {}))
+          resolvedHeaders[k] = resolveTemplate(v as any)
+        for (const [k, v] of Object.entries(typeConfig.auth.injection?.query || {}))
+          resolvedQuery.set(k, resolveTemplate(v as any))
+      }
 
-      for (const [k, v] of Object.entries(credCfg.injection?.query || {}))
-        resolvedQuery.set(k, resolveTemplate(v as any))
-
-      const providerCfg = PROVIDERS[provider]
-      if (!providerCfg)
-        throw new HttpError(501, `Provider '${provider}' is not configured in the server proxy.`)
-
-      const baseUrl = credCfg.baseUrlTemplate
-        ? resolveTemplate(credCfg.baseUrlTemplate)
-        : (typeof providerCfg.baseUrl === 'function'
-            ? providerCfg.baseUrl(integration, creds, credCfg)
-            : providerCfg.baseUrl)
-      let finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
+      let finalUrl = joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
 
       const queryString = resolvedQuery.toString()
       if (queryString)
@@ -341,7 +313,7 @@ export class IntegrationProxy {
 
     // Managed OAuth branch: used by hosted deployments / CI.
     if (!connectionId)
-      throw new HttpError(400, 'connectionId is required for non-http providers.')
+      throw new HttpError(400, 'connectionId is required.')
     if (!this.opts.managedOAuthBaseUrl || !this.opts.managedOAuthSecretKey)
       throw new HttpError(501, 'Managed OAuth is not configured for this server.')
 

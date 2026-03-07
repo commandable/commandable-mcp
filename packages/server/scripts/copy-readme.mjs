@@ -5,15 +5,25 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const serverPkgRoot = resolve(here, '..')
 
-const src = resolve(serverPkgRoot, 'src', 'mcp', 'commandable_readme.md')
-const dest = resolve(serverPkgRoot, 'dist', 'mcp', 'commandable_readme.md')
+const assets = [
+  {
+    src: resolve(serverPkgRoot, 'src', 'mcp', 'commandable_readme.md'),
+    dest: resolve(serverPkgRoot, 'dist', 'mcp', 'commandable_readme.md'),
+  },
+  {
+    src: resolve(serverPkgRoot, 'src', 'mcp', 'builder_guide.md'),
+    dest: resolve(serverPkgRoot, 'dist', 'mcp', 'builder_guide.md'),
+  },
+]
 
-if (!existsSync(src)) {
-  console.error(`[copy-readme] Missing source file: ${src}`)
-  process.exit(1)
+for (const a of assets) {
+  if (!existsSync(a.src)) {
+    console.error(`[copy-readme] Missing source file: ${a.src}`)
+    process.exit(1)
+  }
+
+  mkdirSync(dirname(a.dest), { recursive: true })
+  cpSync(a.src, a.dest)
+  console.error(`[copy-readme] Copied ${a.src} -> ${a.dest}`)
 }
-
-mkdirSync(dirname(dest), { recursive: true })
-cpSync(src, dest)
-console.error(`[copy-readme] Copied ${src} -> ${dest}`)
 

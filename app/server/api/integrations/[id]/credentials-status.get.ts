@@ -1,6 +1,12 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { SqlCredentialStore, getOrCreateEncryptionSecret, loadIntegrationCredentialConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import {
+  findIntegrationTypeConfig,
+  SqlCredentialStore,
+  getOrCreateEncryptionSecret,
+  pgIntegrations,
+  sqliteIntegrations,
+} from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -17,9 +23,15 @@ export default defineEventHandler(async (event) => {
   if (!integ)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  const type = integ.type as string
-  const credCfg = loadIntegrationCredentialConfig(type)
-  const fieldNames = Object.keys((credCfg?.schema as any)?.properties || {})
+  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
+  const typeConfig = await findIntegrationTypeConfig({ db, spaceId, typeSlug: integ.type as string })
+
+  const credentialVariant = integ.credentialVariant as string | null | undefined
+  const variantKey = (credentialVariant && typeConfig?.variants[credentialVariant])
+    ? credentialVariant
+    : (typeConfig?.defaultVariant ?? null)
+  const variant = variantKey ? typeConfig?.variants[variantKey] : null
+  const fieldNames = Object.keys((variant?.credentialSchema as any)?.properties || {})
 
   const credentialId = integ.credentialId as string | null | undefined
   if (!credentialId) {
@@ -31,7 +43,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
   const store = new SqlCredentialStore(db, encryptionSecret)
   const hasCredentials = await store.hasCredentials(spaceId, credentialId)
 

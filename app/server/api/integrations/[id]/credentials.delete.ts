@@ -9,6 +9,7 @@ import {
   sqliteIntegrations,
 } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
+import { refreshMcpState } from '../../../utils/mcp'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -39,6 +40,7 @@ export default defineEventHandler(async (event) => {
 
   // Mark as disconnected
   await updateIntegrationHealth(db, id, 'disconnected')
+  await refreshMcpState()
 
   return { ok: true }
 })

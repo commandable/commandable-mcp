@@ -64,6 +64,16 @@ export interface AbilitySearchResult extends AbilityEntry {
 
 export type { McpToolDefinition } from './toolAdapter.js'
 
+export const BUILDER_ABILITY_ID: AbilityId = 'commandable__builder'
+
+const BUILDER_TOOL_NAMES = [
+  'commandable_list_prebuilt_integrations',
+  'commandable_add_prebuilt_integration',
+  'commandable_create_custom_integration',
+  'commandable_create_custom_tool',
+  'commandable_test_custom_tool',
+] as const
+
 function makeAbilityId(integ: IntegrationData, toolsetKey?: string): AbilityId {
   const suffix = `__n${shortNodeId(integ.id)}`
   if (!toolsetKey)
@@ -105,10 +115,27 @@ export class AbilityCatalog {
   private abilities: AbilityEntry[]
   private byId: Map<AbilityId, AbilityEntry>
   private toolIndex: Map<string, ExecutableTool>
+  private extraToolDefinitions: Map<string, McpToolDefinition>
 
-  constructor(params: { integrations: IntegrationData[], toolIndex: Map<string, ExecutableTool> }) {
+  constructor(params: {
+    integrations: IntegrationData[]
+    toolIndex: Map<string, ExecutableTool>
+    extraToolDefinitions?: Map<string, McpToolDefinition>
+  }) {
     this.toolIndex = params.toolIndex
-    this.abilities = this.buildAbilities(params.integrations)
+    this.extraToolDefinitions = params.extraToolDefinitions || new Map()
+    this.abilities = [
+      {
+        id: BUILDER_ABILITY_ID,
+        integrationtype: 'commandable',
+        integrationLabel: 'Commandable',
+        toolsetKey: 'builder',
+        label: 'Commandable Builder',
+        description: 'Add integrations and vibe-code new tools (custom actions) against them.',
+        toolNames: [...BUILDER_TOOL_NAMES],
+      },
+      ...this.buildAbilities(params.integrations),
+    ]
     this.byId = new Map(this.abilities.map(a => [a.id, a]))
   }
 
@@ -144,13 +171,40 @@ export class AbilityCatalog {
     return newOnes
   }
 
+  addCustomTool(params: { integration: IntegrationData, toolName: string }): AbilityEntry {
+    const abilityId = makeAbilityId(params.integration, 'custom')
+    const existing = this.byId.get(abilityId)
+    if (existing) {
+      if (!existing.toolNames.includes(params.toolName))
+        existing.toolNames.push(params.toolName)
+      return existing
+    }
+
+    const created: AbilityEntry = {
+      id: abilityId,
+      integrationtype: params.integration.type,
+      integrationLabel: params.integration.label,
+      toolsetKey: 'custom',
+      label: 'Custom Tools',
+      description: `Agent-created tools for ${params.integration.label}`,
+      toolNames: [params.toolName],
+    }
+    this.abilities.push(created)
+    this.byId.set(created.id, created)
+    return created
+  }
+
   getToolDefinitions(toolNames: string[]): McpToolDefinition[] {
     const out: McpToolDefinition[] = []
     for (const n of toolNames) {
       const t = this.toolIndex.get(n)
-      if (!t)
+      if (t) {
+        out.push({ name: t.name, description: t.description, inputSchema: t.inputSchema })
         continue
-      out.push({ name: t.name, description: t.description, inputSchema: t.inputSchema })
+      }
+      const extra = this.extraToolDefinitions.get(n)
+      if (extra)
+        out.push(extra)
     }
     return out
   }
@@ -191,10 +245,7 @@ export class AbilityCatalog {
 
     for (const integ of integrations) {
       const manifest = loadIntegrationManifest(integ.type) as IntegrationManifest | null
-      if (!manifest?.tools?.length)
-        continue
-
-      const toolsets = manifest.toolsets && Object.keys(manifest.toolsets).length ? manifest.toolsets : null
+      const toolsets = manifest?.toolsets && Object.keys(manifest.toolsets).length ? manifest.toolsets : null
 
       const activeVariant = integ.credentialVariant ?? undefined
       const activeToolsets = integ.enabledToolsets ?? undefined
@@ -204,49 +255,76 @@ export class AbilityCatalog {
       const toolsByToolset = new Map<string, string[]>()
       const allTools: string[] = []
 
-      for (const ref of manifest.tools) {
-        if (!ref?.name)
-          continue
+      if (manifest?.tools?.length) {
+        for (const ref of manifest.tools) {
+          if (!ref?.name)
+            continue
 
-        if (activeVariant && ref.credentialVariants?.length && !ref.credentialVariants.includes(activeVariant))
-          continue
-        if (activeToolsets && ref.toolset && !activeToolsets.includes(ref.toolset))
-          continue
+          if (activeVariant && ref.credentialVariants?.length && !ref.credentialVariants.includes(activeVariant))
+            continue
+          if (activeToolsets && ref.toolset && !activeToolsets.includes(ref.toolset))
+            continue
 
-        const scope = (ref.scope || 'read') as Scope
-        if ((SCOPE_RANK[scope] ?? 0) > maxRank)
-          continue
-        if (blocked?.has(ref.name))
-          continue
+          const scope = (ref.scope || 'read') as Scope
+          if ((SCOPE_RANK[scope] ?? 0) > maxRank)
+            continue
+          if (blocked?.has(ref.name))
+            continue
 
-        const toolName = makeIntegrationToolName(integ.type, ref.name, integ.id)
-        // Only include tools that actually exist in the executable index.
-        // (This should be true if filters match, but keeps us robust.)
-        if (!this.toolIndex.has(toolName))
-          continue
+          const toolName = makeIntegrationToolName(integ.type, ref.name, integ.id)
+          // Only include tools that actually exist in the executable index.
+          // (This should be true if filters match, but keeps us robust.)
+          if (!this.toolIndex.has(toolName))
+            continue
 
-        allTools.push(toolName)
+          allTools.push(toolName)
 
-        const bucketKey = toolsets ? (ref.toolset || '__misc') : '__all'
-        const arr = toolsByToolset.get(bucketKey) || []
-        arr.push(toolName)
-        toolsByToolset.set(bucketKey, arr)
+          const bucketKey = toolsets ? (ref.toolset || '__misc') : '__all'
+          const arr = toolsByToolset.get(bucketKey) || []
+          arr.push(toolName)
+          toolsByToolset.set(bucketKey, arr)
+        }
       }
 
-      if (!allTools.length)
+      const suffix = `__n${shortNodeId(integ.id)}`
+      const typePrefix = `${sanitizeAbilityKey(integ.type)}__`
+      const allForIntegration = [...this.toolIndex.keys()].filter((n) => {
+        if (!n.endsWith(suffix))
+          return false
+        if (!n.startsWith(typePrefix))
+          return false
+        return true
+      })
+      const builtInSet = new Set(allTools)
+      const customTools = allForIntegration.filter(n => !builtInSet.has(n))
+
+      if (!allTools.length && !customTools.length)
         continue
 
       // If no toolsets, the integration itself is the ability.
       if (!toolsets) {
-        const label = manifest.name || integ.type
-        out.push({
-          id: makeAbilityId(integ),
-          integrationtype: integ.type,
-          integrationLabel: integ.label,
-          label,
-          description: `All ${label} tools`,
-          toolNames: allTools,
-        })
+        const label = manifest?.name || integ.type
+        if (allTools.length) {
+          out.push({
+            id: makeAbilityId(integ),
+            integrationtype: integ.type,
+            integrationLabel: integ.label,
+            label,
+            description: `All ${label} tools`,
+            toolNames: allTools,
+          })
+        }
+        if (customTools.length) {
+          out.push({
+            id: makeAbilityId(integ, 'custom'),
+            integrationtype: integ.type,
+            integrationLabel: integ.label,
+            toolsetKey: 'custom',
+            label: 'Custom Tools',
+            description: `Agent-created tools for ${integ.label}`,
+            toolNames: customTools,
+          })
+        }
         continue
       }
 
@@ -257,7 +335,7 @@ export class AbilityCatalog {
 
         const meta = toolsetKey !== '__misc' ? toolsets[toolsetKey] : undefined
         const label = meta?.label || (toolsetKey === '__misc' ? 'Other' : humanize(toolsetKey))
-        const description = meta?.description || (toolsetKey === '__misc' ? `Other ${manifest.name || integ.type} tools` : '')
+        const description = meta?.description || (toolsetKey === '__misc' ? `Other ${manifest?.name || integ.type} tools` : '')
 
         out.push({
           id: makeAbilityId(integ, toolsetKey === '__all' ? undefined : toolsetKey),
@@ -267,6 +345,18 @@ export class AbilityCatalog {
           label,
           description,
           toolNames,
+        })
+      }
+
+      if (customTools.length) {
+        out.push({
+          id: makeAbilityId(integ, 'custom'),
+          integrationtype: integ.type,
+          integrationLabel: integ.label,
+          toolsetKey: 'custom',
+          label: 'Custom Tools',
+          description: `Agent-created tools for ${integ.label}`,
+          toolNames: customTools,
         })
       }
     }

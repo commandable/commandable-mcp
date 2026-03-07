@@ -12,7 +12,7 @@ import { IntegrationProxy } from '../integrations/proxy.js'
 import type { IntegrationData } from '../types.js'
 import { AbilityCatalog } from '../mcp/abilityCatalog.js'
 import { SessionAbilityState } from '../mcp/sessionState.js'
-import { META_TOOL_NAMES } from '../mcp/metaTools.js'
+import { getBuilderToolDefinitions, META_TOOL_NAMES } from '../mcp/metaTools.js'
 import { registerToolHandlers } from '../mcp/handlers.js'
 
 const integrationDataDir = fileURLToPath(new URL('../../../integration-data/integrations', import.meta.url))
@@ -34,7 +34,10 @@ describe('meta: add integration from catalog', () => {
 
     const integrationsRef = { current: [] as IntegrationData[] }
     const toolIndex = { list: [] as any[], byName: new Map<string, any>() }
-    const catalogRef = { current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndex.byName }) }
+    const extraToolDefinitions = new Map(getBuilderToolDefinitions().map(d => [d.name, d]))
+    const catalogRef = {
+      current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndex.byName, extraToolDefinitions }),
+    }
     const sessionState = new SessionAbilityState()
 
     const server = new Server({ name: 'test', version: '0.0.0' }, { capabilities: { tools: { listChanged: true } } })
@@ -63,14 +66,32 @@ describe('meta: add integration from catalog', () => {
 
     const initial = await client.listTools()
     const initialNames = initial.tools.map(t => t.name)
+    expect(initialNames).toContain(META_TOOL_NAMES.readme)
     expect(initialNames).toContain(META_TOOL_NAMES.searchTools)
     expect(initialNames).toContain(META_TOOL_NAMES.enableToolset)
     expect(initialNames).toContain(META_TOOL_NAMES.disableToolset)
-    expect(initialNames).toContain(META_TOOL_NAMES.listIntegrations)
-    expect(initialNames).toContain(META_TOOL_NAMES.addIntegration)
+
+    // Enable the Builder toolset to access integration management tools.
+    const builderSearch = await client.callTool({
+      name: META_TOOL_NAMES.searchTools,
+      arguments: { query: 'builder', limit: 10 },
+    } as any)
+    const parsedBuilderSearch = JSON.parse((builderSearch.content as any)[0].text)
+    const builderToolset = parsedBuilderSearch.toolsets.find((t: any) => String(t.toolset_id).startsWith('commandable__builder'))
+    expect(builderToolset).toBeTruthy()
+
+    await client.callTool({
+      name: META_TOOL_NAMES.enableToolset,
+      arguments: { toolset_id: builderToolset.toolset_id },
+    } as any)
+
+    const afterBuilder = await client.listTools()
+    const afterBuilderNames = afterBuilder.tools.map(t => t.name)
+    expect(afterBuilderNames).toContain(META_TOOL_NAMES.listPrebuiltIntegrations)
+    expect(afterBuilderNames).toContain(META_TOOL_NAMES.addPrebuiltIntegration)
 
     const addRes = await client.callTool({
-      name: META_TOOL_NAMES.addIntegration,
+      name: META_TOOL_NAMES.addPrebuiltIntegration,
       arguments: { type: 'trello' },
     } as any)
     const parsedAdd = JSON.parse((addRes.content as any)[0].text)
@@ -104,7 +125,7 @@ describe('meta: add integration from catalog', () => {
     expect(afterNames).toContain(parsedLoad.new_tools[0])
 
     // Catalog listing includes configured instance with health fields
-    const listRes = await client.callTool({ name: META_TOOL_NAMES.listIntegrations, arguments: { query: 'trello' } } as any)
+    const listRes = await client.callTool({ name: META_TOOL_NAMES.listPrebuiltIntegrations, arguments: { query: 'trello' } } as any)
     const parsedList = JSON.parse((listRes.content as any)[0].text)
     const trelloItem = parsedList.integrations.find((x: any) => x.type === 'trello')
     expect(trelloItem.configured).toBe(true)

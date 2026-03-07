@@ -9,6 +9,8 @@ export default defineEventHandler(async (event) => {
     nodeReq: event.node.req,
     nodeRes: event.node.res,
     body,
+    endpoint: 'static',
+    authApiKeyId: event.context.auth?.apiKeyId ?? null,
   })
 
   if (result.kind === 'handled') {

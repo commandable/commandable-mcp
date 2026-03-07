@@ -8,8 +8,10 @@ import { Pool } from 'pg'
 
 export type DbDialect = 'sqlite' | 'postgres'
 
+export type AnyDrizzle = ReturnType<typeof drizzleSqlite> | ReturnType<typeof drizzlePg>
+
 export type DbClient =
-  | { dialect: 'sqlite', db: ReturnType<typeof drizzleSqlite>, raw: any, close: () => void }
+  | { dialect: 'sqlite', db: ReturnType<typeof drizzleSqlite>, raw: InstanceType<typeof Database>, close: () => void }
   | { dialect: 'postgres', db: ReturnType<typeof drizzlePg>, raw: Pool, close: () => Promise<void> }
 
 export interface CreateDbOptions {

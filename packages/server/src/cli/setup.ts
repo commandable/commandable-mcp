@@ -11,7 +11,8 @@ import {
   text,
 } from '@clack/prompts'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
-import { loadIntegrationCredentialConfig, loadIntegrationHint, loadIntegrationToolsets, loadIntegrationVariants } from '../integrations/dataLoader.js'
+import { loadIntegrationToolsets } from '../integrations/dataLoader.js'
+import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegrationTypeConfigStore.js'
 import { getCommandableDir, openLocalState } from './credentialManager.js'
 import { listIntegrations, updateIntegrationHealth, upsertIntegration } from '../db/integrationStore.js'
 import { checkIntegrationHealth } from '../integrations/health.js'
@@ -81,11 +82,11 @@ function formatIntegrationOption(type: string, name?: string): string {
  * Returns the selected variant key, or null if the user cancelled.
  */
 async function selectCredentialVariant(type: string): Promise<string | null> {
-  const variantsFile = loadIntegrationVariants(type)
-  if (!variantsFile)
+  const typeConfig = getBuiltInIntegrationTypeConfig(type)
+  if (!typeConfig)
     return null
 
-  const variantKeys = Object.keys(variantsFile.variants)
+  const variantKeys = Object.keys(typeConfig.variants)
 
   if (variantKeys.length === 1) {
     return variantKeys[0]!
@@ -93,14 +94,14 @@ async function selectCredentialVariant(type: string): Promise<string | null> {
 
   const options = variantKeys.map(key => ({
     value: key,
-    label: variantsFile.variants[key]!.label,
-    hint: key === variantsFile.default ? 'recommended' : undefined,
+    label: typeConfig.variants[key]!.label,
+    hint: key === typeConfig.defaultVariant ? 'recommended' : undefined,
   }))
 
   const result = await select({
     message: `Select credential type for ${picocolors.cyan(type)}:`,
     options,
-    initialValue: variantsFile.default,
+    initialValue: typeConfig.defaultVariant,
   })
 
   if (isCancel(result))
@@ -113,8 +114,9 @@ async function promptCredentialsForVariant(
   type: string,
   variantKey: string,
 ): Promise<Record<string, string> | null> {
-  const credCfg = loadIntegrationCredentialConfig(type, variantKey)
-  const schema = credCfg?.schema
+  const typeConfig = getBuiltInIntegrationTypeConfig(type)
+  const variant = typeConfig?.variants[variantKey]
+  const schema = variant?.credentialSchema
   if (!schema || typeof schema !== 'object')
     return {}
 
@@ -124,7 +126,7 @@ async function promptCredentialsForVariant(
   if (!keys.length)
     return {}
 
-  const hint = loadIntegrationHint(type, variantKey)
+  const hint = variant?.hintMarkdown ?? null
   if (hint) {
     note(formatHintForTerminal(hint), `${type} (${variantKey}): setup hint`)
   }
@@ -172,7 +174,7 @@ async function selectIntegrations(args: { title: string, excludeTypes?: Set<stri
   const catalog = listIntegrationCatalog()
   const options = catalog
     .filter(it => !args.excludeTypes?.has(it.type))
-    .filter(it => !!loadIntegrationVariants(it.type))
+    .filter(it => !!getBuiltInIntegrationTypeConfig(it.type))
     .map(it => ({ value: it.type, label: formatIntegrationOption(it.type, it.name) }))
     .sort((a, b) => a.value.localeCompare(b.value))
 
@@ -236,17 +238,6 @@ async function selectEnabledToolsets(type: string): Promise<string[] | undefined
   return (result as string[]).map(s => String(s)).filter(Boolean)
 }
 
-function makeClaudeDesktopSnippet() {
-  return {
-    mcpServers: {
-      commandable: {
-        command: 'npx',
-        args: ['-y', '@commandable/mcp'],
-      },
-    },
-  }
-}
-
 function makeIntegrationRecord(type: string, variantKey: string, enabledToolsets?: string[], maxScope?: 'read' | null): IntegrationData {
   return {
     spaceId: 'local',
@@ -269,9 +260,9 @@ async function configureIntegration(type: string): Promise<{ variantKey: string,
   if (variantKey === null)
     return null
 
-  const variantsFile = loadIntegrationVariants(type)
-  if (variantsFile && Object.keys(variantsFile.variants).length > 1) {
-    log.info(`Using: ${picocolors.cyan(variantsFile.variants[variantKey]?.label ?? variantKey)}`)
+  const typeConfig = getBuiltInIntegrationTypeConfig(type)
+  if (typeConfig && Object.keys(typeConfig.variants).length > 1) {
+    log.info(`Using: ${picocolors.cyan(typeConfig.variants[variantKey]?.label ?? variantKey)}`)
   }
 
   const enabledToolsets = await selectEnabledToolsets(type)
@@ -381,14 +372,14 @@ export async function runInitInteractive() {
     }
 
     log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
-    log.info('Claude Desktop config snippet (plain JSON):')
-    process.stdout.write(`${JSON.stringify(makeClaudeDesktopSnippet(), null, 2)}\n`)
+    log.info(`Create flow (preferred): run ${picocolors.cyan('commandable-mcp create')}.`)
+    log.info(`Read clients: run ${picocolors.cyan('commandable-mcp connect --client claude-desktop')} to print a config snippet.`)
   }
   finally {
     await close()
   }
 
-  outro('You\'re all set. Restart your MCP client and try a tool call.')
+  outro('Done.')
 }
 
 export async function runAddInteractive() {

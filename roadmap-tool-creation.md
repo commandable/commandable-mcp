@@ -10,7 +10,7 @@
 
 **The foundation. Valuable on its own, required for everything after.**
 
-Right now, every MCP session gets the full tool list — every tool from every integration, all at once. That doesn't scale. Create Mode (`COMMANDABLE_MODE=create`) makes tool loading per-session and on-demand.
+Right now, every MCP session gets the full tool list — every tool from every integration, all at once. That doesn't scale. Create Mode makes tool loading per-session and on-demand. Over HTTP, create behavior lives at `/mcp/create`; over stdio, it remains the `create-mode` flow.
 
 ### What the user sees
 
@@ -26,7 +26,7 @@ Right now, every MCP session gets the full tool list — every tool from every i
 - `commandable_search_tools` meta-tool — fuzzy search across all configured integrations and their toolsets
 - `commandable_enable_toolset` / `commandable_disable_toolset` meta-tools — add/remove toolsets from the current session
 - `notifications/tools/list_changed` emission when session tool set changes
-- Configuration: `COMMANDABLE_MODE=create` to opt in (static mode is the default — all tools loaded, works everywhere)
+- Configuration: use the create-mode stdio flow or the HTTP `/mcp/create` endpoint to opt in (read mode remains the default at `/mcp`)
 
 ### Why this comes first
 
@@ -48,8 +48,8 @@ This is Open Gloves itself. The agent gets meta-tools that let it create new int
 - User asks their AI to do something with an API that isn't connected.
 - The agent says "I don't have a tool for that — let me create one."
 - The agent creates a new integration and adds one or more tools to it.
-- In Create Mode (`COMMANDABLE_MODE=create`), the tools are immediately available in the current session.
-- In Static Mode (default), the agent tells the user to start a new chat to use the new tools.
+- In Create Mode, the tools are immediately available in the current session.
+- In Read Mode (default), the agent tells the user to start a new chat to use the new tools.
 - The next time any chat searches for tools related to that API, the agent-created tools show up.
 
 ### What ships

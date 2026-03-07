@@ -1,27 +1,34 @@
-# Commandable MCP App (Server mode)
+# Commandable App
 
-This Nuxt/Nitro app provides **server mode** for Commandable:
+This Nuxt/Nitro app is the HTTP deployment runtime for Commandable.
 
-- **Management UI** at `/`
-- **MCP Streamable HTTP endpoint** at `/mcp`
-- **Health check** at `/health`
+It serves:
 
-For the canonical setup and Docker instructions, see the root `commandable-mcp/README.md`.
+- the management UI at `/`
+- the read MCP HTTP endpoint at `/mcp`
+- the create MCP HTTP endpoint at `/mcp/create`
+- the health check at `/health`
+
+For the main product flow, see the root `README.md`. The short version is:
+
+1. run this app
+2. use `commandable-mcp create --transport http --url http://<host>/mcp/create ...` for Claude Code
+3. use `commandable-mcp connect --transport http --url http://<host>/mcp ...` for read-client connection details
 
 ## Development
 
-From `commandable-mcp/app`:
+From the repo root:
 
 ```bash
-pnpm install
-pnpm dev
+yarn install
+yarn dev
 ```
 
-The app will run on `http://localhost:3000` by default.
+The app runs on `http://localhost:3000` by default.
 
 ## Configuration
 
-Server mode is configured via environment variables and/or a config file. See:
+The app is configured via environment variables and/or a config file. See:
 
-- `commandable-mcp/.env.example`
-- root `commandable-mcp/README.md` (Server mode + config-as-code)
+- `.env.example`
+- the root `README.md`

@@ -1,8 +1,4 @@
 export const PROVIDERS: Record<string, any> = {
-  'http': {
-    baseUrl: '',
-    makeAuth: () => ({}),
-  },
   'trello': {
     baseUrl: 'https://api.trello.com/1',
     makeAuth: (token: string, apiKey: string) => ({ key: apiKey, token }),
