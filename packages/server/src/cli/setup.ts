@@ -236,17 +236,6 @@ async function selectEnabledToolsets(type: string): Promise<string[] | undefined
   return (result as string[]).map(s => String(s)).filter(Boolean)
 }
 
-function makeClaudeDesktopSnippet() {
-  return {
-    mcpServers: {
-      commandable: {
-        command: 'npx',
-        args: ['-y', '@commandable/mcp'],
-      },
-    },
-  }
-}
-
 function makeIntegrationRecord(type: string, variantKey: string, enabledToolsets?: string[], maxScope?: 'read' | null): IntegrationData {
   return {
     spaceId: 'local',
@@ -381,14 +370,14 @@ export async function runInitInteractive() {
     }
 
     log.success(`Credentials saved (encrypted) to ${picocolors.dim(getCommandableDir())}`)
-    log.info('Claude Desktop config snippet (plain JSON):')
-    process.stdout.write(`${JSON.stringify(makeClaudeDesktopSnippet(), null, 2)}\n`)
+    log.info(`Create flow (preferred): run ${picocolors.cyan('commandable-mcp create')}.`)
+    log.info(`Read clients: run ${picocolors.cyan('commandable-mcp connect --client claude-desktop')} to print a config snippet.`)
   }
   finally {
     await close()
   }
 
-  outro('You\'re all set. Restart your MCP client and try a tool call.')
+  outro('Done.')
 }
 
 export async function runAddInteractive() {

@@ -1,55 +1,52 @@
 # @commandable/mcp
 
-Connect your everyday apps to any AI assistant that supports the Model Context Protocol (MCP). Commandable MCP is a single encrypted, self-hosted server and CLI that works with MCP clients like Claude Desktop and Cursor.
+Commandable is the workflow for building and serving app-connected MCP tools.
 
 ## Quick start
 
-### 1) Run the setup wizard
+### 1) Start the local instance
 
 ```bash
-npx -y @commandable/mcp init
+npx -y @commandable/mcp serve
 ```
 
-This walks you through selecting integrations and entering API credentials. Credentials are encrypted immediately and stored locally on your machine (not in your project).
+### 2) Connect Claude Code for create
 
-### 2) Add the snippet to your MCP client
-
-The wizard prints a JSON snippet to paste into your MCP client config.
-
-For Claude Desktop, edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add the `mcpServers.commandable` block.
-
-Example:
-
-```json
-{
-  "mcpServers": {
-    "commandable": {
-      "command": "npx",
-      "args": ["-y", "@commandable/mcp"]
-    }
-  }
-}
+```bash
+npx -y @commandable/mcp create
 ```
 
-### 3) Restart your MCP client
+Run the printed `claude mcp add ...` command, then restart Claude Code.
 
-Restart Claude Desktop (or reload the Cursor window) so it picks up the new MCP server.
+### 3) Print a read-client snippet
 
-## CLI
+```bash
+npx -y @commandable/mcp connect --client claude-desktop
+```
 
-- `npx -y @commandable/mcp init`: first-time setup
-- `npx -y @commandable/mcp add`: add more integrations later
-- `npx -y @commandable/mcp status`: show enabled integrations
-- `npx -y @commandable/mcp apply [--config <file>]`: apply config-as-code idempotently (CI-friendly)
-- `npx -y @commandable/mcp create-api-key [name]`: create an API key for authenticating to the hosted `/mcp` endpoint in server mode
- 
-Tip: in non-interactive contexts (and in MCP client configs), prefer `npx -y @commandable/mcp ...` to avoid install prompts on first run.
+Use `--client cursor` for Cursor.
+
+## Main commands
+
+- `npx -y @commandable/mcp serve [--restart]`
+- `npx -y @commandable/mcp create [--transport stdio|http] [--source package|local] [--apply]`
+- `npx -y @commandable/mcp connect [--client claude-desktop|cursor] [--transport stdio|http] [--source package|local]`
+- `npx -y @commandable/mcp doctor`
+- `npx -y @commandable/mcp reset local --yes`
+- `npx -y @commandable/mcp apply [--config <file>]`
+- `npx -y @commandable/mcp create-api-key [name]`
+
+Legacy / advanced:
+
+- `npx -y @commandable/mcp static-init`
+- `npx -y @commandable/mcp add`
+
+Tip: prefer `npx -y @commandable/mcp ...` to avoid install prompts on first run.
 
 ## Repository
 
 Source lives in the monorepo at `commandable-mcp/packages/server`.
 
-## Server mode (HTTP + UI)
+## HTTP deployment
 
-If you want an MCP endpoint by URL (for agent frameworks) plus a management UI, run the Nuxt app (Docker deployment) from the monorepo. See the root `commandable-mcp/README.md`.
-
+If you want a shared HTTP endpoint plus management UI, run the app from the monorepo. See the root `README.md` and `app/README.md`.

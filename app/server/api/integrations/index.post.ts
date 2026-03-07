@@ -3,6 +3,7 @@ import { createError, defineEventHandler, readBody } from 'h3'
 import type { IntegrationData } from '@commandable/mcp'
 import { upsertIntegration } from '@commandable/mcp'
 import { getDb } from '../../utils/db'
+import { refreshMcpState } from '../../utils/mcp'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -16,7 +17,6 @@ export default defineEventHandler(async (event) => {
     referenceId: body?.referenceId || body?.type,
     label: body?.label || body?.type,
     enabled: typeof body?.enabled === 'boolean' ? body.enabled : true,
-    config: body?.config || undefined,
     connectionMethod: body?.connectionMethod || undefined,
     connectionId: body?.connectionId || undefined,
     credentialId: body?.credentialId || undefined,
@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
 
   const db = await getDb()
   await upsertIntegration(db, integration)
+  await refreshMcpState()
   return integration
 })
 

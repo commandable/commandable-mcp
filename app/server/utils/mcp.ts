@@ -16,6 +16,8 @@ import {
 import { getDb } from './db'
 import type { MetaToolContext } from '@commandable/mcp'
 
+export type HttpMcpEndpoint = 'static' | 'create'
+
 type SharedState = {
   spaceId: string
   db: any
@@ -27,14 +29,24 @@ type SharedState = {
   ctx?: MetaToolContext
 }
 
+type SessionRecord = {
+  server: Server
+  transport: StreamableHTTPServerTransport
+  ownerApiKeyId: string | null
+}
+
 type McpState = {
   shared: SharedState
-  sessions: Map<string, { server: Server, transport: StreamableHTTPServerTransport }>
+  sessions: Map<string, SessionRecord>
+}
+
+type McpStateStore = {
+  byEndpoint: Partial<Record<HttpMcpEndpoint, McpState>>
 }
 
 declare global {
   // eslint-disable-next-line no-var
-  var __commandableMcpHttpState: McpState | undefined
+  var __commandableMcpHttpState: McpStateStore | undefined
 }
 
 function getSpaceId(): string {
@@ -46,16 +58,17 @@ function getServerInfo(): Implementation {
   return { name: 'commandable', version: '0.0.1' }
 }
 
-function resolveMode(): 'static' | 'create' {
-  const explicit = (process.env.COMMANDABLE_MODE || '').toLowerCase().trim()
-  if (explicit === 'create')
-    return 'create'
-  return 'static'
+function isCreateEndpoint(endpoint: HttpMcpEndpoint): boolean {
+  return endpoint === 'create'
 }
 
-async function getOrCreateState(): Promise<McpState> {
-  if (globalThis.__commandableMcpHttpState)
-    return globalThis.__commandableMcpHttpState
+function getOrCreateStore(): McpStateStore {
+  globalThis.__commandableMcpHttpState ||= { byEndpoint: {} }
+  return globalThis.__commandableMcpHttpState
+}
+
+async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
+  const createMode = isCreateEndpoint(endpoint)
 
   const db = await getDb()
   const secret = getOrCreateEncryptionSecret()
@@ -72,16 +85,15 @@ async function getOrCreateState(): Promise<McpState> {
   const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
   const toolIndexRef = { list: index.tools, byName: index.byName }
 
-  const mode = resolveMode()
   const port = (process.env.PORT || '').trim() || '23432'
   const host = (process.env.HOST || '').trim() || '127.0.0.1'
   const credentialSetupBaseUrl = `http://${host}:${port}`
 
-  const sessionState = mode === 'create' ? new SessionAbilityState() : undefined
-  const catalogRef = mode === 'create'
+  const sessionState = createMode ? new SessionAbilityState() : undefined
+  const catalogRef = createMode
     ? { current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndexRef.byName }) }
     : undefined
-  const ctx: MetaToolContext | undefined = mode === 'create'
+  const ctx: MetaToolContext | undefined = createMode
     ? {
         spaceId,
         db,
@@ -108,7 +120,17 @@ async function getOrCreateState(): Promise<McpState> {
     sessions: new Map(),
   }
 
-  globalThis.__commandableMcpHttpState = state
+  return state
+}
+
+async function getOrCreateState(endpoint: HttpMcpEndpoint): Promise<McpState> {
+  const store = getOrCreateStore()
+  const existing = store.byEndpoint[endpoint]
+  if (existing)
+    return existing
+
+  const state = await buildState(endpoint)
+  store.byEndpoint[endpoint] = state
   return state
 }
 
@@ -116,8 +138,12 @@ async function getOrCreateState(): Promise<McpState> {
 export async function refreshMcpState(): Promise<void> {
   const prev = globalThis.__commandableMcpHttpState
   if (prev) {
-    for (const sess of prev.sessions.values()) {
-      try { await sess.server.close() } catch {}
+    for (const endpointState of Object.values(prev.byEndpoint)) {
+      if (!endpointState)
+        continue
+      for (const sess of endpointState.sessions.values()) {
+        try { await sess.server.close() } catch {}
+      }
     }
     globalThis.__commandableMcpHttpState = undefined
   }
@@ -136,22 +162,32 @@ export type McpHandleArgs = {
   nodeReq: any
   nodeRes: any
   body?: any
+  endpoint: HttpMcpEndpoint
+  authApiKeyId?: string | null
 }
 
 export async function handleMcpHttp(args: McpHandleArgs): Promise<
   | { kind: 'handled' }
   | { kind: 'error', statusCode: number, message: string }
 > {
-  const state = await getOrCreateState()
+  const state = await getOrCreateState(args.endpoint)
   const shared = state.shared
   const req = args.nodeReq
   const res = args.nodeRes
   const method = String(req?.method || 'GET').toUpperCase()
+  const ownerApiKeyId = args.authApiKeyId ?? null
 
   const sessionId = getHeader(req, 'mcp-session-id')
   const existing = sessionId ? state.sessions.get(sessionId) : undefined
 
   if (existing) {
+    if (existing.ownerApiKeyId !== ownerApiKeyId) {
+      return {
+        kind: 'error',
+        statusCode: 403,
+        message: 'Session does not belong to the authenticated API key',
+      }
+    }
     await existing.transport.handleRequest(req, res, args.body)
     return { kind: 'handled' }
   }
@@ -178,7 +214,7 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   registerToolHandlers(
     server,
     shared.toolIndexRef,
-    resolveMode() === 'create' && shared.sessionState && shared.catalogRef && shared.ctx
+    isCreateEndpoint(args.endpoint) && shared.sessionState && shared.catalogRef && shared.ctx
       ? { catalogRef: shared.catalogRef, sessionState: shared.sessionState, ctx: shared.ctx }
       : undefined,
   )
@@ -194,7 +230,7 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   await server.connect(transport)
   const sid = transport.sessionId
   if (sid)
-    state.sessions.set(sid, { server, transport })
+    state.sessions.set(sid, { server, transport, ownerApiKeyId })
 
   await transport.handleRequest(req, res, args.body)
   return { kind: 'handled' }

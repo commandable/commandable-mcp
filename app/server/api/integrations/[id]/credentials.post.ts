@@ -12,6 +12,7 @@ import {
 } from '@commandable/mcp'
 import type { IntegrationData } from '@commandable/mcp'
 import { getDb } from '../../../utils/db'
+import { refreshMcpState } from '../../../utils/mcp'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -71,6 +72,7 @@ export default defineEventHandler(async (event) => {
   if (!healthResult.skipped) {
     await updateIntegrationHealth(db, id, healthResult.status, healthResult.checkedAt)
   }
+  await refreshMcpState()
 
   return {
     ok: true,

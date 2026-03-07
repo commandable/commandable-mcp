@@ -47,7 +47,7 @@ export function getOrCreateEncryptionSecret(): string {
 const REQUIRED_INTEGRATION_COLUMNS = [
   'id', 'space_id', 'type', 'reference_id', 'label',
   'connection_method', 'connection_id', 'credential_id', 'credential_variant',
-  'config_json', 'enabled_toolsets', 'max_scope', 'disabled_tools', 'created_at',
+  'enabled_toolsets', 'max_scope', 'disabled_tools', 'created_at',
 ]
 
 export async function openLocalDb(): Promise<{ db: DbClient, close: () => Promise<void> }> {
@@ -73,7 +73,8 @@ export async function openLocalDb(): Promise<{ db: DbClient, close: () => Promis
       console.error(`\nWe're in early development and don't run automatic migrations yet.`)
       console.error(`Please delete your database and run again:\n`)
       console.error(`  rm ${sqlitePath}`)
-      console.error(`  commandable-mcp init\n`)
+      console.error(`  commandable-mcp create`)
+      console.error(`  # or legacy bootstrap: commandable-mcp static-init\n`)
       process.exit(1)
     }
   }

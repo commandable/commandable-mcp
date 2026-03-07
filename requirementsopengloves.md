@@ -84,9 +84,9 @@ You install and configure Commandable MCP or "Open Gloves" depending on the name
 
 There are two operating modes:
 
-**Static mode** (default) — All configured tools are loaded at startup. This works with every MCP client today. Best for: day-to-day usage with Claude Desktop, Cursor, and other clients.
+**Read mode** (default) — All configured tools are loaded at startup. Over HTTP this is served at `/mcp`. This works with every MCP client today. Best for: day-to-day usage with Claude Desktop, Cursor, and other clients.
 
-**Create mode** (`COMMANDABLE_MODE=create`) — Per-session dynamic tool loading via meta-tools (`commandable_search_tools`, `commandable_enable_toolset`, `commandable_disable_toolset`). The agent discovers and enables only the toolsets it needs. When agent tool creation is enabled, new tools are immediately available in the same conversation. Best for: building and configuring integrations with Claude Code or other clients that support `notifications/tools/list_changed`.
+**Create mode** — Per-session dynamic tool loading via meta-tools (`commandable_search_tools`, `commandable_enable_toolset`, `commandable_disable_toolset`). Over HTTP this is served at `/mcp/create`; over stdio it remains the `create-mode` flow. The agent discovers and enables only the toolsets it needs. When agent tool creation is enabled, new tools are immediately available in the same conversation. Best for: building and configuring integrations with Claude Code or other clients that support `notifications/tools/list_changed`.
 
 ### The User Journey
 
@@ -106,7 +106,7 @@ This is the critical UX moment: **the agent tells you what it needs, but you pro
 
 **4. The tool is live**
 
-In create mode, the tool is immediately available. In static mode, the user reconnects. Either way, the agent can now use the tool — and so can any future conversation.
+In create mode, the tool is immediately available. In read mode, the user reconnects. Either way, the agent can now use the tool — and so can any future conversation.
 
 **5. Extending existing integrations**
 
@@ -218,7 +218,7 @@ The user has to leave the conversation to enter credentials in the UI. That cont
 
 ### "Create mode doesn't work with my client"
 
-Not all MCP clients support dynamic tool list changes. **Mitigation**: Static mode is the default. Clear documentation on which clients support what. Push for broader client support.
+Not all MCP clients support dynamic tool list changes. **Mitigation**: Read mode is the default. Clear documentation on which clients support what. Push for broader client support.
 
 ### "Enterprise IT won't allow it"
 
@@ -236,4 +236,4 @@ An agent creates a tool that exfiltrates data to a malicious API. **Mitigation**
 
 ## Note: Per-Session Tool Loading (Create Mode)
 
-Open Gloves depends on Create Mode (`COMMANDABLE_MODE=create`). Agent-created tools are persisted on the server but **not loaded into every chat by default**. Each new MCP session starts with only the meta-tools (`commandable_search_tools`, `commandable_enable_toolset`, `commandable_disable_toolset`, plus future creation tools). The agent discovers and enables the toolsets it needs for that specific conversation. This keeps the context window clean — a Stripe chat only loads Stripe tools, a Trello chat only loads Trello tools — while agent-created tools remain available to any future session that searches for them. The flow is: `commandable_search_tools` → nothing found → `create_tool` → tool exists forever → future sessions find it via `commandable_search_tools` → `commandable_enable_toolset` → use it. This requires client support for `notifications/tools/list_changed` (e.g. Claude Code).
+Open Gloves depends on Create Mode. Over HTTP, that means the `/mcp/create` endpoint; over stdio, it remains the `create-mode` flow. Agent-created tools are persisted on the server but **not loaded into every chat by default**. Each new MCP session starts with only the meta-tools (`commandable_search_tools`, `commandable_enable_toolset`, `commandable_disable_toolset`, plus future creation tools). The agent discovers and enables the toolsets it needs for that specific conversation. This keeps the context window clean — a Stripe chat only loads Stripe tools, a Trello chat only loads Trello tools — while agent-created tools remain available to any future session that searches for them. The flow is: `commandable_search_tools` → nothing found → `create_tool` → tool exists forever → future sessions find it via `commandable_search_tools` → `commandable_enable_toolset` → use it. This requires client support for `notifications/tools/list_changed` (e.g. Claude Code).
