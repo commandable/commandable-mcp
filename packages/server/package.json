@@ -1,6 +1,6 @@
 {
   "name": "@commandable/mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "The recursive MCP server. Allows agents to build new MCP servers and tools securely on the fly. One MCP, any app.",
   "license": "AGPL-3.0-only",
   "repository": {
