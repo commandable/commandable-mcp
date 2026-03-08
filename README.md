@@ -4,16 +4,6 @@ Commandable MCP is the recursive mcp server.
 
 An MCP server which allows your agents to create new mcp servers and tools securely. One MCP, any app.
 
-## How it works
-
-Commandable is the layer that stores your integrations, credentials, and tool definitions.
-
-- Use `serve` to setup and run your commandable instance in the background on your machine.
-- Use `create` to start a session with Claude Code to configure integrations and build tools.
-- Use `connect` to wire Claude Desktop, Cursor, or any other read client to the resulting MCP server.
-
-## Demo 
-
 https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b
 
 ## Quick Start: Local Flow
