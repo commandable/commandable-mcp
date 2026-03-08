@@ -1,6 +1,6 @@
 {
   "name": "@commandable/mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Commandable app/server package for local management UI, HTTP endpoints, and human-facing CLI flows.",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -33,8 +33,8 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@commandable/mcp-core": "workspace:*",
     "@clack/prompts": "^1.0.1",
+    "@commandable/mcp-core": "workspace:*",
     "@iconify-json/lucide": "^1.2.90",
     "@iconify-json/simple-icons": "^1.2.70",
     "@nuxt/ui": "^4.4.0",

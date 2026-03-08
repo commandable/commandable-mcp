@@ -419,6 +419,7 @@ __metadata:
     google-auth-library: "npm:^10.3.0"
     js-yaml: "npm:^4.1.0"
     json-schema: "npm:^0.4.0"
+    marked: "npm:^17.0.4"
     pg: "npm:^8.16.3"
     turndown: "npm:^7.2.2"
     typescript: "npm:^5.9.3"
@@ -431,6 +432,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@commandable/mcp@workspace:app"
   dependencies:
+    "@clack/prompts": "npm:^1.0.1"
     "@commandable/mcp-core": "workspace:*"
     "@iconify-json/lucide": "npm:^1.2.90"
     "@iconify-json/simple-icons": "npm:^1.2.70"
@@ -439,6 +441,7 @@ __metadata:
     eslint: "npm:^10.0.0"
     marked: "npm:^17.0.3"
     nuxt: "npm:^4.3.1"
+    picocolors: "npm:^1.1.1"
     tailwindcss: "npm:^4.1.18"
     typescript: "npm:^5.9.3"
     vue-tsc: "npm:^3.2.4"
@@ -8764,6 +8767,15 @@ __metadata:
   bin:
     marked: bin/marked.js
   checksum: 10c0/3970f96ce3b1a7fd5bba82a6c7e4dffec9f7e0f238633e57139e8aa8fe637bccb1c1b61f2b3ed21b1afdbd4e076326f29e449d147203a0bdb9394e21e9a6a722
+  languageName: node
+  linkType: hard
+
+"marked@npm:^17.0.4":
+  version: 17.0.4
+  resolution: "marked@npm:17.0.4"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/a6f6a2df8157835bc23b2bede31f1cae7af75af7a2cd2e070d640c5a490e6cfe5eb63309cf353d7b373f7aef04ead4f2de51a59905bb829c462d802484468cd9
   languageName: node
   linkType: hard
 
