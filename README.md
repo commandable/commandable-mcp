@@ -12,14 +12,9 @@ Commandable is the layer that stores your integrations, credentials, and tool de
 - Use `create` to start a session with Claude Code to configure integrations and build tools.
 - Use `connect` to wire Claude Desktop, Cursor, or any other read client to the resulting MCP server.
 
+## Demo 
 
-Commandable stores your integrations, credentials, and custom tool definitions, then serves them over MCP.
-
-The package model is now explicit:
-
-- `@commandable/mcp`: the product package users run for the local server, management UI, HTTP endpoints, and human-facing CLI commands
-- `@commandable/mcp-connect`: the thin stdio package MCP clients invoke for local create-mode and read-mode sessions
-- `@commandable/mcp-core`: shared runtime used by both packages
+https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b
 
 ## Quick Start: Local Flow
 
