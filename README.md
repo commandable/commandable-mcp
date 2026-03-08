@@ -2,7 +2,7 @@
 
 Commandable MCP is the recursive mcp server. 
 
-An mcp server which allows your agents create new mcp servers and tools securely. One MCP, any app.
+An MCP server which allows your agents to create new mcp servers and tools securely. One MCP, any app.
 
 ## How it works
 
