@@ -1,8 +1,8 @@
 # Commandable MCP
 
-Commandable MCP is the recursive mcp server. 
+Commandable MCP is the last mcp server you need. 
 
-An MCP server which allows your agents to create new mcp servers and tools securely. One MCP, any app.
+Why? It allows your agents to create their own mcp servers and tools from scratch, securely. One MCP, any app.
 
 https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b
 
