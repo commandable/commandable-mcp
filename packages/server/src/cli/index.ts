@@ -5,7 +5,7 @@ import { chmodSync, existsSync, readFileSync, unlinkSync, writeFileSync } from '
 import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isCancel, select } from '@clack/prompts'
+import { isCancel, note, select } from '@clack/prompts'
 import { IntegrationProxy } from '../integrations/proxy.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { runStdioMcpServer } from '../mcp/server.js'
@@ -547,25 +547,31 @@ async function runDoctor() {
 }
 
 async function confirmDestroyLocal(params: { keepKey: boolean }): Promise<boolean> {
-  const warningLabel = picocolors.black(picocolors.bgYellow(picocolors.bold(' WARNING ')))
-  console.error(`${warningLabel} ${picocolors.red('This will delete all of your local saved Commandable data.')}`)
-  console.error(`${picocolors.dim('-')} saved integrations and credentials`)
-  console.error(`${picocolors.dim('-')} local SQLite state and daemon state`)
-  console.error(`${picocolors.dim('-')} ${params.keepKey ? 'the encryption key will be kept because --keep-key is set' : 'the local encryption key'}`)
-  console.error(`${picocolors.yellow('Remote Postgres data will not be deleted.')}`)
-  console.error('')
+  note(
+    [
+      picocolors.bold(picocolors.red('This will delete all of your local saved Commandable data.')),
+      '',
+      `${picocolors.white('•')} saved integrations and credentials`,
+      `${picocolors.white('•')} local SQLite state and daemon state`,
+      `${picocolors.white('•')} ${params.keepKey ? 'the encryption key will be kept (--keep-key is set)' : 'the local encryption key'}`,
+      '',
+      picocolors.yellow('Remote Postgres data will not be deleted.'),
+    ].join('\n'),
+    picocolors.yellow('Warning'),
+    { format: (str: string) => str },
+  )
 
   const result = await select({
-    message: 'Are you sure you want to continue?',
+    message: 'Do you want to continue?',
     options: [
       { value: 'destroy', label: picocolors.red('Yes, destroy local data') },
-      { value: 'cancel', label: picocolors.cyan('No, cancel') },
+      { value: 'cancel', label: picocolors.cyan('No, keep local data') },
     ],
     initialValue: 'cancel',
   })
 
   if (isCancel(result) || result !== 'destroy') {
-    console.error(picocolors.yellow('Cancelled.'))
+    console.error(picocolors.yellow('Destroy cancelled.'))
     return false
   }
 
