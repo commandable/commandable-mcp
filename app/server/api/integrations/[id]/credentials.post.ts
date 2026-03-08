@@ -10,8 +10,8 @@ import {
   findIntegrationTypeConfig,
   pgIntegrations,
   sqliteIntegrations,
-} from '@commandable/mcp'
-import type { IntegrationData } from '@commandable/mcp'
+} from '@commandable/mcp-core'
+import type { IntegrationData } from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
 import { refreshMcpState } from '../../../utils/mcp'
 

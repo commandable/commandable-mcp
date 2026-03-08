@@ -2,34 +2,30 @@
 
 Thanks for helping improve Commandable MCP.
 
-This repo is a monorepo. The npm package is `@commandable/mcp` and the HTTP/UI runtime lives in `app/`.
+This repo now has three package layers:
 
-## Development setup
+- `@commandable/mcp`: the published Nuxt app/server package and human-facing CLI
+- `@commandable/mcp-connect`: the published stdio connector package
+- `@commandable/mcp-core`: the shared runtime package
+
+## Development Setup
 
 ### Prerequisites
 
 - Node.js **18+**
-- Yarn **4+** (the repo uses workspaces)
+- Yarn **4+**
 
 ### Install dependencies
-
-From the repo root:
 
 ```bash
 yarn install
 ```
 
-## Running locally
+## Main Local Workflow
 
-The contributor dev workflow uses an isolated data directory (`~/.commandable-dev`) and port (`23433`), completely separate from your normal local Commandable instance (`~/.commandable`, port `23432`) and from any deployed HTTP environment.
+The contributor workflow uses an isolated data directory (`~/.commandable-dev`) and port (`23433`) so it stays separate from your normal local instance.
 
-### 1) Build local source
-
-```bash
-yarn workspace @commandable/mcp prepack
-```
-
-### 2) Start the dev instance
+### 1. Start the dev server/app package
 
 ```bash
 yarn dev:serve
@@ -42,9 +38,10 @@ yarn dev:destroy
 yarn dev:serve
 ```
 
+
 This starts the management UI at `http://127.0.0.1:23433/`, the read MCP endpoint at `http://127.0.0.1:23433/mcp`, and the create MCP endpoint at `http://127.0.0.1:23433/mcp/create`. It always restarts the daemon so you are always on the latest build.
 
-### 3) Connect Claude Code
+### 2. Print the Claude Code create command
 
 ```bash
 yarn dev:create
@@ -52,39 +49,69 @@ yarn dev:create
 
 This prints the Claude Code replacement steps for the local dev instance, including removing any existing `commandable` entry before adding the dev one. Previous Commandable instances keep their own state and can be added back later. Then restart Claude Code.
 
-### 4) Print a read-client snippet
+
+
+
+### 3. Check its connected correctly
 
 ```bash
-yarn dev:connect
+claude mcp list
 ```
 
-### Diagnostics
+### 4. Use with claude code 
 
 ```bash
-yarn dev:doctor
+claude 
 ```
 
-### Nuxt app development (UI-only)
+## Workspace Responsibilities
 
-To work directly on the management UI app without the CLI daemon wrapper:
+### `app/`
+
+This is the published `@commandable/mcp` package.
+
+It owns:
+
+- the Nuxt management UI
+- the `/mcp` and `/mcp/create` HTTP endpoints
+- the local server lifecycle CLI (`serve`, `doctor`, `destroy`, `create-api-key`)
+- the user-facing `create` and `connect` commands
+
+### `packages/connect/`
+
+This is the published `@commandable/mcp-connect` package.
+
+It owns:
+
+- `create-mode`
+- default stdio read-mode
+- hard failure when the local server is unavailable
+
+### `packages/core/`
+
+This folder now builds the shared `@commandable/mcp-core` package.
+
+It owns reusable:
+
+- DB and migrations
+- integration registry/data loading/proxy logic
+- MCP runtime and meta-tools
+- config loading/apply logic
+- local credential/storage primitives
+
+## Tests
+
+Run the default repo test suite:
 
 ```bash
-yarn dev
+yarn test
 ```
 
-This serves the Nuxt app at `http://localhost:3000/`. Create an API key first if needed:
+Run all workspace tests:
 
 ```bash
-node packages/server/dist/cli/bin.js create-api-key dev
+yarn test:all
 ```
-
-Then print connection details:
-
-```bash
-node packages/server/dist/cli/bin.js create --transport http --url http://localhost:3000/mcp/create --api-key <your-api-key>
-node packages/server/dist/cli/bin.js connect --transport http --url http://localhost:3000/mcp --api-key <your-api-key>
-```
-
 ## Tests
 
 Run all workspace tests:
@@ -160,7 +187,12 @@ yarn workspace @commandable/mcp test
 
 ## Publishing to npm
 
-Packages must be published in dependency order. `@commandable/mcp` depends on `@commandable/integration-data`, so publish integration-data first.
+Packages must be published in dependency order:
+
+- `@commandable/integration-data` (base data package)
+- `@commandable/mcp-core` (depends on integration-data)
+- `@commandable/mcp-connect` (depends on mcp-core)
+- `@commandable/mcp` (depends on mcp-core)
 
 ```bash
 # Authenticate (opens browser)
@@ -169,7 +201,13 @@ yarn npm login
 # 1. Publish integration-data
 yarn workspace @commandable/integration-data npm publish
 
-# 2. Publish the server
+# 2. Publish core runtime
+yarn workspace @commandable/mcp-core npm publish
+
+# 3. Publish stdio connector
+yarn workspace @commandable/mcp-connect npm publish
+
+# 4. Publish app/server package
 yarn workspace @commandable/mcp npm publish
 ```
 

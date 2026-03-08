@@ -29,7 +29,7 @@ app/.output/
 .commandable-dev/
 
 # Test artifacts
-packages/server/src/__tests__/tmp-*.sqlite
+packages/core/src/__tests__/tmp-*.sqlite
 
 # OS
 .DS_Store

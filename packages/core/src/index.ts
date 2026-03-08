@@ -22,6 +22,7 @@ export * from './db/schema.js'
 export * from './db/credentialStore.js'
 export * from './db/integrationStore.js'
 export * from './db/integrationTypeConfigStore.js'
+export * from './db/toolDefinitionStore.js'
 
 export * from './mcp/toolAdapter.js'
 export * from './mcp/handlers.js'
@@ -35,5 +36,6 @@ export * from './config/configSchema.js'
 export * from './config/configLoader.js'
 export * from './config/configApply.js'
 
-export * from './cli/credentialManager.js'
+export * from './runtime/credentialManager.js'
 
+export * from './runtime/stdioSession.js'

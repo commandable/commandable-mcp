@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../server/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../server/src/integrations/dataLoader.js'
+import { IntegrationProxy } from '../../../../core/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../../core/src/integrations/dataLoader.js'
 
 // LIVE Airtable integration tests using credentials
 // Required env vars:

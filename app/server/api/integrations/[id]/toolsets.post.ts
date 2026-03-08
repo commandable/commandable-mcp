@@ -1,5 +1,5 @@
 import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
-import { listIntegrations, upsertIntegration } from '@commandable/mcp'
+import { listIntegrations, upsertIntegration } from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
 import { refreshMcpState } from '../../../utils/mcp'
 

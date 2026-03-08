@@ -9,7 +9,7 @@ yarn test
 ```
 
 This runs Vitest in the `@commandable/mcp` workspace and includes:
-- Core unit tests in `packages/server/src/__tests__/`
+- Core unit tests in `packages/core/src/__tests__/`
 - Live integration handler suites in `packages/integration-data/integrations/*/__tests__/`
 
 ## Live integration tests (credentials-first)

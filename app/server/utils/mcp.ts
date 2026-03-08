@@ -12,9 +12,9 @@ import {
   getOrCreateEncryptionSecret,
   listIntegrations,
   registerToolHandlers,
-} from '@commandable/mcp'
+} from '@commandable/mcp-core'
 import { getDb } from './db'
-import type { MetaToolContext } from '@commandable/mcp'
+import type { MetaToolContext } from '@commandable/mcp-core'
 
 export type HttpMcpEndpoint = 'static' | 'create'
 
@@ -55,7 +55,10 @@ function getSpaceId(): string {
 }
 
 function getServerInfo(): Implementation {
-  return { name: 'commandable', version: '0.0.1' }
+  return {
+    name: 'commandable',
+    version: (process.env.COMMANDABLE_VERSION || '').trim() || '0.0.0'
+  }
 }
 
 function isCreateEndpoint(endpoint: HttpMcpEndpoint): boolean {

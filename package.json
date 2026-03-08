@@ -6,17 +6,17 @@
     "app"
   ],
   "scripts": {
-    "build": "yarn workspaces foreach -A run build",
-    "dev": "yarn workspace commandable-mcp-app dev",
-    "lint": "yarn workspaces foreach -A run lint",
-    "test": "yarn workspace @commandable/mcp test",
-    "test:all": "yarn workspaces foreach -A run test",
+    "build": "yarn workspaces foreach -A -t run build",
+    "dev": "yarn workspace @commandable/mcp dev",
+    "lint": "yarn workspace @commandable/mcp lint",
+    "test": "yarn workspace @commandable/mcp-core test",
+    "test:all": "yarn workspaces foreach -A -t run test",
     "generate-docs": "node scripts/generate-integration-docs.mjs",
-    "dev:serve": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node packages/server/dist/cli/bin.js serve --restart",
-    "dev:destroy": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node packages/server/dist/cli/bin.js destroy local --yes",
-    "dev:create": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node scripts/dev-create.mjs",
-    "dev:connect": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node packages/server/dist/cli/bin.js connect --source local --client claude-desktop",
-    "dev:doctor": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node packages/server/dist/cli/bin.js doctor"
+    "dev:serve": "yarn workspace @commandable/mcp build && COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node app/bin/commandable-mcp.mjs serve --restart",
+    "dev:destroy": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node app/bin/commandable-mcp.mjs destroy local --yes",
+    "dev:create": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node app/bin/commandable-mcp.mjs create",
+    "dev:connect": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node app/bin/commandable-mcp.mjs connect --client claude-desktop",
+    "dev:doctor": "COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node app/bin/commandable-mcp.mjs doctor"
   },
   "packageManager": "yarn@4.12.0"
 }

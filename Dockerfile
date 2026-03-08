@@ -9,7 +9,7 @@ RUN apt-get update \
 
 # Install deps (workspace-aware)
 COPY package.json yarn.lock tsconfig.base.json .yarnrc.yml ./
-COPY packages/server/package.json packages/server/package.json
+COPY packages/core/package.json packages/core/package.json
 COPY packages/integration-data/package.json packages/integration-data/package.json
 COPY app/package.json app/package.json
 
@@ -23,7 +23,7 @@ RUN yarn build
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV COMMANDABLE_INTEGRATION_DATA_DIR=/app/packages/server/integration-data
+ENV COMMANDABLE_INTEGRATION_DATA_DIR=/app/packages/integration-data/integrations
 
 EXPOSE 3000
 

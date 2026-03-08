@@ -1,35 +1,37 @@
 {
-  "name": "@commandable/integration-data",
+  "name": "@commandable/mcp-connect",
   "version": "0.2.0",
-  "description": "Integration data (manifests, schemas, handlers, credential configs) for Commandable integrations.",
+  "description": "Thin stdio connector package for Commandable MCP clients.",
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/commandable/commandable-mcp.git",
-    "directory": "packages/integration-data"
+    "directory": "packages/connect"
   },
   "homepage": "https://github.com/commandable/commandable-mcp#readme",
   "bugs": {
     "url": "https://github.com/commandable/commandable-mcp/issues"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "commandable-mcp-connect": "./dist/cli/bin.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./credentials": {
-      "types": "./dist/credentials-index.d.ts",
-      "import": "./dist/credentials-index.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
-    "json-schema": "^0.4.0"
+    "@commandable/mcp-core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
@@ -38,12 +40,12 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "build": "npm run clean && tsc -p tsconfig.json && node -e \"require('node:fs').chmodSync('dist/cli/bin.js', 0o755)\"",
+    "dev": "tsc -p tsconfig.json --watch",
     "prepack": "npm run build",
     "test": "vitest run"
   },
   "files": [
-    "dist",
-    "integrations"
+    "dist"
   ]
 }

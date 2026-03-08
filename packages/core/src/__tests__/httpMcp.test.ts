@@ -32,7 +32,7 @@ vi.mock('../../../../app/server/utils/db', () => ({
   getDb: mocks.getDb,
 }))
 
-vi.mock('@commandable/mcp', () => ({
+vi.mock('@commandable/mcp-core', () => ({
   AbilityCatalog: class AbilityCatalog {
     constructor(_args: any) {}
   },

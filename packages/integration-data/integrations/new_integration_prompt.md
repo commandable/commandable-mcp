@@ -4,7 +4,7 @@ Write a new integration-data folder for `<INTEGRATION_NAME>`.
 
 ## Required structure
 
-Create `commandable-mcp/packages/server/integration-data/<name>/` containing:
+Create `commandable-mcp/packages/integration-data/integrations/<name>/` containing:
 
 - `manifest.json`: flat `tools[]`; each tool has `name`, `description`, `inputSchema` (relative path), `handler` (relative path), `scope` (`read` | `write` | optionally `admin`). If the integration has genuinely independent workflow areas, add a top-level `toolsets` map and a `toolset` field on each tool (see **Toolsets** section below).
 - `schemas/*.json`: JSON Schema for each tool input. Prefer `additionalProperties: false` for strict contracts; use `true` only for pass-through bodies (common in Google APIs). Reuse `empty.json` for no-arg tools.

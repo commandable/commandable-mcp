@@ -1,5 +1,5 @@
 import { defineEventHandler, getHeader, setResponseStatus } from 'h3'
-import { hashApiKey, lookupApiKeyByHash } from '@commandable/mcp'
+import { hashApiKey, lookupApiKeyByHash } from '@commandable/mcp-core'
 import { getDb } from '../utils/db'
 
 declare module 'h3' {

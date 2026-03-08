@@ -1,5 +1,5 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
-import { loadIntegrationToolList } from '@commandable/mcp'
+import { loadIntegrationToolList } from '@commandable/mcp-core'
 
 export default defineEventHandler((event) => {
   const type = getRouterParam(event, 'type')

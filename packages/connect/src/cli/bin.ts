@@ -2,8 +2,7 @@
 
 import { main } from './index.js'
 
-main().catch((err) => {
-  console.error(err)
+main().catch((error) => {
+  console.error(error)
   process.exit(1)
 })
-

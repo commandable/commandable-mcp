@@ -1,4 +1,4 @@
-import { createDbFromEnv } from '@commandable/mcp'
+import { createDbFromEnv } from '@commandable/mcp-core'
 
 type DbState = {
   ready: Promise<ReturnType<typeof createDbFromEnv>>

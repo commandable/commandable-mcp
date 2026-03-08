@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { listIntegrationCatalog, loadIntegrationCredentialConfig } from '@commandable/mcp'
+import { listIntegrationCatalog, loadIntegrationCredentialConfig } from '@commandable/mcp-core'
 
 export default defineEventHandler(() => {
   const items = listIntegrationCatalog()

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createError, defineEventHandler, readBody } from 'h3'
-import type { IntegrationData } from '@commandable/mcp'
-import { upsertIntegration } from '@commandable/mcp'
+import type { IntegrationData } from '@commandable/mcp-core'
+import { upsertIntegration } from '@commandable/mcp-core'
 import { getDb } from '../../utils/db'
 import { refreshMcpState } from '../../utils/mcp'
 

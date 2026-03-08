@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam } from 'h3'
 import { eq } from 'drizzle-orm'
-import { pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import { pgIntegrations, sqliteIntegrations } from '@commandable/mcp-core'
 import { getDb } from '../../utils/db'
 import { refreshMcpState } from '../../utils/mcp'
 
