@@ -12,6 +12,22 @@ This runs Vitest in the `@commandable/mcp` workspace and includes:
 - Core unit tests in `packages/core/src/__tests__/`
 - Live integration handler suites in `packages/integration-data/integrations/*/__tests__/`
 
+## Packaged npm smoke (local + CI)
+
+Run this from the repo root:
+
+```bash
+yarn smoke:packaged
+```
+
+This command validates the publish-like flow end-to-end by:
+- packing all publishable workspaces into tarballs
+- installing those tarballs into a fresh temp directory outside the monorepo
+- running the packaged CLIs (`commandable-mcp` and `commandable-mcp-connect`)
+- starting local packaged `serve` and exercising packaged `create`
+
+Use this before publishing to catch hidden workspace dependency issues.
+
 ## Live integration tests (credentials-first)
 
 The integration suites are **credentials-first** and will skip automatically unless the required

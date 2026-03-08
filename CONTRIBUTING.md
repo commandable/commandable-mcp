@@ -185,6 +185,19 @@ yarn workspace @commandable/mcp test
 
 ---
 
+## Pre-publish packaged smoke
+
+Before publishing, run the packaged-install smoke check from the repo root:
+
+```bash
+yarn smoke:packaged
+```
+
+This uses `yarn workspace <pkg> pack` tarballs, installs them into a clean temp project
+outside the monorepo, then runs packaged `serve`/`create` and connector CLI checks.
+
+---
+
 ## Publishing to npm
 
 Packages must be published in dependency order:

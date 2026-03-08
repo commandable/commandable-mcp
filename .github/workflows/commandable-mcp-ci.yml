@@ -27,10 +27,29 @@ jobs:
       - name: Run core unit tests
         run: yarn workspace @commandable/mcp test -- src/__tests__
 
+  # ─── Packaged npm smoke (artifact install outside workspace) ──────────────────
+  packaged-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: |
+          corepack enable
+          corepack prepare yarn@4.12.0 --activate
+          yarn install --frozen-lockfile
+
+      - name: Run packaged smoke test
+        run: yarn smoke:packaged
+
   # ─── Per-integration live tests (matrix, fail-fast disabled) ─────────────────
   test-integration:
     runs-on: ubuntu-latest
-    needs: core-tests
+    needs: [core-tests, packaged-smoke]
     strategy:
       fail-fast: false
       # Many suites hit third-party APIs. Limit concurrency to reduce rate limiting.
