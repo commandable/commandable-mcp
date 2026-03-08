@@ -49,6 +49,19 @@ export async function listToolDefinitions(client: DbClient, spaceId: string): Pr
   return rows.map(rowToToolDefinition)
 }
 
+export async function listToolDefinitionsForIntegration(
+  client: DbClient,
+  spaceId: string,
+  integrationId: string,
+): Promise<ToolDefinition[]> {
+  const table = t(client)
+  const rows: any[] = await db(client)
+    .select()
+    .from(table)
+    .where(and(eq(table.spaceId, spaceId), eq(table.integrationId, integrationId)))
+  return rows.map(rowToToolDefinition)
+}
+
 export async function getToolDefinitionByName(
   client: DbClient,
   spaceId: string,
@@ -92,7 +105,7 @@ export async function upsertToolDefinition(
       updatedAt: now,
     })
     .onConflictDoUpdate({
-      target: table.id,
+      target: [table.spaceId, table.integrationId, table.name],
       set: {
         integrationId: tool.integrationId,
         name: tool.name,
@@ -105,4 +118,29 @@ export async function upsertToolDefinition(
         updatedAt: now,
       },
     })
+}
+
+export async function deleteToolDefinitionByName(
+  client: DbClient,
+  spaceId: string,
+  integrationId: string,
+  name: string,
+): Promise<number> {
+  const table = t(client)
+  const result: any = await db(client)
+    .delete(table)
+    .where(and(eq(table.spaceId, spaceId), eq(table.integrationId, integrationId), eq(table.name, name)))
+  return Number(result?.rowsAffected ?? result?.rowCount ?? 0)
+}
+
+export async function deleteToolDefinitionsForIntegration(
+  client: DbClient,
+  spaceId: string,
+  integrationId: string,
+): Promise<number> {
+  const table = t(client)
+  const result: any = await db(client)
+    .delete(table)
+    .where(and(eq(table.spaceId, spaceId), eq(table.integrationId, integrationId)))
+  return Number(result?.rowsAffected ?? result?.rowCount ?? 0)
 }

@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => {
     registerToolHandlers: vi.fn(),
     getDb: vi.fn(async () => ({ dialect: 'sqlite' })),
     listIntegrations: vi.fn(async () => []),
+    listToolDefinitions: vi.fn(async () => []),
+    listIntegrationTypeConfigs: vi.fn(async () => []),
     buildMcpToolIndex: vi.fn(() => ({ tools: [{ name: 'list_tools', inputSchema: {} }], byName: new Map() })),
     serverClose: vi.fn(async () => {}),
     serverConnect: vi.fn(async () => {}),
@@ -16,6 +18,8 @@ const mocks = vi.hoisted(() => {
       this.registerToolHandlers.mockClear()
       this.getDb.mockClear()
       this.listIntegrations.mockClear()
+      this.listToolDefinitions.mockClear()
+      this.listIntegrationTypeConfigs.mockClear()
       this.buildMcpToolIndex.mockClear()
       this.serverClose.mockClear()
       this.serverConnect.mockClear()
@@ -48,6 +52,8 @@ vi.mock('@commandable/mcp-core', () => ({
   buildMcpToolIndex: mocks.buildMcpToolIndex,
   getOrCreateEncryptionSecret: () => 'secret',
   listIntegrations: mocks.listIntegrations,
+  listToolDefinitions: mocks.listToolDefinitions,
+  listIntegrationTypeConfigs: mocks.listIntegrationTypeConfigs,
   registerToolHandlers: mocks.registerToolHandlers,
 }))
 

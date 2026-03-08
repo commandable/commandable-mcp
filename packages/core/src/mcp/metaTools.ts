@@ -11,16 +11,21 @@ import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegration
 import { createGetIntegration } from '../integrations/getIntegration.js'
 import { loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
 import type { DbClient } from '../db/client.js'
-import { listIntegrations, upsertIntegration } from '../db/integrationStore.js'
+import { deleteIntegrationById, listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { SqlCredentialStore } from '../db/credentialStore.js'
 import type { IntegrationCredentialVariant, IntegrationData } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
 import { PROVIDERS } from '../integrations/providerRegistry.js'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { sanitizeJsonSchema } from '../integrations/tools.js'
-import { getToolDefinitionByName, upsertToolDefinition } from '../db/toolDefinitionStore.js'
+import {
+  deleteToolDefinitionByName,
+  deleteToolDefinitionsForIntegration,
+  getToolDefinitionByName,
+  upsertToolDefinition,
+} from '../db/toolDefinitionStore.js'
 import { buildExecutableToolFromDefinition } from '../integrations/customToolFactory.js'
-import { upsertIntegrationTypeConfig } from '../db/integrationTypeConfigStore.js'
+import { deleteIntegrationTypeConfig, getIntegrationTypeConfig, upsertIntegrationTypeConfig } from '../db/integrationTypeConfigStore.js'
 import type { IntegrationTypeConfig } from '../types.js'
 
 export const META_TOOL_NAMES = {
@@ -30,8 +35,10 @@ export const META_TOOL_NAMES = {
   disableToolset: 'commandable_disable_toolset',
   listPrebuiltIntegrations: 'commandable_list_prebuilt_integrations',
   addPrebuiltIntegration: 'commandable_add_prebuilt_integration',
-  createCustomIntegration: 'commandable_create_custom_integration',
-  createCustomTool: 'commandable_create_custom_tool',
+  upsertCustomIntegration: 'commandable_upsert_custom_integration',
+  upsertCustomTool: 'commandable_upsert_custom_tool',
+  deleteCustomIntegration: 'commandable_delete_custom_integration',
+  deleteCustomTool: 'commandable_delete_custom_tool',
   testCustomTool: 'commandable_test_custom_tool',
 } as const
 
@@ -182,12 +189,13 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
       },
     },
     {
-      name: META_TOOL_NAMES.createCustomIntegration,
-      description: 'Builder tool. Create a brand new integration type from scratch (base URL + credential schema + auth injection rules). Returns a credential URL and a new integration_id you can add tools to.',
+      name: META_TOOL_NAMES.upsertCustomIntegration,
+      description: 'Builder tool. Create or update a custom integration type (base URL + credential schema + auth injection rules). Omit type_slug to create a new one.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
         properties: {
+          type_slug: { type: 'string', minLength: 1 },
           label: { type: 'string', minLength: 1 },
           base_url: { type: 'string', minLength: 1 },
           auth_type: { type: 'string', enum: ['basic', 'custom'] },
@@ -242,8 +250,8 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
       },
     },
     {
-      name: META_TOOL_NAMES.createCustomTool,
-      description: 'Builder tool. Persist a new custom tool on an existing integration, and register it so it can be used immediately.',
+      name: META_TOOL_NAMES.upsertCustomTool,
+      description: 'Builder tool. Upsert a custom tool on an existing integration, and register it so it can be used immediately.',
       inputSchema: {
         type: 'object',
         additionalProperties: false,
@@ -257,6 +265,31 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
           handler_code: { type: 'string', minLength: 1 },
         },
         required: ['integration_id', 'name', 'handler_code'],
+      },
+    },
+    {
+      name: META_TOOL_NAMES.deleteCustomTool,
+      description: 'Builder tool. Hard delete a custom tool from an integration by raw tool name (not the MCP materialized name).',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          integration_id: { type: 'string', minLength: 1 },
+          name: { type: 'string', minLength: 1 },
+        },
+        required: ['integration_id', 'name'],
+      },
+    },
+    {
+      name: META_TOOL_NAMES.deleteCustomIntegration,
+      description: 'Builder tool. Hard delete a custom integration instance, including its custom tools and linked credentials.',
+      inputSchema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          integration_id: { type: 'string', minLength: 1 },
+        },
+        required: ['integration_id'],
       },
     },
   ]
@@ -549,8 +582,8 @@ export async function handleMetaToolCall(params: {
     }
   }
 
-  if (name === META_TOOL_NAMES.createCustomIntegration) {
-    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.createCustomIntegration)
+  if (name === META_TOOL_NAMES.upsertCustomIntegration) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.upsertCustomIntegration)
     if (!ctx)
       throw new Error('Integration management is not available in this server mode.')
 
@@ -559,6 +592,7 @@ export async function handleMetaToolCall(params: {
     if (!ctx.integrationTypeConfigsRef)
       throw new Error('integrationTypeConfigsRef is required for custom integrations.')
 
+    const typeSlugInput = typeof args?.type_slug === 'string' ? args.type_slug.trim() : ''
     const label = String(args?.label || '').trim()
     const baseUrl = String(args?.base_url || '').trim()
     const authType = (args?.auth_type === 'basic' || args?.auth_type === 'custom') ? String(args.auth_type) : null
@@ -604,16 +638,24 @@ export async function handleMetaToolCall(params: {
     const existingSlugs = new Set(ctx.integrationTypeConfigsRef.current
       .filter(c => c.spaceId === ctx.spaceId)
       .map(c => c.typeSlug))
-    let typeSlug = ''
-    for (let i = 0; i < 20; i++) {
-      const candidate = `${toKebab(label)}-${suffix()}`
-      if (!existingSlugs.has(candidate)) {
-        typeSlug = candidate
-        break
+    let typeSlug = typeSlugInput
+    if (!typeSlug) {
+      for (let i = 0; i < 20; i++) {
+        const candidate = `${toKebab(label)}-${suffix()}`
+        if (!existingSlugs.has(candidate)) {
+          typeSlug = candidate
+          break
+        }
       }
+      if (!typeSlug)
+        throw new Error('Failed to generate a unique type slug')
     }
-    if (!typeSlug)
-      throw new Error('Failed to generate a unique type slug')
+
+    const existingCfg = typeSlugInput
+      ? await getIntegrationTypeConfig(ctx.db, ctx.spaceId, typeSlugInput)
+      : null
+    if (typeSlugInput && !existingCfg)
+      throw new Error(`Unknown type_slug: ${typeSlugInput}`)
 
     const schemaProps: Record<string, any> = {}
     const required: string[] = []
@@ -643,7 +685,7 @@ export async function handleMetaToolCall(params: {
     })
 
     const id = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
-    const cfgId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')
+    const cfgId = existingCfg?.id || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'))
 
     const defaultVariantConfig: IntegrationCredentialVariant = {
       label,
@@ -667,46 +709,59 @@ export async function handleMetaToolCall(params: {
 
     await upsertIntegrationTypeConfig(ctx.db, customCfg as any)
 
-    // Keep the proxy cache hot for immediate use (no restart needed).
-    ctx.integrationTypeConfigsRef.current.push(customCfg)
+    const cfgIndex = ctx.integrationTypeConfigsRef.current.findIndex(c => c.spaceId === ctx.spaceId && c.typeSlug === typeSlug)
+    if (cfgIndex >= 0)
+      ctx.integrationTypeConfigsRef.current[cfgIndex] = customCfg
+    else
+      ctx.integrationTypeConfigsRef.current.push(customCfg)
 
+    const existingIntegration = ctx.integrationsRef.current.find(i => i.type === typeSlug)
+    const created = !existingIntegration
     const shortId = id.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
-    const referenceId = `${typeSlug}-${shortId}`
-    const integration: IntegrationData = {
-      spaceId: ctx.spaceId,
-      id,
-      type: typeSlug,
-      referenceId,
-      label,
-      enabled: true,
-      connectionMethod: 'credentials',
-      credentialId: `${referenceId}-creds`,
-    }
+    const referenceId = existingIntegration?.referenceId || `${typeSlug}-${shortId}`
+    const integration: IntegrationData = existingIntegration
+      ? {
+          ...existingIntegration,
+          spaceId: ctx.spaceId,
+          type: typeSlug,
+          label,
+        }
+      : {
+          spaceId: ctx.spaceId,
+          id,
+          type: typeSlug,
+          referenceId,
+          label,
+          enabled: true,
+          connectionMethod: 'credentials',
+          credentialId: `${referenceId}-creds`,
+        }
 
     await upsertIntegration(ctx.db, integration)
     try { ctx.integrationsRef.current = await listIntegrations(ctx.db, ctx.spaceId) } catch {}
 
     const base = ctx.credentialSetupBaseUrl ? ctx.credentialSetupBaseUrl.replace(/\/+$/, '') : null
     const managementUrl = base ? `${base}/integrations` : null
-    const credentialUrl = base ? `${base}/integrations/${encodeURIComponent(id)}` : null
+    const credentialUrl = base ? `${base}/integrations/${encodeURIComponent(integration.id)}` : null
 
     return {
       handled: true,
       listChanged: false,
       result: {
-        created: true,
         integration: {
-          id,
+          id: integration.id,
           type: typeSlug,
           label,
-          reference_id: referenceId,
+          reference_id: integration.referenceId,
           auth_type: authType,
         },
+        upserted: true,
+        created,
         management_url: managementUrl,
         credential_url: credentialUrl,
         next_steps: credentialUrl
-          ? ['Open credential_url to enter credentials, then create tools with commandable_create_custom_tool.']
-          : ['Start the management UI (create mode) to get a credential URL, then create tools with commandable_create_custom_tool.'],
+          ? ['Open credential_url to enter credentials, then create tools with commandable_upsert_custom_tool.']
+          : ['Start the management UI (create mode) to get a credential URL, then create tools with commandable_upsert_custom_tool.'],
       },
     }
   }
@@ -737,8 +792,8 @@ export async function handleMetaToolCall(params: {
     return { handled: true, listChanged: false, result: res }
   }
 
-  if (name === META_TOOL_NAMES.createCustomTool) {
-    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.createCustomTool)
+  if (name === META_TOOL_NAMES.upsertCustomTool) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.upsertCustomTool)
     if (!ctx)
       throw new Error('Tool building is not available in this server mode.')
 
@@ -767,6 +822,7 @@ export async function handleMetaToolCall(params: {
       throw new Error(`Unknown integration_id: ${integrationId}`)
 
     const existing = await getToolDefinitionByName(ctx.db, ctx.spaceId, integration.id, toolNameRaw)
+    const created = !existing
     const id = existing?.id || (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'))
 
     const inputSchema = sanitizeJsonSchema(inputSchemaObj)
@@ -826,7 +882,8 @@ export async function handleMetaToolCall(params: {
       handled: true,
       listChanged: true,
       result: {
-        added: true,
+        upserted: true,
+        created,
         tool: {
           id,
           name: executable.name,
@@ -837,6 +894,118 @@ export async function handleMetaToolCall(params: {
         next_steps: [
           'Call the newly registered tool by name (it is now enabled in this session).',
         ],
+      },
+    }
+  }
+
+  if (name === META_TOOL_NAMES.deleteCustomTool) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.deleteCustomTool)
+    if (!ctx)
+      throw new Error('Tool building is not available in this server mode.')
+
+    const integrationId = String(args?.integration_id || '').trim()
+    const toolNameRaw = String(args?.name || '').trim()
+    if (!integrationId)
+      throw new Error('integration_id is required')
+    if (!toolNameRaw)
+      throw new Error('name is required')
+
+    const integration = ctx.integrationsRef?.current?.find(i => i.id === integrationId || i.referenceId === integrationId)
+    if (!integration)
+      throw new Error(`Unknown integration_id: ${integrationId}`)
+
+    const existing = await getToolDefinitionByName(ctx.db, ctx.spaceId, integration.id, toolNameRaw)
+    if (!existing) {
+      return {
+        handled: true,
+        listChanged: false,
+        result: { deleted: false, reason: 'not_found' },
+      }
+    }
+
+    const executable = buildExecutableToolFromDefinition({
+      spaceId: ctx.spaceId,
+      integration,
+      tool: existing,
+      proxy: ctx.proxy,
+      integrationsRef: ctx.integrationsRef,
+    })
+
+    await deleteToolDefinitionByName(ctx.db, ctx.spaceId, integration.id, toolNameRaw)
+
+    if (ctx.toolIndexRef) {
+      ctx.toolIndexRef.byName.delete(executable.name)
+      if (ctx.toolIndexRef.list)
+        ctx.toolIndexRef.list = ctx.toolIndexRef.list.filter(t => t.name !== executable.name)
+    }
+    if (ctx.catalogRef)
+      ctx.catalogRef.current.removeCustomTool({ integration, toolName: executable.name })
+    sessionState.removeToolFromAllSessions(executable.name)
+
+    return {
+      handled: true,
+      listChanged: true,
+      result: {
+        deleted: true,
+        tool: {
+          raw_name: toolNameRaw,
+          name: executable.name,
+        },
+      },
+    }
+  }
+
+  if (name === META_TOOL_NAMES.deleteCustomIntegration) {
+    requireBuilderEnabled(sessionState, sessionId, META_TOOL_NAMES.deleteCustomIntegration)
+    if (!ctx)
+      throw new Error('Integration management is not available in this server mode.')
+    if (!ctx.integrationsRef)
+      throw new Error('integrationsRef is required for builder mode.')
+    if (!ctx.integrationTypeConfigsRef)
+      throw new Error('integrationTypeConfigsRef is required for custom integrations.')
+
+    const integrationId = String(args?.integration_id || '').trim()
+    if (!integrationId)
+      throw new Error('integration_id is required')
+
+    const integration = ctx.integrationsRef.current.find(i => i.id === integrationId || i.referenceId === integrationId)
+    if (!integration)
+      throw new Error(`Unknown integration_id: ${integrationId}`)
+
+    const materializedToolNames = [...ctx.toolIndexRef?.byName.keys() || []]
+      .filter(toolName => toolName.endsWith(`__n${integration.id.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()}`))
+    for (const toolName of materializedToolNames) {
+      ctx.toolIndexRef?.byName.delete(toolName)
+      sessionState.removeToolFromAllSessions(toolName)
+    }
+    if (ctx.toolIndexRef?.list)
+      ctx.toolIndexRef.list = ctx.toolIndexRef.list.filter(t => !materializedToolNames.includes(t.name))
+
+    await deleteToolDefinitionsForIntegration(ctx.db, ctx.spaceId, integration.id)
+    if (integration.connectionMethod === 'credentials' && integration.credentialId)
+      await ctx.credentialStore.deleteCredentials(ctx.spaceId, integration.credentialId)
+    await deleteIntegrationById(ctx.db, integration.id)
+
+    const remainingIntegrations = await listIntegrations(ctx.db, ctx.spaceId)
+    ctx.integrationsRef.current = remainingIntegrations
+    if (!remainingIntegrations.some(i => i.type === integration.type)) {
+      await deleteIntegrationTypeConfig(ctx.db, ctx.spaceId, integration.type)
+      ctx.integrationTypeConfigsRef.current = ctx.integrationTypeConfigsRef.current
+        .filter(cfg => !(cfg.spaceId === ctx.spaceId && cfg.typeSlug === integration.type))
+    }
+    if (ctx.catalogRef)
+      ctx.catalogRef.current.removeIntegrationAbilities(integration)
+
+    return {
+      handled: true,
+      listChanged: materializedToolNames.length > 0,
+      result: {
+        deleted: true,
+        integration: {
+          id: integration.id,
+          type: integration.type,
+          label: integration.label,
+        },
       },
     }
   }

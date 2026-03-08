@@ -17,13 +17,13 @@ Your job is to write four things for each tool:
 - an **input schema** — a JSON Schema object that defines the arguments the caller passes
 - **handler code** — raw JavaScript that calls the integration and returns data
 
-When you're done with a tool, call `commandable_create_custom_tool`. It persists the tool and triggers a live `tools/list_changed` notification — the tool is callable immediately.
+When you're done with a tool, call `commandable_upsert_custom_tool`. It persists (or updates) the tool and triggers a live `tools/list_changed` notification — the tool is callable immediately.
 
 ## Creating brand new integrations (full vibe-coded integrations)
 
 If the user needs an API that isn't connected yet, you can create a brand new integration type from scratch using:
 
-- `commandable_create_custom_integration`
+- `commandable_upsert_custom_integration`
 
 This creates:
 
@@ -32,9 +32,9 @@ This creates:
 - a **credential form schema** (so the user can enter credentials out-of-band)
 - an **auth injection rule** (so Commandable injects credentials into API calls)
 
-After creation, the user must open the returned `credential_url` and enter credentials. Then you can add tools to the new integration with `commandable_create_custom_tool`.
+After creation, the user must open the returned `credential_url` and enter credentials. Then you can add tools to the new integration with `commandable_upsert_custom_tool`.
 
-### `commandable_create_custom_integration` inputs
+### `commandable_upsert_custom_integration` inputs
 
 - **`label`**: display name, e.g. `"Stripe"`
 - **`base_url`**: API base URL, e.g. `"https://api.stripe.com/v1"`
@@ -175,7 +175,7 @@ Every integration has a base URL baked in. Your paths are appended to it. If the
 2. **Explore first** — use existing read tools (or build a quick `list_*` tool) to understand the API shape, field names, and ID formats
 3. **Draft** the write tool with the correct input schema and handler
 4. **Test** with `commandable_test_custom_tool` — run it with representative input before persisting
-5. **Persist** with `commandable_create_custom_tool` — the tool is live immediately
+5. **Persist** with `commandable_upsert_custom_tool` — the tool is live immediately
 
 ---
 
@@ -189,7 +189,7 @@ The following are real tools taken from the Commandable integration library. Use
 
 **Step 1: Create the integration**
 
-Call `commandable_create_custom_integration`:
+Call `commandable_upsert_custom_integration`:
 
 ```json
 {
@@ -217,7 +217,7 @@ The user opens `credential_url` and enters `apiKey`. The model never sees it.
 
 **Step 3: Add a tool against the new integration**
 
-Call `commandable_create_custom_tool`:
+Call `commandable_upsert_custom_tool`:
 
 ```json
 {

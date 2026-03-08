@@ -69,8 +69,10 @@ export const BUILDER_ABILITY_ID: AbilityId = 'commandable__builder'
 const BUILDER_TOOL_NAMES = [
   'commandable_list_prebuilt_integrations',
   'commandable_add_prebuilt_integration',
-  'commandable_create_custom_integration',
-  'commandable_create_custom_tool',
+  'commandable_upsert_custom_integration',
+  'commandable_upsert_custom_tool',
+  'commandable_delete_custom_tool',
+  'commandable_delete_custom_integration',
   'commandable_test_custom_tool',
 ] as const
 
@@ -192,6 +194,31 @@ export class AbilityCatalog {
     this.abilities.push(created)
     this.byId.set(created.id, created)
     return created
+  }
+
+  removeCustomTool(params: { integration: IntegrationData, toolName: string }): boolean {
+    const abilityId = makeAbilityId(params.integration, 'custom')
+    const existing = this.byId.get(abilityId)
+    if (!existing)
+      return false
+    const before = existing.toolNames.length
+    existing.toolNames = existing.toolNames.filter(name => name !== params.toolName)
+    if (!existing.toolNames.length) {
+      this.byId.delete(abilityId)
+      this.abilities = this.abilities.filter(a => a.id !== abilityId)
+    }
+    return existing.toolNames.length !== before
+  }
+
+  removeIntegrationAbilities(integration: IntegrationData): number {
+    const suffix = `__n${shortNodeId(integration.id)}`
+    const removed = this.abilities.filter(a => a.id.endsWith(suffix)).map(a => a.id)
+    if (!removed.length)
+      return 0
+    for (const id of removed)
+      this.byId.delete(id)
+    this.abilities = this.abilities.filter(a => !removed.includes(a.id))
+    return removed.length
   }
 
   getToolDefinitions(toolNames: string[]): McpToolDefinition[] {

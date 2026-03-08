@@ -10,7 +10,9 @@ import {
   SqlCredentialStore,
   buildMcpToolIndex,
   getOrCreateEncryptionSecret,
+  listIntegrationTypeConfigs,
   listIntegrations,
+  listToolDefinitions,
   registerToolHandlers,
 } from '@commandable/mcp-core'
 import { getDb } from './db'
@@ -78,14 +80,18 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
   const credentialStore = new SqlCredentialStore(db, secret)
   const spaceId = getSpaceId()
   const integrations = await listIntegrations(db, spaceId)
+  const toolDefinitions = await listToolDefinitions(db, spaceId)
+  const integrationTypeConfigs = await listIntegrationTypeConfigs(db, spaceId)
   const integrationsRef = { current: integrations }
+  const integrationTypeConfigsRef = { current: integrationTypeConfigs }
 
   const proxy = new IntegrationProxy({
     credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
+    integrationTypeConfigsRef,
   })
 
-  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
+  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef, toolDefinitions })
   const toolIndexRef = { list: index.tools, byName: index.byName }
 
   const port = (process.env.PORT || '').trim() || '23432'
@@ -104,6 +110,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
         proxy,
         credentialSetupBaseUrl,
         integrationsRef,
+        integrationTypeConfigsRef,
         toolIndexRef,
         catalogRef: catalogRef!,
       }

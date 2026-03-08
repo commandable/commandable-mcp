@@ -76,6 +76,17 @@
                 <p class="text-xs text-muted mt-0.5 leading-snug">{{ tool.description }}</p>
                 <p class="text-[10px] font-mono text-muted/60 mt-0.5">{{ tool.name }}</p>
               </div>
+              <UButton
+                v-if="tool.custom && props.integrationId"
+                size="xs"
+                variant="soft"
+                color="error"
+                icon="i-lucide-trash-2"
+                :loading="deletingToolName === tool.name"
+                @click="deleteCustomTool(tool.name)"
+              >
+                Delete
+              </UButton>
             </div>
           </div>
         </div>
@@ -91,6 +102,7 @@ type ToolItem = {
   description: string
   scope: 'read' | 'write' | 'admin'
   toolset?: string
+  custom?: boolean
 }
 
 type ToolsetMeta = {
@@ -102,7 +114,8 @@ type ToolsetMeta = {
 type ToolsetMap = Record<string, { label: string, description: string }>
 
 const props = defineProps<{
-  integrationType: string
+  integrationType?: string
+  integrationId?: string
   maxScope: 'read' | 'write' | null
   enabledToolsets: string[]
   disabledTools: string[]
@@ -117,6 +130,7 @@ const toolsets = ref<ToolsetMeta[]>([])
 const tools = ref<ToolItem[]>([])
 const loading = ref(true)
 const loadError = ref(false)
+const deletingToolName = ref('')
 const expanded = ref<Set<string>>(new Set())
 
 const effectiveToolsets = computed<ToolsetMeta[]>(() => {
@@ -215,10 +229,20 @@ async function load() {
   loading.value = true
   loadError.value = false
   try {
-    const [tsData, toolData] = await Promise.all([
-      $fetch<ToolsetMap>(`/api/catalog/${props.integrationType}/toolsets`),
-      $fetch<ToolItem[]>(`/api/catalog/${props.integrationType}/tools`),
-    ])
+    if (!props.integrationId && !props.integrationType) {
+      toolsets.value = []
+      tools.value = []
+      return
+    }
+    const [tsData, toolData] = await (props.integrationId
+      ? Promise.all([
+          $fetch<ToolsetMap>(`/api/integrations/${props.integrationId}/toolsets`),
+          $fetch<ToolItem[]>(`/api/integrations/${props.integrationId}/tools`),
+        ])
+      : Promise.all([
+          $fetch<ToolsetMap>(`/api/catalog/${props.integrationType}/toolsets`),
+          $fetch<ToolItem[]>(`/api/catalog/${props.integrationType}/tools`),
+        ]))
 
     toolsets.value = Object.entries(tsData || {})
       .map(([key, value]) => ({ key, label: value.label, description: value.description }))
@@ -234,6 +258,25 @@ async function load() {
   }
   finally {
     loading.value = false
+  }
+}
+
+async function deleteCustomTool(name: string) {
+  if (!props.integrationId || !name || deletingToolName.value)
+    return
+  if (!window.confirm(`Delete custom tool "${name}"? This cannot be undone.`))
+    return
+  deletingToolName.value = name
+  try {
+    await $fetch(`/api/integrations/${props.integrationId}/tools`, {
+      method: 'DELETE',
+      body: { name },
+    })
+    emit('update:disabledTools', props.disabledTools.filter(toolName => toolName !== name))
+    await load()
+  }
+  finally {
+    deletingToolName.value = ''
   }
 }
 

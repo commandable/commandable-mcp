@@ -78,6 +78,21 @@ export class SessionAbilityState {
     return this.getOrCreate(sessionId).activeToolNames.has(toolName)
   }
 
+  removeToolFromAllSessions(toolName: string): void {
+    for (const st of this.sessions.values()) {
+      if (!st.activeToolNames.has(toolName))
+        continue
+      st.activeToolNames.delete(toolName)
+      for (const [abilityId, names] of st.loadedAbilities.entries()) {
+        const next = names.filter(n => n !== toolName)
+        if (next.length)
+          st.loadedAbilities.set(abilityId, next)
+        else
+          st.loadedAbilities.delete(abilityId)
+      }
+    }
+  }
+
   cleanup(sessionId: string | undefined): void {
     const k = this.key(sessionId)
     this.sessions.delete(k)

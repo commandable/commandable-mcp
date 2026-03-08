@@ -99,7 +99,7 @@ export async function upsertIntegrationTypeConfig(
       updatedAt: now,
     })
     .onConflictDoUpdate({
-      target: table.id,
+      target: [table.spaceId, table.typeSlug],
       set: {
         typeSlug: cfg.typeSlug,
         label: cfg.label,
@@ -108,4 +108,16 @@ export async function upsertIntegrationTypeConfig(
         updatedAt: now,
       },
     })
+}
+
+export async function deleteIntegrationTypeConfig(
+  client: DbClient,
+  spaceId: string,
+  typeSlug: string,
+): Promise<number> {
+  const table = t(client)
+  const result: any = await db(client)
+    .delete(table)
+    .where(and(eq(table.spaceId, spaceId), eq(table.typeSlug, typeSlug)))
+  return Number(result?.rowsAffected ?? result?.rowCount ?? 0)
 }

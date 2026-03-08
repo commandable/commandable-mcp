@@ -21,6 +21,30 @@ function parseJson(raw: any): any {
   return raw
 }
 
+function rowToIntegrationData(r: any): IntegrationData {
+  const healthCheckedAt = r.healthCheckedAt
+    ? (r.healthCheckedAt instanceof Date ? r.healthCheckedAt : new Date(r.healthCheckedAt))
+    : null
+
+  return {
+    id: r.id,
+    spaceId: r.spaceId ?? undefined,
+    type: r.type,
+    referenceId: r.referenceId,
+    label: r.label,
+    enabled: r.enabled === 0 ? false : true,
+    connectionMethod: r.connectionMethod ?? undefined,
+    connectionId: r.connectionId ?? undefined,
+    credentialId: r.credentialId ?? undefined,
+    credentialVariant: r.credentialVariant ?? undefined,
+    enabledToolsets: parseJson(r.enabledToolsets),
+    maxScope: (r.maxScope as 'read' | 'write' | null) ?? undefined,
+    disabledTools: parseJson(r.disabledTools),
+    healthStatus: (r.healthStatus as IntegrationData['healthStatus']) ?? null,
+    healthCheckedAt,
+  } satisfies IntegrationData
+}
+
 export async function listIntegrations(client: DbClient, spaceId?: string): Promise<IntegrationData[]> {
   const table = t(client)
   let query: any = db(client).select().from(table)
@@ -28,29 +52,20 @@ export async function listIntegrations(client: DbClient, spaceId?: string): Prom
     query = query.where(eq(table.spaceId, spaceId))
   const rows: any[] = await query
 
-  return rows.map((r) => {
-    const healthCheckedAt = r.healthCheckedAt
-      ? (r.healthCheckedAt instanceof Date ? r.healthCheckedAt : new Date(r.healthCheckedAt))
-      : null
+  return rows.map(rowToIntegrationData)
+}
 
-    return {
-      id: r.id,
-      spaceId: r.spaceId ?? undefined,
-      type: r.type,
-      referenceId: r.referenceId,
-      label: r.label,
-      enabled: r.enabled === 0 ? false : true,
-      connectionMethod: r.connectionMethod ?? undefined,
-      connectionId: r.connectionId ?? undefined,
-      credentialId: r.credentialId ?? undefined,
-      credentialVariant: r.credentialVariant ?? undefined,
-      enabledToolsets: parseJson(r.enabledToolsets),
-      maxScope: (r.maxScope as 'read' | 'write' | null) ?? undefined,
-      disabledTools: parseJson(r.disabledTools),
-      healthStatus: (r.healthStatus as IntegrationData['healthStatus']) ?? null,
-      healthCheckedAt,
-    } satisfies IntegrationData
-  })
+export async function getIntegrationById(
+  client: DbClient,
+  id: string,
+): Promise<IntegrationData | null> {
+  const table = t(client)
+  const rows: any[] = await db(client)
+    .select()
+    .from(table)
+    .where(eq(table.id, id))
+    .limit(1)
+  return rows[0] ? rowToIntegrationData(rows[0]) : null
 }
 
 export async function upsertIntegration(client: DbClient, integration: IntegrationData): Promise<void> {
@@ -93,6 +108,14 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
         disabledTools: integration.disabledTools?.length ? JSON.stringify(integration.disabledTools) : null,
       },
     })
+}
+
+export async function deleteIntegrationById(client: DbClient, id: string): Promise<number> {
+  const table = t(client)
+  const result: any = await db(client)
+    .delete(table)
+    .where(eq(table.id, id))
+  return Number(result?.rowsAffected ?? result?.rowCount ?? 0)
 }
 
 /** Update only credential linkage fields — does not clobber toolsets/permissions. */
