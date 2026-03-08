@@ -131,16 +131,16 @@ jobs:
           COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
           COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
         run: |
-          cd packages/server && yarn vitest run \
+          cd packages/core && yarn vitest run \
             --reporter=json \
-            --outputFile=$GITHUB_WORKSPACE/packages/server/test-results.json
+            --outputFile=$GITHUB_WORKSPACE/packages/core/test-results.json
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.integration }}
-          path: packages/server/test-results.json
+          path: packages/core/test-results.json
           if-no-files-found: warn
 
   # ─── Update gist badges (main branch pushes only) ────────────────────────────

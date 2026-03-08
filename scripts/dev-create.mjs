@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 
 const result = spawnSync(
   process.execPath,
-  ['packages/server/dist/cli/bin.js', 'create', '--source', 'local'],
+  ['app/bin/commandable-mcp.mjs', 'create'],
   {
     cwd: process.cwd(),
     env: process.env,

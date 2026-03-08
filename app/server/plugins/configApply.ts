@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineNitroPlugin } from 'nitropack/runtime'
-import { SqlCredentialStore, applyConfig, getOrCreateEncryptionSecret, loadConfig } from '@commandable/mcp'
+import { SqlCredentialStore, applyConfig, getOrCreateEncryptionSecret, loadConfig } from '@commandable/mcp-core'
 import { getDb } from '../utils/db'
 
 function hasAutoConfigFile(): boolean {

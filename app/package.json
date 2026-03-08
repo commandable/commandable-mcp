@@ -1,24 +1,46 @@
 {
-  "name": "commandable-mcp-app",
-  "version": "0.0.1",
-  "private": true,
+  "name": "@commandable/mcp",
+  "version": "0.2.0",
+  "description": "Commandable app/server package for local management UI, HTTP endpoints, and human-facing CLI flows.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commandable/commandable-mcp.git",
+    "directory": "app"
+  },
+  "homepage": "https://github.com/commandable/commandable-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/commandable/commandable-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "module",
+  "bin": {
+    "commandable-mcp": "./bin/commandable-mcp.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "test": "echo \"(no tests)\"",
-    "typecheck": "nuxt typecheck"
+    "test": "echo \"(no app tests)\"",
+    "typecheck": "nuxt typecheck",
+    "prepack": "npm run build"
   },
   "dependencies": {
-    "@commandable/mcp": "workspace:*",
+    "@commandable/mcp-core": "workspace:*",
+    "@clack/prompts": "^1.0.1",
     "@iconify-json/lucide": "^1.2.90",
     "@iconify-json/simple-icons": "^1.2.70",
     "@nuxt/ui": "^4.4.0",
     "marked": "^17.0.3",
     "nuxt": "^4.3.1",
+    "picocolors": "^1.1.1",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
@@ -27,5 +49,10 @@
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.4"
   },
+  "files": [
+    ".output",
+    "bin",
+    "README.md"
+  ],
   "packageManager": "yarn@4.12.0"
 }

@@ -6,7 +6,7 @@ import {
   getOrCreateEncryptionSecret,
   pgIntegrations,
   sqliteIntegrations,
-} from '@commandable/mcp'
+} from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {

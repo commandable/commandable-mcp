@@ -1,6 +1,13 @@
 import { defineEventHandler, getRouterParam } from 'h3'
-import { eq } from 'drizzle-orm'
-import { pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import {
+  SqlCredentialStore,
+  deleteIntegrationById,
+  deleteIntegrationTypeConfig,
+  deleteToolDefinitionsForIntegration,
+  getIntegrationById,
+  getOrCreateEncryptionSecret,
+  listIntegrations,
+} from '@commandable/mcp-core'
 import { getDb } from '../../utils/db'
 import { refreshMcpState } from '../../utils/mcp'
 
@@ -10,9 +17,23 @@ export default defineEventHandler(async (event) => {
     return { ok: true }
 
   const db = await getDb()
-  const table: any = db.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations
-  await (db.db as any).delete(table).where(eq(table.id, id))
+  const integration = await getIntegrationById(db, id)
+  if (!integration)
+    return { ok: true, deleted: false }
+
+  const spaceId = integration.spaceId || (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local'
+  await deleteToolDefinitionsForIntegration(db, spaceId, integration.id)
+  if (integration.connectionMethod === 'credentials' && integration.credentialId) {
+    const credentialStore = new SqlCredentialStore(db, getOrCreateEncryptionSecret())
+    await credentialStore.deleteCredentials(spaceId, integration.credentialId)
+  }
+  await deleteIntegrationById(db, integration.id)
+
+  const remaining = await listIntegrations(db, spaceId)
+  if (!remaining.some(i => i.type === integration.type))
+    await deleteIntegrationTypeConfig(db, spaceId, integration.type)
+
   await refreshMcpState()
-  return { ok: true }
+  return { ok: true, deleted: true }
 })
 

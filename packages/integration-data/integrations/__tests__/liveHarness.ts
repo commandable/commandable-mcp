@@ -1,7 +1,7 @@
-import { IntegrationProxy } from '../../../server/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../server/src/integrations/dataLoader.js'
-import { createSafeHandlerFromString } from '../../../server/src/integrations/sandbox.js'
-import { buildSandboxUtils } from '../../../server/src/integrations/sandboxUtils.js'
+import { IntegrationProxy } from '../../../core/src/integrations/proxy.js'
+import { loadIntegrationTools } from '../../../core/src/integrations/dataLoader.js'
+import { createSafeHandlerFromString } from '../../../core/src/integrations/sandbox.js'
+import { buildSandboxUtils } from '../../../core/src/integrations/sandboxUtils.js'
 
 type ToolDef = {
   name: string

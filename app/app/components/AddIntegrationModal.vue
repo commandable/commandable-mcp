@@ -120,7 +120,7 @@ watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
 
   // Default: all toolsets enabled in UI.
   if (!selectedTypeEnabledToolsets.value.length)
-    selectedTypeEnabledToolsets.value = toolsets.map((t: any) => t.key)
+    selectedTypeEnabledToolsets.value = toolsets.map((t: any) => t.key).filter((k: string) => k !== 'custom')
 }, { deep: true })
 
 async function create() {
@@ -128,7 +128,7 @@ async function create() {
   creating.value = true
   try {
     const toolsetKeys: string[] = (toolsTreeRef.value?.toolsets || []).map((t: any) => t.key)
-    const realToolsetKeys = toolsetKeys.filter(k => k !== '__all__')
+    const realToolsetKeys = toolsetKeys.filter(k => k !== '__all__' && k !== 'custom')
 
     // IMPORTANT:
     // - undefined/null means "all toolsets" (no filtering)

@@ -1,19 +1,24 @@
-# Commandable App
+# @commandable/mcp App Package
 
-This Nuxt/Nitro app is the HTTP deployment runtime for Commandable.
+This workspace is the published `@commandable/mcp` package.
 
-It serves:
+It owns:
 
-- the management UI at `/`
-- the read MCP HTTP endpoint at `/mcp`
-- the create MCP HTTP endpoint at `/mcp/create`
-- the health check at `/health`
+- the Nuxt management UI
+- the `/mcp` read endpoint
+- the `/mcp/create` create endpoint
+- the local server lifecycle CLI
+- the human-facing `create` and `connect` commands
 
-For the main product flow, see the root `README.md`. The short version is:
+## Main Commands
 
-1. run this app
-2. use `commandable-mcp create --transport http --url http://<host>/mcp/create ...` for Claude Code
-3. use `commandable-mcp connect --transport http --url http://<host>/mcp ...` for read-client connection details
+```bash
+npx -y @commandable/mcp serve
+npx -y @commandable/mcp create
+npx -y @commandable/mcp connect --client claude-desktop
+```
+
+The generated local client snippets target `@commandable/mcp-connect`.
 
 ## Development
 
@@ -21,14 +26,27 @@ From the repo root:
 
 ```bash
 yarn install
-yarn dev
+yarn workspace @commandable/mcp dev
 ```
 
-The app runs on `http://localhost:3000` by default.
+For the full local product flow, prefer the root scripts:
 
-## Configuration
+```bash
+yarn dev:serve
+yarn dev:create
+yarn dev:connect
+```
 
-The app is configured via environment variables and/or a config file. See:
+## HTTP Deployment
 
-- `.env.example`
-- the root `README.md`
+For remote/shared deployments, run this package as the app server and use:
+
+```bash
+npx -y @commandable/mcp create --transport http --url <create-url> --api-key <api-key>
+npx -y @commandable/mcp connect --transport http --url <read-url> --api-key <api-key>
+```
+
+## Notes
+
+- The old embedded-bundle-in-another-package model is gone.
+- This package now publishes and runs the built Nuxt app directly.

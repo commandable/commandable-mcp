@@ -10,11 +10,13 @@ import {
   SqlCredentialStore,
   buildMcpToolIndex,
   getOrCreateEncryptionSecret,
+  listIntegrationTypeConfigs,
   listIntegrations,
+  listToolDefinitions,
   registerToolHandlers,
-} from '@commandable/mcp'
+} from '@commandable/mcp-core'
 import { getDb } from './db'
-import type { MetaToolContext } from '@commandable/mcp'
+import type { MetaToolContext } from '@commandable/mcp-core'
 
 export type HttpMcpEndpoint = 'static' | 'create'
 
@@ -55,7 +57,10 @@ function getSpaceId(): string {
 }
 
 function getServerInfo(): Implementation {
-  return { name: 'commandable', version: '0.0.1' }
+  return {
+    name: 'commandable',
+    version: (process.env.COMMANDABLE_VERSION || '').trim() || '0.0.0'
+  }
 }
 
 function isCreateEndpoint(endpoint: HttpMcpEndpoint): boolean {
@@ -75,14 +80,18 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
   const credentialStore = new SqlCredentialStore(db, secret)
   const spaceId = getSpaceId()
   const integrations = await listIntegrations(db, spaceId)
+  const toolDefinitions = await listToolDefinitions(db, spaceId)
+  const integrationTypeConfigs = await listIntegrationTypeConfigs(db, spaceId)
   const integrationsRef = { current: integrations }
+  const integrationTypeConfigsRef = { current: integrationTypeConfigs }
 
   const proxy = new IntegrationProxy({
     credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
+    integrationTypeConfigsRef,
   })
 
-  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef })
+  const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef, toolDefinitions })
   const toolIndexRef = { list: index.tools, byName: index.byName }
 
   const port = (process.env.PORT || '').trim() || '23432'
@@ -101,6 +110,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
         proxy,
         credentialSetupBaseUrl,
         integrationsRef,
+        integrationTypeConfigsRef,
         toolIndexRef,
         catalogRef: catalogRef!,
       }

@@ -98,7 +98,7 @@
         </h2>
         <IntegrationToolsTree
           ref="toolsTreeRef"
-          :integration-type="integration.type"
+          :integration-id="integration.id"
           :max-scope="formMaxScope"
           :enabled-toolsets="formEnabledToolsets"
           :disabled-tools="formDisabledTools"
@@ -164,7 +164,9 @@ function initForm() {
   formDisabledTools.value = integration.value.disabledTools ? [...integration.value.disabledTools] : []
 
   const treeToolsets = toolsTreeRef.value?.toolsets
-  const allKeys = Array.isArray(treeToolsets) ? treeToolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__') : []
+  const allKeys = Array.isArray(treeToolsets)
+    ? treeToolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__' && k !== 'custom')
+    : []
   formEnabledToolsets.value = integration.value.enabledToolsets?.length
     ? [...integration.value.enabledToolsets]
     : allKeys
@@ -194,7 +196,9 @@ async function saveAll() {
 
     // Save toolsets
     const treeToolsets = toolsTreeRef.value?.toolsets
-    const allKeys = Array.isArray(treeToolsets) ? treeToolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__') : []
+    const allKeys = Array.isArray(treeToolsets)
+      ? treeToolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__' && k !== 'custom')
+      : []
     const enabledToolsets = allKeys.length && formEnabledToolsets.value.length < allKeys.length
       ? formEnabledToolsets.value
       : []

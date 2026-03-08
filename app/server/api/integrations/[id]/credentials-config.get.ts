@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { findIntegrationTypeConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp'
+import { findIntegrationTypeConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
