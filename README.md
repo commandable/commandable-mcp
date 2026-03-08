@@ -2,7 +2,7 @@
 
 Commandable MCP is the last mcp server you need. 
 
-Why? It allows your agents to create their own mcp servers and tools from scratch, securely. One MCP, any app.
+It allows your agents to create their own mcp servers and tools from scratch, securely. One MCP, any app.
 
 https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b
 
