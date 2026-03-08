@@ -70,11 +70,9 @@ npx -y @commandable/mcp create --transport http --url http://localhost:3000/mcp/
 npx -y @commandable/mcp connect --transport http --url http://localhost:3000/mcp --api-key <your-api-key>
 ```
 
-## Local Source Development
+## Pre Build MCPs 
 
-If you are working from this repo, use the contributor workflow in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
-
-## Supported Integrations
+Commandable also ships with a number of pre built integrations / mcps that work out of the box. The full list of included MCPs is below and grows regularly.
 
 <!-- INTEGRATION_TABLE_START -->
 | Integration | Tools | Toolsets | Live Tests |
@@ -94,23 +92,12 @@ If you are working from this repo, use the contributor workflow in [`CONTRIBUTIN
 | [Trello](packages/integration-data/integrations/trello/) | 34 | all tools | ![Trello tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theomccabe/771bd329f303087690c522afa1baa6f3/raw/test-trello.json) |
 <!-- INTEGRATION_TABLE_END -->
 
-## Configuration
 
-Commandable looks for config in this order:
+## Security
 
-1. `--config <path>`
-2. `COMMANDABLE_CONFIG_FILE`
-3. `./commandable.config.yaml`, `./commandable.config.yml`, `./commandable.config.json`
+Commandable encrypts credentials immediately and stores them in your home directory (`~/.commandable/`) unless you override `COMMANDABLE_DATA_DIR`.
 
-Important environment variables:
-
-- `COMMANDABLE_ENCRYPTION_SECRET`
-- `DATABASE_URL`
-- `COMMANDABLE_CONFIG_FILE`
-- `COMMANDABLE_DATA_DIR`
-- `COMMANDABLE_MCP_SQLITE_PATH`
-- `COMMANDABLE_UI_PORT`
-- `COMMANDABLE_INTEGRATION_DATA_DIR`
+In deployed HTTP setups, use `commandable.config.yaml` with `${ENV_VAR}` references and inject secrets through your deployment environment.
 
 ## CLI Reference
 
@@ -125,18 +112,6 @@ Important environment variables:
 | `commandable-mcp create-api-key [name]` | Create an API key for HTTP MCP endpoints |
 | `commandable-mcp --help` | Show usage |
 | `commandable-mcp --version` | Print version |
-
-## Notes
-
-- `@commandable/mcp create` and local `connect` flows now hard-fail if the local server is not already running.
-- `@commandable/mcp-connect` is intentionally machine-facing. Most humans only need `@commandable/mcp`.
-- The old embedded Nitro bundle flow is gone. The published app package now runs as itself.
-
-## Security
-
-Commandable encrypts credentials immediately and stores them in your home directory (`~/.commandable/`) unless you override `COMMANDABLE_DATA_DIR`.
-
-In deployed HTTP setups, use `commandable.config.yaml` with `${ENV_VAR}` references and inject secrets through your deployment environment.
 
 ## Contributing
 
