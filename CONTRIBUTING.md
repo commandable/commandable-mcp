@@ -35,10 +35,11 @@ yarn workspace @commandable/mcp prepack
 yarn dev:serve
 ```
 
-or if you have want a completely fresh database:
+If you want a completely fresh local dev database state first:
 
 ```bash
-yarn dev:reset
+yarn dev:destroy
+yarn dev:serve
 ```
 
 This starts the management UI at `http://127.0.0.1:23433/`, the read MCP endpoint at `http://127.0.0.1:23433/mcp`, and the create MCP endpoint at `http://127.0.0.1:23433/mcp/create`. It always restarts the daemon so you are always on the latest build.
@@ -56,15 +57,6 @@ This prints the Claude Code replacement steps for the local dev instance, includ
 ```bash
 yarn dev:connect
 ```
-
-### Reset or wipe dev state
-
-```bash
-yarn dev:reset    # wipe dev state and restart fresh
-yarn dev:destroy  # wipe dev state only, no restart
-```
-
-These only affect `~/.commandable-dev`. Your normal local instance and any deployed environments are untouched.
 
 ### Diagnostics
 

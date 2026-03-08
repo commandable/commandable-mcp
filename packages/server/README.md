@@ -32,7 +32,7 @@ Use `--client cursor` for Cursor.
 - `npx -y @commandable/mcp create [--transport stdio|http] [--source package|local] [--apply]`
 - `npx -y @commandable/mcp connect [--client claude-desktop|cursor] [--transport stdio|http] [--source package|local]`
 - `npx -y @commandable/mcp doctor`
-- `npx -y @commandable/mcp reset local --yes`
+- `npx -y @commandable/mcp destroy local --yes`
 - `npx -y @commandable/mcp apply [--config <file>]`
 - `npx -y @commandable/mcp create-api-key [name]`
 

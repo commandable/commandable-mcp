@@ -138,7 +138,7 @@ Key environment variables:
 | `commandable-mcp connect [--client claude-desktop\|cursor] [--transport stdio\|http] [--source package\|local] [--url] [--api-key]` | Print read-client connection details |
 | `commandable-mcp apply [--config <file>]` | Apply config-as-code idempotently (CI-friendly) |
 | `commandable-mcp doctor` | Print diagnostic info for local state, daemon, and active env wiring |
-| `commandable-mcp reset local [--yes] [--keep-key]` | Stop daemon and wipe local SQLite/pid (and key unless `--keep-key`) |
+| `commandable-mcp destroy local [--yes] [--keep-key]` | Stop daemon and wipe local SQLite/pid (and key unless `--keep-key`) |
 | `commandable-mcp create-api-key [name]` | Create an API key for the HTTP MCP endpoints |
 | `commandable-mcp --help` | Show usage |
 | `commandable-mcp --version` | Print version |

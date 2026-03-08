@@ -1,7 +1,7 @@
 {
   "name": "@commandable/mcp",
-  "version": "0.1.0",
-  "description": "Encrypted, self-hosted MCP server + setup CLI for connecting everyday apps to any MCP-compatible AI client.",
+  "version": "0.1.1",
+  "description": "The recursive MCP server. Allows agents to build new MCP servers and tools securely on the fly. One MCP, any app.",
   "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",

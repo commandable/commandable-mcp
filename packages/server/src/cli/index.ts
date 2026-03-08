@@ -5,6 +5,7 @@ import { chmodSync, existsSync, readFileSync, unlinkSync, writeFileSync } from '
 import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isCancel, select } from '@clack/prompts'
 import { IntegrationProxy } from '../integrations/proxy.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { runStdioMcpServer } from '../mcp/server.js'
@@ -535,7 +536,7 @@ async function runDoctor() {
       status: probe?.json ?? null,
     },
     hints: [
-      'Use "commandable-mcp reset local --yes" for a full local wipe.',
+      'Use "commandable-mcp destroy local --yes" for a full local wipe.',
       'Use "commandable-mcp serve" to start the local Commandable instance.',
       'Use "commandable-mcp create" for the Claude Code authoring flow.',
       'Use "commandable-mcp connect --client claude-desktop" for a read-client config snippet.',
@@ -545,13 +546,38 @@ async function runDoctor() {
   console.error(JSON.stringify(report, null, 2))
 }
 
-function runResetLocal() {
-  const confirm = hasFlag('--yes')
+async function confirmDestroyLocal(params: { keepKey: boolean }): Promise<boolean> {
+  const warningLabel = picocolors.black(picocolors.bgYellow(picocolors.bold(' WARNING ')))
+  console.error(`${warningLabel} ${picocolors.red('This will delete all of your local saved Commandable data.')}`)
+  console.error(`${picocolors.dim('-')} saved integrations and credentials`)
+  console.error(`${picocolors.dim('-')} local SQLite state and daemon state`)
+  console.error(`${picocolors.dim('-')} ${params.keepKey ? 'the encryption key will be kept because --keep-key is set' : 'the local encryption key'}`)
+  console.error(`${picocolors.yellow('Remote Postgres data will not be deleted.')}`)
+  console.error('')
+
+  const result = await select({
+    message: 'Are you sure you want to continue?',
+    options: [
+      { value: 'destroy', label: picocolors.red('Yes, destroy local data') },
+      { value: 'cancel', label: picocolors.cyan('No, cancel') },
+    ],
+    initialValue: 'cancel',
+  })
+
+  if (isCancel(result) || result !== 'destroy') {
+    console.error(picocolors.yellow('Cancelled.'))
+    return false
+  }
+
+  return true
+}
+
+async function runDestroyLocal() {
   const keepKey = hasFlag('--keep-key')
-  if (!confirm) {
-    console.error(`This command deletes local Commandable state.`)
-    console.error(`Re-run with ${picocolors.cyan('--yes')} to confirm.`)
-    process.exit(1)
+  if (!hasFlag('--yes')) {
+    const confirmed = await confirmDestroyLocal({ keepKey })
+    if (!confirmed)
+      return
   }
 
   const dataDir = getCommandableDir()
@@ -577,7 +603,7 @@ function runResetLocal() {
     }
   }
 
-  console.error(picocolors.green('Local reset complete.'))
+  console.error(picocolors.green('Local destroy complete.'))
   console.error(`${picocolors.dim('Data dir:')} ${dataDir}`)
   console.error(`${picocolors.dim('Daemon stopped:')} ${stopped.stopped ? 'yes' : 'no (no PID found)'}`)
   if (removed.length)
@@ -586,7 +612,8 @@ function runResetLocal() {
     console.error(`${picocolors.dim('Already absent:')} ${missing.join(', ')}`)
   if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length)
     console.error(`${picocolors.yellow('Warning:')} DATABASE_URL is set; remote Postgres data was not modified.`)
-  console.error(`Next step: ${picocolors.cyan('commandable-mcp create')}`)
+  console.error(`Next step: ${picocolors.cyan('commandable-mcp serve')}`)
+  console.error(`Then connect create mode: ${picocolors.cyan('commandable-mcp create')}`)
   console.error(`Legacy bootstrap: ${picocolors.cyan('commandable-mcp static-init')}`)
 }
 
@@ -605,7 +632,7 @@ function help(exitCode: number = 0): never {
     `  ${picocolors.cyan('commandable-mcp create')} ${picocolors.dim('[--transport stdio|http] [--source package|local] [--apply] [--url] [--api-key]')}`,
     `  ${picocolors.cyan('commandable-mcp connect')} ${picocolors.dim('[--client claude-desktop|cursor] [--transport stdio|http] [--source package|local] [--url] [--api-key]')}`,
     `  ${picocolors.cyan('commandable-mcp doctor')}`,
-    `  ${picocolors.cyan('commandable-mcp reset local')} ${picocolors.dim('[--yes] [--keep-key]')}`,
+    `  ${picocolors.cyan('commandable-mcp destroy local')} ${picocolors.dim('[--yes] [--keep-key]')}`,
     `  ${picocolors.cyan('commandable-mcp apply')} ${picocolors.dim('[--config ./commandable.config.yaml]')}`,
     `  ${picocolors.cyan('commandable-mcp create-api-key')} ${picocolors.dim('[name]')}`,
     `  ${picocolors.cyan('commandable-mcp --version')}`,
@@ -801,10 +828,10 @@ export async function main() {
   if (cmd === 'doctor')
     return await runDoctor()
 
-  if (cmd === 'reset') {
+  if (cmd === 'destroy') {
     const sub = (process.argv[3] || '').trim().toLowerCase()
     if (sub === 'local')
-      return runResetLocal()
+      return await runDestroyLocal()
     help(1)
   }
 
