@@ -404,6 +404,21 @@ function makeClaudeCodeHttpAddCommand(): string {
   return `claude mcp add --transport http commandable ${details.url} --header "Authorization: ${details.headers.Authorization}"`
 }
 
+function printCreateInstructions(addCommand: string, instanceLabel: string) {
+  const line = picocolors.dim('─'.repeat(60))
+  console.error('')
+  console.error(picocolors.white('The current create experience requires an advanced MCP client. We recommend Claude Code.'))
+  console.error('')
+  console.error(picocolors.bold(`Connect Claude Code to your local ${instanceLabel}:`))
+  console.error(line)
+  console.error(picocolors.cyan('claude mcp remove commandable'))
+  console.error(picocolors.cyan(addCommand))
+  console.error(line)
+  console.error(picocolors.dim('Paste the commands above into your terminal, then restart Claude Code.'))
+  console.error(picocolors.dim('Previous Commandable instances keep their own state and can be re-added later.'))
+  console.error('')
+}
+
 function runCreate() {
   const source = getSourceValue()
   const transport = getTransportValue()
@@ -414,8 +429,8 @@ function runCreate() {
     : makeClaudeCodeAddCommand(source)
 
   if (!shouldApply) {
-    console.error(command)
-    console.error('Run that, then restart Claude Code.')
+    const instanceLabel = source === 'local' ? 'dev instance' : 'instance'
+    printCreateInstructions(command, instanceLabel)
     return
   }
 
