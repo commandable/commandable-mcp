@@ -10,6 +10,7 @@ RUN apt-get update \
 # Install deps (workspace-aware)
 COPY package.json yarn.lock tsconfig.base.json .yarnrc.yml ./
 COPY packages/core/package.json packages/core/package.json
+COPY packages/connect/package.json packages/connect/package.json
 COPY packages/integration-data/package.json packages/integration-data/package.json
 COPY app/package.json app/package.json
 
