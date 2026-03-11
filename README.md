@@ -1,14 +1,23 @@
 # Commandable MCP
 
-Commandable MCP is the last MCP server you need
+Commandable MCP is the last MCP framework you need
 
-It allows agents to create their own MCP servers and tools from scratch, securely*
+It lets agents build, configure, and serve MCP integrations and lightweight app backends in place, securely*
 
 __One MCP, any app__
 
 _*credentials encrypted at rest, the model never sees them_
 
 https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b
+
+Commandable ships with a growing set of prebuilt integrations out of the box, but that is only the starting point. The bigger idea is create mode: instead of treating MCPs as static, hand-authored servers, agents can generate the MCP capabilities they need on the fly and expose them through one consistent runtime.
+
+Use it when you want to:
+
+- connect existing apps like GitHub, Notion, Google, Jira, and Trello fast
+- let an agent compose custom toolsets for a specific workflow or user
+- stand up new MCP-powered integrations or mini app backends without rebuilding everything from scratch
+- keep credentials server-side, encrypted at rest, and out of model context
 
 ## Quick Start: Local Flow
 
@@ -74,9 +83,9 @@ npx -y @commandable/mcp create --transport http --url http://localhost:3000/mcp/
 npx -y @commandable/mcp connect --transport http --url http://localhost:3000/mcp --api-key <your-api-key>
 ```
 
-## Pre Build MCPs 
+## Prebuilt Integrations
 
-Commandable also ships with a number of pre built integrations / mcps that work out of the box. The full list of included MCPs is below and grows regularly.
+Commandable also ships with a strong set of prebuilt integrations that work out of the box. These are not the whole product, but they give you an immediate foundation: connect fast, start building, then extend or generate custom MCP capabilities as needed. The list below grows regularly.
 
 <!-- INTEGRATION_TABLE_START -->
 | Integration | Tools | Toolsets | Live Tests |

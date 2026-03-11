@@ -2,31 +2,37 @@
 
 ## What is this?
 
-Commandable MCP is an open-source tool server that connects your everyday apps (GitHub, Notion, Google Docs, Trello, Airtable, etc.) to any AI assistant that supports the Model Context Protocol (MCP). You configure your integrations once, and every MCP-compatible client — Claude Desktop, Cursor, Cline, and others — gets access to all your tools through a single endpoint.
+Commandable MCP is an open-source framework for building, configuring, and serving MCP integrations and lightweight MCP-powered apps. It still ships with a growing set of prebuilt integrations (GitHub, Notion, Google Docs, Trello, Airtable, etc.), but that is no longer the whole story: the core idea is that an agent can assemble or generate the MCP it needs in place, on the fly, without starting from scratch each time.
 
-Think of it as the universal adapter between your apps and your AI.
+Think of it as both:
+- a universal adapter between your apps and your AI
+- and a creation framework that lets agents stand up new MCP capabilities dynamically
 
 ## Why does this exist?
 
-Today, if you want an AI assistant to interact with your tools, you either:
+Today, if you want an AI assistant to interact with your tools or build a new MCP-backed workflow, you either:
 
 - Use a closed platform that locks you in and controls your data
 - Build custom integrations yourself, one per tool, per AI client
 - Cobble together multiple MCP servers (one for GitHub, one for Notion, one for Google, etc.), each with its own config, auth setup, and maintenance burden
+- Hand-roll one-off MCP integrations or mini agent apps every time you need a new capability
 
 None of these are great. Commandable MCP exists so that developers and teams can:
 
 1. **Connect once, use everywhere.** Set up your integrations in one place. Every MCP client you use gets the same tools.
 2. **Own their data and infrastructure.** Self-host with zero external dependencies. Your credentials stay on your machine, encrypted at rest. No cloud account required.
 3. **Get started in under 5 minutes.** Run one command, paste a couple of API keys, and you're working. If setup takes longer than 5 minutes, we've failed.
+4. **Create new MCP capabilities without rebuilding the world.** Prebuilt integrations should get you far, but when you need something custom, the framework should help an agent generate the integration/app layer in place instead of forcing you to author an entire MCP project by hand.
 
 ## Who is this for?
 
 **Individual developers** who use AI coding assistants (Cursor, Claude Desktop, Cline) and want those assistants to be able to interact with their tools — create GitHub issues, query Notion databases, update Trello boards, read Google Docs — without leaving the conversation.
 
-**Small teams** who want a shared, self-hosted tool server that everyone's AI assistant can connect to, with a simple web UI for managing which integrations are active and who has access.
+**Small teams** who want a shared, self-hosted MCP layer that everyone's AI assistant can connect to, with a simple web UI for managing which integrations are active and who has access.
 
-**Power users** who are already deep in the MCP ecosystem and want a single, well-maintained server that covers the 8-10 integrations they use daily, rather than running a separate MCP server for each one.
+**Agent builders and vibe coders** who want an agent to help generate new MCP integrations, toolsets, or lightweight app behavior in place, rather than treating MCPs as static hand-authored artifacts.
+
+**Power users** who are already deep in the MCP ecosystem and want a single, well-maintained foundation that covers the 8-10 integrations they use daily, while still leaving room to create custom capabilities when the built-ins are not enough.
 
 ## Using Commandable as a web API (agent frameworks)
 
@@ -51,13 +57,15 @@ That moment — "holy shit, it actually works" — is the most important moment 
 
 The tool server runs invisibly in the background. The developer doesn't think about it. They just talk to their AI assistant and it can do things: create issues, look up documents, check calendars, update boards. The tools are there when needed and invisible when not.
 
-### Adding a new integration
+### Adding a new integration or app capability
 
 A developer wants to add Notion. They either:
 - Run an npx command again and add it to their config
 - Open the local web UI, click "Add Integration," paste their Notion token, done
 
 Either path should take under 60 seconds.
+
+If the capability does not already exist as a prebuilt integration, the developer should increasingly be able to use Commandable's create flow to generate or compose the MCP integration/app behavior they need in place, then immediately expose it through the same Commandable runtime.
 
 ### The management UI
 
@@ -69,9 +77,9 @@ For people who prefer clicking over typing, there's a local web app. It shows wh
 
 Each integration ships with a complete manifest of tools — not just "call this API endpoint," but thoughtful, well-described operations that LLMs can actually understand and use correctly. Input schemas are precise. Descriptions are written for AI consumption. Handlers deal with pagination, error cases, and API quirks so the LLM doesn't have to.
 
-### One server, many tools
+### One framework, many MCPs
 
-Instead of running 8 separate MCP servers and managing 8 separate configs, you run one. This matters because every tool you expose to an LLM consumes context window. Having one well-organized server that can present tools intelligently is fundamentally better than 8 dumb ones dumping everything at once.
+Instead of running 8 separate MCP servers and managing 8 separate configs, you run one foundation. That foundation can expose prebuilt integrations, generated integrations, and custom app-specific tool surfaces through a consistent runtime. This matters because every tool you expose to an LLM consumes context window. Having one well-organized framework that can present tools intelligently is fundamentally better than 8 dumb servers dumping everything at once.
 
 ### Security by default
 
@@ -87,12 +95,14 @@ Commandable MCP is the open-source project. Commandable (at commandable.ai) is t
 
 The company also offers:
 - **A hosted version** at mcp.commandable.ai — same software, but managed for you. Includes managed OAuth (so you don't have to figure out API keys for services like Google and GitHub), higher usage limits, and team features.
-- **An enterprise agent platform** — a full AI agent builder for organizations. The open-source MCP server and the enterprise platform share the same integration engine, so integration quality improvements flow to both.
+- **The Commandable app** — the broader platform for vibe-coding agents. This is where chats, studio/build flows, activity, runs, cards, and agent orchestration live.
+
+Commandable MCP should be thought of as one foundational section of the broader Commandable app. It is the integration and MCP-generation layer that the app builds on top of. The same integration engine and runtime ideas should flow between the open-source MCP project and the productized Commandable app.
 
 The open-source project exists to:
 - Give developers a genuinely useful tool with no strings attached
 - Build trust and awareness for the Commandable brand
-- Create a natural upgrade path for users who want managed OAuth, team features, or the full agent platform
+- Create a natural upgrade path for users who want managed OAuth, team features, or the full vibe-coding agent platform
 - Receive community contributions that improve integrations for everyone
 
 ## What's in scope for v1?
