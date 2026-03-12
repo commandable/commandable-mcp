@@ -1,6 +1,6 @@
 {
   "name": "@commandable/integration-data",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Integration data (manifests, schemas, handlers, credential configs) for Commandable integrations.",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -19,6 +19,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.js"
     },
     "./credentials": {
       "types": "./dist/credentials-index.d.ts",
