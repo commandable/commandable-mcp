@@ -5,7 +5,6 @@ export type {
   ToolsetMeta,
   ToolListItem,
   ToolData,
-  DisplayCardData,
   IntegrationCatalogItem,
 } from './loader.js'
 

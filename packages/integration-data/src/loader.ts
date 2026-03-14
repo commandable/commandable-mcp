@@ -62,13 +62,6 @@ interface ToolRef {
 
 type FlatTools = ToolRef[]
 
-interface DisplayCardRef {
-  name: string
-  description: string
-  inputSchema: string
-  component: string
-}
-
 export interface ToolsetMeta {
   label: string
   description: string
@@ -91,13 +84,6 @@ function humanizeName(name: string): string {
     .join(' ')
 }
 
-export interface DisplayCardData {
-  name: string
-  description: string
-  inputSchema: JSONSchema7
-  component: string
-}
-
 export interface ToolData {
   name: string
   displayName?: string
@@ -115,7 +101,6 @@ interface Manifest {
   utils?: string[]
   toolsets?: Record<string, ToolsetMeta>
   tools: FlatTools
-  displayCards?: DisplayCardRef[]
 }
 
 /**
@@ -189,23 +174,6 @@ function materializeTool(type: string, ref: ToolRef, utils?: string[]): ToolData
     handlerCode,
     utils: Array.isArray(utils) ? utils : undefined,
   }
-}
-
-export function loadIntegrationDisplayCards(type: string): DisplayCardData[] {
-  const manifest = loadIntegrationManifest(type)
-  if (!manifest?.displayCards?.length)
-    return []
-  const dir = integrationDir(type)
-  return manifest.displayCards.map((ref) => {
-    const schemaPath = resolve(dir, ref.inputSchema)
-    const schema = existsSync(schemaPath) ? ensureSchemaObject(readJsonFile(schemaPath)) : {}
-    return {
-      name: ref.name,
-      description: ref.description,
-      inputSchema: schema as JSONSchema7,
-      component: ref.component,
-    }
-  })
 }
 
 export function loadIntegrationToolsets(type: string): Record<string, ToolsetMeta> | null {

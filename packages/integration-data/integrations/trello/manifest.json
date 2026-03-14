@@ -1,14 +1,6 @@
 {
   "name": "trello",
   "version": "0.1.0",
-  "displayCards": [
-    {
-      "name": "display_trello_cards",
-      "description": "Display one or more Trello cards as rich visual cards in the chat. Use this whenever you have fetched Trello card data and want to present it visually to the user instead of as plain text.",
-      "inputSchema": "schemas/display_trello_cards.json",
-      "component": "TrelloCard"
-    }
-  ],
   "tools": [
     {
       "name": "get_member",

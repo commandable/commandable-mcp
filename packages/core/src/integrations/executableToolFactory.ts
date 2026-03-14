@@ -1,6 +1,6 @@
 import type { ExecutableTool, IntegrationData, ToolDefinition, ToolScope } from '../types.js'
 import type { IntegrationProxy } from './proxy.js'
-import { loadIntegrationDisplayCards, loadIntegrationTools } from './dataLoader.js'
+import { loadIntegrationTools } from './dataLoader.js'
 import { makeIntegrationToolName, sanitizeJsonSchema } from './tools.js'
 import { createSafeHandlerFromString } from './sandbox.js'
 import { createGetIntegration } from './getIntegration.js'
@@ -97,36 +97,3 @@ export function buildToolsByIntegration(
 
   return toolsByIntegration
 }
-
-export function buildDisplayCardTools(
-  spaceId: string,
-  integrations: IntegrationData[],
-): Record<string, ExecutableTool[]> {
-  const displayToolsByIntegration: Record<string, ExecutableTool[]> = {}
-
-  for (const integ of integrations) {
-    const cards = loadIntegrationDisplayCards(integ.type)
-    if (!cards.length)
-      continue
-
-    const tools: ExecutableTool[] = []
-    for (const card of cards) {
-      const schemaObj = sanitizeJsonSchema(card.inputSchema)
-      const toolName = makeIntegrationToolName(integ.type, card.name, integ.id)
-      const description = `[${integ.label} | ${integ.type}] ${card.description}`
-
-      tools.push({
-        name: toolName,
-        displayName: card.component,
-        description,
-        inputSchema: schemaObj,
-        run: async (args: any) => ({ success: true, result: args, logs: [] }),
-      })
-    }
-
-    displayToolsByIntegration[integ.referenceId] = tools
-  }
-
-  return displayToolsByIntegration
-}
-
