@@ -2,7 +2,7 @@ import type { JSONSchema7 } from 'json-schema'
 import type { ExecutableTool, IntegrationData } from '../types.js'
 import type { ToolDefinition } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
-import { buildToolsByIntegration } from '../integrations/actionsFactory.js'
+import { buildToolsByIntegration } from '../integrations/executableToolFactory.js'
 
 export interface McpToolDefinition {
   name: string
