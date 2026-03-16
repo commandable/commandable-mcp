@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, setResponseStatus } from 'h3'
-import { handleMcpHttp } from '../utils/mcp'
+import { handleMcpHttp } from '../../utils/mcp'
 
 export default defineEventHandler(async (event) => {
   const method = event.node.req.method || 'GET'
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     nodeReq: event.node.req,
     nodeRes: event.node.res,
     body,
-    endpoint: 'dynamic',
+    endpoint: 'static',
     authApiKeyId: event.context.auth?.apiKeyId ?? null
   })
 

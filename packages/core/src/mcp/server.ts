@@ -7,10 +7,19 @@ import type { SessionAbilityState } from './sessionState.js'
 import { registerToolHandlers } from './handlers.js'
 import type { MetaToolContext } from './metaTools.js'
 
+export type McpServerMode = 'static' | 'dynamic' | 'create'
+
+export interface DynamicModeContext {
+  catalogRef: { current: AbilityCatalog }
+  sessionState: SessionAbilityState
+  ctx?: MetaToolContext
+}
+
 export interface StdioMcpServerParams {
   serverInfo: Implementation
   tools: { list: Array<{ name: string, description?: string, inputSchema: any }>, byName: Map<string, ExecutableTool> }
-  createMode?: { catalogRef: { current: AbilityCatalog }, sessionState: SessionAbilityState, ctx?: MetaToolContext }
+  mode: McpServerMode
+  dynamicMode?: DynamicModeContext
 }
 
 export async function runStdioMcpServer(params: StdioMcpServerParams): Promise<void> {
@@ -20,7 +29,10 @@ export async function runStdioMcpServer(params: StdioMcpServerParams): Promise<v
     },
   })
 
-  registerToolHandlers(server, params.tools, params.createMode)
+  registerToolHandlers(server, params.tools, {
+    mode: params.mode,
+    dynamicMode: params.dynamicMode,
+  })
 
   const transport = new StdioServerTransport()
   await server.connect(transport)

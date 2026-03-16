@@ -5,7 +5,8 @@ This workspace is the published `@commandable/mcp` package.
 It owns:
 
 - the Nuxt management UI
-- the `/mcp` read endpoint
+- the `/mcp` dynamic endpoint
+- the `/mcp/static` compatibility endpoint
 - the `/mcp/create` create endpoint
 - the local server lifecycle CLI
 - the human-facing `create` and `connect` commands
@@ -45,6 +46,12 @@ For remote/shared deployments, run this package as the app server and use:
 npx -y @commandable/mcp create --transport http --url <create-url> --api-key <api-key>
 npx -y @commandable/mcp connect --transport http --url <read-url> --api-key <api-key>
 ```
+
+Recommended URLs:
+
+- dynamic: `<base-url>/mcp`
+- static: `<base-url>/mcp/static`
+- create: `<base-url>/mcp/create`
 
 ## Notes
 

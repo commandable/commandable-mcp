@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     nodeRes: event.node.res,
     body,
     endpoint: 'create',
-    authApiKeyId: event.context.auth?.apiKeyId ?? null,
+    authApiKeyId: event.context.auth?.apiKeyId ?? null
   })
 
   if (result.kind === 'handled') {
@@ -22,6 +22,6 @@ export default defineEventHandler(async (event) => {
   return {
     jsonrpc: '2.0',
     error: { code: -32000, message: result.message },
-    id: null,
+    id: null
   }
 })

@@ -176,7 +176,7 @@ function makeReadModeConfig() {
     mcpServers: {
       commandable: {
         command: 'npx',
-        args: ['-y', '@commandable/mcp-connect'],
+        args: ['-y', '@commandable/mcp-connect', 'static-mode'],
       },
     },
   }
@@ -308,7 +308,8 @@ async function runServe() {
   console.error(picocolors.green(`Commandable local instance ${ui.reused ? 'ready' : 'running'}.`))
   console.error(`${picocolors.dim('Base URL:')} ${baseUrl}`)
   console.error(`${picocolors.dim('Management UI:')} ${baseUrl}/`)
-  console.error(`${picocolors.dim('MCP endpoint:')} ${baseUrl}/mcp`)
+  console.error(`${picocolors.dim('Dynamic MCP endpoint:')} ${baseUrl}/mcp`)
+  console.error(`${picocolors.dim('Static MCP endpoint:')} ${baseUrl}/mcp/static`)
   console.error(`${picocolors.dim('Create endpoint:')} ${baseUrl}/mcp/create`)
   console.error(`${picocolors.dim('Data dir:')} ${getCommandableDir()}`)
   console.error(`${picocolors.dim('SQLite:')} ${getSqlitePathForLocalState()}`)
@@ -515,8 +516,8 @@ function help(exitCode = 0) {
     '',
     picocolors.bold('Notes'),
     `- ${picocolors.bold('Serve')}: starts or reuses the local Commandable instance.`,
-    `- ${picocolors.bold('Create')}: Claude Code authoring flow. Prints or applies ${picocolors.cyan('claude mcp add')}.`,
-    `- ${picocolors.bold('Connect')}: prints read-client connection details.`,
+    `- ${picocolors.bold('Create')}: Claude Code authoring flow. Prints or applies ${picocolors.cyan('claude mcp add')} for builder mode.`,
+    `- ${picocolors.bold('Connect')}: prints compatibility client connection details (stdio static-mode or HTTP /mcp by default).`,
     '',
   ].join('\n'))
   process.exit(exitCode)

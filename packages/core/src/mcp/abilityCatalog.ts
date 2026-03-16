@@ -118,24 +118,29 @@ export class AbilityCatalog {
   private byId: Map<AbilityId, AbilityEntry>
   private toolIndex: Map<string, ExecutableTool>
   private extraToolDefinitions: Map<string, McpToolDefinition>
+  private includeBuilderAbility: boolean
 
   constructor(params: {
     integrations: IntegrationData[]
     toolIndex: Map<string, ExecutableTool>
     extraToolDefinitions?: Map<string, McpToolDefinition>
+    includeBuilderAbility?: boolean
   }) {
     this.toolIndex = params.toolIndex
     this.extraToolDefinitions = params.extraToolDefinitions || new Map()
+    this.includeBuilderAbility = params.includeBuilderAbility ?? true
     this.abilities = [
-      {
-        id: BUILDER_ABILITY_ID,
-        integrationtype: 'commandable',
-        integrationLabel: 'Commandable',
-        toolsetKey: 'builder',
-        label: 'Commandable Builder',
-        description: 'Add integrations and vibe-code new tools (custom actions) against them.',
-        toolNames: [...BUILDER_TOOL_NAMES],
-      },
+      ...(this.includeBuilderAbility
+        ? [{
+            id: BUILDER_ABILITY_ID,
+            integrationtype: 'commandable',
+            integrationLabel: 'Commandable',
+            toolsetKey: 'builder',
+            label: 'Commandable Builder',
+            description: 'Add integrations and vibe-code new tools (custom actions) against them.',
+            toolNames: [...BUILDER_TOOL_NAMES],
+          } satisfies AbilityEntry]
+        : []),
       ...this.buildAbilities(params.integrations),
     ]
     this.byId = new Map(this.abilities.map(a => [a.id, a]))

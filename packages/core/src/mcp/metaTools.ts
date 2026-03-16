@@ -53,9 +53,19 @@ function normalizeHintMarkdown(value: string): string {
     .replace(/\\n/g, '\n')
 }
 
-function buildCommandableReadme(): string {
-  const path = fileURLToPath(new URL('./commandable_readme.md', import.meta.url))
+function buildReadme(filename: string): string {
+  const path = fileURLToPath(new URL(`./${filename}`, import.meta.url))
   return readFileSync(path, 'utf8')
+}
+
+function buildCommandableReadme(hasBuilderCtx: boolean): string {
+  return hasBuilderCtx
+    ? buildReadme('commandable_readme_create.md')
+    : buildReadme('commandable_readme_dynamic.md')
+}
+
+function buildStaticReadme(): string {
+  return buildReadme('commandable_readme_static.md')
 }
 
 function buildBuilderGuide(): string {
@@ -109,13 +119,23 @@ export type MetaToolContext = {
   catalogRef?: { current: AbilityCatalog }
 }
 
+export function getReadmeToolDefinition(): McpToolDefinition {
+  return {
+    name: META_TOOL_NAMES.readme,
+    description: 'Read this first. Returns a guide explaining how Commandable works and how to use the tools available in this session.',
+    inputSchema: { type: 'object', additionalProperties: false, properties: {}, required: [] },
+  }
+}
+
+export function handleStaticReadmeCall(name: string): MetaToolCallResult {
+  if (name === META_TOOL_NAMES.readme)
+    return { handled: true, listChanged: false, result: { markdown: buildStaticReadme() } }
+  return { handled: false }
+}
+
 export function getMetaToolDefinitions(): McpToolDefinition[] {
   return [
-    {
-      name: META_TOOL_NAMES.readme,
-      description: 'Read this first. Returns a guide explaining how Commandable works and how to discover/add integrations safely.',
-      inputSchema: { type: 'object', additionalProperties: false, properties: {}, required: [] },
-    },
+    getReadmeToolDefinition(),
     {
       name: META_TOOL_NAMES.searchTools,
       description: `Search available toolsets (integration/toolset bundles) you can enable in this session. Call \`${META_TOOL_NAMES.readme}\` first if you haven't yet.`,
@@ -310,7 +330,7 @@ export async function handleMetaToolCall(params: {
   const { name, args, sessionId, catalog, sessionState, ctx } = params
 
   if (name === META_TOOL_NAMES.readme) {
-    return { handled: true, listChanged: false, result: { markdown: buildCommandableReadme() } }
+    return { handled: true, listChanged: false, result: { markdown: buildCommandableReadme(!!ctx) } }
   }
 
   if (name === META_TOOL_NAMES.searchTools) {

@@ -1,14 +1,17 @@
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import type { ExecutableTool } from '../types.js'
-import type { AbilityCatalog } from './abilityCatalog.js'
-import type { SessionAbilityState } from './sessionState.js'
-import { getMetaToolDefinitions, handleMetaToolCall } from './metaTools.js'
-import type { MetaToolContext } from './metaTools.js'
+import { getMetaToolDefinitions, getReadmeToolDefinition, handleMetaToolCall, handleStaticReadmeCall } from './metaTools.js'
+import type { DynamicModeContext, McpServerMode } from './server.js'
 
 export interface ToolIndex {
   list: Array<{ name: string, description?: string, inputSchema: any }>
   byName: Map<string, ExecutableTool>
+}
+
+export interface RegisterToolHandlersOptions {
+  mode: McpServerMode
+  dynamicMode?: DynamicModeContext
 }
 
 function formatAsText(value: any): string {
@@ -25,17 +28,26 @@ function formatAsText(value: any): string {
 export function registerToolHandlers(
   server: Server,
   tools: ToolIndex,
-  createMode?: { catalogRef: { current: AbilityCatalog }, sessionState: SessionAbilityState, ctx?: MetaToolContext },
+  options: RegisterToolHandlersOptions = { mode: 'static' },
 ): void {
   const metaToolDefs = getMetaToolDefinitions()
+  const { mode, dynamicMode } = options
+  const usesDynamicToolLoading = mode !== 'static'
+
+  if (usesDynamicToolLoading && !dynamicMode)
+    throw new Error(`Dynamic MCP mode requires dynamicMode context. Received mode: ${mode}`)
+
+  const resolvedDynamicMode = dynamicMode
+
+  const readmeToolDef = getReadmeToolDefinition()
 
   server.setRequestHandler(ListToolsRequestSchema, async (_req, extra) => {
-    if (!createMode)
-      return { tools: tools.list }
+    if (!usesDynamicToolLoading)
+      return { tools: [readmeToolDef, ...tools.list] }
 
     const sessionId = extra?.sessionId
-    const active = createMode.sessionState.getActiveToolNames(sessionId)
-    const toolDefs = createMode.catalogRef.current.getToolDefinitions([...active])
+    const active = resolvedDynamicMode!.sessionState.getActiveToolNames(sessionId)
+    const toolDefs = resolvedDynamicMode!.catalogRef.current.getToolDefinitions([...active])
     return { tools: [...metaToolDefs, ...toolDefs] }
   })
 
@@ -44,14 +56,14 @@ export function registerToolHandlers(
     const args = (req.params.arguments ?? {}) as any
     const sessionId = extra?.sessionId
 
-    if (createMode) {
+    if (usesDynamicToolLoading) {
       const metaRes = await handleMetaToolCall({
         name,
         args,
         sessionId,
-        catalog: createMode.catalogRef.current,
-        sessionState: createMode.sessionState,
-        ctx: createMode.ctx,
+        catalog: resolvedDynamicMode!.catalogRef.current,
+        sessionState: resolvedDynamicMode!.sessionState,
+        ctx: resolvedDynamicMode!.ctx,
       })
 
       if (metaRes.handled) {
@@ -63,13 +75,13 @@ export function registerToolHandlers(
         }
       }
 
-      if (!createMode.sessionState.isToolActive(sessionId, name)) {
+      if (!resolvedDynamicMode!.sessionState.isToolActive(sessionId, name)) {
         throw new Error(
           `Tool not enabled in this session: ${name}. Use ${metaToolDefs[0]!.name} + ${metaToolDefs[1]!.name} to enable a toolset first.`,
         )
       }
 
-      const tool = createMode.catalogRef.current.getExecutableTool(name)
+      const tool = resolvedDynamicMode!.catalogRef.current.getExecutableTool(name)
       if (!tool)
         throw new Error(`Unknown tool: ${name}`)
 
@@ -89,6 +101,13 @@ export function registerToolHandlers(
           { type: 'text', text: formatAsText(res.result) },
           ...(res.logs?.length ? [{ type: 'text', text: `Logs:\n${res.logs.join('\n')}` }] : []),
         ],
+      }
+    }
+
+    const staticMeta = handleStaticReadmeCall(name)
+    if (staticMeta.handled) {
+      return {
+        content: [{ type: 'text', text: formatAsText(staticMeta.result) }],
       }
     }
 

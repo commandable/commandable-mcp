@@ -29,4 +29,15 @@ describe('builder meta tools', () => {
     expect(builder?.toolNames).toContain(META_TOOL_NAMES.upsertCustomTool)
     expect(builder?.toolNames).toContain(META_TOOL_NAMES.deleteCustomTool)
   })
+
+  it('can exclude the builder ability for plain dynamic mode', () => {
+    const catalog = new AbilityCatalog({
+      integrations: [],
+      toolIndex: new Map(),
+      extraToolDefinitions: new Map(),
+      includeBuilderAbility: false,
+    })
+
+    expect(catalog.getAbility('commandable__builder')).toBeUndefined()
+  })
 })

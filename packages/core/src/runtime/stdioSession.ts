@@ -2,17 +2,15 @@ import type { Implementation } from '@modelcontextprotocol/sdk/types.js'
 import { listToolDefinitions } from '../db/toolDefinitionStore.js'
 import { listIntegrationTypeConfigs } from '../db/integrationTypeConfigStore.js'
 import { listIntegrations } from '../db/integrationStore.js'
-import type { AbilityCatalog } from '../mcp/abilityCatalog.js'
 import { IntegrationProxy } from '../integrations/proxy.js'
-import type { SessionAbilityState } from '../mcp/sessionState.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { getBuilderToolDefinitions, type MetaToolContext } from '../mcp/metaTools.js'
-import { SessionAbilityState as SessionAbilityStateImpl } from '../mcp/sessionState.js'
-import { AbilityCatalog as AbilityCatalogImpl } from '../mcp/abilityCatalog.js'
-import { runStdioMcpServer } from '../mcp/server.js'
+import { SessionAbilityState } from '../mcp/sessionState.js'
+import { AbilityCatalog } from '../mcp/abilityCatalog.js'
+import { runStdioMcpServer, type DynamicModeContext } from '../mcp/server.js'
 import { openLocalState } from './credentialManager.js'
 
-export type LocalStdioMode = 'static' | 'create'
+export type LocalStdioMode = 'static' | 'dynamic' | 'create'
 
 export interface RunLocalStdioSessionParams {
   mode: LocalStdioMode
@@ -44,9 +42,9 @@ export async function runLocalStdioSession(params: RunLocalStdioSessionParams): 
     integrationTypeConfigsRef,
   })
 
-  if (!integrations.length && params.mode !== 'create') {
+  if (!integrations.length && params.mode === 'static') {
     console.error('No integrations are configured yet.')
-    console.error('Start the local server with "npx -y @commandable/mcp serve", then run "npx -y @commandable/mcp create" first.')
+    console.error('Start the local server with "npx -y @commandable/mcp serve", then configure it with "npx -y @commandable/mcp create" first.')
     process.exit(1)
   }
 
@@ -60,37 +58,42 @@ export async function runLocalStdioSession(params: RunLocalStdioSessionParams): 
 
   const toolIndex = { list: index.tools, byName: index.byName }
   const baseUrl = `http://127.0.0.1:${getUiPort()}`
+  const buildDynamicModeContext = (mode: Extract<LocalStdioMode, 'dynamic' | 'create'>): DynamicModeContext => {
+    const includeBuilderAbility = mode === 'create'
+    const builderDefs = includeBuilderAbility ? getBuilderToolDefinitions() : []
+    const extraToolDefinitions = new Map(builderDefs.map(definition => [definition.name, definition]))
+    const catalogRef = {
+      current: new AbilityCatalog({
+        integrations: integrationsRef.current,
+        toolIndex: toolIndex.byName,
+        extraToolDefinitions,
+        includeBuilderAbility,
+      }),
+    }
+    const sessionState = new SessionAbilityState()
+    const ctx: MetaToolContext | undefined = includeBuilderAbility
+      ? {
+          spaceId,
+          db,
+          credentialStore,
+          proxy,
+          credentialSetupBaseUrl: baseUrl,
+          integrationsRef,
+          integrationTypeConfigsRef,
+          toolIndexRef: toolIndex,
+          catalogRef,
+        }
+      : undefined
+
+    return { catalogRef, sessionState, ctx }
+  }
 
   await runStdioMcpServer({
     serverInfo: params.serverInfo || { name: 'commandable', version: '0.0.0' },
     tools: toolIndex,
-    ...(params.mode === 'create'
-      ? {
-          createMode: (() => {
-            const builderDefs = getBuilderToolDefinitions()
-            const extraToolDefinitions = new Map(builderDefs.map(definition => [definition.name, definition]))
-            const catalogRef: { current: AbilityCatalog } = {
-              current: new AbilityCatalogImpl({
-                integrations: integrationsRef.current,
-                toolIndex: toolIndex.byName,
-                extraToolDefinitions,
-              }),
-            }
-            const sessionState: SessionAbilityState = new SessionAbilityStateImpl()
-            const ctx: MetaToolContext = {
-              spaceId,
-              db,
-              credentialStore,
-              proxy,
-              credentialSetupBaseUrl: baseUrl,
-              integrationsRef,
-              integrationTypeConfigsRef,
-              toolIndexRef: toolIndex,
-              catalogRef,
-            }
-            return { catalogRef, sessionState, ctx }
-          })(),
-        }
+    mode: params.mode,
+    ...(params.mode === 'dynamic' || params.mode === 'create'
+      ? { dynamicMode: buildDynamicModeContext(params.mode) }
       : {}),
   })
 }

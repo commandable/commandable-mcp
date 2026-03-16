@@ -31,8 +31,9 @@ const integration = process.env.VITEST_INTEGRATION
 export default defineConfig({
   resolve: {
     alias: {
-      '@commandable/integration-data': resolve(here, '../integration-data/src/index.ts'),
+      '@commandable/integration-data/tools': resolve(here, '../integration-data/src/tools.ts'),
       '@commandable/integration-data/credentials': resolve(here, '../integration-data/src/credentials-index.ts'),
+      '@commandable/integration-data': resolve(here, '../integration-data/src/index.ts'),
     },
   },
   test: {

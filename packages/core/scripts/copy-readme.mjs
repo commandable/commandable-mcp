@@ -7,8 +7,16 @@ const serverPkgRoot = resolve(here, '..')
 
 const assets = [
   {
-    src: resolve(serverPkgRoot, 'src', 'mcp', 'commandable_readme.md'),
-    dest: resolve(serverPkgRoot, 'dist', 'mcp', 'commandable_readme.md'),
+    src: resolve(serverPkgRoot, 'src', 'mcp', 'commandable_readme_create.md'),
+    dest: resolve(serverPkgRoot, 'dist', 'mcp', 'commandable_readme_create.md'),
+  },
+  {
+    src: resolve(serverPkgRoot, 'src', 'mcp', 'commandable_readme_dynamic.md'),
+    dest: resolve(serverPkgRoot, 'dist', 'mcp', 'commandable_readme_dynamic.md'),
+  },
+  {
+    src: resolve(serverPkgRoot, 'src', 'mcp', 'commandable_readme_static.md'),
+    dest: resolve(serverPkgRoot, 'dist', 'mcp', 'commandable_readme_static.md'),
   },
   {
     src: resolve(serverPkgRoot, 'src', 'mcp', 'builder_guide.md'),
