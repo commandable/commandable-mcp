@@ -37,13 +37,15 @@ export function registerToolHandlers(
   if (usesDynamicToolLoading && !dynamicMode)
     throw new Error(`Dynamic MCP mode requires dynamicMode context. Received mode: ${mode}`)
 
+  const resolvedDynamicMode = dynamicMode
+
   server.setRequestHandler(ListToolsRequestSchema, async (_req, extra) => {
     if (!usesDynamicToolLoading)
       return { tools: tools.list }
 
     const sessionId = extra?.sessionId
-    const active = dynamicMode.sessionState.getActiveToolNames(sessionId)
-    const toolDefs = dynamicMode.catalogRef.current.getToolDefinitions([...active])
+    const active = resolvedDynamicMode!.sessionState.getActiveToolNames(sessionId)
+    const toolDefs = resolvedDynamicMode!.catalogRef.current.getToolDefinitions([...active])
     return { tools: [...metaToolDefs, ...toolDefs] }
   })
 
@@ -57,9 +59,9 @@ export function registerToolHandlers(
         name,
         args,
         sessionId,
-        catalog: dynamicMode.catalogRef.current,
-        sessionState: dynamicMode.sessionState,
-        ctx: dynamicMode.ctx,
+        catalog: resolvedDynamicMode!.catalogRef.current,
+        sessionState: resolvedDynamicMode!.sessionState,
+        ctx: resolvedDynamicMode!.ctx,
       })
 
       if (metaRes.handled) {
@@ -71,13 +73,13 @@ export function registerToolHandlers(
         }
       }
 
-      if (!dynamicMode.sessionState.isToolActive(sessionId, name)) {
+      if (!resolvedDynamicMode!.sessionState.isToolActive(sessionId, name)) {
         throw new Error(
           `Tool not enabled in this session: ${name}. Use ${metaToolDefs[0]!.name} + ${metaToolDefs[1]!.name} to enable a toolset first.`,
         )
       }
 
-      const tool = dynamicMode.catalogRef.current.getExecutableTool(name)
+      const tool = resolvedDynamicMode!.catalogRef.current.getExecutableTool(name)
       if (!tool)
         throw new Error(`Unknown tool: ${name}`)
 
