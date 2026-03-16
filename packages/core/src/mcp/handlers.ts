@@ -1,7 +1,7 @@
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import type { ExecutableTool } from '../types.js'
-import { getMetaToolDefinitions, handleMetaToolCall } from './metaTools.js'
+import { getMetaToolDefinitions, getReadmeToolDefinition, handleMetaToolCall, handleStaticReadmeCall } from './metaTools.js'
 import type { DynamicModeContext, McpServerMode } from './server.js'
 
 export interface ToolIndex {
@@ -39,9 +39,11 @@ export function registerToolHandlers(
 
   const resolvedDynamicMode = dynamicMode
 
+  const readmeToolDef = getReadmeToolDefinition()
+
   server.setRequestHandler(ListToolsRequestSchema, async (_req, extra) => {
     if (!usesDynamicToolLoading)
-      return { tools: tools.list }
+      return { tools: [readmeToolDef, ...tools.list] }
 
     const sessionId = extra?.sessionId
     const active = resolvedDynamicMode!.sessionState.getActiveToolNames(sessionId)
@@ -99,6 +101,13 @@ export function registerToolHandlers(
           { type: 'text', text: formatAsText(res.result) },
           ...(res.logs?.length ? [{ type: 'text', text: `Logs:\n${res.logs.join('\n')}` }] : []),
         ],
+      }
+    }
+
+    const staticMeta = handleStaticReadmeCall(name)
+    if (staticMeta.handled) {
+      return {
+        content: [{ type: 'text', text: formatAsText(staticMeta.result) }],
       }
     }
 
