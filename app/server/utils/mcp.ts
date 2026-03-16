@@ -9,16 +9,17 @@ import {
   SessionAbilityState,
   SqlCredentialStore,
   buildMcpToolIndex,
+  getBuilderToolDefinitions,
   getOrCreateEncryptionSecret,
   listIntegrationTypeConfigs,
   listIntegrations,
   listToolDefinitions,
-  registerToolHandlers,
+  registerToolHandlers
 } from '@commandable/mcp-core'
 import { getDb } from './db'
 import type { MetaToolContext } from '@commandable/mcp-core'
 
-export type HttpMcpEndpoint = 'static' | 'create'
+export type HttpMcpEndpoint = 'static' | 'dynamic' | 'create'
 
 type SharedState = {
   spaceId: string
@@ -63,7 +64,11 @@ function getServerInfo(): Implementation {
   }
 }
 
-function isCreateEndpoint(endpoint: HttpMcpEndpoint): boolean {
+function usesDynamicToolLoading(endpoint: HttpMcpEndpoint): boolean {
+  return endpoint !== 'static'
+}
+
+function allowsBuilderTools(endpoint: HttpMcpEndpoint): boolean {
   return endpoint === 'create'
 }
 
@@ -73,7 +78,8 @@ function getOrCreateStore(): McpStateStore {
 }
 
 async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
-  const createMode = isCreateEndpoint(endpoint)
+  const dynamicMode = usesDynamicToolLoading(endpoint)
+  const includeBuilderAbility = allowsBuilderTools(endpoint)
 
   const db = await getDb()
   const secret = getOrCreateEncryptionSecret()
@@ -88,7 +94,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
   const proxy = new IntegrationProxy({
     credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
-    integrationTypeConfigsRef,
+    integrationTypeConfigsRef
   })
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef, toolDefinitions })
@@ -98,11 +104,21 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
   const host = (process.env.HOST || '').trim() || '127.0.0.1'
   const credentialSetupBaseUrl = `http://${host}:${port}`
 
-  const sessionState = createMode ? new SessionAbilityState() : undefined
-  const catalogRef = createMode
-    ? { current: new AbilityCatalog({ integrations: integrationsRef.current, toolIndex: toolIndexRef.byName }) }
+  const sessionState = dynamicMode ? new SessionAbilityState() : undefined
+  const extraToolDefinitions = new Map(
+    (includeBuilderAbility ? getBuilderToolDefinitions() : []).map(definition => [definition.name, definition])
+  )
+  const catalogRef = dynamicMode
+    ? {
+        current: new AbilityCatalog({
+          integrations: integrationsRef.current,
+          toolIndex: toolIndexRef.byName,
+          extraToolDefinitions,
+          includeBuilderAbility
+        })
+      }
     : undefined
-  const ctx: MetaToolContext | undefined = createMode
+  const ctx: MetaToolContext | undefined = includeBuilderAbility
     ? {
         spaceId,
         db,
@@ -112,7 +128,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
         integrationsRef,
         integrationTypeConfigsRef,
         toolIndexRef,
-        catalogRef: catalogRef!,
+        catalogRef: catalogRef!
       }
     : undefined
 
@@ -125,9 +141,9 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
       toolIndexRef,
       sessionState,
       catalogRef,
-      ctx,
+      ctx
     },
-    sessions: new Map(),
+    sessions: new Map()
   }
 
   return state
@@ -195,7 +211,7 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
       return {
         kind: 'error',
         statusCode: 403,
-        message: 'Session does not belong to the authenticated API key',
+        message: 'Session does not belong to the authenticated API key'
       }
     }
     await existing.transport.handleRequest(req, res, args.body)
@@ -209,13 +225,13 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
     return {
       kind: 'error',
       statusCode: 400,
-      message: 'Bad Request: No valid session ID provided',
+      message: 'Bad Request: No valid session ID provided'
     }
   }
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
-    enableJsonResponse: true,
+    enableJsonResponse: true
   })
 
   const server = new Server(getServerInfo(), {
@@ -224,9 +240,18 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   registerToolHandlers(
     server,
     shared.toolIndexRef,
-    isCreateEndpoint(args.endpoint) && shared.sessionState && shared.catalogRef && shared.ctx
-      ? { catalogRef: shared.catalogRef, sessionState: shared.sessionState, ctx: shared.ctx }
-      : undefined,
+    {
+      mode: args.endpoint,
+      ...(usesDynamicToolLoading(args.endpoint) && shared.sessionState && shared.catalogRef
+        ? {
+            dynamicMode: {
+              catalogRef: shared.catalogRef,
+              sessionState: shared.sessionState,
+              ctx: shared.ctx
+            }
+          }
+        : {}),
+    }
   )
 
   transport.onclose = () => {

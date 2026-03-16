@@ -42,17 +42,20 @@ describe('meta: add integration from catalog', () => {
 
     const server = new Server({ name: 'test', version: '0.0.0' }, { capabilities: { tools: { listChanged: true } } })
     registerToolHandlers(server, toolIndex as any, {
-      catalogRef,
-      sessionState,
-      ctx: {
-        spaceId: 'local',
-        db,
-        credentialStore,
-        proxy,
-        credentialSetupBaseUrl: 'http://127.0.0.1:23432',
-        integrationsRef,
-        toolIndexRef: toolIndex as any,
+      mode: 'create',
+      dynamicMode: {
         catalogRef,
+        sessionState,
+        ctx: {
+          spaceId: 'local',
+          db,
+          credentialStore,
+          proxy,
+          credentialSetupBaseUrl: 'http://127.0.0.1:23432',
+          integrationsRef,
+          toolIndexRef: toolIndex as any,
+          catalogRef,
+        },
       },
     } as any)
 

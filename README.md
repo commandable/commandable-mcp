@@ -42,9 +42,9 @@ This prints the exact `claude mcp add ...` command. That command now targets `@c
 
 Open Claude Code and configure integrations, toolsets, and custom tools in your create session.
 
-### 4) Connect a read client
+### 4) Connect a compatibility client
 
-After your create session has configured the server, print a read-client snippet:
+After your create session has configured the server, print a static-mode snippet for clients that do not support dynamic tool loading:
 
 ```bash
 npx -y @commandable/mcp connect --client claude-desktop
@@ -56,7 +56,17 @@ For Cursor:
 npx -y @commandable/mcp connect --client cursor
 ```
 
-Both snippets point read clients at `@commandable/mcp-connect`.
+Both snippets point compatibility clients at `@commandable/mcp-connect static-mode`.
+
+## MCP Modes
+
+Commandable now ships three MCP surfaces:
+
+- `/mcp` - dynamic mode. Starts lean and loads toolsets into the session on demand.
+- `/mcp/static` - static fallback. Eager-loads all configured tools up front.
+- `/mcp/create` - dynamic mode plus builder powers for adding integrations and generating custom tools.
+
+Use dynamic mode when your client supports MCP dynamic tool loading. Use static mode for compatibility or simple setups. Use create mode when you want agents to configure Commandable itself.
 
 ## Quick Start: HTTP Flow
 
@@ -82,10 +92,18 @@ DATABASE_URL="$DATABASE_URL" COMMANDABLE_ENCRYPTION_SECRET="$COMMANDABLE_ENCRYPT
 npx -y @commandable/mcp create --transport http --url http://localhost:3000/mcp/create --api-key <your-api-key>
 ```
 
-### 4. Print read-client HTTP details
+### 4. Print dynamic HTTP details
 
 ```bash
 npx -y @commandable/mcp connect --transport http --url http://localhost:3000/mcp --api-key <your-api-key>
+```
+
+### 5. Optional: print static HTTP details
+
+For fallback clients or simple compatibility testing:
+
+```bash
+npx -y @commandable/mcp connect --transport http --url http://localhost:3000/mcp/static --api-key <your-api-key>
 ```
 
 ## Prebuilt Integrations
@@ -127,7 +145,7 @@ In deployed HTTP setups, use `commandable.config.yaml` with `${ENV_VAR}` referen
 | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `commandable-mcp serve [--restart]`                                                                     | Build/run the local Commandable app server and management UI |
 | `commandable-mcp create [--transport stdio|http] [--apply] [--url] [--api-key]`                         | Print or apply Claude Code setup instructions                      |
-| `commandable-mcp connect [--client claude-desktop|cursor] [--transport stdio|http] [--url] [--api-key]` | Print read-client connection details                               |
+| `commandable-mcp connect [--client claude-desktop|cursor] [--transport stdio|http] [--url] [--api-key]` | Print compatibility client details or HTTP endpoint config         |
 | `commandable-mcp doctor`                                                                                | Print diagnostics for the local server and environment             |
 | `commandable-mcp destroy local --yes [--keep-key]`                                                      | Stop the daemon and wipe local state                               |
 | `commandable-mcp apply [--config <file>]`                                                               | Apply config-as-code against the current environment               |

@@ -28,7 +28,7 @@ async function fetchJsonWithTimeout(url: string, timeoutMs: number): Promise<any
   }
 }
 
-async function assertLocalServerRunning(mode: 'static' | 'create'): Promise<void> {
+async function assertLocalServerRunning(mode: 'static' | 'dynamic' | 'create'): Promise<void> {
   const baseUrl = `http://127.0.0.1:${getUiPort()}`
   const probe = await fetchJsonWithTimeout(`${baseUrl}/api/_commandable/status`, 500).catch(() => null)
   if (probe?.ok)
@@ -38,8 +38,12 @@ async function assertLocalServerRunning(mode: 'static' | 'create'): Promise<void
     console.error('Commandable create mode requires the local server to already be running.')
     console.error('Start it first with: npx -y @commandable/mcp serve')
   }
+  else if (mode === 'dynamic') {
+    console.error('Commandable dynamic mode requires the local server to already be running.')
+    console.error('Start it first with: npx -y @commandable/mcp serve')
+  }
   else {
-    console.error('Commandable read mode requires the local server to already be running.')
+    console.error('Commandable static mode requires the local server to already be running.')
     console.error('Start it first with: npx -y @commandable/mcp serve')
     console.error('Then configure integrations with: npx -y @commandable/mcp create')
   }
@@ -54,6 +58,8 @@ function help(exitCode = 0): never {
     '',
     'Usage',
     '  commandable-mcp-connect create-mode',
+    '  commandable-mcp-connect dynamic-mode',
+    '  commandable-mcp-connect static-mode',
     '  commandable-mcp-connect read-mode',
     '  commandable-mcp-connect',
     '  commandable-mcp-connect --help',
@@ -62,6 +68,7 @@ function help(exitCode = 0): never {
     'Notes',
     '  - The local Commandable server must already be running.',
     '  - Start it with: npx -y @commandable/mcp serve',
+    '  - read-mode is kept as an alias for static-mode.',
     '',
   ].join('\n'))
   process.exit(exitCode)
@@ -87,7 +94,16 @@ export async function main(): Promise<void> {
     return
   }
 
-  if (!cmd || cmd === 'read-mode') {
+  if (cmd === 'dynamic-mode') {
+    await assertLocalServerRunning('dynamic')
+    await runLocalStdioSession({
+      mode: 'dynamic',
+      serverInfo: { name: 'commandable', version: COMMANDABLE_CONNECT_VERSION },
+    })
+    return
+  }
+
+  if (!cmd || cmd === 'read-mode' || cmd === 'static-mode') {
     await assertLocalServerRunning('static')
     await runLocalStdioSession({
       mode: 'static',

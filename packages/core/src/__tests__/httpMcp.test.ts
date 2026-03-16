@@ -50,6 +50,7 @@ vi.mock('@commandable/mcp-core', () => ({
     constructor(_db: any, _secret: string) {}
   },
   buildMcpToolIndex: mocks.buildMcpToolIndex,
+  getBuilderToolDefinitions: () => [],
   getOrCreateEncryptionSecret: () => 'secret',
   listIntegrations: mocks.listIntegrations,
   listToolDefinitions: mocks.listToolDefinitions,
@@ -99,7 +100,7 @@ function initializeBody() {
   }
 }
 
-function makeArgs(endpoint: 'static' | 'create', opts?: {
+function makeArgs(endpoint: 'static' | 'dynamic' | 'create', opts?: {
   method?: 'GET' | 'POST'
   sessionId?: string
   authApiKeyId?: string | null
@@ -124,30 +125,48 @@ describe('HTTP MCP endpoint routing', () => {
     mocks.reset()
   })
 
-  it('registers static HTTP MCP without create-mode helpers', async () => {
+  it('registers static HTTP MCP without dynamic helpers', async () => {
     const result = await handleMcpHttp(makeArgs('static'))
 
     expect(result).toEqual({ kind: 'handled' })
     expect(mocks.registerToolHandlers).toHaveBeenCalledTimes(1)
-    expect(mocks.registerToolHandlers.mock.calls[0]?.[2]).toBeUndefined()
+    expect(mocks.registerToolHandlers.mock.calls[0]?.[2]).toEqual({ mode: 'static' })
   })
 
-  it('registers create HTTP MCP with create-mode helpers', async () => {
+  it('registers dynamic HTTP MCP with session-scoped loading helpers', async () => {
+    const result = await handleMcpHttp(makeArgs('dynamic'))
+
+    expect(result).toEqual({ kind: 'handled' })
+    expect(mocks.registerToolHandlers).toHaveBeenCalledTimes(1)
+    expect(mocks.registerToolHandlers.mock.calls[0]?.[2]).toMatchObject({
+      mode: 'dynamic',
+      dynamicMode: {
+        catalogRef: expect.any(Object),
+        sessionState: expect.any(Object),
+        ctx: undefined,
+      },
+    })
+  })
+
+  it('registers create HTTP MCP with builder-enabled helpers', async () => {
     const result = await handleMcpHttp(makeArgs('create'))
 
     expect(result).toEqual({ kind: 'handled' })
     expect(mocks.registerToolHandlers).toHaveBeenCalledTimes(1)
     expect(mocks.registerToolHandlers.mock.calls[0]?.[2]).toMatchObject({
-      catalogRef: expect.any(Object),
-      sessionState: expect.any(Object),
-      ctx: expect.any(Object),
+      mode: 'create',
+      dynamicMode: {
+        catalogRef: expect.any(Object),
+        sessionState: expect.any(Object),
+        ctx: expect.any(Object),
+      },
     })
   })
 
   it('does not reuse sessions across endpoints', async () => {
-    await handleMcpHttp(makeArgs('static'))
+    await handleMcpHttp(makeArgs('dynamic'))
 
-    const result = await handleMcpHttp(makeArgs('create', {
+    const result = await handleMcpHttp(makeArgs('static', {
       method: 'GET',
       sessionId: 'session-1',
       body: undefined,
@@ -180,11 +199,12 @@ describe('HTTP MCP endpoint routing', () => {
   })
 
   it('refreshes both endpoint caches and closes their sessions', async () => {
+    await handleMcpHttp(makeArgs('dynamic'))
     await handleMcpHttp(makeArgs('static'))
     await handleMcpHttp(makeArgs('create'))
 
     await refreshMcpState()
 
-    expect(mocks.serverClose).toHaveBeenCalledTimes(2)
+    expect(mocks.serverClose).toHaveBeenCalledTimes(3)
   })
 })

@@ -39,7 +39,7 @@ yarn dev:serve
 ```
 
 
-This starts the management UI at `http://127.0.0.1:23433/`, the read MCP endpoint at `http://127.0.0.1:23433/mcp`, and the create MCP endpoint at `http://127.0.0.1:23433/mcp/create`. It always restarts the daemon so you are always on the latest build.
+This starts the management UI at `http://127.0.0.1:23433/`, the dynamic MCP endpoint at `http://127.0.0.1:23433/mcp`, the static MCP endpoint at `http://127.0.0.1:23433/mcp/static`, and the create MCP endpoint at `http://127.0.0.1:23433/mcp/create`. It always restarts the daemon so you are always on the latest build.
 
 ### 2. Print the Claude Code create command
 
@@ -73,7 +73,7 @@ This is the published `@commandable/mcp` package.
 It owns:
 
 - the Nuxt management UI
-- the `/mcp` and `/mcp/create` HTTP endpoints
+- the `/mcp`, `/mcp/static`, and `/mcp/create` HTTP endpoints
 - the local server lifecycle CLI (`serve`, `doctor`, `destroy`, `create-api-key`)
 - the user-facing `create` and `connect` commands
 
@@ -84,7 +84,8 @@ This is the published `@commandable/mcp-connect` package.
 It owns:
 
 - `create-mode`
-- default stdio read-mode
+- `dynamic-mode`
+- `static-mode` and the `read-mode` alias
 - hard failure when the local server is unavailable
 
 ### `packages/core/`

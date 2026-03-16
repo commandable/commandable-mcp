@@ -72,7 +72,10 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
     const sessionState = new SessionAbilityState()
 
     const server = new Server({ name: 'test', version: '0.0.0' }, { capabilities: { tools: { listChanged: true } } })
-    registerToolHandlers(server, { list: index.tools, byName: index.byName }, { catalogRef: { current: catalog }, sessionState })
+    registerToolHandlers(server, { list: index.tools, byName: index.byName }, {
+      mode: 'dynamic',
+      dynamicMode: { catalogRef: { current: catalog }, sessionState },
+    })
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
     await server.connect(serverTransport as any)
