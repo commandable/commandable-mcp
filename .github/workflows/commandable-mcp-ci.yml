@@ -132,8 +132,9 @@ jobs:
           COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
         run: |
           cd packages/core && yarn vitest run \
+            --reporter=default \
             --reporter=json \
-            --outputFile=$GITHUB_WORKSPACE/packages/core/test-results.json
+            --outputFile.json=$GITHUB_WORKSPACE/packages/core/test-results.json
 
       - name: Upload test results
         if: always()
