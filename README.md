@@ -6,8 +6,6 @@ Commandable MCP is the first and last MCP framework your agent needs
 
 It lets agents build, configure, and serve MCP integrations and lightweight app backends in place, securely*
 
-**One MCP, any app**
-
 **credentials encrypted at rest, the model never sees them*
 
 [https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b](https://github.com/user-attachments/assets/ac66133c-162f-4959-81c9-664010d40b3b)
