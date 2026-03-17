@@ -1,6 +1,8 @@
 # Commandable MCP
 
-Commandable MCP is the last MCP framework you need
+**One MCP, any app**
+
+Commandable MCP is the first and last MCP framework your agent needs
 
 It lets agents build, configure, and serve MCP integrations and lightweight app backends in place, securely*
 
