@@ -1,13 +1,24 @@
 <template>
   <UContainer class="py-10 space-y-8 max-w-3xl">
-    <div v-if="pending" class="text-sm text-muted py-8 text-center">
+    <div
+      v-if="pending"
+      class="text-sm text-muted py-8 text-center"
+    >
       Loading…
     </div>
-    <div v-else-if="error || !integration" class="py-8 text-center space-y-4">
+    <div
+      v-else-if="error || !integration"
+      class="py-8 text-center space-y-4"
+    >
       <div class="text-sm text-red-600">
         Integration not found.
       </div>
-      <UButton to="/integrations" variant="soft" color="neutral" icon="i-lucide-arrow-left">
+      <UButton
+        to="/integrations"
+        variant="soft"
+        color="neutral"
+        icon="i-lucide-arrow-left"
+      >
         Back to Integrations
       </UButton>
     </div>
@@ -18,7 +29,10 @@
           to="/integrations"
           class="inline-flex items-center gap-1 text-sm text-muted hover:text-[var(--ui-text)] transition-colors mb-4"
         >
-          <UIcon name="i-lucide-arrow-left" class="w-4 h-4" />
+          <UIcon
+            name="i-lucide-arrow-left"
+            class="w-4 h-4"
+          />
           Back to Integrations
         </NuxtLink>
 
@@ -27,7 +41,11 @@
             <h1 class="text-2xl font-semibold">
               {{ integration.label }}
             </h1>
-            <UBadge size="sm" color="neutral" variant="subtle">
+            <UBadge
+              size="sm"
+              color="neutral"
+              variant="subtle"
+            >
               {{ integration.type }}
             </UBadge>
           </div>
@@ -86,7 +104,10 @@
             Read-only
           </button>
         </div>
-        <p v-if="formMaxScope === 'read'" class="text-xs text-amber-600 dark:text-amber-400">
+        <p
+          v-if="formMaxScope === 'read'"
+          class="text-xs text-amber-600 dark:text-amber-400"
+        >
           Only read tools will be available. Write and admin tools will be greyed out below.
         </p>
       </section>
@@ -191,7 +212,7 @@ async function saveAll() {
     // Save enabled state
     await $fetch('/api/integrations', {
       method: 'POST',
-      body: { ...integration.value, enabled: formEnabled.value },
+      body: { ...integration.value, enabled: formEnabled.value }
     })
 
     // Save toolsets
@@ -204,7 +225,7 @@ async function saveAll() {
       : []
     await $fetch(`/api/integrations/${id}/toolsets`, {
       method: 'POST',
-      body: { enabledToolsets },
+      body: { enabledToolsets }
     })
 
     // Save permissions
@@ -212,8 +233,8 @@ async function saveAll() {
       method: 'POST',
       body: {
         maxScope: formMaxScope.value,
-        disabledTools: formDisabledTools.value.length ? formDisabledTools.value : null,
-      },
+        disabledTools: formDisabledTools.value.length ? formDisabledTools.value : null
+      }
     })
 
     await refresh()

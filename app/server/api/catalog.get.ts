@@ -8,8 +8,7 @@ export default defineEventHandler(() => {
     return {
       ...it,
       supportsCredentials: !!cred,
-      credentialSchema: cred?.schema ?? null,
+      credentialSchema: cred?.schema ?? null
     }
   })
 })
-

@@ -27,12 +27,21 @@ useSeoMeta({
   <UApp>
     <UHeader>
       <template #left>
-        <NuxtLink to="/" class="flex items-center gap-4">
+        <NuxtLink
+          to="/"
+          class="flex items-center gap-4"
+        >
           <AppLogo class="w-auto h-6 shrink-0" />
         </NuxtLink>
 
         <nav class="flex items-center gap-1 ml-4">
-          <UButton to="/integrations" icon="i-lucide-plug" variant="ghost" color="neutral" size="sm">
+          <UButton
+            to="/integrations"
+            icon="i-lucide-plug"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+          >
             Integrations
           </UButton>
         </nav>

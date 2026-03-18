@@ -15,11 +15,12 @@ import {
   generateApiKey,
   getCommandableDir,
   getOrCreateEncryptionSecret,
-  loadConfig,
+  loadConfig
 } from '@commandable/mcp-core'
 
 const require = createRequire(import.meta.url)
 const pkg = require('../package.json')
+
 const COMMANDABLE_VERSION = String(pkg.version || '0.0.0')
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const serverEntry = resolve(packageRoot, '.output', 'server', 'index.mjs')
@@ -30,7 +31,7 @@ const CLAUDE_CODE_STDIO_ENV_KEYS = [
   'COMMANDABLE_UI_PORT',
   'DATABASE_URL',
   'COMMANDABLE_CONFIG_FILE',
-  'COMMANDABLE_INTEGRATION_DATA_DIR',
+  'COMMANDABLE_INTEGRATION_DATA_DIR'
 ]
 
 function hasFlag(...flags) {
@@ -78,8 +79,7 @@ function readDaemonPid() {
     const pid = lines[0] && /^\d+$/.test(lines[0]) ? Number(lines[0]) : null
     const version = lines[1] || null
     return pid ? { pid, version } : null
-  }
-  catch {
+  } catch {
     return null
   }
 }
@@ -88,8 +88,7 @@ function isProcessAlive(pid) {
   try {
     process.kill(pid, 0)
     return true
-  }
-  catch {
+  } catch {
     return false
   }
 }
@@ -99,13 +98,11 @@ function stopDaemonProcess() {
   if (info?.pid) {
     try {
       process.kill(info.pid, 'SIGTERM')
-    }
-    catch {}
+    } catch {}
   }
   try {
     unlinkSync(daemonPidPath())
-  }
-  catch {}
+  } catch {}
   return { stopped: !!info?.pid, pid: info?.pid ?? null }
 }
 
@@ -118,11 +115,9 @@ async function fetchJsonWithTimeout(url, timeoutMs) {
     let json = null
     try {
       json = text ? JSON.parse(text) : null
-    }
-    catch {}
+    } catch {}
     return { ok: response.ok, status: response.status, json }
-  }
-  finally {
+  } finally {
     clearTimeout(timeout)
   }
 }
@@ -176,9 +171,9 @@ function makeReadModeConfig() {
     mcpServers: {
       commandable: {
         command: 'npx',
-        args: ['-y', '@commandable/mcp-connect', 'static-mode'],
-      },
-    },
+        args: ['-y', '@commandable/mcp-connect', 'static-mode']
+      }
+    }
   }
 }
 
@@ -188,8 +183,8 @@ function makeHttpConnectionDetails() {
   return {
     url,
     headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
+      Authorization: `Bearer ${apiKey}`
+    }
   }
 }
 
@@ -251,10 +246,10 @@ async function startManagementUi({ restart }) {
       HOST: '127.0.0.1',
       PORT: String(getUiPort()),
       COMMANDABLE_UI_PORT: String(getUiPort()),
-      COMMANDABLE_VERSION,
+      COMMANDABLE_VERSION
     },
     detached: true,
-    stdio: ['ignore', fd, fd],
+    stdio: ['ignore', fd, fd]
   })
   child.unref()
 
@@ -264,12 +259,10 @@ async function startManagementUi({ restart }) {
   if (!probe?.ok) {
     try {
       process.kill(child.pid, 'SIGTERM')
-    }
-    catch {}
+    } catch {}
     try {
       unlinkSync(daemonPidPath())
-    }
-    catch {}
+    } catch {}
     console.error(`Commandable management UI failed to start at ${baseUrl}`)
     console.error(`Check the daemon log at ${logPath}`)
     process.exit(1)
@@ -291,7 +284,7 @@ async function openEnvState() {
         db.close()
       else
         await db.close()
-    },
+    }
   }
 }
 
@@ -385,14 +378,14 @@ async function runDoctor() {
       COMMANDABLE_DATA_DIR: process.env.COMMANDABLE_DATA_DIR || null,
       COMMANDABLE_MCP_SQLITE_PATH: process.env.COMMANDABLE_MCP_SQLITE_PATH || null,
       COMMANDABLE_UI_PORT: getUiPort(),
-      DATABASE_URL: databaseUrl && databaseUrl.trim().length ? '[set]' : null,
+      DATABASE_URL: databaseUrl && databaseUrl.trim().length ? '[set]' : null
     },
     localState: {
       dataDir: getCommandableDir(),
       sqlitePath,
       daemonPidPath: daemonPidPath(),
       daemonLogPath: daemonLogPath(),
-      encryptionKeyPath: resolve(getCommandableDir(), 'encryption.key'),
+      encryptionKeyPath: resolve(getCommandableDir(), 'encryption.key')
     },
     daemon: {
       running: !!(pidAlive && probe?.ok),
@@ -400,8 +393,8 @@ async function runDoctor() {
       baseUrl,
       runningVersion,
       versionMatch: !!runningVersion && runningVersion === COMMANDABLE_VERSION,
-      status: probe?.json ?? null,
-    },
+      status: probe?.json ?? null
+    }
   }, null, 2))
 }
 
@@ -416,18 +409,18 @@ async function runDestroyLocal() {
         `${picocolors.white('•')} local SQLite state and daemon state`,
         `${picocolors.white('•')} ${keepKey ? 'the encryption key will be kept (--keep-key is set)' : 'the local encryption key'}`,
         '',
-        picocolors.yellow('Remote Postgres data will not be deleted.'),
+        picocolors.yellow('Remote Postgres data will not be deleted.')
       ].join('\n'),
       picocolors.yellow('Warning'),
-      { format: str => str },
+      { format: str => str }
     )
     const result = await select({
       message: 'Do you want to continue?',
       options: [
         { value: 'destroy', label: picocolors.red('Yes, destroy local data') },
-        { value: 'cancel', label: picocolors.cyan('No, keep local data') },
+        { value: 'cancel', label: picocolors.cyan('No, keep local data') }
       ],
-      initialValue: 'cancel',
+      initialValue: 'cancel'
     })
     if (isCancel(result) || result !== 'destroy') {
       console.error(picocolors.yellow('Destroy cancelled.'))
@@ -475,8 +468,7 @@ async function runApply() {
     console.error(`${picocolors.dim('Integrations upserted:')} ${result.integrationsUpserted}`)
     console.error(`${picocolors.dim('Credentials written:')} ${result.credentialsWritten}`)
     console.error(`${picocolors.dim('Credentials unchanged:')} ${result.credentialsUnchanged}`)
-  }
-  finally {
+  } finally {
     await close()
   }
 }
@@ -492,8 +484,7 @@ async function runCreateApiKey() {
     console.error(`${picocolors.dim('Name:')} ${name}`)
     console.error(`${picocolors.dim('ID:')} ${id}`)
     console.error(`${picocolors.dim('Key (store this now):')} ${rawKey}`)
-  }
-  finally {
+  } finally {
     await close()
   }
 }
@@ -518,7 +509,7 @@ function help(exitCode = 0) {
     `- ${picocolors.bold('Serve')}: starts or reuses the local Commandable instance.`,
     `- ${picocolors.bold('Create')}: Claude Code authoring flow. Prints or applies ${picocolors.cyan('claude mcp add')} for builder mode.`,
     `- ${picocolors.bold('Connect')}: prints compatibility client connection details (stdio static-mode or HTTP /mcp by default).`,
-    '',
+    ''
   ].join('\n'))
   process.exit(exitCode)
 }

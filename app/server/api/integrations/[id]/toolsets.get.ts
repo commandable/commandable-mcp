@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   if (customDefs.length) {
     toolsets.custom = {
       label: 'Custom Tools',
-      description: `Agent-created tools for ${integration.label}`,
+      description: `Agent-created tools for ${integration.label}`
     }
   }
   return toolsets

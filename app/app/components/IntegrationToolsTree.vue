@@ -1,12 +1,21 @@
 <template>
   <div class="space-y-2">
-    <div v-if="loading" class="text-sm text-muted py-2">
+    <div
+      v-if="loading"
+      class="text-sm text-muted py-2"
+    >
       Loading tools…
     </div>
-    <div v-else-if="loadError" class="text-sm text-red-600 py-2">
+    <div
+      v-else-if="loadError"
+      class="text-sm text-red-600 py-2"
+    >
       Failed to load tools.
     </div>
-    <div v-else-if="!effectiveToolsets.length" class="text-sm text-muted py-2">
+    <div
+      v-else-if="!effectiveToolsets.length"
+      class="text-sm text-muted py-2"
+    >
       No tools available for this integration.
     </div>
     <template v-else>
@@ -17,7 +26,8 @@
         :class="!isToolsetEnabled(ts.key) ? 'opacity-50' : ''"
       >
         <!-- Toolset header row -->
-        <div class="flex items-center gap-3 px-3 py-2.5 bg-[var(--ui-bg-elevated)] border-l-4"
+        <div
+          class="flex items-center gap-3 px-3 py-2.5 bg-[var(--ui-bg-elevated)] border-l-4"
           :class="isToolsetEnabled(ts.key) ? 'border-l-primary' : 'border-l-transparent'"
         >
           <USwitch
@@ -35,7 +45,10 @@
               <span class="text-xs text-muted ml-2 font-normal">
                 {{ getActiveCount(ts.key) }}/{{ getToolsInSet(ts.key).length }} active
               </span>
-              <span v-if="ts.description" class="block text-xs text-muted mt-0.5">{{ ts.description }}</span>
+              <span
+                v-if="ts.description"
+                class="block text-xs text-muted mt-0.5"
+              >{{ ts.description }}</span>
             </div>
             <UIcon
               :name="expanded.has(ts.key) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
@@ -45,7 +58,10 @@
         </div>
 
         <!-- Tools list (expanded) -->
-        <div v-if="expanded.has(ts.key)" class="border-t border-[var(--ui-border)]">
+        <div
+          v-if="expanded.has(ts.key)"
+          class="border-t border-[var(--ui-border)]"
+        >
           <div class="ml-4 border-l-2 border-[var(--ui-border)]">
             <div
               v-for="tool in getToolsInSet(ts.key)"
@@ -69,12 +85,19 @@
                   >
                     {{ tool.scope }}
                   </span>
-                  <span v-if="isToolGreyed(tool)" class="text-[10px] text-muted italic">
+                  <span
+                    v-if="isToolGreyed(tool)"
+                    class="text-[10px] text-muted italic"
+                  >
                     hidden by read-only
                   </span>
                 </div>
-                <p class="text-xs text-muted mt-0.5 leading-snug">{{ tool.description }}</p>
-                <p class="text-[10px] font-mono text-muted/60 mt-0.5">{{ tool.name }}</p>
+                <p class="text-xs text-muted mt-0.5 leading-snug">
+                  {{ tool.description }}
+                </p>
+                <p class="text-[10px] font-mono text-muted/60 mt-0.5">
+                  {{ tool.name }}
+                </p>
               </div>
               <UButton
                 v-if="tool.custom && props.integrationId"
@@ -140,7 +163,7 @@ const effectiveToolsets = computed<ToolsetMeta[]>(() => {
   const discovered = Array.from(new Set(
     tools.value
       .map(tool => tool.toolset)
-      .filter((key): key is string => !!key),
+      .filter((key): key is string => !!key)
   )).sort((a, b) => a.localeCompare(b))
 
   if (!discovered.length && tools.value.length) {
@@ -178,7 +201,7 @@ function getToolsInSet(key: string): ToolItem[] {
 }
 
 function getActiveCount(key: string): number {
-  return getToolsInSet(key).filter(t => {
+  return getToolsInSet(key).filter((t) => {
     if (isToolGreyed(t)) return false
     if (props.disabledTools.includes(t.name)) return false
     return true
@@ -196,8 +219,7 @@ function toggleToolset(key: string, enabled: boolean) {
   const current = [...props.enabledToolsets]
   if (enabled) {
     if (!current.includes(key)) current.push(key)
-  }
-  else {
+  } else {
     if (current.length > 1) {
       const idx = current.indexOf(key)
       if (idx >= 0) current.splice(idx, 1)
@@ -211,8 +233,7 @@ function toggleTool(name: string, enabled: boolean) {
   if (enabled) {
     const idx = current.indexOf(name)
     if (idx >= 0) current.splice(idx, 1)
-  }
-  else {
+  } else {
     if (!current.includes(name)) current.push(name)
   }
   emit('update:disabledTools', current)
@@ -237,11 +258,11 @@ async function load() {
     const [tsData, toolData] = await (props.integrationId
       ? Promise.all([
           $fetch<ToolsetMap>(`/api/integrations/${props.integrationId}/toolsets`),
-          $fetch<ToolItem[]>(`/api/integrations/${props.integrationId}/tools`),
+          $fetch<ToolItem[]>(`/api/integrations/${props.integrationId}/tools`)
         ])
       : Promise.all([
           $fetch<ToolsetMap>(`/api/catalog/${props.integrationType}/toolsets`),
-          $fetch<ToolItem[]>(`/api/catalog/${props.integrationType}/tools`),
+          $fetch<ToolItem[]>(`/api/catalog/${props.integrationType}/tools`)
         ]))
 
     toolsets.value = Object.entries(tsData || {})
@@ -252,11 +273,9 @@ async function load() {
 
     if (effectiveToolsets.value.length)
       expanded.value = new Set([effectiveToolsets.value[0]!.key])
-  }
-  catch {
+  } catch {
     loadError.value = true
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
@@ -270,12 +289,11 @@ async function deleteCustomTool(name: string) {
   try {
     await $fetch(`/api/integrations/${props.integrationId}/tools`, {
       method: 'DELETE',
-      body: { name },
+      body: { name }
     })
     emit('update:disabledTools', props.disabledTools.filter(toolName => toolName !== name))
     await load()
-  }
-  finally {
+  } finally {
     deletingToolName.value = ''
   }
 }

@@ -7,4 +7,3 @@ export default defineEventHandler(async () => {
   const spaceId = (process.env.COMMANDABLE_SPACE_ID || 'local').trim() || 'local'
   return await listIntegrations(db, spaceId)
 })
-

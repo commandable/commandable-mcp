@@ -41,7 +41,6 @@ export default defineEventHandler(async (event) => {
     type: 'bearer',
     apiKeyId: row.id,
     name: row.name,
-    scopes: row.scopesJson ?? null,
+    scopes: row.scopesJson ?? null
   }
 })
-

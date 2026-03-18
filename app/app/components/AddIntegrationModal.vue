@@ -15,7 +15,10 @@
           />
         </UFormField>
 
-        <div v-if="selectedType" class="space-y-2">
+        <div
+          v-if="selectedType"
+          class="space-y-2"
+        >
           <div class="text-sm font-medium">
             Access level
           </div>
@@ -41,12 +44,18 @@
               Read-only
             </button>
           </div>
-          <p v-if="selectedTypeMaxScope === 'read'" class="text-xs text-amber-600 dark:text-amber-400">
+          <p
+            v-if="selectedTypeMaxScope === 'read'"
+            class="text-xs text-amber-600 dark:text-amber-400"
+          >
             Write/admin tools are greyed out automatically.
           </p>
         </div>
 
-        <details v-if="selectedType" class="border border-[var(--ui-border)] rounded-md">
+        <details
+          v-if="selectedType"
+          class="border border-[var(--ui-border)] rounded-md"
+        >
           <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">
             Advanced tool controls (optional)
           </summary>
@@ -67,10 +76,18 @@
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton variant="soft" color="neutral" @click="isOpen = false">
+        <UButton
+          variant="soft"
+          color="neutral"
+          @click="isOpen = false"
+        >
           Cancel
         </UButton>
-        <UButton :disabled="!selectedType || creating" :loading="creating" @click="create">
+        <UButton
+          :disabled="!selectedType || creating"
+          :loading="creating"
+          @click="create"
+        >
           Add
         </UButton>
       </div>
@@ -87,7 +104,7 @@ const emit = defineEmits<{
 
 const isOpen = computed({
   get: () => props.open,
-  set: (v: boolean) => emit('update:open', v),
+  set: (v: boolean) => emit('update:open', v)
 })
 
 const { data: catalog } = await useFetch<any[]>('/api/catalog')
@@ -145,14 +162,13 @@ async function create() {
         type: selectedType.value,
         maxScope: selectedTypeMaxScope.value || undefined,
         enabledToolsets,
-        disabledTools: selectedTypeDisabledTools.value.length ? selectedTypeDisabledTools.value : undefined,
-      },
+        disabledTools: selectedTypeDisabledTools.value.length ? selectedTypeDisabledTools.value : undefined
+      }
     })
 
     isOpen.value = false
     emit('created', result.id)
-  }
-  finally {
+  } finally {
     creating.value = false
   }
 }

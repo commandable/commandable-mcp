@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<ToolItem[]> => {
     description: def.description,
     scope: def.scope,
     toolset: 'custom',
-    custom: true,
+    custom: true
   }))
   return [...builtIn, ...custom]
 })

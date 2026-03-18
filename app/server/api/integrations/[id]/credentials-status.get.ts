@@ -5,7 +5,7 @@ import {
   SqlCredentialStore,
   getOrCreateEncryptionSecret,
   pgIntegrations,
-  sqliteIntegrations,
+  sqliteIntegrations
 } from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
 
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
       hasCredentials: false,
       fieldNames,
       health_status: (integ.healthStatus as string | null) ?? 'disconnected',
-      health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null,
+      health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null
     }
   }
 
@@ -50,6 +50,6 @@ export default defineEventHandler(async (event) => {
     hasCredentials,
     fieldNames,
     health_status: (integ.healthStatus as string | null) ?? null,
-    health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null,
+    health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null
   }
 })

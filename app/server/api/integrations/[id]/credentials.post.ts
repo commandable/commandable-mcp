@@ -9,7 +9,7 @@ import {
   checkIntegrationHealth,
   findIntegrationTypeConfig,
   pgIntegrations,
-  sqliteIntegrations,
+  sqliteIntegrations
 } from '@commandable/mcp-core'
 import type { IntegrationData } from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
@@ -47,13 +47,13 @@ export default defineEventHandler(async (event) => {
   await updateIntegrationCredentials(db, id, {
     connectionMethod: 'credentials',
     credentialId,
-    credentialVariant: resolvedVariant,
+    credentialVariant: resolvedVariant
   })
 
   const typeConfig = await findIntegrationTypeConfig({
     db,
     spaceId,
-    typeSlug: row.type,
+    typeSlug: row.type
   })
 
   const integrationForCheck: IntegrationData = {
@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
     label: row.label,
     connectionMethod: 'credentials',
     credentialId,
-    credentialVariant: resolvedVariant,
+    credentialVariant: resolvedVariant
   }
 
   const proxy = new IntegrationProxy({
@@ -72,13 +72,13 @@ export default defineEventHandler(async (event) => {
     trelloApiKey: process.env.TRELLO_API_KEY,
     integrationTypeConfigsRef: typeConfig
       ? { current: [typeConfig] }
-      : undefined,
+      : undefined
   })
 
   const healthResult = await checkIntegrationHealth({
     integration: integrationForCheck,
     proxy,
-    db,
+    db
   })
 
   // Always persist health status — even skipped checks resolve as 'connected'
@@ -90,6 +90,6 @@ export default defineEventHandler(async (event) => {
     ok: true,
     credentialId,
     health_status: healthResult.status,
-    health_checked_at: healthResult.checkedAt?.toISOString(),
+    health_checked_at: healthResult.checkedAt?.toISOString()
   }
 })

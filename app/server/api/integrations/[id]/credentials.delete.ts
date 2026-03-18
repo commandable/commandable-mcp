@@ -6,7 +6,7 @@ import {
   updateIntegrationCredentials,
   updateIntegrationHealth,
   pgIntegrations,
-  sqliteIntegrations,
+  sqliteIntegrations
 } from '@commandable/mcp-core'
 import { getDb } from '../../../utils/db'
 import { refreshMcpState } from '../../../utils/mcp'
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   await updateIntegrationCredentials(db, id, {
     connectionMethod: null,
     credentialId: null,
-    credentialVariant: null,
+    credentialVariant: null
   })
 
   // Mark as disconnected

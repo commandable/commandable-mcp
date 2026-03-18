@@ -6,8 +6,23 @@
     aria-label="Commandable MCP"
   >
     <!-- Geometric mark: two overlapping rounded squares suggesting connectivity -->
-    <rect x="2" y="2" width="22" height="22" rx="5" fill="var(--ui-primary)" />
-    <rect x="10" y="10" width="22" height="22" rx="5" fill="var(--ui-primary)" opacity="0.4" />
+    <rect
+      x="2"
+      y="2"
+      width="22"
+      height="22"
+      rx="5"
+      fill="var(--ui-primary)"
+    />
+    <rect
+      x="10"
+      y="10"
+      width="22"
+      height="22"
+      rx="5"
+      fill="var(--ui-primary)"
+      opacity="0.4"
+    />
     <!-- Wordmark -->
     <text
       x="40"

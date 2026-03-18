@@ -5,13 +5,13 @@ type DbState = {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var __commandableMcpDbState: DbState | undefined
 }
 
 function initOnce(): DbState {
   return {
-    ready: Promise.resolve(createDbFromEnv()),
+    ready: Promise.resolve(createDbFromEnv())
   }
 }
 

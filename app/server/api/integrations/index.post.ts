@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     // Empty array means "all toolsets enabled" -> store null/undefined (no filtering).
     enabledToolsets: Array.isArray(body?.enabledToolsets) && body.enabledToolsets.length ? body.enabledToolsets : undefined,
     maxScope: body?.maxScope === 'read' || body?.maxScope === 'write' ? body.maxScope : undefined,
-    disabledTools: Array.isArray(body?.disabledTools) && body.disabledTools.length ? body.disabledTools : undefined,
+    disabledTools: Array.isArray(body?.disabledTools) && body.disabledTools.length ? body.disabledTools : undefined
   }
 
   if (!integration.type)
@@ -34,4 +34,3 @@ export default defineEventHandler(async (event) => {
   await refreshMcpState()
   return integration
 })
-

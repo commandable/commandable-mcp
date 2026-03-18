@@ -26,8 +26,8 @@ export default defineEventHandler(async (event) => {
       key,
       label: variant.label,
       schema: variant.credentialSchema,
-      hintMarkdown: variant.hintMarkdown ?? null,
+      hintMarkdown: variant.hintMarkdown ?? null
     })),
-    defaultVariant: typeConfig.defaultVariant,
+    defaultVariant: typeConfig.defaultVariant
   }
 })

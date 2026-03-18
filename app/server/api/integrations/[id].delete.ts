@@ -6,7 +6,7 @@ import {
   deleteToolDefinitionsForIntegration,
   getIntegrationById,
   getOrCreateEncryptionSecret,
-  listIntegrations,
+  listIntegrations
 } from '@commandable/mcp-core'
 import { getDb } from '../../utils/db'
 import { refreshMcpState } from '../../utils/mcp'
@@ -36,4 +36,3 @@ export default defineEventHandler(async (event) => {
   await refreshMcpState()
   return { ok: true, deleted: true }
 })
-

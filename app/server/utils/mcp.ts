@@ -48,7 +48,7 @@ type McpStateStore = {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var __commandableMcpHttpState: McpStateStore | undefined
 }
 
@@ -235,7 +235,7 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   })
 
   const server = new Server(getServerInfo(), {
-    capabilities: { tools: { listChanged: true } },
+    capabilities: { tools: { listChanged: true } }
   })
   registerToolHandlers(
     server,
@@ -250,7 +250,7 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
               ctx: shared.ctx
             }
           }
-        : {}),
+        : {})
     }
   )
 

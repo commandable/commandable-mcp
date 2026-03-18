@@ -1,52 +1,100 @@
 <template>
   <div>
     <!-- Loading skeleton -->
-    <div v-if="loading" class="flex items-center gap-2 text-sm text-muted">
-      <UIcon name="i-lucide-loader-2" class="animate-spin" />
+    <div
+      v-if="loading"
+      class="flex items-center gap-2 text-sm text-muted"
+    >
+      <UIcon
+        name="i-lucide-loader-2"
+        class="animate-spin"
+      />
       Checking connection…
     </div>
 
     <!-- No credentials support -->
-    <div v-else-if="credConfig?.supportsCredentials === false" class="flex items-center gap-2 text-sm text-muted">
+    <div
+      v-else-if="credConfig?.supportsCredentials === false"
+      class="flex items-center gap-2 text-sm text-muted"
+    >
       <UIcon name="i-lucide-info" />
       No credentials required for this integration.
     </div>
 
     <!-- Connected state -->
-    <div v-else-if="healthStatus === 'connected'" class="flex items-center gap-3 flex-wrap">
+    <div
+      v-else-if="healthStatus === 'connected'"
+      class="flex items-center gap-3 flex-wrap"
+    >
       <div class="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
         <span class="inline-block w-2 h-2 rounded-full bg-green-500" />
         Connected
       </div>
-      <UButton size="xs" variant="soft" color="neutral" icon="i-lucide-refresh-cw" @click="openModal">
+      <UButton
+        size="xs"
+        variant="soft"
+        color="neutral"
+        icon="i-lucide-refresh-cw"
+        @click="openModal"
+      >
         Reconfigure
       </UButton>
-      <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
+      <UButton
+        size="xs"
+        variant="soft"
+        color="error"
+        icon="i-lucide-unplug"
+        :loading="disconnecting"
+        @click="disconnect"
+      >
         Disconnect
       </UButton>
     </div>
 
     <!-- Invalid credentials state -->
-    <div v-else-if="healthStatus === 'invalid_credentials'" class="flex items-center gap-3 flex-wrap">
+    <div
+      v-else-if="healthStatus === 'invalid_credentials'"
+      class="flex items-center gap-3 flex-wrap"
+    >
       <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
         <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
         Invalid credentials
       </div>
-      <UButton size="sm" icon="i-lucide-refresh-cw" color="primary" @click="openModal">
+      <UButton
+        size="sm"
+        icon="i-lucide-refresh-cw"
+        color="primary"
+        @click="openModal"
+      >
         Reconfigure
       </UButton>
-      <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
+      <UButton
+        size="xs"
+        variant="soft"
+        color="error"
+        icon="i-lucide-unplug"
+        :loading="disconnecting"
+        @click="disconnect"
+      >
         Disconnect
       </UButton>
     </div>
 
     <!-- Not connected state -->
-    <div v-else class="flex items-center gap-3 flex-wrap">
+    <div
+      v-else
+      class="flex items-center gap-3 flex-wrap"
+    >
       <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
         <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
         Not connected
       </div>
-      <UButton size="sm" icon="i-lucide-plug" color="primary" @click="openModal">
+      <UButton
+        size="sm"
+        icon="i-lucide-plug"
+        color="primary"
+        @click="openModal"
+      >
         Connect
       </UButton>
     </div>
@@ -59,12 +107,18 @@
     >
       <template #body>
         <div class="space-y-4">
-          <div v-if="loadError" class="text-sm text-red-600">
+          <div
+            v-if="loadError"
+            class="text-sm text-red-600"
+          >
             Failed to load credential schema. Please try again.
           </div>
 
           <template v-else>
-            <UFormField v-if="hasMultipleVariants" label="Credential type">
+            <UFormField
+              v-if="hasMultipleVariants"
+              label="Credential type"
+            >
               <USelect
                 v-model="selectedVariant"
                 :items="variantItems"
@@ -73,7 +127,11 @@
             </UFormField>
 
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-if="activeVariant?.hintMarkdown" class="hint-markdown text-sm bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2" v-html="renderedHint" />
+            <div
+              v-if="activeVariant?.hintMarkdown"
+              class="hint-markdown text-sm bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2"
+              v-html="renderedHint"
+            />
 
             <div class="space-y-3">
               <UFormField
@@ -95,10 +153,19 @@
 
       <template #footer>
         <div class="flex items-center justify-end gap-2 w-full">
-          <UButton variant="ghost" color="neutral" :disabled="saving" @click="modalOpen = false">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            :disabled="saving"
+            @click="modalOpen = false"
+          >
             Cancel
           </UButton>
-          <UButton :loading="saving" icon="i-lucide-check" @click="save">
+          <UButton
+            :loading="saving"
+            icon="i-lucide-check"
+            @click="save"
+          >
             Save Credentials
           </UButton>
         </div>
@@ -148,11 +215,11 @@ const modalOpen = ref(false)
 const hasMultipleVariants = computed(() => (credConfig.value?.variants?.length ?? 0) > 1)
 
 const variantItems = computed(() =>
-  (credConfig.value?.variants || []).map(v => ({ label: v.label, value: v.key })),
+  (credConfig.value?.variants || []).map(v => ({ label: v.label, value: v.key }))
 )
 
 const activeVariant = computed(() =>
-  credConfig.value?.variants?.find(v => v.key === selectedVariant.value) ?? null,
+  credConfig.value?.variants?.find(v => v.key === selectedVariant.value) ?? null
 )
 
 const schemaFields = computed((): [string, unknown][] => {
@@ -188,17 +255,15 @@ async function load() {
   try {
     const [config, status] = await Promise.all([
       $fetch<CredConfig>(`/api/integrations/${props.integrationId}/credentials-config`),
-      $fetch<{ hasCredentials: boolean, health_status: string | null }>(`/api/integrations/${props.integrationId}/credentials-status`),
+      $fetch<{ hasCredentials: boolean, health_status: string | null }>(`/api/integrations/${props.integrationId}/credentials-status`)
     ])
     credConfig.value = config
     hasCredentials.value = !!status?.hasCredentials
     healthStatus.value = status?.health_status ?? null
     selectedVariant.value = props.currentVariant || config?.defaultVariant || config?.variants?.[0]?.key || undefined
-  }
-  catch {
+  } catch {
     loadError.value = true
-  }
-  finally {
+  } finally {
     loading.value = false
   }
 }
@@ -220,8 +285,7 @@ async function save() {
     for (const k of Object.keys(form))
       delete form[k]
     emit('saved')
-  }
-  finally {
+  } finally {
     saving.value = false
   }
 }
@@ -233,8 +297,7 @@ async function disconnect() {
     hasCredentials.value = false
     healthStatus.value = 'disconnected'
     emit('disconnected')
-  }
-  finally {
+  } finally {
     disconnecting.value = false
   }
 }
