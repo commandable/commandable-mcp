@@ -1,6 +1,7 @@
 {
   "name": "github",
   "version": "0.3.0",
+  "baseUrl": "https://api.github.com",
   "toolsets": {
     "code": {
       "label": "Code & Files",

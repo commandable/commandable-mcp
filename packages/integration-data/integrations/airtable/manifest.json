@@ -1,6 +1,7 @@
 {
   "name": "airtable",
   "version": "0.1.0",
+  "baseUrl": "https://api.airtable.com/v0",
   "tools": [
     {
       "name": "list_bases",

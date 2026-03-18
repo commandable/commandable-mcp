@@ -1,7 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { HttpError } from '../errors/httpError.js'
 import type { IntegrationCredentialVariant, IntegrationData, IntegrationTypeConfig } from '../types.js'
-import { PROVIDERS } from './providerRegistry.js'
 import { getBuiltInIntegrationTypeConfig } from './fileIntegrationTypeConfigStore.js'
 import { getGoogleAccessToken } from './googleServiceAccount.js'
 
@@ -10,11 +9,6 @@ export interface CredentialStore {
 }
 
 export interface IntegrationProxyOptions {
-  // Optional: managed OAuth support. For self-hosted BYO creds, you can omit these.
-  managedOAuthSecretKey?: string
-  managedOAuthBaseUrl?: string
-
-  trelloApiKey?: string
   credentialStore?: CredentialStore
   integrationTypeConfigsRef?: { current: IntegrationTypeConfig[] }
 }
@@ -64,7 +58,7 @@ export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 
   async call(integration: IntegrationData, path: string, init: RequestInit = {}): Promise<Response> {
-    const { type: provider, connectionId } = integration
+    const { type: provider } = integration
 
     if (!provider || !path)
       throw new HttpError(400, 'provider and path are required.')
@@ -183,19 +177,11 @@ export class IntegrationProxy {
         })
       }
 
-      // Resolve base URL: template takes priority over fixed URL, then PROVIDERS registry fallback.
       const baseUrl = (() => {
         if (variant.baseUrlTemplate)
           return resolveTemplate(variant.baseUrlTemplate)
         if (variant.baseUrl)
           return variant.baseUrl
-        // Fallback: PROVIDERS registry (used by built-ins that derive URL from provider config).
-        const providerCfg = PROVIDERS[provider]
-        if (providerCfg) {
-          return typeof providerCfg.baseUrl === 'function'
-            ? providerCfg.baseUrl(integration, creds, variant as any)
-            : providerCfg.baseUrl
-        }
         throw new HttpError(501, `No base URL configured for provider '${provider}'.`)
       })()
 
@@ -311,112 +297,7 @@ export class IntegrationProxy {
       return response
     }
 
-    // Managed OAuth branch: used by hosted deployments / CI.
-    if (!connectionId)
-      throw new HttpError(400, 'connectionId is required.')
-    if (!this.opts.managedOAuthBaseUrl || !this.opts.managedOAuthSecretKey)
-      throw new HttpError(501, 'Managed OAuth is not configured for this server.')
-
-    let managedConnection: any
-    try {
-      const managedUrl = `${this.opts.managedOAuthBaseUrl}/connection/${encodeURIComponent(connectionId)}?provider_config_key=${encodeURIComponent(provider)}`
-      const resp = await fetch(managedUrl, {
-        headers: { Authorization: `Bearer ${this.opts.managedOAuthSecretKey}` },
-      })
-      if (!resp.ok)
-        throw new Error(`Managed OAuth connection lookup failed (${resp.status})`)
-      managedConnection = await resp.json()
-    }
-    catch (error) {
-      console.error('Failed to fetch connection details from managed OAuth gateway:', error)
-      throw new HttpError(502, 'Failed to retrieve connection details from managed OAuth gateway.')
-    }
-
-    const providerId = provider
-    const providerCfg = PROVIDERS[providerId]
-    const creds = managedConnection.credentials || {}
-    const userAccessToken = creds.access_token || creds.oauth_token || creds.token
-
-    if (!providerCfg)
-      throw new HttpError(501, `Provider '${providerId}' is not configured in the server proxy.`)
-
-    const baseUrl = typeof providerCfg.baseUrl === 'function'
-      ? providerCfg.baseUrl(integration, creds)
-      : providerCfg.baseUrl
-    const finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
-
-    try {
-      const preparedInit: RequestInit = { ...init }
-
-      if (preparedInit.body !== undefined && typeof preparedInit.body !== 'string') {
-        preparedInit.body = JSON.stringify(preparedInit.body)
-        preparedInit.headers = {
-          'Content-Type': 'application/json',
-          ...preparedInit.headers,
-        }
-      }
-
-      if (providerId === 'trello') {
-        if (!this.opts.trelloApiKey)
-          throw new HttpError(500, 'Trello API key is not configured.')
-
-        const queryParams = new URLSearchParams({
-          ...providerCfg.makeAuth(userAccessToken, this.opts.trelloApiKey),
-        }).toString()
-
-        const urlWithAuth = finalUrl + (finalUrl.includes('?') ? '&' : '?') + queryParams
-        const response = await fetch(urlWithAuth, { ...preparedInit, method: preparedInit.method || 'GET' })
-        if (!response.ok) {
-          const contentType = response.headers.get('content-type') || ''
-          let bodyText = ''
-          try {
-            bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
-          }
-          catch {}
-          const hint = getErrorHint(response.status, providerId, bodyText)
-          const hintSuffix = hint ? ` ${hint}` : ''
-          throw new HttpError(response.status, `Failed to proxy request to ${providerId}.${hintSuffix}`, {
-            status: response.status,
-            url: urlWithAuth,
-            contentType,
-            body: bodyText?.slice(0, 4000),
-          })
-        }
-        return response
-      }
-
-      const response = await fetch(finalUrl, {
-        ...preparedInit,
-        method: preparedInit.method || 'GET',
-        headers: {
-          ...preparedInit.headers,
-          ...providerCfg.makeAuth(userAccessToken),
-        },
-      })
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type') || ''
-        let bodyText = ''
-        try {
-          bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
-        }
-        catch {}
-        const hint = getErrorHint(response.status, providerId, bodyText)
-        const hintSuffix = hint ? ` ${hint}` : ''
-        throw new HttpError(response.status, `Failed to proxy request to ${providerId}.${hintSuffix}`, {
-          status: response.status,
-          url: finalUrl,
-          contentType,
-          body: bodyText?.slice(0, 4000),
-        })
-      }
-      return response
-    }
-    catch (error: any) {
-      console.error(`Error proxying request to ${providerId}:`, error)
-      if (error && typeof error === 'object' && 'statusCode' in error)
-        throw error
-      throw new HttpError(500, `Failed to proxy request to ${providerId}.`, (error as any)?.message)
-    }
+    throw new HttpError(501, 'Only credentials-based integrations are supported. Managed OAuth is not configured.')
   }
 }
 

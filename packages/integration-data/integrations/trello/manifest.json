@@ -1,6 +1,7 @@
 {
   "name": "trello",
   "version": "0.1.0",
+  "baseUrl": "https://api.trello.com/1",
   "tools": [
     {
       "name": "get_member",

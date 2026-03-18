@@ -38,7 +38,6 @@ export async function runLocalStdioSession(params: RunLocalStdioSessionParams): 
 
   const proxy = new IntegrationProxy({
     credentialStore,
-    trelloApiKey: process.env.TRELLO_API_KEY,
     integrationTypeConfigsRef,
   })
 

@@ -1,6 +1,7 @@
 {
   "name": "google-calendar",
   "version": "0.1.0",
+  "baseUrl": "https://www.googleapis.com/calendar/v3",
   "toolsets": {
     "events": {
       "label": "Events",

@@ -15,7 +15,6 @@ import { deleteIntegrationById, listIntegrations, upsertIntegration } from '../d
 import type { SqlCredentialStore } from '../db/credentialStore.js'
 import type { IntegrationCredentialVariant, IntegrationData } from '../types.js'
 import type { IntegrationProxy } from '../integrations/proxy.js'
-import { PROVIDERS } from '../integrations/providerRegistry.js'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { sanitizeJsonSchema } from '../integrations/tools.js'
 import {
@@ -73,13 +72,16 @@ function buildBuilderGuide(): string {
   return readFileSync(path, 'utf8')
 }
 
-function providerBaseUrl(integration: IntegrationData): string {
-  const provider = PROVIDERS[integration.type]
-  const base = provider?.baseUrl
-  if (typeof base === 'function') {
-    try { return String(base(integration, undefined) || '') } catch { return '(dynamic baseUrl)' }
-  }
-  return String(base || '')
+function providerBaseUrl(integration: IntegrationData, ctx?: MetaToolContext): string {
+  const manifest = loadIntegrationManifest(integration.type)
+  if (manifest?.baseUrl) return manifest.baseUrl
+  const typeCfg = ctx?.integrationTypeConfigsRef?.current.find(
+    c => c.spaceId === integration.spaceId && c.typeSlug === integration.type,
+  )
+  const variant = typeCfg ? (typeCfg.variants[typeCfg.defaultVariant] ?? Object.values(typeCfg.variants)[0]) : null
+  if (variant?.baseUrl) return variant.baseUrl
+  if (variant?.baseUrlTemplate) return '(dynamic baseUrl)'
+  return ''
 }
 
 function requireBuilderEnabled(sessionState: SessionAbilityState, sessionId: string | undefined, toolName: string) {
@@ -368,7 +370,7 @@ export async function handleMetaToolCall(params: {
         const base = buildBuilderGuide()
         const integrations = ctx?.integrationsRef?.current || []
         const lines = integrations.map((i) => {
-          const baseUrl = providerBaseUrl(i) || '(unknown baseUrl)'
+          const baseUrl = providerBaseUrl(i, ctx) || '(unknown baseUrl)'
           return `- \`${i.referenceId || i.id}\`: ${i.label} (${i.type}), baseUrl: ${baseUrl}`
         }).join('\n')
         return `${base}\n\n${lines ? `${lines}\n` : 'No integrations configured yet.\n'}`
