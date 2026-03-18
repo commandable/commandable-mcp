@@ -1,3 +1,9 @@
+import type {
+  ToolsetMeta as IntegrationDataToolsetMeta,
+  ToolListItem,
+  ToolScope,
+} from '@commandable/mcp-core'
+
 export interface CatalogEntry {
   type: string
 }
@@ -9,6 +15,18 @@ export interface ToolsetEntry {
 export interface IntegrationToolsTreeExpose {
   toolsets?: ToolsetEntry[]
 }
+
+export type { ToolScope }
+
+export type ToolItem = ToolListItem & {
+  custom?: boolean
+}
+
+export type ToolsetMeta = IntegrationDataToolsetMeta & {
+  key: string
+}
+
+export type ToolsetMap = Record<string, IntegrationDataToolsetMeta>
 
 export interface CredentialFieldSchema {
   title?: string

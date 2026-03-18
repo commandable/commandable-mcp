@@ -24,6 +24,10 @@ const pkg = require('../package.json')
 const COMMANDABLE_VERSION = String(pkg.version || '0.0.0')
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const serverEntry = resolve(packageRoot, '.output', 'server', 'index.mjs')
+const DIGITS_ONLY_RE = /^\d+$/
+const PID_LINE_RE = /^\d+$/
+const SAFE_SHELL_ARG_RE = /^[\w./:=@-]+$/
+const SINGLE_QUOTE_RE = /'/g
 const CLAUDE_CODE_STDIO_ENV_KEYS = [
   'COMMANDABLE_SPACE_ID',
   'COMMANDABLE_DATA_DIR',
@@ -50,7 +54,7 @@ function getFlagValue(flag) {
 
 function getUiPort() {
   const raw = process.env.COMMANDABLE_UI_PORT
-  return raw && /^\d+$/.test(raw) ? Number(raw) : 23432
+  return raw && DIGITS_ONLY_RE.test(raw) ? Number(raw) : 23432
 }
 
 function getBaseUrl() {
@@ -76,7 +80,7 @@ function readDaemonPid() {
   try {
     const raw = readFileSync(daemonPidPath(), 'utf8')
     const lines = raw.split('\n').map(line => line.trim()).filter(Boolean)
-    const pid = lines[0] && /^\d+$/.test(lines[0]) ? Number(lines[0]) : null
+    const pid = lines[0] && PID_LINE_RE.test(lines[0]) ? Number(lines[0]) : null
     const version = lines[1] || null
     return pid ? { pid, version } : null
   }
@@ -173,9 +177,9 @@ function getClaudeCodeEnvEntries() {
 }
 
 function quoteShellArg(value) {
-  if (/^[\w./:=@-]+$/.test(value))
+  if (SAFE_SHELL_ARG_RE.test(value))
     return value
-  return `'${value.replace(/'/g, `'"'"'`)}'`
+  return `'${value.replace(SINGLE_QUOTE_RE, `'"'"'`)}'`
 }
 
 function makeReadModeConfig() {

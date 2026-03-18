@@ -1,20 +1,5 @@
 <script setup lang="ts">
-interface ToolItem {
-  name: string
-  displayName: string
-  description: string
-  scope: 'read' | 'write' | 'admin'
-  toolset?: string
-  custom?: boolean
-}
-
-interface ToolsetMeta {
-  key: string
-  label: string
-  description: string
-}
-
-type ToolsetMap = Record<string, { label: string, description: string }>
+import type { ToolItem, ToolScope, ToolsetMap, ToolsetMeta } from '../types/integration'
 
 const props = defineProps<{
   integrationType?: string
@@ -34,7 +19,15 @@ const tools = ref<ToolItem[]>([])
 const loading = ref(true)
 const loadError = ref(false)
 const deletingToolName = ref('')
+const pendingDeleteToolName = ref('')
 const expanded = ref<Set<string>>(new Set())
+const deleteModalOpen = computed({
+  get: () => !!pendingDeleteToolName.value,
+  set: (open: boolean) => {
+    if (!open)
+      pendingDeleteToolName.value = ''
+  },
+})
 
 const effectiveToolsets = computed<ToolsetMeta[]>(() => {
   if (toolsets.value.length)
@@ -53,7 +46,7 @@ const effectiveToolsets = computed<ToolsetMeta[]>(() => {
   return discovered.map(key => ({ key, label: key, description: '' }))
 })
 
-function scopeClass(scope: string): string {
+function scopeClass(scope: ToolScope): string {
   if (scope === 'read')
     return 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
   if (scope === 'write')
@@ -177,8 +170,14 @@ async function load() {
 async function deleteCustomTool(name: string) {
   if (!props.integrationId || !name || deletingToolName.value)
     return
-  if (!window.confirm(`Delete custom tool "${name}"? This cannot be undone.`))
+  pendingDeleteToolName.value = name
+}
+
+async function confirmDeleteCustomTool() {
+  if (!props.integrationId || !pendingDeleteToolName.value || deletingToolName.value)
     return
+  const name = pendingDeleteToolName.value
+  pendingDeleteToolName.value = ''
   deletingToolName.value = name
   try {
     await $fetch(`/api/integrations/${props.integrationId}/tools`, {
@@ -191,6 +190,10 @@ async function deleteCustomTool(name: string) {
   finally {
     deletingToolName.value = ''
   }
+}
+
+function cancelDeleteCustomTool() {
+  pendingDeleteToolName.value = ''
 }
 
 defineExpose({ toolsets: effectiveToolsets })
@@ -315,5 +318,31 @@ load()
         </div>
       </div>
     </template>
+    <UModal
+      v-model:open="deleteModalOpen"
+      title="Delete custom tool"
+      :description="pendingDeleteToolName ? `Delete custom tool '${pendingDeleteToolName}'? This cannot be undone.` : undefined"
+    >
+      <template #footer>
+        <div class="flex items-center justify-end gap-2 w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            :disabled="!!deletingToolName"
+            @click="cancelDeleteCustomTool"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="error"
+            icon="i-lucide-trash-2"
+            :loading="!!deletingToolName"
+            @click="confirmDeleteCustomTool"
+          >
+            Delete
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

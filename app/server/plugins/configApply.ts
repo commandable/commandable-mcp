@@ -26,7 +26,7 @@ export default defineNitroPlugin(async () => {
     const store = new SqlCredentialStore(db, secret)
     await applyConfig({ config, db, credentialStore: store })
 
-    console.info(`[commandable] applied config: ${path}`)
+    process.stdout.write(`[commandable] applied config: ${path}\n`)
   }
   catch (err) {
     console.error('[commandable] failed to apply config at startup')

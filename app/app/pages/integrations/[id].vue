@@ -14,6 +14,7 @@ const formMaxScope = ref<'read' | 'write' | null>(null)
 const formEnabledToolsets = ref<string[]>([])
 const formDisabledTools = ref<string[]>([])
 const toolsTreeRef = ref<IntegrationToolsTreeExpose | null>(null)
+const removeModalOpen = ref(false)
 const saving = ref(false)
 
 function initForm() {
@@ -88,8 +89,13 @@ async function saveAll() {
 async function confirmRemove() {
   if (!integration.value)
     return
-  if (!window.confirm(`Remove "${integration.value.label}"? This cannot be undone.`))
+  removeModalOpen.value = true
+}
+
+async function removeIntegration() {
+  if (!integration.value)
     return
+  removeModalOpen.value = false
   await $fetch(`/api/integrations/${integration.value.id}`, { method: 'DELETE' })
   navigateTo('/integrations')
 }
@@ -248,6 +254,31 @@ function onCredentialChange() {
           Remove Integration
         </UButton>
       </div>
+
+      <UModal
+        v-model:open="removeModalOpen"
+        title="Remove integration"
+        :description="integration ? `Remove &quot;${integration.label}&quot;? This cannot be undone.` : undefined"
+      >
+        <template #footer>
+          <div class="flex items-center justify-end gap-2 w-full">
+            <UButton
+              variant="ghost"
+              color="neutral"
+              @click="removeModalOpen = false"
+            >
+              Cancel
+            </UButton>
+            <UButton
+              color="error"
+              icon="i-lucide-trash-2"
+              @click="removeIntegration"
+            >
+              Remove
+            </UButton>
+          </div>
+        </template>
+      </UModal>
     </template>
   </UContainer>
 </template>
