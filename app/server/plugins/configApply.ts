@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { applyConfig, getOrCreateEncryptionSecret, loadConfig, SqlCredentialStore } from '@commandable/mcp-core'
 import { defineNitroPlugin } from 'nitropack/runtime'
-import { SqlCredentialStore, applyConfig, getOrCreateEncryptionSecret, loadConfig } from '@commandable/mcp-core'
 import { getDb } from '../utils/db'
 
 function hasAutoConfigFile(): boolean {
@@ -9,7 +9,7 @@ function hasAutoConfigFile(): boolean {
   const candidates = [
     'commandable.config.yaml',
     'commandable.config.yml',
-    'commandable.config.json'
+    'commandable.config.json',
   ].map(f => resolve(base, f))
   return candidates.some(p => existsSync(p))
 }
@@ -27,7 +27,8 @@ export default defineNitroPlugin(async () => {
     await applyConfig({ config, db, credentialStore: store })
 
     console.info(`[commandable] applied config: ${path}`)
-  } catch (err) {
+  }
+  catch (err) {
     console.error('[commandable] failed to apply config at startup')
 
     console.error(err)

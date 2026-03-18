@@ -1,13 +1,11 @@
-import { defineEventHandler, getRouterParam, createError } from 'h3'
-import { eq } from 'drizzle-orm'
 import {
-  SqlCredentialStore,
+  getIntegrationById,
   getOrCreateEncryptionSecret,
+  SqlCredentialStore,
   updateIntegrationCredentials,
   updateIntegrationHealth,
-  pgIntegrations,
-  sqliteIntegrations
 } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 import { refreshMcpState } from '../../../utils/mcp'
 
@@ -17,15 +15,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'id is required' })
 
   const db = await getDb()
-  const table: any = db.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations
-  const rows = await (db.db as any).select().from(table).where(eq(table.id, id)).limit(1)
-  const row = rows?.[0]
-  if (!row)
+  const integ = await getIntegrationById(db, id)
+  if (!integ)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  const credentialId = row.credentialId as string | null | undefined
+  const credentialId = integ.credentialId
   if (credentialId) {
-    const spaceId = row.spaceId ?? 'local'
+    const spaceId = integ.spaceId ?? 'local'
     const encryptionSecret = getOrCreateEncryptionSecret()
     const store = new SqlCredentialStore(db, encryptionSecret)
     await store.deleteCredentials(spaceId, credentialId)
@@ -35,7 +31,7 @@ export default defineEventHandler(async (event) => {
   await updateIntegrationCredentials(db, id, {
     connectionMethod: null,
     credentialId: null,
-    credentialVariant: null
+    credentialVariant: null,
   })
 
   // Mark as disconnected

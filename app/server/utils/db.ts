@@ -1,6 +1,6 @@
 import { createDbFromEnv } from '@commandable/mcp-core'
 
-type DbState = {
+interface DbState {
   ready: Promise<ReturnType<typeof createDbFromEnv>>
 }
 
@@ -11,7 +11,7 @@ declare global {
 
 function initOnce(): DbState {
   return {
-    ready: Promise.resolve(createDbFromEnv())
+    ready: Promise.resolve(createDbFromEnv()),
   }
 }
 

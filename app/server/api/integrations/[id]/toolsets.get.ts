@@ -1,5 +1,5 @@
-import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getIntegrationById, listToolDefinitionsForIntegration, loadIntegrationToolsets } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   if (customDefs.length) {
     toolsets.custom = {
       label: 'Custom Tools',
-      description: `Agent-created tools for ${integration.label}`
+      description: `Agent-created tools for ${integration.label}`,
     }
   }
   return toolsets

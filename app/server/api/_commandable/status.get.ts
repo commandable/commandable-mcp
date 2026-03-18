@@ -1,6 +1,6 @@
-import { defineEventHandler } from 'h3'
 import { homedir } from 'node:os'
 import { resolve } from 'node:path'
+import { defineEventHandler } from 'h3'
 
 function getSpaceId(): string {
   const v = process.env.COMMANDABLE_SPACE_ID
@@ -29,6 +29,6 @@ export default defineEventHandler(() => {
     service: 'commandable-management-ui',
     version: (process.env.COMMANDABLE_VERSION || '').trim() || null,
     spaceId: getSpaceId(),
-    db: getDbIdentity()
+    db: getDbIdentity(),
   }
 })

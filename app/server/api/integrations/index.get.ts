@@ -1,5 +1,5 @@
-import { defineEventHandler } from 'h3'
 import { listIntegrations } from '@commandable/mcp-core'
+import { defineEventHandler } from 'h3'
 import { getDb } from '../../utils/db'
 
 export default defineEventHandler(async () => {

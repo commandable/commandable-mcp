@@ -1,8 +1,8 @@
-import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getIntegrationById, listToolDefinitionsForIntegration, loadIntegrationToolList } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
-type ToolItem = {
+interface ToolItem {
   name: string
   displayName: string
   description: string
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<ToolItem[]> => {
     description: def.description,
     scope: def.scope,
     toolset: 'custom',
-    custom: true
+    custom: true,
   }))
   return [...builtIn, ...custom]
 })

@@ -1,14 +1,14 @@
 <script setup>
 useHead({
   meta: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
   ],
   link: [
-    { rel: 'icon', href: '/favicon.ico' }
+    { rel: 'icon', href: '/favicon.ico' },
   ],
   htmlAttrs: {
-    lang: 'en'
-  }
+    lang: 'en',
+  },
 })
 
 const title = 'Commandable MCP'
@@ -19,7 +19,7 @@ useSeoMeta({
   description,
   ogTitle: title,
   ogDescription: description,
-  twitterCard: 'summary'
+  twitterCard: 'summary',
 })
 </script>
 

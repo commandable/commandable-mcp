@@ -1,3 +1,87 @@
+<script setup lang="ts">
+import type { CatalogEntry, IntegrationToolsTreeExpose } from '../types/integration'
+
+const props = defineProps<{ open: boolean }>()
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  'created': [id: string]
+}>()
+
+const isOpen = computed({
+  get: () => props.open,
+  set: (v: boolean) => emit('update:open', v),
+})
+
+const { data: catalog } = await useFetch<CatalogEntry[]>('/api/catalog')
+const catalogTypes = computed(() => (catalog.value || []).map(i => ({ label: i.type, value: i.type })))
+
+const selectedType = ref<string | undefined>(undefined)
+const selectedTypeMaxScope = ref<'read' | null>(null)
+const selectedTypeEnabledToolsets = ref<string[]>([])
+const selectedTypeDisabledTools = ref<string[]>([])
+const toolsTreeRef = ref<IntegrationToolsTreeExpose | null>(null)
+const creating = ref(false)
+
+watch(isOpen, (open) => {
+  if (!open)
+    return
+  selectedType.value = undefined
+  selectedTypeMaxScope.value = null
+  selectedTypeEnabledToolsets.value = []
+  selectedTypeDisabledTools.value = []
+})
+
+watch(selectedType, () => {
+  selectedTypeMaxScope.value = null
+  selectedTypeEnabledToolsets.value = []
+  selectedTypeDisabledTools.value = []
+})
+
+watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
+  if (!selectedType.value || !toolsets?.length)
+    return
+
+  // Default: all toolsets enabled in UI.
+  if (!selectedTypeEnabledToolsets.value.length)
+    selectedTypeEnabledToolsets.value = toolsets.map(t => t.key).filter(k => k !== 'custom')
+}, { deep: true })
+
+async function create() {
+  if (!selectedType.value)
+    return
+  creating.value = true
+  try {
+    const toolsetKeys: string[] = (toolsTreeRef.value?.toolsets || []).map(t => t.key)
+    const realToolsetKeys = toolsetKeys.filter(k => k !== '__all__' && k !== 'custom')
+
+    // IMPORTANT:
+    // - undefined/null means "all toolsets" (no filtering)
+    // - [] is NOT safe (it filters out all tools in the loader)
+    const enabledToolsets = realToolsetKeys.length
+      ? (selectedTypeEnabledToolsets.value.length < realToolsetKeys.length
+          ? selectedTypeEnabledToolsets.value.filter(k => k !== '__all__')
+          : undefined)
+      : undefined
+
+    const result = await $fetch<{ id: string }>('/api/integrations', {
+      method: 'POST',
+      body: {
+        type: selectedType.value,
+        maxScope: selectedTypeMaxScope.value || undefined,
+        enabledToolsets,
+        disabledTools: selectedTypeDisabledTools.value.length ? selectedTypeDisabledTools.value : undefined,
+      },
+    })
+
+    isOpen.value = false
+    emit('created', result.id)
+  }
+  finally {
+    creating.value = false
+  }
+}
+</script>
+
 <template>
   <UModal
     v-model:open="isOpen"
@@ -94,82 +178,3 @@
     </template>
   </UModal>
 </template>
-
-<script setup lang="ts">
-const props = defineProps<{ open: boolean }>()
-const emit = defineEmits<{
-  'update:open': [value: boolean]
-  'created': [id: string]
-}>()
-
-const isOpen = computed({
-  get: () => props.open,
-  set: (v: boolean) => emit('update:open', v)
-})
-
-const { data: catalog } = await useFetch<any[]>('/api/catalog')
-const catalogTypes = computed(() => (catalog.value || []).map((i: any) => ({ label: i.type, value: i.type })))
-
-const selectedType = ref<string | undefined>(undefined)
-const selectedTypeMaxScope = ref<'read' | null>(null)
-const selectedTypeEnabledToolsets = ref<string[]>([])
-const selectedTypeDisabledTools = ref<string[]>([])
-const toolsTreeRef = ref<any>(null)
-const creating = ref(false)
-
-watch(isOpen, (open) => {
-  if (!open) return
-  selectedType.value = undefined
-  selectedTypeMaxScope.value = null
-  selectedTypeEnabledToolsets.value = []
-  selectedTypeDisabledTools.value = []
-})
-
-watch(selectedType, () => {
-  selectedTypeMaxScope.value = null
-  selectedTypeEnabledToolsets.value = []
-  selectedTypeDisabledTools.value = []
-})
-
-watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
-  if (!selectedType.value || !toolsets?.length)
-    return
-
-  // Default: all toolsets enabled in UI.
-  if (!selectedTypeEnabledToolsets.value.length)
-    selectedTypeEnabledToolsets.value = toolsets.map((t: any) => t.key).filter((k: string) => k !== 'custom')
-}, { deep: true })
-
-async function create() {
-  if (!selectedType.value) return
-  creating.value = true
-  try {
-    const toolsetKeys: string[] = (toolsTreeRef.value?.toolsets || []).map((t: any) => t.key)
-    const realToolsetKeys = toolsetKeys.filter(k => k !== '__all__' && k !== 'custom')
-
-    // IMPORTANT:
-    // - undefined/null means "all toolsets" (no filtering)
-    // - [] is NOT safe (it filters out all tools in the loader)
-    const enabledToolsets = realToolsetKeys.length
-      ? (selectedTypeEnabledToolsets.value.length < realToolsetKeys.length
-          ? selectedTypeEnabledToolsets.value.filter(k => k !== '__all__')
-          : undefined)
-      : undefined
-
-    const result = await $fetch<{ id: string }>('/api/integrations', {
-      method: 'POST',
-      body: {
-        type: selectedType.value,
-        maxScope: selectedTypeMaxScope.value || undefined,
-        enabledToolsets,
-        disabledTools: selectedTypeDisabledTools.value.length ? selectedTypeDisabledTools.value : undefined
-      }
-    })
-
-    isOpen.value = false
-    emit('created', result.id)
-  } finally {
-    creating.value = false
-  }
-}
-</script>

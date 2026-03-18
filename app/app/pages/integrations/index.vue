@@ -1,3 +1,44 @@
+<script setup lang="ts">
+interface Integration {
+  id: string
+  type: string
+  referenceId: string
+  label: string
+  enabled?: boolean
+  credentialVariant?: string | null
+  enabledToolsets?: string[] | null
+  maxScope?: 'read' | 'write' | null
+  disabledTools?: string[] | null
+}
+
+const { data: integrations, pending, error, refresh } = await useFetch<Integration[]>('/api/integrations')
+const healthStatus = reactive<Record<string, string>>({})
+const showAddModal = ref(false)
+
+watchEffect(async () => {
+  if (!integrations.value)
+    return
+  for (const i of integrations.value) {
+    if (healthStatus[i.id] !== undefined)
+      continue
+    const res = await $fetch<{ health_status: string | null }>(`/api/integrations/${i.id}/credentials-status`).catch(() => null)
+    healthStatus[i.id] = res?.health_status ?? 'disconnected'
+  }
+})
+
+async function toggleEnabled(integ: Integration, enabled: boolean) {
+  await $fetch('/api/integrations', {
+    method: 'POST',
+    body: { ...integ, enabled },
+  })
+  await refresh()
+}
+
+function onIntegrationCreated(id: string) {
+  navigateTo(`/integrations/${id}`)
+}
+</script>
+
 <template>
   <UContainer class="py-10 space-y-6">
     <div class="flex items-center justify-between gap-4">
@@ -80,14 +121,14 @@
               class="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded"
               :class="{
                 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400': healthStatus[integ.id] === 'connected',
-                'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400': healthStatus[integ.id] === 'invalid_credentials' || healthStatus[integ.id] === 'disconnected'
+                'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400': healthStatus[integ.id] === 'invalid_credentials' || healthStatus[integ.id] === 'disconnected',
               }"
             >
               <span
                 class="inline-block w-1.5 h-1.5 rounded-full"
                 :class="{
                   'bg-green-500': healthStatus[integ.id] === 'connected',
-                  'bg-red-500': healthStatus[integ.id] === 'invalid_credentials' || healthStatus[integ.id] === 'disconnected'
+                  'bg-red-500': healthStatus[integ.id] === 'invalid_credentials' || healthStatus[integ.id] === 'disconnected',
                 }"
               />
               <template v-if="healthStatus[integ.id] === 'connected'">Connected</template>
@@ -132,42 +173,3 @@
     />
   </UContainer>
 </template>
-
-<script setup lang="ts">
-type Integration = {
-  id: string
-  type: string
-  referenceId: string
-  label: string
-  enabled?: boolean
-  credentialVariant?: string | null
-  enabledToolsets?: string[] | null
-  maxScope?: 'read' | 'write' | null
-  disabledTools?: string[] | null
-}
-
-const { data: integrations, pending, error, refresh } = await useFetch<Integration[]>('/api/integrations')
-const healthStatus = reactive<Record<string, string>>({})
-const showAddModal = ref(false)
-
-watchEffect(async () => {
-  if (!integrations.value) return
-  for (const i of integrations.value) {
-    if (healthStatus[i.id] !== undefined) continue
-    const res = await $fetch<{ health_status: string | null }>(`/api/integrations/${i.id}/credentials-status`).catch(() => null)
-    healthStatus[i.id] = res?.health_status ?? 'disconnected'
-  }
-})
-
-async function toggleEnabled(integ: Integration, enabled: boolean) {
-  await $fetch('/api/integrations', {
-    method: 'POST',
-    body: { ...integ, enabled }
-  })
-  await refresh()
-}
-
-function onIntegrationCreated(id: string) {
-  navigateTo(`/integrations/${id}`)
-}
-</script>

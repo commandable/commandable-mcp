@@ -1,5 +1,5 @@
-import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
 import { deleteToolDefinitionByName, getIntegrationById } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
 import { getDb } from '../../../utils/db'
 import { refreshMcpState } from '../../../utils/mcp'
 

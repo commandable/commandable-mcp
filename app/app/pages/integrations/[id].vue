@@ -1,3 +1,104 @@
+<script setup lang="ts">
+import type { IntegrationData } from '@commandable/mcp-core'
+import type { IntegrationToolsTreeExpose } from '../../types/integration'
+
+const route = useRoute()
+const integrationId = route.params.id as string
+
+const { data: integrations, pending, error, refresh } = await useFetch<IntegrationData[]>('/api/integrations')
+
+const integration = computed(() => integrations.value?.find(i => i.id === integrationId) ?? null)
+
+const formEnabled = ref(true)
+const formMaxScope = ref<'read' | 'write' | null>(null)
+const formEnabledToolsets = ref<string[]>([])
+const formDisabledTools = ref<string[]>([])
+const toolsTreeRef = ref<IntegrationToolsTreeExpose | null>(null)
+const saving = ref(false)
+
+function initForm() {
+  if (!integration.value)
+    return
+  formEnabled.value = integration.value.enabled !== false
+  formMaxScope.value = integration.value.maxScope === 'read' ? 'read' : null
+  formDisabledTools.value = integration.value.disabledTools ? [...integration.value.disabledTools] : []
+
+  const treeToolsets = toolsTreeRef.value?.toolsets
+  const allKeys = Array.isArray(treeToolsets)
+    ? treeToolsets.map(t => t.key).filter(k => k !== '__all__' && k !== 'custom')
+    : []
+  formEnabledToolsets.value = integration.value.enabledToolsets?.length
+    ? [...integration.value.enabledToolsets]
+    : allKeys
+}
+
+watch(integration, () => initForm(), { immediate: true })
+
+// Re-initialize form when the tree finishes loading its toolsets
+watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
+  if (!integration.value || !toolsets?.length)
+    return
+  if (!integration.value.enabledToolsets?.length) {
+    formEnabledToolsets.value = toolsets.map(t => t.key).filter(k => k !== '__all__')
+  }
+}, { deep: true })
+
+async function saveAll() {
+  if (!integration.value)
+    return
+  saving.value = true
+  try {
+    const id = integration.value.id
+
+    // Save enabled state
+    await $fetch('/api/integrations', {
+      method: 'POST',
+      body: { ...integration.value, enabled: formEnabled.value },
+    })
+
+    // Save toolsets
+    const treeToolsets = toolsTreeRef.value?.toolsets
+    const allKeys = Array.isArray(treeToolsets)
+      ? treeToolsets.map(t => t.key).filter(k => k !== '__all__' && k !== 'custom')
+      : []
+    const enabledToolsets = allKeys.length && formEnabledToolsets.value.length < allKeys.length
+      ? formEnabledToolsets.value
+      : []
+    await $fetch(`/api/integrations/${id}/toolsets`, {
+      method: 'POST',
+      body: { enabledToolsets },
+    })
+
+    // Save permissions
+    await $fetch(`/api/integrations/${id}/permissions`, {
+      method: 'POST',
+      body: {
+        maxScope: formMaxScope.value,
+        disabledTools: formDisabledTools.value.length ? formDisabledTools.value : null,
+      },
+    })
+
+    await refresh()
+  }
+  finally {
+    saving.value = false
+  }
+}
+
+async function confirmRemove() {
+  if (!integration.value)
+    return
+  if (!window.confirm(`Remove "${integration.value.label}"? This cannot be undone.`))
+    return
+  await $fetch(`/api/integrations/${integration.value.id}`, { method: 'DELETE' })
+  navigateTo('/integrations')
+}
+
+function onCredentialChange() {
+  refresh()
+}
+</script>
+
 <template>
   <UContainer class="py-10 space-y-8 max-w-3xl">
     <div
@@ -150,108 +251,3 @@
     </template>
   </UContainer>
 </template>
-
-<script setup lang="ts">
-type Integration = {
-  id: string
-  type: string
-  referenceId: string
-  label: string
-  enabled?: boolean
-  credentialVariant?: string | null
-  enabledToolsets?: string[] | null
-  maxScope?: 'read' | 'write' | null
-  disabledTools?: string[] | null
-}
-
-const route = useRoute()
-const integrationId = route.params.id as string
-
-const { data: integrations, pending, error, refresh } = await useFetch<Integration[]>('/api/integrations')
-
-const integration = computed(() => integrations.value?.find(i => i.id === integrationId) ?? null)
-
-const formEnabled = ref(true)
-const formMaxScope = ref<'read' | 'write' | null>(null)
-const formEnabledToolsets = ref<string[]>([])
-const formDisabledTools = ref<string[]>([])
-const toolsTreeRef = ref<any>(null)
-const saving = ref(false)
-
-function initForm() {
-  if (!integration.value) return
-  formEnabled.value = integration.value.enabled !== false
-  formMaxScope.value = integration.value.maxScope === 'read' ? 'read' : null
-  formDisabledTools.value = integration.value.disabledTools ? [...integration.value.disabledTools] : []
-
-  const treeToolsets = toolsTreeRef.value?.toolsets
-  const allKeys = Array.isArray(treeToolsets)
-    ? treeToolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__' && k !== 'custom')
-    : []
-  formEnabledToolsets.value = integration.value.enabledToolsets?.length
-    ? [...integration.value.enabledToolsets]
-    : allKeys
-}
-
-watch(integration, () => initForm(), { immediate: true })
-
-// Re-initialize form when the tree finishes loading its toolsets
-watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
-  if (!integration.value || !toolsets?.length) return
-  if (!integration.value.enabledToolsets?.length) {
-    formEnabledToolsets.value = toolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__')
-  }
-}, { deep: true })
-
-async function saveAll() {
-  if (!integration.value) return
-  saving.value = true
-  try {
-    const id = integration.value.id
-
-    // Save enabled state
-    await $fetch('/api/integrations', {
-      method: 'POST',
-      body: { ...integration.value, enabled: formEnabled.value }
-    })
-
-    // Save toolsets
-    const treeToolsets = toolsTreeRef.value?.toolsets
-    const allKeys = Array.isArray(treeToolsets)
-      ? treeToolsets.map((t: any) => t.key).filter((k: string) => k !== '__all__' && k !== 'custom')
-      : []
-    const enabledToolsets = allKeys.length && formEnabledToolsets.value.length < allKeys.length
-      ? formEnabledToolsets.value
-      : []
-    await $fetch(`/api/integrations/${id}/toolsets`, {
-      method: 'POST',
-      body: { enabledToolsets }
-    })
-
-    // Save permissions
-    await $fetch(`/api/integrations/${id}/permissions`, {
-      method: 'POST',
-      body: {
-        maxScope: formMaxScope.value,
-        disabledTools: formDisabledTools.value.length ? formDisabledTools.value : null
-      }
-    })
-
-    await refresh()
-  } finally {
-    saving.value = false
-  }
-}
-
-async function confirmRemove() {
-  if (!integration.value) return
-  if (!window.confirm(`Remove "${integration.value.label}"? This cannot be undone.`))
-    return
-  await $fetch(`/api/integrations/${integration.value.id}`, { method: 'DELETE' })
-  navigateTo('/integrations')
-}
-
-function onCredentialChange() {
-  refresh()
-}
-</script>

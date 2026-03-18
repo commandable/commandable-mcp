@@ -1,3 +1,136 @@
+<script setup lang="ts">
+import type { CredentialFieldSchema, CredentialVariantConfig } from '../types/integration'
+import { marked } from 'marked'
+
+interface CredConfig {
+  supportsCredentials: boolean
+  variants: CredentialVariantConfig[]
+  defaultVariant: string | null | undefined
+}
+
+const props = defineProps<{
+  integrationId: string
+  integrationType: string
+  currentVariant?: string | null
+}>()
+
+const emit = defineEmits<{
+  saved: []
+  disconnected: []
+}>()
+
+const credConfig = ref<CredConfig | null>(null)
+const loading = ref(true)
+const loadError = ref(false)
+const hasCredentials = ref(false)
+const healthStatus = ref<string | null>(null)
+const selectedVariant = ref<string | undefined>(undefined)
+const form = reactive<Record<string, string>>({})
+const saving = ref(false)
+const disconnecting = ref(false)
+const modalOpen = ref(false)
+
+const hasMultipleVariants = computed(() => (credConfig.value?.variants?.length ?? 0) > 1)
+
+const variantItems = computed(() =>
+  (credConfig.value?.variants || []).map(v => ({ label: v.label, value: v.key })),
+)
+
+const activeVariant = computed(() =>
+  credConfig.value?.variants?.find(v => v.key === selectedVariant.value) ?? null,
+)
+
+const schemaFields = computed((): [string, unknown][] => {
+  const properties = activeVariant.value?.schema?.properties || {}
+  return Object.entries(properties)
+})
+
+const renderedHint = computed((): string => {
+  const md = activeVariant.value?.hintMarkdown
+  if (!md)
+    return ''
+  return marked.parse(md) as string
+})
+
+function isSecretField(key: string): boolean {
+  const lower = key.toLowerCase()
+  return lower.includes('token') || lower.includes('key') || lower.includes('secret') || lower.includes('password') || lower.includes('json')
+}
+
+function clearForm(): void {
+  for (const key of Object.keys(form))
+    form[key] = ''
+}
+
+function openModal() {
+  clearForm()
+  modalOpen.value = true
+}
+
+watch(selectedVariant, () => {
+  clearForm()
+})
+
+async function load() {
+  loading.value = true
+  loadError.value = false
+  try {
+    const [config, status] = await Promise.all([
+      $fetch<CredConfig>(`/api/integrations/${props.integrationId}/credentials-config`),
+      $fetch<{ hasCredentials: boolean, health_status: string | null }>(`/api/integrations/${props.integrationId}/credentials-status`),
+    ])
+    credConfig.value = config
+    hasCredentials.value = !!status?.hasCredentials
+    healthStatus.value = status?.health_status ?? null
+    selectedVariant.value = props.currentVariant || config?.defaultVariant || config?.variants?.[0]?.key || undefined
+  }
+  catch {
+    loadError.value = true
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+async function save() {
+  saving.value = true
+  try {
+    const body: Record<string, string> = {}
+    for (const [k] of schemaFields.value) {
+      const v = (form[k] || '').trim()
+      if (v)
+        body[k] = v
+    }
+    if (selectedVariant.value)
+      body.credentialVariant = selectedVariant.value
+    const res = await $fetch<{ ok: boolean, health_status: string }>(`/api/integrations/${props.integrationId}/credentials`, { method: 'POST', body })
+    hasCredentials.value = true
+    healthStatus.value = res.health_status ?? 'connected'
+    modalOpen.value = false
+    clearForm()
+    emit('saved')
+  }
+  finally {
+    saving.value = false
+  }
+}
+
+async function disconnect() {
+  disconnecting.value = true
+  try {
+    await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'DELETE' })
+    hasCredentials.value = false
+    healthStatus.value = 'disconnected'
+    emit('disconnected')
+  }
+  finally {
+    disconnecting.value = false
+  }
+}
+
+load()
+</script>
+
 <template>
   <div>
     <!-- Loading skeleton -->
@@ -137,8 +270,8 @@
               <UFormField
                 v-for="[key, prop] in schemaFields"
                 :key="key"
-                :label="(prop as any).title || key"
-                :description="(prop as any).description"
+                :label="(prop as CredentialFieldSchema).title || key"
+                :description="(prop as CredentialFieldSchema).description"
               >
                 <UInput
                   v-model="form[key]"
@@ -173,137 +306,6 @@
     </UModal>
   </div>
 </template>
-
-<script setup lang="ts">
-import { marked } from 'marked'
-
-type CredentialVariant = {
-  key: string
-  label: string
-  schema: any
-  hintMarkdown: string | null
-}
-
-type CredConfig = {
-  supportsCredentials: boolean
-  variants: CredentialVariant[]
-  defaultVariant: string | null | undefined
-}
-
-const props = defineProps<{
-  integrationId: string
-  integrationType: string
-  currentVariant?: string | null
-}>()
-
-const emit = defineEmits<{
-  saved: []
-  disconnected: []
-}>()
-
-const credConfig = ref<CredConfig | null>(null)
-const loading = ref(true)
-const loadError = ref(false)
-const hasCredentials = ref(false)
-const healthStatus = ref<string | null>(null)
-const selectedVariant = ref<string | undefined>(undefined)
-const form = reactive<Record<string, string>>({})
-const saving = ref(false)
-const disconnecting = ref(false)
-const modalOpen = ref(false)
-
-const hasMultipleVariants = computed(() => (credConfig.value?.variants?.length ?? 0) > 1)
-
-const variantItems = computed(() =>
-  (credConfig.value?.variants || []).map(v => ({ label: v.label, value: v.key }))
-)
-
-const activeVariant = computed(() =>
-  credConfig.value?.variants?.find(v => v.key === selectedVariant.value) ?? null
-)
-
-const schemaFields = computed((): [string, unknown][] => {
-  const properties = activeVariant.value?.schema?.properties || {}
-  return Object.entries(properties)
-})
-
-const renderedHint = computed((): string => {
-  const md = activeVariant.value?.hintMarkdown
-  if (!md) return ''
-  return marked.parse(md) as string
-})
-
-function isSecretField(key: string): boolean {
-  const lower = key.toLowerCase()
-  return lower.includes('token') || lower.includes('key') || lower.includes('secret') || lower.includes('password') || lower.includes('json')
-}
-
-function openModal() {
-  for (const k of Object.keys(form))
-    delete form[k]
-  modalOpen.value = true
-}
-
-watch(selectedVariant, () => {
-  for (const k of Object.keys(form))
-    delete form[k]
-})
-
-async function load() {
-  loading.value = true
-  loadError.value = false
-  try {
-    const [config, status] = await Promise.all([
-      $fetch<CredConfig>(`/api/integrations/${props.integrationId}/credentials-config`),
-      $fetch<{ hasCredentials: boolean, health_status: string | null }>(`/api/integrations/${props.integrationId}/credentials-status`)
-    ])
-    credConfig.value = config
-    hasCredentials.value = !!status?.hasCredentials
-    healthStatus.value = status?.health_status ?? null
-    selectedVariant.value = props.currentVariant || config?.defaultVariant || config?.variants?.[0]?.key || undefined
-  } catch {
-    loadError.value = true
-  } finally {
-    loading.value = false
-  }
-}
-
-async function save() {
-  saving.value = true
-  try {
-    const body: Record<string, string> = {}
-    for (const [k] of schemaFields.value) {
-      const v = (form[k] || '').trim()
-      if (v) body[k] = v
-    }
-    if (selectedVariant.value)
-      body.credentialVariant = selectedVariant.value
-    const res = await $fetch<{ ok: boolean, health_status: string }>(`/api/integrations/${props.integrationId}/credentials`, { method: 'POST', body })
-    hasCredentials.value = true
-    healthStatus.value = res.health_status ?? 'connected'
-    modalOpen.value = false
-    for (const k of Object.keys(form))
-      delete form[k]
-    emit('saved')
-  } finally {
-    saving.value = false
-  }
-}
-
-async function disconnect() {
-  disconnecting.value = true
-  try {
-    await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'DELETE' as any })
-    hasCredentials.value = false
-    healthStatus.value = 'disconnected'
-    emit('disconnected')
-  } finally {
-    disconnecting.value = false
-  }
-}
-
-load()
-</script>
 
 <style scoped>
 .hint-markdown :deep(p) {

@@ -1,5 +1,5 @@
-import { defineEventHandler, getHeader, setResponseStatus } from 'h3'
 import { hashApiKey, lookupApiKeyByHash } from '@commandable/mcp-core'
+import { defineEventHandler, getHeader, setResponseStatus } from 'h3'
 import { getDb } from '../utils/db'
 
 declare module 'h3' {
@@ -8,7 +8,7 @@ declare module 'h3' {
       type: 'bearer'
       apiKeyId: string
       name: string
-      scopes: any
+      scopes: unknown
     }
   }
 }
@@ -41,6 +41,6 @@ export default defineEventHandler(async (event) => {
     type: 'bearer',
     apiKeyId: row.id,
     name: row.name,
-    scopes: row.scopesJson ?? null
+    scopes: row.scopesJson ?? null,
   }
 })
