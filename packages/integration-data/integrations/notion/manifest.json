@@ -1,6 +1,7 @@
 {
   "name": "notion",
   "version": "0.1.0",
+  "baseUrl": "https://api.notion.com/v1",
   "toolsets": {
     "pages": {
       "label": "Pages",

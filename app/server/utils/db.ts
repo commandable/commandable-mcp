@@ -1,11 +1,11 @@
 import { createDbFromEnv } from '@commandable/mcp-core'
 
-type DbState = {
+interface DbState {
   ready: Promise<ReturnType<typeof createDbFromEnv>>
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var __commandableMcpDbState: DbState | undefined
 }
 

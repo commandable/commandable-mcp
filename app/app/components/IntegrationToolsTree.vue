@@ -1,117 +1,5 @@
-<template>
-  <div class="space-y-2">
-    <div v-if="loading" class="text-sm text-muted py-2">
-      Loading tools…
-    </div>
-    <div v-else-if="loadError" class="text-sm text-red-600 py-2">
-      Failed to load tools.
-    </div>
-    <div v-else-if="!effectiveToolsets.length" class="text-sm text-muted py-2">
-      No tools available for this integration.
-    </div>
-    <template v-else>
-      <div
-        v-for="ts in effectiveToolsets"
-        :key="ts.key"
-        class="rounded-lg overflow-hidden border border-[var(--ui-border)]"
-        :class="!isToolsetEnabled(ts.key) ? 'opacity-50' : ''"
-      >
-        <!-- Toolset header row -->
-        <div class="flex items-center gap-3 px-3 py-2.5 bg-[var(--ui-bg-elevated)] border-l-4"
-          :class="isToolsetEnabled(ts.key) ? 'border-l-primary' : 'border-l-transparent'"
-        >
-          <USwitch
-            :model-value="isToolsetEnabled(ts.key)"
-            size="sm"
-            @update:model-value="toggleToolset(ts.key, $event)"
-          />
-          <button
-            type="button"
-            class="flex-1 flex items-center justify-between min-w-0 text-left"
-            @click="toggleExpanded(ts.key)"
-          >
-            <div class="min-w-0">
-              <span class="text-sm font-semibold">{{ ts.label }}</span>
-              <span class="text-xs text-muted ml-2 font-normal">
-                {{ getActiveCount(ts.key) }}/{{ getToolsInSet(ts.key).length }} active
-              </span>
-              <span v-if="ts.description" class="block text-xs text-muted mt-0.5">{{ ts.description }}</span>
-            </div>
-            <UIcon
-              :name="expanded.has(ts.key) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-              class="text-muted shrink-0 ml-2"
-            />
-          </button>
-        </div>
-
-        <!-- Tools list (expanded) -->
-        <div v-if="expanded.has(ts.key)" class="border-t border-[var(--ui-border)]">
-          <div class="ml-4 border-l-2 border-[var(--ui-border)]">
-            <div
-              v-for="tool in getToolsInSet(ts.key)"
-              :key="tool.name"
-              class="flex items-start gap-3 px-4 py-2.5 border-b border-[var(--ui-border)] last:border-b-0"
-              :class="isToolGreyed(tool) ? 'opacity-40' : ''"
-            >
-              <USwitch
-                :model-value="isToolEnabled(tool.name)"
-                :disabled="isToolGreyed(tool) || !isToolsetEnabled(ts.key)"
-                size="xs"
-                class="mt-0.5 shrink-0"
-                @update:model-value="toggleTool(tool.name, $event)"
-              />
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-medium">{{ tool.displayName }}</span>
-                  <span
-                    class="text-[10px] px-1.5 py-0.5 rounded font-medium leading-tight"
-                    :class="scopeClass(tool.scope)"
-                  >
-                    {{ tool.scope }}
-                  </span>
-                  <span v-if="isToolGreyed(tool)" class="text-[10px] text-muted italic">
-                    hidden by read-only
-                  </span>
-                </div>
-                <p class="text-xs text-muted mt-0.5 leading-snug">{{ tool.description }}</p>
-                <p class="text-[10px] font-mono text-muted/60 mt-0.5">{{ tool.name }}</p>
-              </div>
-              <UButton
-                v-if="tool.custom && props.integrationId"
-                size="xs"
-                variant="soft"
-                color="error"
-                icon="i-lucide-trash-2"
-                :loading="deletingToolName === tool.name"
-                @click="deleteCustomTool(tool.name)"
-              >
-                Delete
-              </UButton>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-  </div>
-</template>
-
 <script setup lang="ts">
-type ToolItem = {
-  name: string
-  displayName: string
-  description: string
-  scope: 'read' | 'write' | 'admin'
-  toolset?: string
-  custom?: boolean
-}
-
-type ToolsetMeta = {
-  key: string
-  label: string
-  description: string
-}
-
-type ToolsetMap = Record<string, { label: string, description: string }>
+import type { ToolItem, ToolScope, ToolsetMap, ToolsetMeta } from '../types/integration'
 
 const props = defineProps<{
   integrationType?: string
@@ -131,7 +19,15 @@ const tools = ref<ToolItem[]>([])
 const loading = ref(true)
 const loadError = ref(false)
 const deletingToolName = ref('')
+const pendingDeleteToolName = ref('')
 const expanded = ref<Set<string>>(new Set())
+const deleteModalOpen = computed({
+  get: () => !!pendingDeleteToolName.value,
+  set: (open: boolean) => {
+    if (!open)
+      pendingDeleteToolName.value = ''
+  },
+})
 
 const effectiveToolsets = computed<ToolsetMeta[]>(() => {
   if (toolsets.value.length)
@@ -150,9 +46,11 @@ const effectiveToolsets = computed<ToolsetMeta[]>(() => {
   return discovered.map(key => ({ key, label: key, description: '' }))
 })
 
-function scopeClass(scope: string): string {
-  if (scope === 'read') return 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
-  if (scope === 'write') return 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400'
+function scopeClass(scope: ToolScope): string {
+  if (scope === 'read')
+    return 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+  if (scope === 'write')
+    return 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400'
   return 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400'
 }
 
@@ -173,14 +71,17 @@ function isToolGreyed(tool: ToolItem): boolean {
 }
 
 function getToolsInSet(key: string): ToolItem[] {
-  if (key === '__all__') return tools.value
+  if (key === '__all__')
+    return tools.value
   return tools.value.filter(t => t.toolset === key)
 }
 
 function getActiveCount(key: string): number {
-  return getToolsInSet(key).filter(t => {
-    if (isToolGreyed(t)) return false
-    if (props.disabledTools.includes(t.name)) return false
+  return getToolsInSet(key).filter((t) => {
+    if (isToolGreyed(t))
+      return false
+    if (props.disabledTools.includes(t.name))
+      return false
     return true
   }).length
 }
@@ -195,12 +96,14 @@ function toggleToolset(key: string, enabled: boolean) {
   }
   const current = [...props.enabledToolsets]
   if (enabled) {
-    if (!current.includes(key)) current.push(key)
+    if (!current.includes(key))
+      current.push(key)
   }
   else {
     if (current.length > 1) {
       const idx = current.indexOf(key)
-      if (idx >= 0) current.splice(idx, 1)
+      if (idx >= 0)
+        current.splice(idx, 1)
     }
   }
   emit('update:enabledToolsets', current)
@@ -210,17 +113,20 @@ function toggleTool(name: string, enabled: boolean) {
   const current = [...props.disabledTools]
   if (enabled) {
     const idx = current.indexOf(name)
-    if (idx >= 0) current.splice(idx, 1)
+    if (idx >= 0)
+      current.splice(idx, 1)
   }
   else {
-    if (!current.includes(name)) current.push(name)
+    if (!current.includes(name))
+      current.push(name)
   }
   emit('update:disabledTools', current)
 }
 
 function toggleExpanded(key: string) {
   const next = new Set(expanded.value)
-  if (next.has(key)) next.delete(key)
+  if (next.has(key))
+    next.delete(key)
   else next.add(key)
   expanded.value = next
 }
@@ -264,8 +170,14 @@ async function load() {
 async function deleteCustomTool(name: string) {
   if (!props.integrationId || !name || deletingToolName.value)
     return
-  if (!window.confirm(`Delete custom tool "${name}"? This cannot be undone.`))
+  pendingDeleteToolName.value = name
+}
+
+async function confirmDeleteCustomTool() {
+  if (!props.integrationId || !pendingDeleteToolName.value || deletingToolName.value)
     return
+  const name = pendingDeleteToolName.value
+  pendingDeleteToolName.value = ''
   deletingToolName.value = name
   try {
     await $fetch(`/api/integrations/${props.integrationId}/tools`, {
@@ -280,7 +192,157 @@ async function deleteCustomTool(name: string) {
   }
 }
 
+function cancelDeleteCustomTool() {
+  pendingDeleteToolName.value = ''
+}
+
 defineExpose({ toolsets: effectiveToolsets })
 
 load()
 </script>
+
+<template>
+  <div class="space-y-2">
+    <div
+      v-if="loading"
+      class="text-sm text-muted py-2"
+    >
+      Loading tools…
+    </div>
+    <div
+      v-else-if="loadError"
+      class="text-sm text-red-600 py-2"
+    >
+      Failed to load tools.
+    </div>
+    <div
+      v-else-if="!effectiveToolsets.length"
+      class="text-sm text-muted py-2"
+    >
+      No tools available for this integration.
+    </div>
+    <template v-else>
+      <div
+        v-for="ts in effectiveToolsets"
+        :key="ts.key"
+        class="rounded-lg overflow-hidden border border-[var(--ui-border)]"
+        :class="!isToolsetEnabled(ts.key) ? 'opacity-50' : ''"
+      >
+        <!-- Toolset header row -->
+        <div
+          class="flex items-center gap-3 px-3 py-2.5 bg-[var(--ui-bg-elevated)] border-l-4"
+          :class="isToolsetEnabled(ts.key) ? 'border-l-primary' : 'border-l-transparent'"
+        >
+          <USwitch
+            :model-value="isToolsetEnabled(ts.key)"
+            size="sm"
+            @update:model-value="toggleToolset(ts.key, $event)"
+          />
+          <button
+            type="button"
+            class="flex-1 flex items-center justify-between min-w-0 text-left"
+            @click="toggleExpanded(ts.key)"
+          >
+            <div class="min-w-0">
+              <span class="text-sm font-semibold">{{ ts.label }}</span>
+              <span class="text-xs text-muted ml-2 font-normal">
+                {{ getActiveCount(ts.key) }}/{{ getToolsInSet(ts.key).length }} active
+              </span>
+              <span
+                v-if="ts.description"
+                class="block text-xs text-muted mt-0.5"
+              >{{ ts.description }}</span>
+            </div>
+            <UIcon
+              :name="expanded.has(ts.key) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+              class="text-muted shrink-0 ml-2"
+            />
+          </button>
+        </div>
+
+        <!-- Tools list (expanded) -->
+        <div
+          v-if="expanded.has(ts.key)"
+          class="border-t border-[var(--ui-border)]"
+        >
+          <div class="ml-4 border-l-2 border-[var(--ui-border)]">
+            <div
+              v-for="tool in getToolsInSet(ts.key)"
+              :key="tool.name"
+              class="flex items-start gap-3 px-4 py-2.5 border-b border-[var(--ui-border)] last:border-b-0"
+              :class="isToolGreyed(tool) ? 'opacity-40' : ''"
+            >
+              <USwitch
+                :model-value="isToolEnabled(tool.name)"
+                :disabled="isToolGreyed(tool) || !isToolsetEnabled(ts.key)"
+                size="xs"
+                class="mt-0.5 shrink-0"
+                @update:model-value="toggleTool(tool.name, $event)"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-medium">{{ tool.displayName }}</span>
+                  <span
+                    class="text-[10px] px-1.5 py-0.5 rounded font-medium leading-tight"
+                    :class="scopeClass(tool.scope)"
+                  >
+                    {{ tool.scope }}
+                  </span>
+                  <span
+                    v-if="isToolGreyed(tool)"
+                    class="text-[10px] text-muted italic"
+                  >
+                    hidden by read-only
+                  </span>
+                </div>
+                <p class="text-xs text-muted mt-0.5 leading-snug">
+                  {{ tool.description }}
+                </p>
+                <p class="text-[10px] font-mono text-muted/60 mt-0.5">
+                  {{ tool.name }}
+                </p>
+              </div>
+              <UButton
+                v-if="tool.custom && props.integrationId"
+                size="xs"
+                variant="soft"
+                color="error"
+                icon="i-lucide-trash-2"
+                :loading="deletingToolName === tool.name"
+                @click="deleteCustomTool(tool.name)"
+              >
+                Delete
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <UModal
+      v-model:open="deleteModalOpen"
+      title="Delete custom tool"
+      :description="pendingDeleteToolName ? `Delete custom tool '${pendingDeleteToolName}'? This cannot be undone.` : undefined"
+    >
+      <template #footer>
+        <div class="flex items-center justify-end gap-2 w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            :disabled="!!deletingToolName"
+            @click="cancelDeleteCustomTool"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="error"
+            icon="i-lucide-trash-2"
+            :loading="!!deletingToolName"
+            @click="confirmDeleteCustomTool"
+          >
+            Delete
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+  </div>
+</template>

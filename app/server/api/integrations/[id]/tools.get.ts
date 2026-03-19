@@ -1,20 +1,17 @@
-import { createError, defineEventHandler, getRouterParam } from 'h3'
+import type { ToolListItem } from '@commandable/mcp-core'
 import { getIntegrationById, listToolDefinitionsForIntegration, loadIntegrationToolList } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
-type ToolItem = {
-  name: string
-  displayName: string
-  description: string
-  scope: 'read' | 'write' | 'admin'
-  toolset?: string
-  custom?: boolean
-}
+const UNDERSCORE_RE = /_/g
+const WHITESPACE_RE = /\s+/g
+
+type ToolItem = ToolListItem & { custom?: boolean }
 
 function humanizeName(s: string): string {
   return (s || '')
-    .replace(/_/g, ' ')
-    .split(/\s+/g)
+    .replace(UNDERSCORE_RE, ' ')
+    .split(WHITESPACE_RE)
     .filter(Boolean)
     .map(w => (w.length ? `${w[0]!.toUpperCase()}${w.slice(1).toLowerCase()}` : w))
     .join(' ')

@@ -1,12 +1,11 @@
-import { defineEventHandler, getRouterParam, createError } from 'h3'
-import { eq } from 'drizzle-orm'
+import type { CredentialSchemaShape } from '../../../types/integration'
 import {
   findIntegrationTypeConfig,
-  SqlCredentialStore,
+  getIntegrationById,
   getOrCreateEncryptionSecret,
-  pgIntegrations,
-  sqliteIntegrations,
+  SqlCredentialStore,
 } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -17,28 +16,26 @@ export default defineEventHandler(async (event) => {
   const encryptionSecret = getOrCreateEncryptionSecret()
 
   const db = await getDb()
-  const table: any = db.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations
-  const rows = await (db.db as any).select().from(table).where(eq(table.id, id)).limit(1)
-  const integ = rows?.[0]
+  const integ = await getIntegrationById(db, id)
   if (!integ)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
-  const typeConfig = await findIntegrationTypeConfig({ db, spaceId, typeSlug: integ.type as string })
+  const spaceId = integ.spaceId ?? 'local'
+  const typeConfig = await findIntegrationTypeConfig({ db, spaceId, typeSlug: integ.type })
 
-  const credentialVariant = integ.credentialVariant as string | null | undefined
+  const credentialVariant = integ.credentialVariant
   const variantKey = (credentialVariant && typeConfig?.variants[credentialVariant])
     ? credentialVariant
     : (typeConfig?.defaultVariant ?? null)
   const variant = variantKey ? typeConfig?.variants[variantKey] : null
-  const fieldNames = Object.keys((variant?.credentialSchema as any)?.properties || {})
+  const fieldNames = Object.keys((variant?.credentialSchema as CredentialSchemaShape | undefined)?.properties || {})
 
-  const credentialId = integ.credentialId as string | null | undefined
+  const credentialId = integ.credentialId
   if (!credentialId) {
     return {
       hasCredentials: false,
       fieldNames,
-      health_status: (integ.healthStatus as string | null) ?? 'disconnected',
+      health_status: integ.healthStatus ?? 'disconnected',
       health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null,
     }
   }
@@ -49,7 +46,7 @@ export default defineEventHandler(async (event) => {
   return {
     hasCredentials,
     fieldNames,
-    health_status: (integ.healthStatus as string | null) ?? null,
+    health_status: integ.healthStatus ?? null,
     health_checked_at: integ.healthCheckedAt ? new Date(integ.healthCheckedAt).toISOString() : null,
   }
 })

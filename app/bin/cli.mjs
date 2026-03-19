@@ -1,13 +1,11 @@
-import crypto from 'node:crypto'
 import { spawn, spawnSync } from 'node:child_process'
+import crypto from 'node:crypto'
 import { existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createRequire } from 'node:module'
 import { isCancel, note, select } from '@clack/prompts'
-import picocolors from 'picocolors'
 import {
-  SqlCredentialStore,
   applyConfig,
   createApiKey,
   createDbFromEnv,
@@ -16,13 +14,20 @@ import {
   getCommandableDir,
   getOrCreateEncryptionSecret,
   loadConfig,
+  SqlCredentialStore,
 } from '@commandable/mcp-core'
+import picocolors from 'picocolors'
 
 const require = createRequire(import.meta.url)
 const pkg = require('../package.json')
+
 const COMMANDABLE_VERSION = String(pkg.version || '0.0.0')
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const serverEntry = resolve(packageRoot, '.output', 'server', 'index.mjs')
+const DIGITS_ONLY_RE = /^\d+$/
+const PID_LINE_RE = /^\d+$/
+const SAFE_SHELL_ARG_RE = /^[\w./:=@-]+$/
+const SINGLE_QUOTE_RE = /'/g
 const CLAUDE_CODE_STDIO_ENV_KEYS = [
   'COMMANDABLE_SPACE_ID',
   'COMMANDABLE_DATA_DIR',
@@ -49,7 +54,7 @@ function getFlagValue(flag) {
 
 function getUiPort() {
   const raw = process.env.COMMANDABLE_UI_PORT
-  return raw && /^\d+$/.test(raw) ? Number(raw) : 23432
+  return raw && DIGITS_ONLY_RE.test(raw) ? Number(raw) : 23432
 }
 
 function getBaseUrl() {
@@ -75,7 +80,7 @@ function readDaemonPid() {
   try {
     const raw = readFileSync(daemonPidPath(), 'utf8')
     const lines = raw.split('\n').map(line => line.trim()).filter(Boolean)
-    const pid = lines[0] && /^\d+$/.test(lines[0]) ? Number(lines[0]) : null
+    const pid = lines[0] && PID_LINE_RE.test(lines[0]) ? Number(lines[0]) : null
     const version = lines[1] || null
     return pid ? { pid, version } : null
   }
@@ -100,12 +105,16 @@ function stopDaemonProcess() {
     try {
       process.kill(info.pid, 'SIGTERM')
     }
-    catch {}
+    catch {
+      // Ignore if process already exited.
+    }
   }
   try {
     unlinkSync(daemonPidPath())
   }
-  catch {}
+  catch {
+    // Ignore missing pid file.
+  }
   return { stopped: !!info?.pid, pid: info?.pid ?? null }
 }
 
@@ -119,7 +128,9 @@ async function fetchJsonWithTimeout(url, timeoutMs) {
     try {
       json = text ? JSON.parse(text) : null
     }
-    catch {}
+    catch {
+      // Ignore invalid JSON payloads.
+    }
     return { ok: response.ok, status: response.status, json }
   }
   finally {
@@ -166,9 +177,9 @@ function getClaudeCodeEnvEntries() {
 }
 
 function quoteShellArg(value) {
-  if (/^[A-Za-z0-9_./:=@-]+$/.test(value))
+  if (SAFE_SHELL_ARG_RE.test(value))
     return value
-  return `'${value.replace(/'/g, `'\"'\"'`)}'`
+  return `'${value.replace(SINGLE_QUOTE_RE, `'"'"'`)}'`
 }
 
 function makeReadModeConfig() {
@@ -265,11 +276,15 @@ async function startManagementUi({ restart }) {
     try {
       process.kill(child.pid, 'SIGTERM')
     }
-    catch {}
+    catch {
+      // Ignore if process already exited.
+    }
     try {
       unlinkSync(daemonPidPath())
     }
-    catch {}
+    catch {
+      // Ignore missing pid file.
+    }
     console.error(`Commandable management UI failed to start at ${baseUrl}`)
     console.error(`Check the daemon log at ${logPath}`)
     process.exit(1)

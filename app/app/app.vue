@@ -1,14 +1,14 @@
 <script setup>
 useHead({
   meta: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
   ],
   link: [
-    { rel: 'icon', href: '/favicon.ico' }
+    { rel: 'icon', href: '/favicon.ico' },
   ],
   htmlAttrs: {
-    lang: 'en'
-  }
+    lang: 'en',
+  },
 })
 
 const title = 'Commandable MCP'
@@ -19,7 +19,7 @@ useSeoMeta({
   description,
   ogTitle: title,
   ogDescription: description,
-  twitterCard: 'summary'
+  twitterCard: 'summary',
 })
 </script>
 
@@ -27,12 +27,21 @@ useSeoMeta({
   <UApp>
     <UHeader>
       <template #left>
-        <NuxtLink to="/" class="flex items-center gap-4">
+        <NuxtLink
+          to="/"
+          class="flex items-center gap-4"
+        >
           <AppLogo class="w-auto h-6 shrink-0" />
         </NuxtLink>
 
         <nav class="flex items-center gap-1 ml-4">
-          <UButton to="/integrations" icon="i-lucide-plug" variant="ghost" color="neutral" size="sm">
+          <UButton
+            to="/integrations"
+            icon="i-lucide-plug"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+          >
             Integrations
           </UButton>
         </nav>

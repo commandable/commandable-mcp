@@ -1,6 +1,7 @@
 {
   "name": "google-gmail",
   "version": "0.1.0",
+  "baseUrl": "https://gmail.googleapis.com/gmail/v1",
   "toolsets": {
     "email": {
       "label": "Email",

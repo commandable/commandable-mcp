@@ -1,4 +1,4 @@
-import { loadIntegrationHint, loadIntegrationVariants } from '@commandable/integration-data'
+import { loadIntegrationHint, loadIntegrationManifest, loadIntegrationVariants } from '@commandable/integration-data'
 import type { IntegrationCredentialVariant, IntegrationTypeConfig } from '../types.js'
 
 /**
@@ -9,6 +9,9 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
   const variantsFile = loadIntegrationVariants(typeSlug)
   if (!variantsFile)
     return null
+
+  const manifest = loadIntegrationManifest(typeSlug)
+  const manifestBaseUrl = manifest?.baseUrl ?? null
 
   const variants: Record<string, IntegrationCredentialVariant> = {}
   for (const [key, variant] of Object.entries(variantsFile.variants)) {
@@ -21,7 +24,7 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
       label: variant.label,
       credentialSchema: variant.schema,
       auth: { kind: 'template', injection: variant.injection || {} },
-      baseUrl: null,
+      baseUrl: manifestBaseUrl,
       baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : null,
       healthCheck: (variant as any).healthCheck ?? null,
       hintMarkdown: loadIntegrationHint(typeSlug, key),

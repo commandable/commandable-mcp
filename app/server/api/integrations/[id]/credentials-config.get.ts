@@ -1,6 +1,6 @@
-import { defineEventHandler, getRouterParam, createError } from 'h3'
-import { eq } from 'drizzle-orm'
-import { findIntegrationTypeConfig, pgIntegrations, sqliteIntegrations } from '@commandable/mcp-core'
+import type { CredentialVariantConfig } from '../../../types/integration'
+import { findIntegrationTypeConfig, getIntegrationById } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
@@ -9,20 +9,18 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'id is required' })
 
   const db = await getDb()
-  const table: any = db.dialect === 'sqlite' ? sqliteIntegrations : pgIntegrations
-  const rows = await (db.db as any).select().from(table).where(eq(table.id, id)).limit(1)
-  const integ = rows?.[0]
+  const integ = await getIntegrationById(db, id)
   if (!integ)
     throw createError({ statusCode: 404, statusMessage: 'integration not found' })
 
-  const spaceId = (integ.spaceId as string | null | undefined) ?? 'local'
-  const typeConfig = await findIntegrationTypeConfig({ db, spaceId, typeSlug: integ.type as string })
+  const spaceId = integ.spaceId ?? 'local'
+  const typeConfig = await findIntegrationTypeConfig({ db, spaceId, typeSlug: integ.type })
   if (!typeConfig)
     return { supportsCredentials: false, variants: [], defaultVariant: null }
 
   return {
     supportsCredentials: true,
-    variants: Object.entries(typeConfig.variants).map(([key, variant]: [string, any]) => ({
+    variants: Object.entries(typeConfig.variants as Record<string, CredentialVariantConfig>).map(([key, variant]) => ({
       key,
       label: variant.label,
       schema: variant.credentialSchema,

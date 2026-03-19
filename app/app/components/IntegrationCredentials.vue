@@ -1,125 +1,10 @@
-<template>
-  <div>
-    <!-- Loading skeleton -->
-    <div v-if="loading" class="flex items-center gap-2 text-sm text-muted">
-      <UIcon name="i-lucide-loader-2" class="animate-spin" />
-      Checking connection…
-    </div>
-
-    <!-- No credentials support -->
-    <div v-else-if="credConfig?.supportsCredentials === false" class="flex items-center gap-2 text-sm text-muted">
-      <UIcon name="i-lucide-info" />
-      No credentials required for this integration.
-    </div>
-
-    <!-- Connected state -->
-    <div v-else-if="healthStatus === 'connected'" class="flex items-center gap-3 flex-wrap">
-      <div class="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
-        <span class="inline-block w-2 h-2 rounded-full bg-green-500" />
-        Connected
-      </div>
-      <UButton size="xs" variant="soft" color="neutral" icon="i-lucide-refresh-cw" @click="openModal">
-        Reconfigure
-      </UButton>
-      <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
-        Disconnect
-      </UButton>
-    </div>
-
-    <!-- Invalid credentials state -->
-    <div v-else-if="healthStatus === 'invalid_credentials'" class="flex items-center gap-3 flex-wrap">
-      <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
-        <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
-        Invalid credentials
-      </div>
-      <UButton size="sm" icon="i-lucide-refresh-cw" color="primary" @click="openModal">
-        Reconfigure
-      </UButton>
-      <UButton size="xs" variant="soft" color="error" icon="i-lucide-unplug" :loading="disconnecting" @click="disconnect">
-        Disconnect
-      </UButton>
-    </div>
-
-    <!-- Not connected state -->
-    <div v-else class="flex items-center gap-3 flex-wrap">
-      <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
-        <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
-        Not connected
-      </div>
-      <UButton size="sm" icon="i-lucide-plug" color="primary" @click="openModal">
-        Connect
-      </UButton>
-    </div>
-
-    <!-- Connect / Reconfigure Modal -->
-    <UModal
-      v-model:open="modalOpen"
-      :title="hasCredentials ? 'Reconfigure Credentials' : 'Connect Integration'"
-      description="Enter your credentials to connect this integration."
-    >
-      <template #body>
-        <div class="space-y-4">
-          <div v-if="loadError" class="text-sm text-red-600">
-            Failed to load credential schema. Please try again.
-          </div>
-
-          <template v-else>
-            <UFormField v-if="hasMultipleVariants" label="Credential type">
-              <USelect
-                v-model="selectedVariant"
-                :items="variantItems"
-                class="w-full"
-              />
-            </UFormField>
-
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-if="activeVariant?.hintMarkdown" class="hint-markdown text-sm bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2" v-html="renderedHint" />
-
-            <div class="space-y-3">
-              <UFormField
-                v-for="[key, prop] in schemaFields"
-                :key="key"
-                :label="(prop as any).title || key"
-                :description="(prop as any).description"
-              >
-                <UInput
-                  v-model="form[key]"
-                  :type="isSecretField(key) ? 'password' : 'text'"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-          </template>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex items-center justify-end gap-2 w-full">
-          <UButton variant="ghost" color="neutral" :disabled="saving" @click="modalOpen = false">
-            Cancel
-          </UButton>
-          <UButton :loading="saving" icon="i-lucide-check" @click="save">
-            Save Credentials
-          </UButton>
-        </div>
-      </template>
-    </UModal>
-  </div>
-</template>
-
 <script setup lang="ts">
+import type { CredentialFieldSchema, CredentialVariantConfig } from '../types/integration'
 import { marked } from 'marked'
 
-type CredentialVariant = {
-  key: string
-  label: string
-  schema: any
-  hintMarkdown: string | null
-}
-
-type CredConfig = {
+interface CredConfig {
   supportsCredentials: boolean
-  variants: CredentialVariant[]
+  variants: CredentialVariantConfig[]
   defaultVariant: string | null | undefined
 }
 
@@ -162,7 +47,8 @@ const schemaFields = computed((): [string, unknown][] => {
 
 const renderedHint = computed((): string => {
   const md = activeVariant.value?.hintMarkdown
-  if (!md) return ''
+  if (!md)
+    return ''
   return marked.parse(md) as string
 })
 
@@ -171,15 +57,18 @@ function isSecretField(key: string): boolean {
   return lower.includes('token') || lower.includes('key') || lower.includes('secret') || lower.includes('password') || lower.includes('json')
 }
 
+function clearForm(): void {
+  for (const key of Object.keys(form))
+    form[key] = ''
+}
+
 function openModal() {
-  for (const k of Object.keys(form))
-    delete form[k]
+  clearForm()
   modalOpen.value = true
 }
 
 watch(selectedVariant, () => {
-  for (const k of Object.keys(form))
-    delete form[k]
+  clearForm()
 })
 
 async function load() {
@@ -209,7 +98,8 @@ async function save() {
     const body: Record<string, string> = {}
     for (const [k] of schemaFields.value) {
       const v = (form[k] || '').trim()
-      if (v) body[k] = v
+      if (v)
+        body[k] = v
     }
     if (selectedVariant.value)
       body.credentialVariant = selectedVariant.value
@@ -217,8 +107,7 @@ async function save() {
     hasCredentials.value = true
     healthStatus.value = res.health_status ?? 'connected'
     modalOpen.value = false
-    for (const k of Object.keys(form))
-      delete form[k]
+    clearForm()
     emit('saved')
   }
   finally {
@@ -229,7 +118,7 @@ async function save() {
 async function disconnect() {
   disconnecting.value = true
   try {
-    await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'DELETE' as any })
+    await $fetch(`/api/integrations/${props.integrationId}/credentials`, { method: 'DELETE' })
     hasCredentials.value = false
     healthStatus.value = 'disconnected'
     emit('disconnected')
@@ -241,6 +130,182 @@ async function disconnect() {
 
 load()
 </script>
+
+<template>
+  <div>
+    <!-- Loading skeleton -->
+    <div
+      v-if="loading"
+      class="flex items-center gap-2 text-sm text-muted"
+    >
+      <UIcon
+        name="i-lucide-loader-2"
+        class="animate-spin"
+      />
+      Checking connection…
+    </div>
+
+    <!-- No credentials support -->
+    <div
+      v-else-if="credConfig?.supportsCredentials === false"
+      class="flex items-center gap-2 text-sm text-muted"
+    >
+      <UIcon name="i-lucide-info" />
+      No credentials required for this integration.
+    </div>
+
+    <!-- Connected state -->
+    <div
+      v-else-if="healthStatus === 'connected'"
+      class="flex items-center gap-3 flex-wrap"
+    >
+      <div class="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-green-500" />
+        Connected
+      </div>
+      <UButton
+        size="xs"
+        variant="soft"
+        color="neutral"
+        icon="i-lucide-refresh-cw"
+        @click="openModal"
+      >
+        Reconfigure
+      </UButton>
+      <UButton
+        size="xs"
+        variant="soft"
+        color="error"
+        icon="i-lucide-unplug"
+        :loading="disconnecting"
+        @click="disconnect"
+      >
+        Disconnect
+      </UButton>
+    </div>
+
+    <!-- Invalid credentials state -->
+    <div
+      v-else-if="healthStatus === 'invalid_credentials'"
+      class="flex items-center gap-3 flex-wrap"
+    >
+      <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
+        Invalid credentials
+      </div>
+      <UButton
+        size="sm"
+        icon="i-lucide-refresh-cw"
+        color="primary"
+        @click="openModal"
+      >
+        Reconfigure
+      </UButton>
+      <UButton
+        size="xs"
+        variant="soft"
+        color="error"
+        icon="i-lucide-unplug"
+        :loading="disconnecting"
+        @click="disconnect"
+      >
+        Disconnect
+      </UButton>
+    </div>
+
+    <!-- Not connected state -->
+    <div
+      v-else
+      class="flex items-center gap-3 flex-wrap"
+    >
+      <div class="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-500" />
+        Not connected
+      </div>
+      <UButton
+        size="sm"
+        icon="i-lucide-plug"
+        color="primary"
+        @click="openModal"
+      >
+        Connect
+      </UButton>
+    </div>
+
+    <!-- Connect / Reconfigure Modal -->
+    <UModal
+      v-model:open="modalOpen"
+      :title="hasCredentials ? 'Reconfigure Credentials' : 'Connect Integration'"
+      description="Enter your credentials to connect this integration."
+    >
+      <template #body>
+        <div class="space-y-4">
+          <div
+            v-if="loadError"
+            class="text-sm text-red-600"
+          >
+            Failed to load credential schema. Please try again.
+          </div>
+
+          <template v-else>
+            <UFormField
+              v-if="hasMultipleVariants"
+              label="Credential type"
+            >
+              <USelect
+                v-model="selectedVariant"
+                :items="variantItems"
+                class="w-full"
+              />
+            </UFormField>
+
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div
+              v-if="activeVariant?.hintMarkdown"
+              class="hint-markdown text-sm bg-[var(--ui-bg-elevated)] rounded-md px-3 py-2"
+              v-html="renderedHint"
+            />
+
+            <div class="space-y-3">
+              <UFormField
+                v-for="[key, prop] in schemaFields"
+                :key="key"
+                :label="(prop as CredentialFieldSchema).title || key"
+                :description="(prop as CredentialFieldSchema).description"
+              >
+                <UInput
+                  v-model="form[key]"
+                  :type="isSecretField(key) ? 'password' : 'text'"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex items-center justify-end gap-2 w-full">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            :disabled="saving"
+            @click="modalOpen = false"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            :loading="saving"
+            icon="i-lucide-check"
+            @click="save"
+          >
+            Save Credentials
+          </UButton>
+        </div>
+      </template>
+    </UModal>
+  </div>
+</template>
 
 <style scoped>
 .hint-markdown :deep(p) {

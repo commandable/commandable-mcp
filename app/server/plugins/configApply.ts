@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { applyConfig, getOrCreateEncryptionSecret, loadConfig, SqlCredentialStore } from '@commandable/mcp-core'
 import { defineNitroPlugin } from 'nitropack/runtime'
-import { SqlCredentialStore, applyConfig, getOrCreateEncryptionSecret, loadConfig } from '@commandable/mcp-core'
 import { getDb } from '../utils/db'
 
 function hasAutoConfigFile(): boolean {
@@ -25,15 +25,13 @@ export default defineNitroPlugin(async () => {
     const secret = getOrCreateEncryptionSecret()
     const store = new SqlCredentialStore(db, secret)
     await applyConfig({ config, db, credentialStore: store })
-    // eslint-disable-next-line no-console
-    console.info(`[commandable] applied config: ${path}`)
+
+    process.stdout.write(`[commandable] applied config: ${path}\n`)
   }
   catch (err) {
-    // eslint-disable-next-line no-console
     console.error('[commandable] failed to apply config at startup')
-    // eslint-disable-next-line no-console
+
     console.error(err)
     throw err
   }
 })
-

@@ -1,6 +1,7 @@
 {
   "name": "google-slides",
   "version": "0.1.0",
+  "baseUrl": "https://slides.googleapis.com/v1",
   "tools": [
     {
       "name": "read_presentation",

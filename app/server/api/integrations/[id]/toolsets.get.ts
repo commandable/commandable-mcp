@@ -1,5 +1,5 @@
-import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getIntegrationById, listToolDefinitionsForIntegration, loadIntegrationToolsets } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {

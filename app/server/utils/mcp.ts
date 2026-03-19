@@ -1,54 +1,55 @@
+import type { MetaToolContext } from '@commandable/mcp-core'
 import type { Implementation } from '@modelcontextprotocol/sdk/types.js'
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
-import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http'
 import { randomUUID } from 'node:crypto'
 import {
   AbilityCatalog,
-  IntegrationProxy,
-  SessionAbilityState,
-  SqlCredentialStore,
   buildMcpToolIndex,
   getBuilderToolDefinitions,
   getOrCreateEncryptionSecret,
-  listIntegrationTypeConfigs,
+  IntegrationProxy,
   listIntegrations,
+  listIntegrationTypeConfigs,
   listToolDefinitions,
-  registerToolHandlers
+  registerToolHandlers,
+  SessionAbilityState,
+  SqlCredentialStore,
 } from '@commandable/mcp-core'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import { getDb } from './db'
-import type { MetaToolContext } from '@commandable/mcp-core'
 
 export type HttpMcpEndpoint = 'static' | 'dynamic' | 'create'
 
-type SharedState = {
+interface SharedState {
   spaceId: string
-  db: any
+  db: unknown
   credentialStore: SqlCredentialStore
   proxy: IntegrationProxy
-  toolIndexRef: { list: Array<{ name: string, description?: string, inputSchema: any }>, byName: Map<string, any> }
+  toolIndexRef: { list: Array<{ name: string, description?: string, inputSchema: unknown }>, byName: Map<string, unknown> }
   sessionState?: SessionAbilityState
   catalogRef?: { current: AbilityCatalog }
   ctx?: MetaToolContext
 }
 
-type SessionRecord = {
+interface SessionRecord {
   server: Server
   transport: StreamableHTTPServerTransport
   ownerApiKeyId: string | null
 }
 
-type McpState = {
+interface McpState {
   shared: SharedState
   sessions: Map<string, SessionRecord>
 }
 
-type McpStateStore = {
+interface McpStateStore {
   byEndpoint: Partial<Record<HttpMcpEndpoint, McpState>>
 }
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var __commandableMcpHttpState: McpStateStore | undefined
 }
 
@@ -60,7 +61,7 @@ function getSpaceId(): string {
 function getServerInfo(): Implementation {
   return {
     name: 'commandable',
-    version: (process.env.COMMANDABLE_VERSION || '').trim() || '0.0.0'
+    version: (process.env.COMMANDABLE_VERSION || '').trim() || '0.0.0',
   }
 }
 
@@ -94,7 +95,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
   const proxy = new IntegrationProxy({
     credentialStore,
     trelloApiKey: process.env.TRELLO_API_KEY,
-    integrationTypeConfigsRef
+    integrationTypeConfigsRef,
   })
 
   const index = buildMcpToolIndex({ spaceId, integrations, proxy, integrationsRef, toolDefinitions })
@@ -106,7 +107,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
 
   const sessionState = dynamicMode ? new SessionAbilityState() : undefined
   const extraToolDefinitions = new Map(
-    (includeBuilderAbility ? getBuilderToolDefinitions() : []).map(definition => [definition.name, definition])
+    (includeBuilderAbility ? getBuilderToolDefinitions() : []).map(definition => [definition.name, definition]),
   )
   const catalogRef = dynamicMode
     ? {
@@ -114,8 +115,8 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
           integrations: integrationsRef.current,
           toolIndex: toolIndexRef.byName,
           extraToolDefinitions,
-          includeBuilderAbility
-        })
+          includeBuilderAbility,
+        }),
       }
     : undefined
   const ctx: MetaToolContext | undefined = includeBuilderAbility
@@ -128,7 +129,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
         integrationsRef,
         integrationTypeConfigsRef,
         toolIndexRef,
-        catalogRef: catalogRef!
+        catalogRef: catalogRef!,
       }
     : undefined
 
@@ -141,9 +142,9 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
       toolIndexRef,
       sessionState,
       catalogRef,
-      ctx
+      ctx,
     },
-    sessions: new Map()
+    sessions: new Map(),
   }
 
   return state
@@ -168,14 +169,23 @@ export async function refreshMcpState(): Promise<void> {
       if (!endpointState)
         continue
       for (const sess of endpointState.sessions.values()) {
-        try { await sess.server.close() } catch {}
+        try {
+          await sess.server.close()
+        }
+        catch {
+          // Ignore shutdown errors during state refresh.
+        }
       }
     }
     globalThis.__commandableMcpHttpState = undefined
   }
 }
 
-function getHeader(req: any, name: string): string | undefined {
+interface HeaderReadable {
+  headers?: IncomingHttpHeaders
+}
+
+function getHeader(req: HeaderReadable | undefined, name: string): string | undefined {
   const v = req?.headers?.[name.toLowerCase()]
   if (Array.isArray(v))
     return v[0]
@@ -184,10 +194,10 @@ function getHeader(req: any, name: string): string | undefined {
   return undefined
 }
 
-export type McpHandleArgs = {
-  nodeReq: any
-  nodeRes: any
-  body?: any
+export interface McpHandleArgs {
+  nodeReq: IncomingMessage
+  nodeRes: ServerResponse
+  body?: unknown
   endpoint: HttpMcpEndpoint
   authApiKeyId?: string | null
 }
@@ -211,7 +221,7 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
       return {
         kind: 'error',
         statusCode: 403,
-        message: 'Session does not belong to the authenticated API key'
+        message: 'Session does not belong to the authenticated API key',
       }
     }
     await existing.transport.handleRequest(req, res, args.body)
@@ -225,13 +235,13 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
     return {
       kind: 'error',
       statusCode: 400,
-      message: 'Bad Request: No valid session ID provided'
+      message: 'Bad Request: No valid session ID provided',
     }
   }
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
-    enableJsonResponse: true
+    enableJsonResponse: true,
   })
 
   const server = new Server(getServerInfo(), {
@@ -247,11 +257,11 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
             dynamicMode: {
               catalogRef: shared.catalogRef,
               sessionState: shared.sessionState,
-              ctx: shared.ctx
-            }
+              ctx: shared.ctx,
+            },
           }
         : {}),
-    }
+    },
   )
 
   transport.onclose = () => {

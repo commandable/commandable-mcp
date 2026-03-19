@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto'
-import { createError, defineEventHandler, readBody } from 'h3'
 import type { IntegrationData } from '@commandable/mcp-core'
+import { randomUUID } from 'node:crypto'
 import { upsertIntegration } from '@commandable/mcp-core'
+import { createError, defineEventHandler, readBody } from 'h3'
 import { getDb } from '../../utils/db'
 import { refreshMcpState } from '../../utils/mcp'
 
@@ -34,4 +34,3 @@ export default defineEventHandler(async (event) => {
   await refreshMcpState()
   return integration
 })
-

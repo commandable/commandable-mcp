@@ -1,6 +1,14 @@
-// @ts-check
-import withNuxt from './.nuxt/eslint.config.mjs'
+import antfu from '@antfu/eslint-config'
 
-export default withNuxt(
-  // Your custom configs here
-)
+export default antfu({
+  ignores: [
+    '.nuxt/**',
+  ],
+}, {
+  files: ['scripts/**/*.{js,mjs,ts}', 'server/**/*.{js,mjs,ts}', 'bin/**/*.{js,mjs,ts}', 'test/**/*.{js,mjs,ts}'],
+  rules: {
+    'node/prefer-global/process': 'off',
+    'node/prefer-global/buffer': 'off',
+    'vars-on-top': 'off',
+  },
+})

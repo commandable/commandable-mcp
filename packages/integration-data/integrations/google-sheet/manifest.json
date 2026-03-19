@@ -1,6 +1,7 @@
 {
   "name": "google-sheet",
   "version": "0.1.0",
+  "baseUrl": "https://sheets.googleapis.com/v4",
   "tools": [
     {
       "name": "get_spreadsheet",

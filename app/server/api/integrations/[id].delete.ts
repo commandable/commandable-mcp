@@ -1,13 +1,13 @@
-import { defineEventHandler, getRouterParam } from 'h3'
 import {
-  SqlCredentialStore,
   deleteIntegrationById,
   deleteIntegrationTypeConfig,
   deleteToolDefinitionsForIntegration,
   getIntegrationById,
   getOrCreateEncryptionSecret,
   listIntegrations,
+  SqlCredentialStore,
 } from '@commandable/mcp-core'
+import { defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../utils/db'
 import { refreshMcpState } from '../../utils/mcp'
 
@@ -36,4 +36,3 @@ export default defineEventHandler(async (event) => {
   await refreshMcpState()
   return { ok: true, deleted: true }
 })
-

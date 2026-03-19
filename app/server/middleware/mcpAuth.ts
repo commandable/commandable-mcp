@@ -1,6 +1,8 @@
-import { defineEventHandler, getHeader, setResponseStatus } from 'h3'
 import { hashApiKey, lookupApiKeyByHash } from '@commandable/mcp-core'
+import { defineEventHandler, getHeader, setResponseStatus } from 'h3'
 import { getDb } from '../utils/db'
+
+const BEARER_PREFIX_RE = /^Bearer[ \t]+/i
 
 declare module 'h3' {
   interface H3EventContext {
@@ -8,7 +10,7 @@ declare module 'h3' {
       type: 'bearer'
       apiKeyId: string
       name: string
-      scopes: any
+      scopes: unknown
     }
   }
 }
@@ -22,8 +24,8 @@ export default defineEventHandler(async (event) => {
     return
 
   const value = String(getHeader(event, 'authorization') || '')
-  const m = value.match(/^Bearer\s+(.+)\s*$/i)
-  const token = m?.[1]?.trim()
+  const prefix = BEARER_PREFIX_RE.exec(value)?.[0]
+  const token = prefix ? value.slice(prefix.length).trim() : ''
   if (!token) {
     setResponseStatus(event, 401)
     return { error: 'Missing bearer token' }
@@ -44,4 +46,3 @@ export default defineEventHandler(async (event) => {
     scopes: row.scopesJson ?? null,
   }
 })
-

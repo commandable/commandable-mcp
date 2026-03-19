@@ -1,6 +1,7 @@
 {
   "name": "google-drive",
   "version": "0.1.0",
+  "baseUrl": "https://www.googleapis.com/drive/v3",
   "tools": [
     {
       "name": "list_files",
