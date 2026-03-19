@@ -1,15 +1,14 @@
 export type {
-  IntegrationCredentialConfig,
   CredentialVariantConfig,
   CredentialVariantsFile,
-  ToolsetMeta,
-  ToolListItem,
-  ToolData,
   IntegrationCatalogItem,
-} from './loader.js'
+  IntegrationCredentialConfig,
+  ToolData,
+  ToolListItem,
+  ToolsetMeta,
+} from './types.js'
 
 export {
-  integrationDataRoot,
   loadIntegrationManifest,
   loadIntegrationPrompt,
   loadIntegrationToolList,
