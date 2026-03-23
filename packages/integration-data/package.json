@@ -1,6 +1,6 @@
 {
   "name": "@commandable/integration-data",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Integration data (manifests, schemas, handlers, credential configs) for Commandable integrations.",
   "license": "AGPL-3.0-only",
   "repository": {
