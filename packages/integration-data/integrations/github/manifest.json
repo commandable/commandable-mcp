@@ -30,7 +30,7 @@
   },
   "tools": [
     { "name": "get_me", "description": "Get the authenticated user's profile. Use this to find out who you are authenticated as before performing operations.", "inputSchema": "schemas/empty.json", "handler": "handlers/get_me.js", "scope": "read", "toolset": "repo_admin" },
-    { "name": "list_repos", "description": "List repositories for the authenticated user.", "inputSchema": "schemas/empty.json", "handler": "handlers/list_repos_user.js", "scope": "read", "toolset": "repo_admin" },
+    { "name": "list_repos", "description": "List repositories for the authenticated user. Use get_repo for full metadata.", "inputSchema": "schemas/empty.json", "handler": "handlers/list_repos_user.js", "scope": "read", "toolset": "repo_admin" },
     { "name": "get_repo", "description": "Get details for a repository (description, default branch, visibility, topics, stats).", "inputSchema": "schemas/get_repo.json", "handler": "handlers/get_repo.js", "scope": "read", "toolset": "code" },
     { "name": "search_repos", "description": "Search GitHub repositories. Supports stars, forks, language, topic, and user filters (e.g. 'topic:react stars:>1000 language:javascript'). Use this to discover repos.", "inputSchema": "schemas/search_repos.json", "handler": "handlers/search_repos.js", "scope": "read", "toolset": "repo_admin" },
 
