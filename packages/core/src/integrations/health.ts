@@ -33,8 +33,9 @@ export async function checkIntegrationHealth(params: {
 
   const variantKey = integration.credentialVariant || typeCfg?.defaultVariant || null
   const variant = variantKey ? typeCfg?.variants[variantKey] : null
-  const path = variant?.healthCheck?.path ?? null
-  const method = variant?.healthCheck?.method ?? 'GET'
+  const healthCheck = variant?.healthCheck
+  const path = healthCheck && 'path' in healthCheck ? healthCheck.path : null
+  const method = healthCheck && 'path' in healthCheck ? (healthCheck.method ?? 'GET') : 'GET'
 
   if (!path) {
     return { status: 'connected', skipped: true, checkedAt }
