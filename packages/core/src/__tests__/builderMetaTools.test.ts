@@ -19,6 +19,16 @@ describe('builder meta tools', () => {
     expect(properties.type_slug).toBeTruthy()
   })
 
+  it('requires explicit health_check for integration upsert', () => {
+    const upsert = getBuilderToolDefinitions()
+      .find(def => def.name === META_TOOL_NAMES.upsertCustomIntegration)
+    expect(upsert).toBeTruthy()
+    const schema = upsert!.inputSchema as any
+    const properties = schema.properties || {}
+    expect(properties.health_check).toBeTruthy()
+    expect(schema.required).toContain('health_check')
+  })
+
   it('wires the builder ability to renamed tools', () => {
     const catalog = new AbilityCatalog({
       integrations: [],

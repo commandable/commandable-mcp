@@ -17,15 +17,18 @@ export interface CredentialVariantConfig {
   }
   preprocess?: string
   /**
-   * Optional lightweight health-check call that verifies credentials are valid.
-   * The server will call this path via proxy.call() and classify the response:
-   *   2xx → connected, 401 → invalid_credentials
-   * Omit if no cheap auth-gated endpoint exists for this variant.
+   * Required health-check declaration for this variant.
+   * Either provide a lightweight auth-gated endpoint, or explicitly mark the
+   * variant as not having a viable generic probe.
    */
-  healthCheck?: {
-    path: string
-    method?: string
-  }
+  healthCheck:
+    | {
+      path: string
+      method?: string
+    }
+    | {
+      notViable: true
+    }
 }
 
 export interface CredentialVariantsFile {
@@ -44,10 +47,14 @@ export interface IntegrationCredentialConfig {
     query?: Record<string, string>
   }
   preprocess?: string
-  healthCheck?: {
-    path: string
-    method?: string
-  }
+  healthCheck:
+    | {
+      path: string
+      method?: string
+    }
+    | {
+      notViable: true
+    }
 }
 
 interface ToolRef {
@@ -136,6 +143,34 @@ function ensureSchemaObject(schema: any): any {
     catch { return {} }
   }
   return schema
+}
+
+function validateCredentialVariant(type: string, variantKey: string, variant: any): void {
+  const healthCheck = variant?.healthCheck
+  const hasHealthCheckPath = typeof healthCheck?.path === 'string' && healthCheck.path.trim().length > 0
+  const healthCheckNotViable = healthCheck?.notViable === true
+
+  if (!healthCheck || typeof healthCheck !== 'object') {
+    throw new Error(
+      `Invalid credentials config for '${type}/${variantKey}': missing required 'healthCheck' object.`,
+    )
+  }
+
+  if (hasHealthCheckPath === healthCheckNotViable) {
+    throw new Error(
+      `Invalid credentials config for '${type}/${variantKey}': declare exactly one of 'healthCheck.path' or 'healthCheck.notViable: true'.`,
+    )
+  }
+}
+
+function validateCredentialVariantsFile(type: string, raw: any): CredentialVariantsFile {
+  if (!raw?.variants || typeof raw.variants !== 'object')
+    throw new Error(`Invalid credentials config for '${type}': missing variants object.`)
+
+  for (const [variantKey, variant] of Object.entries(raw.variants))
+    validateCredentialVariant(type, variantKey, variant)
+
+  return raw as CredentialVariantsFile
 }
 
 export function loadIntegrationManifest(type: string): Manifest | null {
@@ -263,15 +298,8 @@ export function loadIntegrationVariants(type: string): CredentialVariantsFile | 
   if (!existsSync(path))
     return null
 
-  try {
-    const raw = readJsonFile(path)
-    if (!raw?.variants)
-      return null
-    return raw as CredentialVariantsFile
-  }
-  catch {
-    return null
-  }
+  const raw = readJsonFile(path)
+  return validateCredentialVariantsFile(type, raw)
 }
 
 /**
@@ -301,7 +329,7 @@ export function loadIntegrationCredentialConfig(
       query: variant.injection?.query || undefined,
     },
     preprocess: variant.preprocess,
-    healthCheck: (variant as any).healthCheck ?? undefined,
+    healthCheck: variant.healthCheck,
   }
 }
 
