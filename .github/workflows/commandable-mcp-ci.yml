@@ -24,6 +24,9 @@ jobs:
           corepack prepare yarn@4.12.0 --activate
           yarn install --frozen-lockfile
 
+      - name: Verify generated integration registry is up to date
+        run: yarn check:generated
+
       - name: Run core unit tests
         run: yarn workspace @commandable/mcp test -- src/__tests__
 
@@ -63,6 +66,9 @@ jobs:
           corepack enable
           corepack prepare yarn@4.12.0 --activate
           yarn install --frozen-lockfile
+
+      - name: Verify generated integration registry is up to date
+        run: yarn check:generated
 
       - name: Run ${{ matrix.integration }} tests
         env:

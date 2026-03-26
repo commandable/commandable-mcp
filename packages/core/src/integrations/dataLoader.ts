@@ -7,7 +7,6 @@ export type {
 } from '@commandable/integration-data'
 
 export {
-  integrationDataRoot,
   loadIntegrationManifest,
   loadIntegrationPrompt,
   loadIntegrationToolList,

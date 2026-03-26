@@ -1,86 +1,15 @@
-import type { JSONSchema7 } from 'json-schema'
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-export interface CredentialVariantConfig {
-  label: string
-  schema: JSONSchema7
-  /**
-   * Optional template used to construct the provider base URL from credential fields.
-   * Example: "https://{{domain}}.atlassian.net"
-   */
-  baseUrlTemplate?: string
-  injection: {
-    headers?: Record<string, string>
-    query?: Record<string, string>
-  }
-  preprocess?: string
-  /**
-   * Required health-check declaration for this variant.
-   * Either provide a lightweight auth-gated endpoint, or explicitly mark the
-   * variant as not having a viable generic probe.
-   */
-  healthCheck:
-    | {
-      path: string
-      method?: string
-    }
-    | {
-      notViable: true
-    }
-}
-
-export interface CredentialVariantsFile {
-  variants: Record<string, CredentialVariantConfig>
-  default: string
-}
-
-/** Resolved config for a single credential variant -- what the proxy actually uses. */
-export interface IntegrationCredentialConfig {
-  variantKey: string
-  label: string
-  schema: JSONSchema7
-  baseUrlTemplate?: string
-  injection: {
-    headers?: Record<string, string>
-    query?: Record<string, string>
-  }
-  preprocess?: string
-  healthCheck:
-    | {
-      path: string
-      method?: string
-    }
-    | {
-      notViable: true
-    }
-}
-
-interface ToolRef {
-  name: string
-  description: string
-  inputSchema: string
-  handler: string
-  scope?: 'read' | 'write' | 'admin'
-  credentialVariants?: string[]
-  toolset?: string
-}
-
-type FlatTools = ToolRef[]
-
-export interface ToolsetMeta {
-  label: string
-  description: string
-}
-
-export interface ToolListItem {
-  name: string
-  displayName: string
-  description: string
-  scope: 'read' | 'write' | 'admin'
-  toolset?: string
-}
+import type {
+  CredentialVariantConfig,
+  CredentialVariantsFile,
+  GeneratedIntegrationEntry,
+  IntegrationCatalogItem,
+  IntegrationCredentialConfig,
+  Manifest,
+  ToolData,
+  ToolListItem,
+  ToolsetMeta,
+} from './types.js'
+import { GENERATED_INTEGRATIONS } from './generated/registry.js'
 
 function humanizeName(name: string): string {
   return name
@@ -91,70 +20,35 @@ function humanizeName(name: string): string {
     .join(' ')
 }
 
-export interface ToolData {
-  name: string
-  displayName?: string
-  description: string
-  inputSchema: JSONSchema7 | Record<string, unknown>
-  handlerCode: string
-  /** Optional sandbox util bundles required by this integration (e.g. ['adf']). */
-  utils?: string[]
+function getIntegration(type: string): GeneratedIntegrationEntry | null {
+  return GENERATED_INTEGRATIONS[type] ?? null
 }
 
-interface Manifest {
-  name: string
-  version?: string
-  baseUrl?: string
-  utils?: string[]
-  toolsets?: Record<string, ToolsetMeta>
-  tools: FlatTools
-}
-
-/**
- * Returns the root directory of the bundled integration-data files.
- * Can be overridden via COMMANDABLE_INTEGRATION_DATA_DIR for testing or
- * custom deployments.
- *
- * Resolution: dist/loader.js -> ../integrations/ (i.e. packages/integration-data/integrations/)
- * When installed as an npm package: node_modules/@commandable/integration-data/dist/loader.js
- * -> node_modules/@commandable/integration-data/integrations/
- */
-export function integrationDataRoot(): string {
-  if (process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
-    return resolve(process.env.COMMANDABLE_INTEGRATION_DATA_DIR)
-
-  return resolve(fileURLToPath(new URL('../integrations/', import.meta.url)))
-}
-
-function integrationDir(type: string): string {
-  return resolve(integrationDataRoot(), type)
-}
-
-function readJsonFile(path: string): any {
-  const content = readFileSync(path, 'utf8')
-  return JSON.parse(content)
-}
-
-function ensureSchemaObject(schema: any): any {
-  if (!schema)
-    return {}
-  if (typeof schema === 'string') {
-    try { return JSON.parse(schema) }
-    catch { return {} }
+function cloneManifest(manifest: Manifest): Manifest {
+  return {
+    ...manifest,
+    toolsets: manifest.toolsets ? { ...manifest.toolsets } : undefined,
+    tools: manifest.tools.map(tool => ({ ...tool })),
   }
-  return schema
 }
 
-function validateCredentialVariant(type: string, variantKey: string, variant: any): void {
-  const healthCheck = variant?.healthCheck
-  const hasHealthCheckPath = typeof healthCheck?.path === 'string' && healthCheck.path.trim().length > 0
-  const healthCheckNotViable = healthCheck?.notViable === true
-
-  if (!healthCheck || typeof healthCheck !== 'object') {
-    throw new Error(
-      `Invalid credentials config for '${type}/${variantKey}': missing required 'healthCheck' object.`,
-    )
+function cloneCredentialVariant(variant: CredentialVariantConfig): CredentialVariantConfig {
+  return {
+    ...variant,
+    injection: {
+      headers: variant.injection?.headers ? { ...variant.injection.headers } : undefined,
+      query: variant.injection?.query ? { ...variant.injection.query } : undefined,
+    },
+    healthCheck: 'path' in variant.healthCheck
+      ? { ...variant.healthCheck }
+      : { notViable: true },
   }
+}
+
+function validateCredentialVariant(type: string, variantKey: string, variant: CredentialVariantConfig): void {
+  const healthCheck = variant.healthCheck
+  const hasHealthCheckPath = 'path' in healthCheck && typeof healthCheck.path === 'string' && healthCheck.path.trim().length > 0
+  const healthCheckNotViable = 'notViable' in healthCheck && healthCheck.notViable === true
 
   if (hasHealthCheckPath === healthCheckNotViable) {
     throw new Error(
@@ -163,79 +57,54 @@ function validateCredentialVariant(type: string, variantKey: string, variant: an
   }
 }
 
-function validateCredentialVariantsFile(type: string, raw: any): CredentialVariantsFile {
+function validateCredentialVariantsFile(type: string, raw: CredentialVariantsFile): CredentialVariantsFile {
   if (!raw?.variants || typeof raw.variants !== 'object')
     throw new Error(`Invalid credentials config for '${type}': missing variants object.`)
 
   for (const [variantKey, variant] of Object.entries(raw.variants))
     validateCredentialVariant(type, variantKey, variant)
 
-  return raw as CredentialVariantsFile
+  return raw
+}
+
+function cloneCredentialVariantsFile(type: string, variants: CredentialVariantsFile): CredentialVariantsFile {
+  const validated = validateCredentialVariantsFile(type, variants)
+
+  return {
+    default: validated.default,
+    variants: Object.fromEntries(
+      Object.entries(validated.variants).map(([key, value]) => [key, cloneCredentialVariant(value)]),
+    ),
+  }
 }
 
 export function loadIntegrationManifest(type: string): Manifest | null {
-  const dir = integrationDir(type)
-  const manifestPath = resolve(dir, 'manifest.json')
-  if (!existsSync(manifestPath))
-    return null
-  return readJsonFile(manifestPath)
+  const entry = getIntegration(type)
+  return entry ? cloneManifest(entry.manifest) : null
 }
 
 export function loadIntegrationPrompt(type: string): string | null {
-  const dir = integrationDir(type)
-  const promptPath = resolve(dir, 'prompt.md')
-  if (!existsSync(promptPath))
-    return null
-  try {
-    return readFileSync(promptPath, 'utf8')
-  }
-  catch {
-    return null
-  }
-}
-
-function materializeTool(type: string, ref: ToolRef, utils?: string[]): ToolData {
-  const dir = integrationDir(type)
-  const schemaPath = resolve(dir, ref.inputSchema)
-  const handlerPath = resolve(dir, ref.handler)
-
-  const schema = readJsonFile(schemaPath)
-  const handlerCode = readFileSync(handlerPath, 'utf8').trim()
-
-  return {
-    name: ref.name,
-    description: ref.description,
-    inputSchema: ensureSchemaObject(schema),
-    handlerCode,
-    utils: Array.isArray(utils) ? utils : undefined,
-  }
+  return getIntegration(type)?.prompt ?? null
 }
 
 export function loadIntegrationToolsets(type: string): Record<string, ToolsetMeta> | null {
-  const manifest = loadIntegrationManifest(type)
-  return manifest?.toolsets ?? null
+  const toolsets = getIntegration(type)?.manifest.toolsets
+  return toolsets ? { ...toolsets } : null
 }
 
 const SCOPE_RANK: Record<string, number> = { read: 0, write: 1, admin: 2 }
 
-/**
- * Load tools for an integration, optionally filtered to only those compatible
- * with the active credential variant. Tools without a `credentialVariants`
- * whitelist are always included.
- */
 export function loadIntegrationTools(
   type: string,
   opts?: {
     credentialVariant?: string
     toolsets?: string[]
-    /** Cap the maximum scope tier. 'read' means only read tools; 'write' means read+write. null/undefined means all. */
     maxScope?: 'read' | 'write' | null
-    /** Individual tool names to block regardless of toolset or scope settings. */
     disabledTools?: string[] | null
   },
 ): { read: ToolData[], write: ToolData[], admin: ToolData[] } | null {
-  const manifest = loadIntegrationManifest(type)
-  if (!manifest)
+  const entry = getIntegration(type)
+  if (!entry)
     return null
 
   const activeVariant = opts?.credentialVariant
@@ -243,69 +112,58 @@ export function loadIntegrationTools(
   const maxRank = opts?.maxScope != null ? (SCOPE_RANK[opts.maxScope] ?? 2) : 2
   const blocked = opts?.disabledTools?.length ? new Set(opts.disabledTools) : null
 
-  const flat = manifest.tools as FlatTools
-  const readRefs: ToolRef[] = []
-  const writeRefs: ToolRef[] = []
-  const adminRefs: ToolRef[] = []
+  const read: ToolData[] = []
+  const write: ToolData[] = []
+  const admin: ToolData[] = []
 
-  for (const t of flat) {
-    if (activeVariant && t.credentialVariants && !t.credentialVariants.includes(activeVariant))
+  for (const tool of entry.tools) {
+    if (activeVariant && tool.credentialVariants && !tool.credentialVariants.includes(activeVariant))
       continue
-    if (activeToolsets && t.toolset && !activeToolsets.includes(t.toolset))
+    if (activeToolsets && tool.toolset && !activeToolsets.includes(tool.toolset))
       continue
 
-    const scope = t.scope || 'read'
+    const scope = tool.scope || 'read'
     if ((SCOPE_RANK[scope] ?? 0) > maxRank)
       continue
-    if (blocked?.has(t.name))
+    if (blocked?.has(tool.name))
       continue
 
-    if (scope === 'read') readRefs.push(t)
-    else if (scope === 'write') writeRefs.push(t)
-    else if (scope === 'admin') adminRefs.push(t)
-    else readRefs.push(t)
+    const nextTool: ToolData = {
+      name: tool.name,
+      displayName: tool.displayName,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+      handlerCode: tool.handlerCode,
+      utils: tool.utils,
+    }
+
+    if (scope === 'write') write.push(nextTool)
+    else if (scope === 'admin') admin.push(nextTool)
+    else read.push(nextTool)
   }
 
-  return {
-    read: readRefs.map(t => materializeTool(type, t, manifest.utils)),
-    write: writeRefs.map(t => materializeTool(type, t, manifest.utils)),
-    admin: adminRefs.map(t => materializeTool(type, t, manifest.utils)),
-  }
+  return { read, write, admin }
 }
 
-/**
- * Returns a lightweight flat list of all tools in an integration's manifest
- * without materializing handlers or schemas. Used by the UI to render tool
- * selection controls.
- */
 export function loadIntegrationToolList(type: string): ToolListItem[] {
-  const manifest = loadIntegrationManifest(type)
+  const manifest = getIntegration(type)?.manifest
   if (!manifest)
     return []
-  return manifest.tools.map(t => ({
-    name: t.name,
-    displayName: humanizeName(t.name),
-    description: t.description,
-    scope: (t.scope || 'read') as 'read' | 'write' | 'admin',
-    toolset: t.toolset,
+
+  return manifest.tools.map(tool => ({
+    name: tool.name,
+    displayName: humanizeName(tool.name),
+    description: tool.description,
+    scope: (tool.scope || 'read') as 'read' | 'write' | 'admin',
+    toolset: tool.toolset,
   }))
 }
 
-/** Load the full variants file for an integration. */
 export function loadIntegrationVariants(type: string): CredentialVariantsFile | null {
-  const dir = integrationDir(type)
-  const path = resolve(dir, 'credentials.json')
-  if (!existsSync(path))
-    return null
-
-  const raw = readJsonFile(path)
-  return validateCredentialVariantsFile(type, raw)
+  const variants = getIntegration(type)?.variants
+  return variants ? cloneCredentialVariantsFile(type, variants) : null
 }
 
-/**
- * Load the resolved credential config for a specific variant (or the default
- * variant if none is specified).
- */
 export function loadIntegrationCredentialConfig(
   type: string,
   variantKey?: string | null,
@@ -322,83 +180,35 @@ export function loadIntegrationCredentialConfig(
   return {
     variantKey: key,
     label: variant.label,
-    schema: ensureSchemaObject(variant.schema) as JSONSchema7,
-    baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : undefined,
+    schema: variant.schema,
+    baseUrlTemplate: typeof variant.baseUrlTemplate === 'string' ? variant.baseUrlTemplate : undefined,
     injection: {
       headers: variant.injection?.headers || undefined,
       query: variant.injection?.query || undefined,
     },
     preprocess: variant.preprocess,
-    healthCheck: variant.healthCheck,
+    healthCheck: cloneCredentialVariant(variant).healthCheck,
   }
 }
 
-/**
- * Resolve the hint markdown for a specific variant. Falls back to the
- * generic credentials_hint.md if no variant-specific file exists.
- */
 export function loadIntegrationHint(type: string, variantKey?: string | null): string | null {
-  const dir = integrationDir(type)
-
-  if (variantKey) {
-    const variantHintPath = resolve(dir, `credentials_hint_${variantKey}.md`)
-    if (existsSync(variantHintPath)) {
-      try {
-        const content = readFileSync(variantHintPath, 'utf8').trim()
-        if (content.length)
-          return content
-      }
-      catch {}
-    }
-  }
-
-  const fallbackPath = resolve(dir, 'credentials_hint.md')
-  if (!existsSync(fallbackPath))
+  const entry = getIntegration(type)
+  if (!entry)
     return null
-  try {
-    const content = readFileSync(fallbackPath, 'utf8').trim()
-    return content.length ? content : null
-  }
-  catch {
-    return null
-  }
-}
 
-export interface IntegrationCatalogItem {
-  type: string
-  name: string
+  if (variantKey && entry.hintsByVariant[variantKey])
+    return entry.hintsByVariant[variantKey]!
+
+  return entry.hint ?? null
 }
 
 export function listIntegrationTypes(): string[] {
-  const root = integrationDataRoot()
-  try {
-    return readdirSync(root).filter((entry: string) => {
-      try {
-        return statSync(resolve(root, entry)).isDirectory()
-      }
-      catch {
-        return false
-      }
-    })
-  }
-  catch {
-    return []
-  }
+  return Object.keys(GENERATED_INTEGRATIONS)
 }
 
 export function listIntegrationCatalog(): IntegrationCatalogItem[] {
-  const types = listIntegrationTypes()
-  const items: IntegrationCatalogItem[] = []
-  for (const type of types) {
-    try {
-      const manifest = loadIntegrationManifest(type)
-      if (!manifest)
-        continue
-      items.push({ type, name: manifest.name || type })
-    }
-    catch {
-      // ignore broken integration directories
-    }
-  }
-  return items
+  return listIntegrationTypes().map(type => ({
+    type,
+    name: GENERATED_INTEGRATIONS[type]!.manifest.name || type,
+  }))
 }
