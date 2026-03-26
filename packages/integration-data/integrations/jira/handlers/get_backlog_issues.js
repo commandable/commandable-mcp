@@ -8,6 +8,31 @@ async (input) => {
   params.set('maxResults', String(input.maxResults ?? 50))
 
   const res = await integration.fetch(`/rest/agile/1.0/board/${encodeURIComponent(String(input.boardId))}/backlog?${params.toString()}`)
-  return await res.json()
+  const data = await res.json()
+  const issues = Array.isArray(data?.issues)
+    ? data.issues.map(i => ({
+      id: i.id ?? null,
+      key: i.key ?? null,
+      summary: i.fields?.summary ?? null,
+      status: i.fields?.status?.name ?? null,
+      assignee: i.fields?.assignee
+        ? {
+            accountId: i.fields.assignee.accountId ?? null,
+            displayName: i.fields.assignee.displayName ?? null,
+          }
+        : null,
+      priority: i.fields?.priority?.name ?? null,
+      issueType: i.fields?.issuetype?.name ?? null,
+      updated: i.fields?.updated ?? null,
+    }))
+    : []
+  return {
+    startAt: data?.startAt ?? 0,
+    maxResults: data?.maxResults ?? issues.length,
+    total: data?.total ?? issues.length,
+    count: issues.length,
+    note: 'Use issue key or id with get_issue for full issue details.',
+    issues,
+  }
 }
 

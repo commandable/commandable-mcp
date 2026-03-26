@@ -40,7 +40,7 @@
     },
     {
       "name": "list_records",
-      "description": "List records from a table with optional filters.",
+      "description": "List records from a table with optional filters. Returns compact record summaries (id, field names/count, primary preview); use get_record for full field payloads.",
       "inputSchema": "schemas/list_records.json",
       "handler": "handlers/list_records.js",
       "scope": "read"
@@ -54,7 +54,7 @@
     },
     {
       "name": "search_records",
-      "description": "Search records in a table using a field and value (filterByFormula).",
+      "description": "Search records in a table using a field and value (filterByFormula). Returns compact record summaries; use get_record for full field payloads.",
       "inputSchema": "schemas/search_records.json",
       "handler": "handlers/search_records.js",
       "scope": "read"

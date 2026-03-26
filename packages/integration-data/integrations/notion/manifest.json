@@ -15,7 +15,7 @@
   "tools": [
     {
       "name": "search",
-      "description": "Search across all accessible Notion content (pages, databases).",
+      "description": "Search across accessible Notion content and return compact page/database summaries. Use retrieve_page or retrieve_database for full details.",
       "inputSchema": "schemas/search.json",
       "handler": "handlers/search.js",
       "scope": "read",
@@ -39,7 +39,7 @@
     },
     {
       "name": "list_block_children",
-      "description": "List child blocks for a block (including page blocks).",
+      "description": "List child blocks as compact summaries (id, type, hasChildren). Use retrieve_block for full block details.",
       "inputSchema": "schemas/list_block_children.json",
       "handler": "handlers/list_block_children.js",
       "scope": "read",
@@ -55,7 +55,7 @@
     },
     {
       "name": "list_users",
-      "description": "List users in the workspace.",
+      "description": "List users in the workspace as compact summaries. Use retrieve_user for full details.",
       "inputSchema": "schemas/list_users.json",
       "handler": "handlers/list_users.js",
       "scope": "read",
@@ -143,7 +143,7 @@
     },
     {
       "name": "query_database",
-      "description": "Query a database with optional filter, sorts, and pagination.",
+      "description": "Query a database and return compact page summaries with pagination metadata. Use retrieve_page for full page details.",
       "inputSchema": "schemas/query_database.json",
       "handler": "handlers/query_database.js",
       "scope": "read",

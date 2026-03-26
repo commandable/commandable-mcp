@@ -49,17 +49,17 @@ suiteOrSkip('github read handlers (live)', () => {
         if (ctx.owner && ctx.repo) {
           const list_issues = toolbox.read('list_issues')
           const issues = await list_issues({ owner: ctx.owner, repo: ctx.repo, state: 'all' })
-          const firstIssue = Array.isArray(issues) ? issues.find((i: any) => typeof i.number === 'number') : undefined
+          const firstIssue = Array.isArray(issues?.issues) ? issues.issues.find((i: any) => typeof i.number === 'number') : undefined
           ctx.issue_number = firstIssue?.number
 
           const list_commits = toolbox.read('list_commits')
           const commits = await list_commits({ owner: ctx.owner, repo: ctx.repo })
-          const firstCommit = Array.isArray(commits) ? commits[0] : undefined
+          const firstCommit = Array.isArray(commits?.commits) ? commits.commits[0] : undefined
           ctx.commit_sha = firstCommit?.sha
 
           const list_pull_requests = toolbox.read('list_pull_requests')
           const prs = await list_pull_requests({ owner: ctx.owner, repo: ctx.repo, state: 'all' })
-          const firstPr = Array.isArray(prs) ? prs.find((p: any) => typeof p.number === 'number') : undefined
+          const firstPr = Array.isArray(prs?.pullRequests) ? prs.pullRequests.find((p: any) => typeof p.number === 'number') : undefined
           ctx.pull_number = firstPr?.number
         }
       }, 60000)
@@ -87,7 +87,7 @@ suiteOrSkip('github read handlers (live)', () => {
       it('search_repos returns repositories', async () => {
         const handler = toolbox.read('search_repos')
         const result = await handler({ query: 'commandable-mcp language:typescript' })
-        expect(result?.items).toBeTruthy()
+        expect(Array.isArray(result?.repositories)).toBe(true)
       }, 30000)
 
       it('get_repo_tree returns file tree', async () => {
@@ -118,7 +118,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('search_code')
         const result = await handler({ query: `repo:${ctx.owner}/${ctx.repo}` })
-        expect(result?.items).toBeTruthy()
+        expect(Array.isArray(result?.matches)).toBe(true)
       }, 30000)
 
       it('list_branches returns branches with pagination', async () => {
@@ -134,7 +134,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('list_commits')
         const result = await handler({ owner: ctx.owner, repo: ctx.repo, per_page: 5 })
-        expect(Array.isArray(result)).toBe(true)
+        expect(Array.isArray(result?.commits)).toBe(true)
       }, 30000)
 
       it('get_commit returns commit details', async () => {
@@ -158,7 +158,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('list_issues')
         const result = await handler({ owner: ctx.owner, repo: ctx.repo, state: 'all' })
-        expect(Array.isArray(result)).toBe(true)
+        expect(Array.isArray(result?.issues)).toBe(true)
       }, 30000)
 
       it('get_issue returns a single issue if available', async () => {
@@ -182,7 +182,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('search_issues')
         const result = await handler({ query: `is:issue repo:${ctx.owner}/${ctx.repo}` })
-        expect(result?.items).toBeTruthy()
+        expect(Array.isArray(result?.issues)).toBe(true)
       }, 30000)
 
       it('list_labels returns labels array', async () => {
@@ -198,7 +198,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('list_pull_requests')
         const result = await handler({ owner: ctx.owner, repo: ctx.repo, state: 'all', per_page: 5 })
-        expect(Array.isArray(result)).toBe(true)
+        expect(Array.isArray(result?.pullRequests)).toBe(true)
       }, 30000)
 
       it('get_pull_request returns PR details if available', async () => {
@@ -238,7 +238,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('search_pull_requests')
         const result = await handler({ query: `is:pr repo:${ctx.owner}/${ctx.repo}` })
-        expect(result?.items).toBeTruthy()
+        expect(Array.isArray(result?.pullRequests)).toBe(true)
       }, 30000)
 
       it('list_releases returns releases', async () => {
@@ -263,7 +263,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const handler = toolbox.read('list_workflow_runs')
         const result = await handler({ owner: ctx.owner, repo: ctx.repo })
-        expect(result?.workflow_runs).toBeTruthy()
+        expect(Array.isArray(result?.workflowRuns)).toBe(true)
       }, 30000)
 
       it('get_workflow_run returns run details if any runs exist', async () => {
@@ -271,7 +271,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const list_runs = toolbox.read('list_workflow_runs')
         const runs = await list_runs({ owner: ctx.owner, repo: ctx.repo, per_page: 1 })
-        const firstRun = Array.isArray(runs?.workflow_runs) ? runs.workflow_runs[0] : undefined
+        const firstRun = Array.isArray(runs?.workflowRuns) ? runs.workflowRuns[0] : undefined
         if (!firstRun)
           return expect(true).toBe(true)
         const handler = toolbox.read('get_workflow_run')
@@ -284,7 +284,7 @@ suiteOrSkip('github read handlers (live)', () => {
           return expect(true).toBe(true)
         const list_runs = toolbox.read('list_workflow_runs')
         const runs = await list_runs({ owner: ctx.owner, repo: ctx.repo, status: 'completed', per_page: 1 })
-        const firstRun = Array.isArray(runs?.workflow_runs) ? runs.workflow_runs[0] : undefined
+        const firstRun = Array.isArray(runs?.workflowRuns) ? runs.workflowRuns[0] : undefined
         if (!firstRun)
           return expect(true).toBe(true)
         // Use native fetch to retrieve job list for this run

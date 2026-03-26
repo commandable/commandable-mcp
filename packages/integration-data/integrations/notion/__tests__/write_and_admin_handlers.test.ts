@@ -100,10 +100,32 @@ suite('notion write handlers (live)', () => {
     })
     expect(res).toBeTruthy()
 
-    // Verify via list_block_children
+    const retrieve_block = notion.read('retrieve_block')
+    const textMatches = (block: any) =>
+      block?.paragraph?.rich_text?.some((t: any) => (t?.plain_text || t?.text?.content) === contentText)
+
+    const appendedId = res?.results?.[0]?.id
+    if (appendedId) {
+      const full = await retrieve_block({ block_id: appendedId })
+      expect(textMatches(full)).toBe(true)
+      return
+    }
+
+    // Compact list_block_children returns summaries only; load full blocks by id.
     const list_block_children = notion.read('list_block_children')
     const listed = await list_block_children({ block_id: ctx.createdPageId })
-    const found = (listed?.results || listed || []).some((b: any) => b?.paragraph?.rich_text?.some((t: any) => (t?.plain_text || t?.text?.content) === contentText))
+    const summaries = listed?.blocks ?? listed?.results ?? []
+    expect(Array.isArray(summaries)).toBe(true)
+    let found = false
+    for (const s of summaries) {
+      if (s?.type !== 'paragraph' || !s?.id)
+        continue
+      const full = await retrieve_block({ block_id: s.id })
+      if (textMatches(full)) {
+        found = true
+        break
+      }
+    }
     expect(found).toBe(true)
   }, 60000)
 

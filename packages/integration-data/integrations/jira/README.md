@@ -44,3 +44,8 @@
 | `move_issues_to_sprint` | write | `boards` | Move one or more issues into a sprint (agile API). |
 | `create_sprint` | write | `boards` | Create a sprint in a board (agile API). Use this for sprint-planning workflows and for in… |
 | `update_sprint` | write | `boards` | Update a sprint (agile API). Use to rename, set/change goal, start a sprint (state: activ… |
+
+## Compact response notes
+
+- `get_sprint_issues` and `get_backlog_issues` return compact issue summaries.
+- Use `get_issue` for full issue detail payloads.

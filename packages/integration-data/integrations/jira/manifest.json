@@ -161,7 +161,7 @@
     },
     {
       "name": "get_sprint_issues",
-      "description": "List issues in a sprint. Useful for sprint status reports and review preparation.",
+      "description": "List issues in a sprint as compact summaries. Use get_issue with key/id for full issue details.",
       "inputSchema": "schemas/get_sprint_issues.json",
       "handler": "handlers/get_sprint_issues.js",
       "scope": "read",
@@ -169,7 +169,7 @@
     },
     {
       "name": "get_backlog_issues",
-      "description": "List issues in the backlog for a board.",
+      "description": "List backlog issues as compact summaries. Use get_issue with key/id for full issue details.",
       "inputSchema": "schemas/get_backlog_issues.json",
       "handler": "handlers/get_backlog_issues.js",
       "scope": "read",

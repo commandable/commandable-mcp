@@ -5,7 +5,7 @@
   "tools": [
     {
       "name": "search_contacts",
-      "description": "Search for contacts. Use query for simple free-text search, and filters for precise property-based filtering. Returns a compact list of matching contacts.",
+      "description": "Search for contacts and return compact summaries. Use get_contact with id for full record details.",
       "inputSchema": "schemas/search_contacts.json",
       "handler": "handlers/search_contacts.js",
       "scope": "read"
@@ -41,7 +41,7 @@
 
     {
       "name": "search_companies",
-      "description": "Search for companies. Use query for free-text search and filters for property-based filtering. Returns a compact list of matching companies.",
+      "description": "Search for companies and return compact summaries. Use get_company with id for full record details.",
       "inputSchema": "schemas/search_companies.json",
       "handler": "handlers/search_companies.js",
       "scope": "read"
@@ -121,7 +121,7 @@
 
     {
       "name": "search_deals",
-      "description": "Search for deals. Use query for free-text search and filters for property-based filtering (e.g. pipeline, dealstage, amount).",
+      "description": "Search for deals and return compact summaries. Use get_deal with id for full record details.",
       "inputSchema": "schemas/search_deals.json",
       "handler": "handlers/search_deals.js",
       "scope": "read"
@@ -157,7 +157,7 @@
 
     {
       "name": "search_tickets",
-      "description": "Search for tickets. Use query for free-text search and filters for property-based filtering (e.g. hs_pipeline, hs_pipeline_stage, priority).",
+      "description": "Search for tickets and return compact summaries. Use get_ticket with id for full record details.",
       "inputSchema": "schemas/search_tickets.json",
       "handler": "handlers/search_tickets.js",
       "scope": "read"

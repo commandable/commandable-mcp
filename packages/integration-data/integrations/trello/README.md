@@ -15,17 +15,17 @@
 | Tool | Scope | Description |
 |---|---|---|
 | `get_member` | read | Fetch the current member profile. |
-| `get_member_boards` | read | List boards for the current member. |
-| `get_member_organizations` | read | List organizations (workspaces) for the current member. |
+| `get_member_boards` | read | List boards for the current member (compact `{ count, boards[], note }` for tool use). |
+| `get_member_organizations` | read | List organizations for the current member (compact summaries; use `get_organization` for full details). |
 | `get_board` | read | Fetch a board by id. |
-| `get_board_lists` | read | List lists on a board. |
-| `get_board_cards` | read | List cards on a board. |
+| `get_board_lists` | read | List lists on a board (compact summaries; use `get_list` for full details). |
+| `get_board_cards` | read | List cards on a board (compact summaries; use `get_card` for full details). |
 | `get_board_members` | read | List members on a board. |
 | `get_board_labels` | read | List labels on a board. |
 | `get_board_custom_fields` | read | List custom fields on a board. |
 | `get_board_memberships` | read | List memberships for a board. |
 | `get_list` | read | Fetch a list by id. |
-| `get_list_cards` | read | List cards in a list. |
+| `get_list_cards` | read | List cards in a list (compact summaries; use `get_card` for full details). |
 | `get_card` | read | Fetch a card by id. |
 | `get_card_members` | read | List members assigned to a card. |
 | `get_card_attachments` | read | List attachments on a card. |
@@ -33,8 +33,8 @@
 | `get_card_checklists` | read | List checklists on a card. |
 | `get_card_custom_field_items` | read | Get custom field items on a card. |
 | `get_organization` | read | Fetch an organization (workspace) by id. |
-| `get_organization_boards` | read | List boards in an organization (workspace). |
-| `search` | read | Search across boards, cards, and members. |
+| `get_organization_boards` | read | List boards in a workspace (compact summaries; use `get_board` for full details). |
+| `search` | read | Search across boards/cards with compact summaries; use `get_board`/`get_card` for full details. |
 | `create_board` | write | Create a new board. |
 | `close_board` | write | Close a board (set closed=true). |
 | `delete_board` | write | Permanently delete a closed board. |
