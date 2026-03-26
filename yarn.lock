@@ -507,6 +507,7 @@ __metadata:
   resolution: "@commandable/integration-data@workspace:packages/integration-data"
   dependencies:
     "@types/node": "npm:^24.3.0"
+    dotenv: "npm:^17.3.1"
     json-schema: "npm:^0.4.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^3.2.4"
