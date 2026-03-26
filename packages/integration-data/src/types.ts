@@ -9,10 +9,14 @@ export interface CredentialVariantConfig {
     query?: Record<string, string>
   }
   preprocess?: string
-  healthCheck?: {
-    path: string
-    method?: string
-  }
+  healthCheck:
+    | {
+      path: string
+      method?: string
+    }
+    | {
+      notViable: true
+    }
 }
 
 export interface CredentialVariantsFile {
@@ -30,10 +34,14 @@ export interface IntegrationCredentialConfig {
     query?: Record<string, string>
   }
   preprocess?: string
-  healthCheck?: {
-    path: string
-    method?: string
-  }
+  healthCheck:
+    | {
+      path: string
+      method?: string
+    }
+    | {
+      notViable: true
+    }
 }
 
 export interface ToolRef {

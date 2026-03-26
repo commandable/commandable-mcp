@@ -85,7 +85,7 @@ describe('checkIntegrationHealth', () => {
   })
 
   it('returns connected (skipped) for providers without a health endpoint', async () => {
-    // google-sheet has no healthCheck in its credentials.json so health is always skipped
+    // google-sheet explicitly marks health checks as not viable, so health is skipped
     const integration: IntegrationData = {
       id: 'gsheet-test',
       referenceId: 'gsheet-test',

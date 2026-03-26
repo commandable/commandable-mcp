@@ -1,4 +1,5 @@
 import type {
+  CredentialVariantConfig,
   CredentialVariantsFile,
   GeneratedIntegrationEntry,
   IntegrationCatalogItem,
@@ -28,6 +29,52 @@ function cloneManifest(manifest: Manifest): Manifest {
     ...manifest,
     toolsets: manifest.toolsets ? { ...manifest.toolsets } : undefined,
     tools: manifest.tools.map(tool => ({ ...tool })),
+  }
+}
+
+function cloneCredentialVariant(variant: CredentialVariantConfig): CredentialVariantConfig {
+  return {
+    ...variant,
+    injection: {
+      headers: variant.injection?.headers ? { ...variant.injection.headers } : undefined,
+      query: variant.injection?.query ? { ...variant.injection.query } : undefined,
+    },
+    healthCheck: 'path' in variant.healthCheck
+      ? { ...variant.healthCheck }
+      : { notViable: true },
+  }
+}
+
+function validateCredentialVariant(type: string, variantKey: string, variant: CredentialVariantConfig): void {
+  const healthCheck = variant.healthCheck
+  const hasHealthCheckPath = 'path' in healthCheck && typeof healthCheck.path === 'string' && healthCheck.path.trim().length > 0
+  const healthCheckNotViable = 'notViable' in healthCheck && healthCheck.notViable === true
+
+  if (hasHealthCheckPath === healthCheckNotViable) {
+    throw new Error(
+      `Invalid credentials config for '${type}/${variantKey}': declare exactly one of 'healthCheck.path' or 'healthCheck.notViable: true'.`,
+    )
+  }
+}
+
+function validateCredentialVariantsFile(type: string, raw: CredentialVariantsFile): CredentialVariantsFile {
+  if (!raw?.variants || typeof raw.variants !== 'object')
+    throw new Error(`Invalid credentials config for '${type}': missing variants object.`)
+
+  for (const [variantKey, variant] of Object.entries(raw.variants))
+    validateCredentialVariant(type, variantKey, variant)
+
+  return raw
+}
+
+function cloneCredentialVariantsFile(type: string, variants: CredentialVariantsFile): CredentialVariantsFile {
+  const validated = validateCredentialVariantsFile(type, variants)
+
+  return {
+    default: validated.default,
+    variants: Object.fromEntries(
+      Object.entries(validated.variants).map(([key, value]) => [key, cloneCredentialVariant(value)]),
+    ),
   }
 }
 
@@ -114,21 +161,14 @@ export function loadIntegrationToolList(type: string): ToolListItem[] {
 
 export function loadIntegrationVariants(type: string): CredentialVariantsFile | null {
   const variants = getIntegration(type)?.variants
-  return variants
-    ? {
-        default: variants.default,
-        variants: Object.fromEntries(
-          Object.entries(variants.variants).map(([key, value]) => [key, { ...value }]),
-        ),
-      }
-    : null
+  return variants ? cloneCredentialVariantsFile(type, variants) : null
 }
 
 export function loadIntegrationCredentialConfig(
   type: string,
   variantKey?: string | null,
 ): IntegrationCredentialConfig | null {
-  const file = getIntegration(type)?.variants
+  const file = loadIntegrationVariants(type)
   if (!file)
     return null
 
@@ -147,7 +187,7 @@ export function loadIntegrationCredentialConfig(
       query: variant.injection?.query || undefined,
     },
     preprocess: variant.preprocess,
-    healthCheck: variant.healthCheck ?? undefined,
+    healthCheck: cloneCredentialVariant(variant).healthCheck,
   }
 }
 

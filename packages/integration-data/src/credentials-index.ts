@@ -14,7 +14,7 @@ export const credentialConfigs: Record<string, IntegrationCredentials> = Object.
     .map(([type, integration]) => {
       const variants = integration.variants!
       const hints = Object.fromEntries(
-        Object.keys(variants.variants).map((variantKey) => [
+        Object.keys(variants.variants).map(variantKey => [
           variantKey,
           integration.hintsByVariant[variantKey] || integration.hint || '',
         ]),
