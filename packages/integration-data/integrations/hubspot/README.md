@@ -46,3 +46,8 @@
 | `search_tasks` | read | Search tasks. Use query for free-text search and filters for precise property-based filte… |
 | `create_task` | write | Create a task and (optionally) associate it to one or more CRM records. Provide subject/b… |
 | `update_task` | write | Update a task by ID. Common updates include setting hs_task_status to COMPLETED. |
+
+## Compact response notes
+
+- `search_contacts`, `search_companies`, `search_deals`, and `search_tickets` return compact summaries.
+- Use matching detail tools (`get_contact`, `get_company`, `get_deal`, `get_ticket`) for full record payloads.

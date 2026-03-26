@@ -1,4 +1,17 @@
 async (input) => {
+  const summarize = (row) => ({
+    id: row?.id ?? null,
+    archived: !!row?.archived,
+    createdAt: row?.createdAt ?? null,
+    updatedAt: row?.updatedAt ?? null,
+    subject: row?.properties?.subject ?? null,
+    content: row?.properties?.content ?? null,
+    hsPipeline: row?.properties?.hs_pipeline ?? null,
+    hsPipelineStage: row?.properties?.hs_pipeline_stage ?? null,
+    hsTicketPriority: row?.properties?.hs_ticket_priority ?? null,
+    hsTicketCategory: row?.properties?.hs_ticket_category ?? null,
+  })
+
   const filterGroups = []
   if (Array.isArray(input.filters) && input.filters.length > 0) {
     const filters = input.filters.map((f) => {
@@ -38,6 +51,14 @@ async (input) => {
     method: 'POST',
     body,
   })
-  return await res.json()
+  const data = await res.json()
+  const tickets = Array.isArray(data?.results) ? data.results.map(summarize) : []
+  return {
+    total: typeof data?.total === 'number' ? data.total : tickets.length,
+    count: tickets.length,
+    paging: data?.paging ?? null,
+    note: 'Use id with get_ticket for full record details.',
+    tickets,
+  }
 }
 

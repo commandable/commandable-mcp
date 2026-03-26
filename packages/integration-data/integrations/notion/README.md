@@ -40,3 +40,8 @@
 | `query_database` | read | `databases` | Query a database with optional filter, sorts, and pagination. |
 | `create_database` | write | `databases` | Create a new database under a page. |
 | `update_database` | write | `databases` | Update database title, description, properties, or archived state. |
+
+## Compact response notes
+
+- `search`, `query_database`, `list_block_children`, and `list_users` return compact summaries plus pagination metadata when available.
+- Use `retrieve_page`, `retrieve_database`, `retrieve_block`, and `retrieve_user` for full payloads.

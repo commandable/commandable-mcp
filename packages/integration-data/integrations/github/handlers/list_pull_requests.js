@@ -9,5 +9,28 @@ async (input) => {
   if (input.per_page) params.set('per_page', String(input.per_page))
   const query = params.toString() ? `?${params.toString()}` : ''
   const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/pulls${query}`)
-  return await res.json()
+  const data = await res.json()
+  const pullRequests = Array.isArray(data)
+    ? data.map(pr => ({
+      id: pr.id,
+      number: pr.number,
+      title: pr.title ?? null,
+      state: pr.state ?? null,
+      draft: !!pr.draft,
+      author: pr.user?.login ?? null,
+      baseRef: pr.base?.ref ?? null,
+      headRef: pr.head?.ref ?? null,
+      mergeableState: pr.mergeable_state ?? null,
+      commentCount: pr.comments ?? 0,
+      reviewCommentCount: pr.review_comments ?? 0,
+      createdAt: pr.created_at ?? null,
+      updatedAt: pr.updated_at ?? null,
+      htmlUrl: pr.html_url ?? null,
+    }))
+    : []
+  return {
+    count: pullRequests.length,
+    note: 'Use pull number with get_pull_request for full details.',
+    pullRequests,
+  }
 }

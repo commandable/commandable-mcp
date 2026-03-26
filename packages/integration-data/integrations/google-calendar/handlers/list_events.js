@@ -19,5 +19,27 @@ async (input) => {
   const qs = params.toString()
   const path = `/calendars/${encodeURIComponent(input.calendarId)}/events${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path)
-  return await res.json()
+  const data = await res.json()
+  const events = Array.isArray(data?.items)
+    ? data.items.map(event => ({
+      id: event.id ?? null,
+      iCalUID: event.iCalUID ?? null,
+      status: event.status ?? null,
+      summary: event.summary ?? null,
+      start: event.start?.dateTime ?? event.start?.date ?? null,
+      end: event.end?.dateTime ?? event.end?.date ?? null,
+      updated: event.updated ?? null,
+      recurringEventId: event.recurringEventId ?? null,
+      organizerEmail: event.organizer?.email ?? null,
+      htmlLink: event.htmlLink ?? null,
+    }))
+    : []
+  return {
+    calendarId: input.calendarId,
+    count: events.length,
+    nextPageToken: data?.nextPageToken ?? null,
+    nextSyncToken: data?.nextSyncToken ?? null,
+    note: 'Use event id with get_event for full event details.',
+    events,
+  }
 }

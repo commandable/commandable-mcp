@@ -51,7 +51,7 @@ suite('trello read handlers (live)', () => {
 
     const get_member_organizations = trello.read('get_member_organizations')
     const orgs = await get_member_organizations({})
-    ids.orgId = orgs[0]?.id
+    ids.orgId = orgs?.organizations?.[0]?.id
   }, 60000)
 
   afterAll(async () => {
@@ -69,16 +69,24 @@ suite('trello read handlers (live)', () => {
     expect(typeof result.username).toBe('string')
   }, 30000)
 
-  it('get_member_boards returns an array', async () => {
+  it('get_member_boards returns a compact board summary object', async () => {
     const handler = trello.read('get_member_boards')
     const result = await handler({})
-    expect(Array.isArray(result)).toBe(true)
+    expect(result && typeof result === 'object').toBe(true)
+    expect(typeof (result as any).count).toBe('number')
+    expect(Array.isArray((result as any).boards)).toBe(true)
+    if ((result as any).boards.length > 0) {
+      const b = (result as any).boards[0]
+      expect(typeof b.id).toBe('string')
+      expect(typeof b.name).toBe('string')
+      expect('closed' in b).toBe(true)
+    }
   }, 30000)
 
-  it('get_member_organizations returns an array', async () => {
+  it('get_member_organizations returns a compact object', async () => {
     const handler = trello.read('get_member_organizations')
     const result = await handler({})
-    expect(Array.isArray(result)).toBe(true)
+    expect(Array.isArray(result?.organizations)).toBe(true)
   }, 30000)
 
   it('get_board works with boardId', async () => {
@@ -94,7 +102,7 @@ suite('trello read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = trello.read('get_board_lists')
     const result = await handler({ boardId: ids.boardId })
-    expect(Array.isArray(result)).toBe(true)
+    expect(Array.isArray(result?.lists)).toBe(true)
   }, 30000)
 
   it('get_board_cards returns cards', async () => {
@@ -102,7 +110,7 @@ suite('trello read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = trello.read('get_board_cards')
     const result = await handler({ boardId: ids.boardId })
-    expect(Array.isArray(result)).toBe(true)
+    expect(Array.isArray(result?.cards)).toBe(true)
   }, 30000)
 
   it('get_board_members returns members', async () => {
@@ -150,7 +158,7 @@ suite('trello read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = trello.read('get_list_cards')
     const result = await handler({ listId: ids.listId })
-    expect(Array.isArray(result)).toBe(true)
+    expect(Array.isArray(result?.cards)).toBe(true)
   }, 30000)
 
   it('get_card returns a card', async () => {
@@ -214,12 +222,13 @@ suite('trello read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = trello.read('get_organization_boards')
     const result = await handler({ orgId: ids.orgId })
-    expect(Array.isArray(result)).toBe(true)
+    expect(Array.isArray(result?.boards)).toBe(true)
   }, 30000)
 
   it('search returns results for a generic query', async () => {
     const handler = trello.read('search')
     const result = await handler({ query: 'test' })
-    expect(result).toBeTruthy()
+    expect(Array.isArray(result?.boards)).toBe(true)
+    expect(Array.isArray(result?.cards)).toBe(true)
   }, 30000)
 })

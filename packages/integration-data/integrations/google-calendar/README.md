@@ -39,3 +39,8 @@
 | `insert_acl` | admin | `sharing` | Add a new ACL rule to grant a user or group access to a calendar. Roles: 'reader' (view),… |
 | `update_acl` | admin | `sharing` | Update an existing ACL rule to change a user's or group's permission level on a calendar.… |
 | `delete_acl` | admin | `sharing` | Remove an ACL rule from a calendar, revoking the associated user's or group's access. Use… |
+
+## Compact response notes
+
+- `list_calendars` and `list_events` return compact summaries.
+- Use `get_calendar` and `get_event` for full resource details.
