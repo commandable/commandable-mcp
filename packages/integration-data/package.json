@@ -43,7 +43,9 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
-    "build": "npm run clean && node scripts/generate-registry.mjs && tsc -p tsconfig.json",
+    "generate:registry": "node scripts/generate-registry.mjs",
+    "generate:registry:check": "yarn run generate:registry && git diff --exit-code -- src/generated/registry.ts",
+    "build": "npm run clean && yarn run generate:registry && tsc -p tsconfig.json",
     "prepack": "npm run build",
     "test": "vitest run"
   },

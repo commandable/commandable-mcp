@@ -284,7 +284,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.view)\n    params.set('view', input.view)\n  if (input.maxRecords)\n    params.set('maxRecords', String(input.maxRecords))\n  if (input.pageSize)\n    params.set('pageSize', String(input.pageSize))\n  if (input.filterByFormula)\n    params.set('filterByFormula', input.filterByFormula)\n  if (input.sort && Array.isArray(input.sort)) {\n    input.sort.forEach((s, i) => {\n      if (s && typeof s === 'object') {\n        if (s.field)\n          params.set(`sort[${i}][field]`, String(s.field))\n        if (s.direction)\n          params.set(`sort[${i}][direction]`, String(s.direction))\n      }\n    })\n  }\n  const qs = params.toString()\n  const path = `/${input.baseId}/${input.tableId}${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const summarizeValue = (value) => {\n    if (value === null || value === undefined)\n      return null\n    if (typeof value === 'string')\n      return value.length <= 120 ? value : `${value.slice(0, 117)}...`\n    if (typeof value === 'number' || typeof value === 'boolean')\n      return value\n    if (Array.isArray(value))\n      return `[array:${value.length}]`\n    if (typeof value === 'object')\n      return '[object]'\n    return String(value)\n  }\n\n  const summarizeRecord = (record) => {\n    const fields = record && typeof record === 'object' && record.fields && typeof record.fields === 'object'\n      ? record.fields\n      : {}\n    const fieldNames = Object.keys(fields)\n    const firstFieldName = fieldNames[0] || null\n    const firstFieldValue = firstFieldName ? summarizeValue(fields[firstFieldName]) : null\n    return {\n      id: record?.id || null,\n      createdTime: record?.createdTime || null,\n      fieldCount: fieldNames.length,\n      fieldNames,\n      primaryFieldName: firstFieldName,\n      primaryFieldValue: firstFieldValue,\n    }\n  }\n\n  const params = new URLSearchParams()\n  if (input.view)\n    params.set('view', input.view)\n  if (input.maxRecords)\n    params.set('maxRecords', String(input.maxRecords))\n  if (input.pageSize)\n    params.set('pageSize', String(input.pageSize))\n  if (input.filterByFormula)\n    params.set('filterByFormula', input.filterByFormula)\n  if (input.sort && Array.isArray(input.sort)) {\n    input.sort.forEach((s, i) => {\n      if (s && typeof s === 'object') {\n        if (s.field)\n          params.set(`sort[${i}][field]`, String(s.field))\n        if (s.direction)\n          params.set(`sort[${i}][direction]`, String(s.direction))\n      }\n    })\n  }\n  const qs = params.toString()\n  const path = `/${input.baseId}/${input.tableId}${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  const data = await res.json()\n  const records = Array.isArray(data?.records) ? data.records.map(summarizeRecord) : []\n  return {\n    count: records.length,\n    offset: data?.offset || null,\n    note: 'Use record id with get_record for full field data.',\n    records,\n  }\n}",
         "scope": "read"
       },
       {
@@ -344,7 +344,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const formula = `{${input.field}} = \"${input.value}\"`\n  const params = new URLSearchParams({ filterByFormula: formula })\n  const res = await integration.fetch(`/${input.baseId}/${input.tableId}?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const summarizeValue = (value) => {\n    if (value === null || value === undefined)\n      return null\n    if (typeof value === 'string')\n      return value.length <= 120 ? value : `${value.slice(0, 117)}...`\n    if (typeof value === 'number' || typeof value === 'boolean')\n      return value\n    if (Array.isArray(value))\n      return `[array:${value.length}]`\n    if (typeof value === 'object')\n      return '[object]'\n    return String(value)\n  }\n\n  const summarizeRecord = (record) => {\n    const fields = record && typeof record === 'object' && record.fields && typeof record.fields === 'object'\n      ? record.fields\n      : {}\n    const fieldNames = Object.keys(fields)\n    const matchField = typeof input.field === 'string' ? input.field : null\n    const matchValue = matchField ? summarizeValue(fields[matchField]) : null\n    return {\n      id: record?.id || null,\n      createdTime: record?.createdTime || null,\n      fieldCount: fieldNames.length,\n      fieldNames,\n      matchField,\n      matchValue,\n    }\n  }\n\n  const formula = `{${input.field}} = \"${input.value}\"`\n  const params = new URLSearchParams({ filterByFormula: formula })\n  const res = await integration.fetch(`/${input.baseId}/${input.tableId}?${params.toString()}`)\n  const data = await res.json()\n  const records = Array.isArray(data?.records) ? data.records.map(summarizeRecord) : []\n  return {\n    count: records.length,\n    offset: data?.offset || null,\n    note: 'Use record id with get_record for full field data.',\n    records,\n  }\n}",
         "scope": "read"
       },
       {
@@ -1057,7 +1057,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         },
         {
           "name": "list_repos",
-          "description": "List repositories for the authenticated user.",
+          "description": "List repositories for the authenticated user. Use get_repo for full metadata.",
           "inputSchema": "schemas/empty.json",
           "handler": "handlers/list_repos_user.js",
           "scope": "read",
@@ -1507,13 +1507,13 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       },
       {
         "name": "list_repos",
-        "description": "List repositories for the authenticated user.",
+        "description": "List repositories for the authenticated user. Use get_repo for full metadata.",
         "inputSchema": {
           "type": "object",
           "properties": {},
           "additionalProperties": false
         },
-        "handlerCode": "async () => {\n  const res = await integration.fetch('/user/repos')\n  return await res.json()\n}",
+        "handlerCode": "async () => {\n  const res = await integration.fetch('/user/repos')\n  const data = await res.json()\n  if (!Array.isArray(data)) return data\n  return data.map((r) => ({\n    full_name: r.full_name,\n    name: r.name,\n    owner: { login: r.owner?.login },\n    private: r.private,\n    default_branch: r.default_branch,\n    description: r.description ?? null,\n    html_url: r.html_url,\n    archived: r.archived,\n    fork: r.fork,\n  }))\n}",
         "scope": "read",
         "toolset": "repo_admin"
       },
@@ -1583,7 +1583,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.sort) params.set('sort', input.sort)\n  if (input.order) params.set('order', input.order)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/repositories?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.sort) params.set('sort', input.sort)\n  if (input.order) params.set('order', input.order)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/repositories?${params.toString()}`)\n  const data = await res.json()\n  const items = Array.isArray(data?.items)\n    ? data.items.map(item => ({\n      id: item.id,\n      fullName: item.full_name,\n      owner: item.owner?.login ?? null,\n      name: item.name ?? null,\n      private: !!item.private,\n      description: item.description ?? null,\n      language: item.language ?? null,\n      stargazersCount: item.stargazers_count ?? 0,\n      forksCount: item.forks_count ?? 0,\n      openIssuesCount: item.open_issues_count ?? 0,\n      defaultBranch: item.default_branch ?? null,\n      updatedAt: item.updated_at ?? null,\n      htmlUrl: item.html_url ?? null,\n    }))\n    : []\n  return {\n    totalCount: typeof data?.total_count === 'number' ? data.total_count : items.length,\n    incompleteResults: !!data?.incomplete_results,\n    count: items.length,\n    note: 'Use owner + repo (from fullName) with get_repo for full repository details.',\n    repositories: items,\n  }\n}",
         "scope": "read",
         "toolset": "repo_admin"
       },
@@ -1655,7 +1655,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const ref = input.ref || 'HEAD'\n  const params = new URLSearchParams()\n  if (input.recursive !== false) params.set('recursive', '1')\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/git/trees/${ref}${query}`)\n  const data = await res.json()\n  if (input.path_filter && Array.isArray(data.tree)) {\n    data.tree = data.tree.filter((item) => item.path && item.path.startsWith(input.path_filter))\n  }\n  return data\n}",
+        "handlerCode": "async (input) => {\n  const ref = input.ref || 'HEAD'\n  const params = new URLSearchParams()\n  if (input.recursive !== false) params.set('recursive', '1')\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/git/trees/${ref}${query}`)\n  const data = await res.json()\n  let tree = Array.isArray(data?.tree) ? data.tree : []\n  if (input.path_filter)\n    tree = tree.filter(item => item.path && item.path.startsWith(input.path_filter))\n\n  const limit = 500\n  const sliced = tree.slice(0, limit).map(item => ({\n    path: item.path ?? null,\n    type: item.type ?? null,\n    mode: item.mode ?? null,\n    sha: item.sha ?? null,\n    size: item.size ?? null,\n    url: item.url ?? null,\n  }))\n\n  return {\n    sha: data?.sha ?? null,\n    truncatedByGitHub: !!data?.truncated,\n    count: tree.length,\n    returnedCount: sliced.length,\n    hasMore: tree.length > sliced.length,\n    note: 'Use path + ref with get_file_contents for file content. Results are capped to 500 entries.',\n    tree: sliced,\n  }\n}",
         "scope": "read",
         "toolset": "code"
       },
@@ -1684,7 +1684,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/code?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/code?${params.toString()}`)\n  const data = await res.json()\n  const items = Array.isArray(data?.items)\n    ? data.items.map(item => ({\n      sha: item.sha ?? null,\n      name: item.name ?? null,\n      path: item.path ?? null,\n      repositoryFullName: item.repository?.full_name ?? null,\n      url: item.html_url ?? null,\n    }))\n    : []\n  return {\n    totalCount: typeof data?.total_count === 'number' ? data.total_count : items.length,\n    incompleteResults: !!data?.incomplete_results,\n    count: items.length,\n    note: 'Use owner/repo + path (and optional ref) with get_file_contents for full file content.',\n    matches: items,\n  }\n}",
         "scope": "read",
         "toolset": "code"
       },
@@ -1766,7 +1766,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.sha) params.set('sha', input.sha)\n  if (typeof input.path === 'string' && input.path.length > 0) params.set('path', input.path)\n  if (input.author) params.set('author', input.author)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/commits${query}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.sha) params.set('sha', input.sha)\n  if (typeof input.path === 'string' && input.path.length > 0) params.set('path', input.path)\n  if (input.author) params.set('author', input.author)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/commits${query}`)\n  const data = await res.json()\n  const commits = Array.isArray(data)\n    ? data.map(commit => ({\n      sha: commit.sha,\n      message: commit.commit?.message?.split('\\n')[0] ?? null,\n      authorName: commit.commit?.author?.name ?? null,\n      authorDate: commit.commit?.author?.date ?? null,\n      committerName: commit.commit?.committer?.name ?? null,\n      committerDate: commit.commit?.committer?.date ?? null,\n      htmlUrl: commit.html_url ?? null,\n    }))\n    : []\n  return {\n    count: commits.length,\n    note: 'Use sha with get_commit for full commit details.',\n    commits,\n  }\n}",
         "scope": "read",
         "toolset": "code"
       },
@@ -1889,7 +1889,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.state) params.set('state', input.state)\n  if (input.labels) params.set('labels', input.labels)\n  if (input.assignee) params.set('assignee', input.assignee)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/issues${query}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.state) params.set('state', input.state)\n  if (input.labels) params.set('labels', input.labels)\n  if (input.assignee) params.set('assignee', input.assignee)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/issues${query}`)\n  const data = await res.json()\n  const issues = Array.isArray(data)\n    ? data.map(issue => ({\n      id: issue.id,\n      number: issue.number,\n      title: issue.title ?? null,\n      state: issue.state ?? null,\n      user: issue.user?.login ?? null,\n      assignee: issue.assignee?.login ?? null,\n      labels: Array.isArray(issue.labels) ? issue.labels.map(l => typeof l === 'string' ? l : l?.name).filter(Boolean) : [],\n      comments: issue.comments ?? 0,\n      createdAt: issue.created_at ?? null,\n      updatedAt: issue.updated_at ?? null,\n      htmlUrl: issue.html_url ?? null,\n      isPullRequest: !!issue.pull_request,\n    }))\n    : []\n  return {\n    count: issues.length,\n    note: 'Use issue number with get_issue for full issue details.',\n    issues,\n  }\n}",
         "scope": "read",
         "toolset": "issues"
       },
@@ -1985,7 +1985,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/issues?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/issues?${params.toString()}`)\n  const data = await res.json()\n  const items = Array.isArray(data?.items)\n    ? data.items.map(issue => ({\n      id: issue.id,\n      number: issue.number,\n      repositoryFullName: issue.repository_url ? issue.repository_url.replace('https://api.github.com/repos/', '') : null,\n      title: issue.title ?? null,\n      state: issue.state ?? null,\n      user: issue.user?.login ?? null,\n      labels: Array.isArray(issue.labels) ? issue.labels.map(l => typeof l === 'string' ? l : l?.name).filter(Boolean) : [],\n      comments: issue.comments ?? 0,\n      createdAt: issue.created_at ?? null,\n      updatedAt: issue.updated_at ?? null,\n      htmlUrl: issue.html_url ?? null,\n      isPullRequest: !!issue.pull_request,\n    }))\n    : []\n  return {\n    totalCount: typeof data?.total_count === 'number' ? data.total_count : items.length,\n    incompleteResults: !!data?.incomplete_results,\n    count: items.length,\n    note: 'Use owner/repo + issue number with get_issue for full details.',\n    issues: items,\n  }\n}",
         "scope": "read",
         "toolset": "issues"
       },
@@ -2086,7 +2086,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.state) params.set('state', input.state)\n  if (input.head) params.set('head', input.head)\n  if (input.base) params.set('base', input.base)\n  if (input.sort) params.set('sort', input.sort)\n  if (input.direction) params.set('direction', input.direction)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/pulls${query}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.state) params.set('state', input.state)\n  if (input.head) params.set('head', input.head)\n  if (input.base) params.set('base', input.base)\n  if (input.sort) params.set('sort', input.sort)\n  if (input.direction) params.set('direction', input.direction)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/pulls${query}`)\n  const data = await res.json()\n  const pullRequests = Array.isArray(data)\n    ? data.map(pr => ({\n      id: pr.id,\n      number: pr.number,\n      title: pr.title ?? null,\n      state: pr.state ?? null,\n      draft: !!pr.draft,\n      author: pr.user?.login ?? null,\n      baseRef: pr.base?.ref ?? null,\n      headRef: pr.head?.ref ?? null,\n      mergeableState: pr.mergeable_state ?? null,\n      commentCount: pr.comments ?? 0,\n      reviewCommentCount: pr.review_comments ?? 0,\n      createdAt: pr.created_at ?? null,\n      updatedAt: pr.updated_at ?? null,\n      htmlUrl: pr.html_url ?? null,\n    }))\n    : []\n  return {\n    count: pullRequests.length,\n    note: 'Use pull number with get_pull_request for full details.',\n    pullRequests,\n  }\n}",
         "scope": "read",
         "toolset": "pull_requests"
       },
@@ -2253,7 +2253,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/issues?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('q', input.query)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const res = await integration.fetch(`/search/issues?${params.toString()}`)\n  const data = await res.json()\n  const items = Array.isArray(data?.items)\n    ? data.items\n      .filter(item => !!item.pull_request)\n      .map(pr => ({\n        id: pr.id,\n        number: pr.number,\n        repositoryFullName: pr.repository_url ? pr.repository_url.replace('https://api.github.com/repos/', '') : null,\n        title: pr.title ?? null,\n        state: pr.state ?? null,\n        author: pr.user?.login ?? null,\n        commentCount: pr.comments ?? 0,\n        createdAt: pr.created_at ?? null,\n        updatedAt: pr.updated_at ?? null,\n        htmlUrl: pr.html_url ?? null,\n      }))\n    : []\n  return {\n    totalCount: typeof data?.total_count === 'number' ? data.total_count : items.length,\n    incompleteResults: !!data?.incomplete_results,\n    count: items.length,\n    note: 'Use owner/repo + pull number with get_pull_request for full details.',\n    pullRequests: items,\n  }\n}",
         "scope": "read",
         "toolset": "pull_requests"
       },
@@ -2370,7 +2370,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.branch) params.set('branch', input.branch)\n  if (input.status) params.set('status', input.status)\n  if (input.event) params.set('event', input.event)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/actions/runs${query}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.branch) params.set('branch', input.branch)\n  if (input.status) params.set('status', input.status)\n  if (input.event) params.set('event', input.event)\n  if (input.page) params.set('page', String(input.page))\n  if (input.per_page) params.set('per_page', String(input.per_page))\n  const query = params.toString() ? `?${params.toString()}` : ''\n  const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/actions/runs${query}`)\n  const data = await res.json()\n  const runs = Array.isArray(data?.workflow_runs)\n    ? data.workflow_runs.map(run => ({\n      id: run.id,\n      name: run.name ?? null,\n      displayTitle: run.display_title ?? null,\n      event: run.event ?? null,\n      status: run.status ?? null,\n      conclusion: run.conclusion ?? null,\n      runNumber: run.run_number ?? null,\n      headBranch: run.head_branch ?? null,\n      headSha: run.head_sha ?? null,\n      createdAt: run.created_at ?? null,\n      updatedAt: run.updated_at ?? null,\n      htmlUrl: run.html_url ?? null,\n      workflowId: run.workflow_id ?? null,\n    }))\n    : []\n  return {\n    totalCount: typeof data?.total_count === 'number' ? data.total_count : runs.length,\n    count: runs.length,\n    note: 'Use run id with get_workflow_run for full workflow run details.',\n    workflowRuns: runs,\n  }\n}",
         "scope": "read",
         "toolset": "ci"
       },
@@ -3565,7 +3565,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "name": "list_calendars",
         "description": "List all calendars in the authenticated user's calendar list, including the primary calendar and any subscribed or shared calendars. Returns calendar IDs needed for list_events, create_event, and other calendar-specific tools. The primary calendar has calendarId='primary'.",
         "inputSchema": {},
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch('/users/me/calendarList')\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch('/users/me/calendarList')\n  const data = await res.json()\n  const calendars = Array.isArray(data?.items)\n    ? data.items.map(cal => ({\n      id: cal.id ?? null,\n      summary: cal.summary ?? null,\n      description: cal.description ?? null,\n      primary: !!cal.primary,\n      accessRole: cal.accessRole ?? null,\n      timeZone: cal.timeZone ?? null,\n      backgroundColor: cal.backgroundColor ?? null,\n      foregroundColor: cal.foregroundColor ?? null,\n    }))\n    : []\n  return {\n    count: calendars.length,\n    nextPageToken: data?.nextPageToken ?? null,\n    nextSyncToken: data?.nextSyncToken ?? null,\n    note: 'Use calendar id with get_calendar for full calendar details.',\n    calendars,\n  }\n}",
         "scope": "read",
         "toolset": "events"
       },
@@ -3645,7 +3645,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.timeMin)\n    params.set('timeMin', input.timeMin)\n  if (input.timeMax)\n    params.set('timeMax', input.timeMax)\n  if (input.q)\n    params.set('q', input.q)\n  if (input.maxResults)\n    params.set('maxResults', String(input.maxResults))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  if (input.singleEvents !== undefined)\n    params.set('singleEvents', String(input.singleEvents))\n  if (input.orderBy)\n    params.set('orderBy', input.orderBy)\n  if (input.fields)\n    params.set('fields', input.fields)\n  const qs = params.toString()\n  const path = `/calendars/${encodeURIComponent(input.calendarId)}/events${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.timeMin)\n    params.set('timeMin', input.timeMin)\n  if (input.timeMax)\n    params.set('timeMax', input.timeMax)\n  if (input.q)\n    params.set('q', input.q)\n  if (input.maxResults)\n    params.set('maxResults', String(input.maxResults))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  if (input.singleEvents !== undefined)\n    params.set('singleEvents', String(input.singleEvents))\n  if (input.orderBy)\n    params.set('orderBy', input.orderBy)\n  if (input.fields)\n    params.set('fields', input.fields)\n  const qs = params.toString()\n  const path = `/calendars/${encodeURIComponent(input.calendarId)}/events${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  const data = await res.json()\n  const events = Array.isArray(data?.items)\n    ? data.items.map(event => ({\n      id: event.id ?? null,\n      iCalUID: event.iCalUID ?? null,\n      status: event.status ?? null,\n      summary: event.summary ?? null,\n      start: event.start?.dateTime ?? event.start?.date ?? null,\n      end: event.end?.dateTime ?? event.end?.date ?? null,\n      updated: event.updated ?? null,\n      recurringEventId: event.recurringEventId ?? null,\n      organizerEmail: event.organizer?.email ?? null,\n      htmlLink: event.htmlLink ?? null,\n    }))\n    : []\n  return {\n    calendarId: input.calendarId,\n    count: events.length,\n    nextPageToken: data?.nextPageToken ?? null,\n    nextSyncToken: data?.nextSyncToken ?? null,\n    note: 'Use event id with get_event for full event details.',\n    events,\n  }\n}",
         "scope": "read",
         "toolset": "events"
       },
@@ -4208,7 +4208,10 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
               "Authorization": "Bearer {{token}}"
             }
           },
-          "preprocess": "google_service_account"
+          "preprocess": "google_service_account",
+          "healthCheck": {
+            "notViable": true
+          }
         },
         "oauth_token": {
           "label": "OAuth Access Token (short-lived)",
@@ -4230,6 +4233,9 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             "headers": {
               "Authorization": "Bearer {{token}}"
             }
+          },
+          "healthCheck": {
+            "notViable": true
           }
         }
       },
@@ -6379,7 +6385,10 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
               "Authorization": "Bearer {{token}}"
             }
           },
-          "preprocess": "google_service_account"
+          "preprocess": "google_service_account",
+          "healthCheck": {
+            "notViable": true
+          }
         },
         "oauth_token": {
           "label": "OAuth Access Token (short-lived)",
@@ -6401,6 +6410,9 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             "headers": {
               "Authorization": "Bearer {{token}}"
             }
+          },
+          "healthCheck": {
+            "notViable": true
           }
         }
       },
@@ -6949,7 +6961,10 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
               "Authorization": "Bearer {{token}}"
             }
           },
-          "preprocess": "google_service_account"
+          "preprocess": "google_service_account",
+          "healthCheck": {
+            "notViable": true
+          }
         },
         "oauth_token": {
           "label": "OAuth Access Token (short-lived)",
@@ -6971,6 +6986,9 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             "headers": {
               "Authorization": "Bearer {{token}}"
             }
+          },
+          "healthCheck": {
+            "notViable": true
           }
         }
       },
@@ -7693,7 +7711,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/contacts/search`, {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const summarize = (row) => ({\n    id: row?.id ?? null,\n    archived: !!row?.archived,\n    createdAt: row?.createdAt ?? null,\n    updatedAt: row?.updatedAt ?? null,\n    email: row?.properties?.email ?? null,\n    firstname: row?.properties?.firstname ?? null,\n    lastname: row?.properties?.lastname ?? null,\n    phone: row?.properties?.phone ?? null,\n    company: row?.properties?.company ?? null,\n    jobtitle: row?.properties?.jobtitle ?? null,\n  })\n\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/contacts/search`, {\n    method: 'POST',\n    body,\n  })\n  const data = await res.json()\n  const contacts = Array.isArray(data?.results) ? data.results.map(summarize) : []\n  return {\n    total: typeof data?.total === 'number' ? data.total : contacts.length,\n    count: contacts.length,\n    paging: data?.paging ?? null,\n    note: 'Use id with get_contact for full record details.',\n    contacts,\n  }\n}",
         "scope": "read"
       },
       {
@@ -7885,7 +7903,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/companies/search`, {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const summarize = (row) => ({\n    id: row?.id ?? null,\n    archived: !!row?.archived,\n    createdAt: row?.createdAt ?? null,\n    updatedAt: row?.updatedAt ?? null,\n    name: row?.properties?.name ?? null,\n    domain: row?.properties?.domain ?? null,\n    city: row?.properties?.city ?? null,\n    state: row?.properties?.state ?? null,\n    country: row?.properties?.country ?? null,\n    phone: row?.properties?.phone ?? null,\n  })\n\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/companies/search`, {\n    method: 'POST',\n    body,\n  })\n  const data = await res.json()\n  const companies = Array.isArray(data?.results) ? data.results.map(summarize) : []\n  return {\n    total: typeof data?.total === 'number' ? data.total : companies.length,\n    count: companies.length,\n    paging: data?.paging ?? null,\n    note: 'Use id with get_company for full record details.',\n    companies,\n  }\n}",
         "scope": "read"
       },
       {
@@ -8249,7 +8267,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/deals/search`, {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const summarize = (row) => ({\n    id: row?.id ?? null,\n    archived: !!row?.archived,\n    createdAt: row?.createdAt ?? null,\n    updatedAt: row?.updatedAt ?? null,\n    dealname: row?.properties?.dealname ?? null,\n    dealstage: row?.properties?.dealstage ?? null,\n    pipeline: row?.properties?.pipeline ?? null,\n    amount: row?.properties?.amount ?? null,\n    closedate: row?.properties?.closedate ?? null,\n  })\n\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/deals/search`, {\n    method: 'POST',\n    body,\n  })\n  const data = await res.json()\n  const deals = Array.isArray(data?.results) ? data.results.map(summarize) : []\n  return {\n    total: typeof data?.total === 'number' ? data.total : deals.length,\n    count: deals.length,\n    paging: data?.paging ?? null,\n    note: 'Use id with get_deal for full record details.',\n    deals,\n  }\n}",
         "scope": "read"
       },
       {
@@ -8463,7 +8481,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/tickets/search`, {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const summarize = (row) => ({\n    id: row?.id ?? null,\n    archived: !!row?.archived,\n    createdAt: row?.createdAt ?? null,\n    updatedAt: row?.updatedAt ?? null,\n    subject: row?.properties?.subject ?? null,\n    content: row?.properties?.content ?? null,\n    hsPipeline: row?.properties?.hs_pipeline ?? null,\n    hsPipelineStage: row?.properties?.hs_pipeline_stage ?? null,\n    hsTicketPriority: row?.properties?.hs_ticket_priority ?? null,\n    hsTicketCategory: row?.properties?.hs_ticket_category ?? null,\n  })\n\n  const filterGroups = []\n  if (Array.isArray(input.filters) && input.filters.length > 0) {\n    const filters = input.filters.map((f) => {\n      const base = {\n        propertyName: f.propertyName,\n        operator: f.operator,\n      }\n\n      if (f.operator === 'BETWEEN' && typeof f.value === 'string' && f.value.includes(',')) {\n        const [low, high] = f.value.split(',', 2).map((s) => s.trim())\n        return { ...base, value: low, highValue: high }\n      }\n\n      if (f.operator === 'HAS_PROPERTY' || f.operator === 'NOT_HAS_PROPERTY') {\n        return base\n      }\n\n      if (f.value !== undefined) {\n        return { ...base, value: f.value }\n      }\n\n      return base\n    })\n\n    filterGroups.push({ filters })\n  }\n\n  const body = {\n    query: input.query,\n    filterGroups: filterGroups.length ? filterGroups : undefined,\n    properties: input.properties,\n    limit: input.limit,\n    after: input.after,\n  }\n\n  const res = await integration.fetch(`/crm/v3/objects/tickets/search`, {\n    method: 'POST',\n    body,\n  })\n  const data = await res.json()\n  const tickets = Array.isArray(data?.results) ? data.results.map(summarize) : []\n  return {\n    total: typeof data?.total === 'number' ? data.total : tickets.length,\n    count: tickets.length,\n    paging: data?.paging ?? null,\n    note: 'Use id with get_ticket for full record details.',\n    tickets,\n  }\n}",
         "scope": "read"
       },
       {
@@ -9874,7 +9892,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.jql)\n    params.set('jql', input.jql)\n  if (Array.isArray(input.fields) && input.fields.length)\n    params.set('fields', input.fields.join(','))\n  params.set('startAt', String(input.startAt ?? 0))\n  params.set('maxResults', String(input.maxResults ?? 50))\n\n  const res = await integration.fetch(`/rest/agile/1.0/sprint/${encodeURIComponent(String(input.sprintId))}/issue?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.jql)\n    params.set('jql', input.jql)\n  if (Array.isArray(input.fields) && input.fields.length)\n    params.set('fields', input.fields.join(','))\n  params.set('startAt', String(input.startAt ?? 0))\n  params.set('maxResults', String(input.maxResults ?? 50))\n\n  const res = await integration.fetch(`/rest/agile/1.0/sprint/${encodeURIComponent(String(input.sprintId))}/issue?${params.toString()}`)\n  const data = await res.json()\n  const issues = Array.isArray(data?.issues)\n    ? data.issues.map(i => ({\n      id: i.id ?? null,\n      key: i.key ?? null,\n      summary: i.fields?.summary ?? null,\n      status: i.fields?.status?.name ?? null,\n      assignee: i.fields?.assignee\n        ? {\n            accountId: i.fields.assignee.accountId ?? null,\n            displayName: i.fields.assignee.displayName ?? null,\n          }\n        : null,\n      priority: i.fields?.priority?.name ?? null,\n      issueType: i.fields?.issuetype?.name ?? null,\n      updated: i.fields?.updated ?? null,\n    }))\n    : []\n  return {\n    startAt: data?.startAt ?? 0,\n    maxResults: data?.maxResults ?? issues.length,\n    total: data?.total ?? issues.length,\n    count: issues.length,\n    note: 'Use issue key or id with get_issue for full issue details.',\n    issues,\n  }\n}",
         "utils": [
           "adf"
         ],
@@ -9920,7 +9938,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.jql)\n    params.set('jql', input.jql)\n  if (Array.isArray(input.fields) && input.fields.length)\n    params.set('fields', input.fields.join(','))\n  params.set('startAt', String(input.startAt ?? 0))\n  params.set('maxResults', String(input.maxResults ?? 50))\n\n  const res = await integration.fetch(`/rest/agile/1.0/board/${encodeURIComponent(String(input.boardId))}/backlog?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.jql)\n    params.set('jql', input.jql)\n  if (Array.isArray(input.fields) && input.fields.length)\n    params.set('fields', input.fields.join(','))\n  params.set('startAt', String(input.startAt ?? 0))\n  params.set('maxResults', String(input.maxResults ?? 50))\n\n  const res = await integration.fetch(`/rest/agile/1.0/board/${encodeURIComponent(String(input.boardId))}/backlog?${params.toString()}`)\n  const data = await res.json()\n  const issues = Array.isArray(data?.issues)\n    ? data.issues.map(i => ({\n      id: i.id ?? null,\n      key: i.key ?? null,\n      summary: i.fields?.summary ?? null,\n      status: i.fields?.status?.name ?? null,\n      assignee: i.fields?.assignee\n        ? {\n            accountId: i.fields.assignee.accountId ?? null,\n            displayName: i.fields.assignee.displayName ?? null,\n          }\n        : null,\n      priority: i.fields?.priority?.name ?? null,\n      issueType: i.fields?.issuetype?.name ?? null,\n      updated: i.fields?.updated ?? null,\n    }))\n    : []\n  return {\n    startAt: data?.startAt ?? 0,\n    maxResults: data?.maxResults ?? issues.length,\n    total: data?.total ?? issues.length,\n    count: issues.length,\n    note: 'Use issue key or id with get_issue for full issue details.',\n    issues,\n  }\n}",
         "utils": [
           "adf"
         ],
@@ -10319,7 +10337,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const body = {\n    query: input.query || '',\n    filter: input.filter || undefined,\n    sort: input.sort || undefined,\n    start_cursor: input.start_cursor || undefined,\n    page_size: input.page_size || undefined,\n  }\n  const res = await integration.fetch(`/search`, { method: 'POST', body })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const titleFromResult = (result) => {\n    const titleProp = result?.properties?.title\n    if (titleProp?.type === 'title' && Array.isArray(titleProp.title))\n      return titleProp.title.map(x => x?.plain_text || '').join('').trim() || null\n    if (Array.isArray(result?.title))\n      return result.title.map(x => x?.plain_text || '').join('').trim() || null\n    return null\n  }\n\n  const body = {\n    query: input.query || '',\n    filter: input.filter || undefined,\n    sort: input.sort || undefined,\n    start_cursor: input.start_cursor || undefined,\n    page_size: input.page_size || undefined,\n  }\n  const res = await integration.fetch(`/search`, { method: 'POST', body })\n  const data = await res.json()\n  const results = Array.isArray(data?.results)\n    ? data.results.map((r) => {\n      const objectType = r?.object || null\n      const id = r?.id || null\n      return {\n        object: objectType,\n        id,\n        title: titleFromResult(r),\n        url: r?.url ?? null,\n        createdTime: r?.created_time ?? null,\n        lastEditedTime: r?.last_edited_time ?? null,\n        followUpTool: objectType === 'database' ? 'retrieve_database' : objectType === 'page' ? 'retrieve_page' : null,\n      }\n    })\n    : []\n  return {\n    count: results.length,\n    has_more: !!data?.has_more,\n    next_cursor: data?.next_cursor ?? null,\n    note: 'Use id with retrieve_page or retrieve_database for full details.',\n    results,\n  }\n}",
         "scope": "read",
         "toolset": "pages"
       },
@@ -10399,7 +10417,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.start_cursor)\n    params.set('start_cursor', input.start_cursor)\n  if (input.page_size)\n    params.set('page_size', String(input.page_size))\n  const qs = params.toString()\n  const res = await integration.fetch(`/blocks/${encodeURIComponent(input.block_id)}/children${qs ? `?${qs}` : ''}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.start_cursor)\n    params.set('start_cursor', input.start_cursor)\n  if (input.page_size)\n    params.set('page_size', String(input.page_size))\n  const qs = params.toString()\n  const res = await integration.fetch(`/blocks/${encodeURIComponent(input.block_id)}/children${qs ? `?${qs}` : ''}`)\n  const data = await res.json()\n  const blocks = Array.isArray(data?.results)\n    ? data.results.map(block => ({\n      id: block?.id ?? null,\n      type: block?.type ?? null,\n      hasChildren: !!block?.has_children,\n      archived: !!block?.archived,\n      createdTime: block?.created_time ?? null,\n      lastEditedTime: block?.last_edited_time ?? null,\n    }))\n    : []\n  return {\n    block_id: input.block_id,\n    count: blocks.length,\n    has_more: !!data?.has_more,\n    next_cursor: data?.next_cursor ?? null,\n    note: 'Use id with retrieve_block for full block details.',\n    blocks,\n  }\n}",
         "scope": "read",
         "toolset": "pages"
       },
@@ -10441,7 +10459,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.start_cursor)\n    params.set('start_cursor', input.start_cursor)\n  if (input.page_size)\n    params.set('page_size', String(input.page_size))\n  const qs = params.toString()\n  const res = await integration.fetch(`/users${qs ? `?${qs}` : ''}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.start_cursor)\n    params.set('start_cursor', input.start_cursor)\n  if (input.page_size)\n    params.set('page_size', String(input.page_size))\n  const qs = params.toString()\n  const res = await integration.fetch(`/users${qs ? `?${qs}` : ''}`)\n  const data = await res.json()\n  const users = Array.isArray(data?.results)\n    ? data.results.map(user => ({\n      id: user?.id ?? null,\n      type: user?.type ?? null,\n      name: user?.name ?? null,\n      avatar_url: user?.avatar_url ?? null,\n      person_email: user?.person?.email ?? null,\n    }))\n    : []\n  return {\n    count: users.length,\n    has_more: !!data?.has_more,\n    next_cursor: data?.next_cursor ?? null,\n    note: 'Use id with retrieve_user for full user details.',\n    users,\n  }\n}",
         "scope": "read",
         "toolset": "pages"
       },
@@ -10783,7 +10801,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const body = {\n    filter: input.filter || undefined,\n    sorts: input.sorts || undefined,\n    start_cursor: input.start_cursor || undefined,\n    page_size: input.page_size || undefined,\n  }\n  const res = await integration.fetch(`/databases/${encodeURIComponent(input.database_id)}/query`, { method: 'POST', body })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const titleFromProperties = (properties) => {\n    if (!properties || typeof properties !== 'object')\n      return null\n    for (const value of Object.values(properties)) {\n      if (value?.type === 'title' && Array.isArray(value.title))\n        return value.title.map(x => x?.plain_text || '').join('').trim() || null\n    }\n    return null\n  }\n\n  const body = {\n    filter: input.filter || undefined,\n    sorts: input.sorts || undefined,\n    start_cursor: input.start_cursor || undefined,\n    page_size: input.page_size || undefined,\n  }\n  const res = await integration.fetch(`/databases/${encodeURIComponent(input.database_id)}/query`, { method: 'POST', body })\n  const data = await res.json()\n  const pages = Array.isArray(data?.results)\n    ? data.results.map(page => ({\n      id: page?.id ?? null,\n      url: page?.url ?? null,\n      createdTime: page?.created_time ?? null,\n      lastEditedTime: page?.last_edited_time ?? null,\n      title: titleFromProperties(page?.properties),\n    }))\n    : []\n  return {\n    database_id: input.database_id,\n    count: pages.length,\n    has_more: !!data?.has_more,\n    next_cursor: data?.next_cursor ?? null,\n    note: 'Use id with retrieve_page for full page details.',\n    pages,\n  }\n}",
         "scope": "read",
         "toolset": "databases"
       },
@@ -11183,7 +11201,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           "properties": {},
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/members/me/boards`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const truncateDesc = (desc) => {\n    if (typeof desc !== 'string' || !desc.trim())\n      return null\n    const oneLine = desc.replace(/\\s+/g, ' ').trim()\n    const max = 200\n    return oneLine.length <= max ? oneLine : `${oneLine.slice(0, max - 1)}…`\n  }\n\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'url',\n    'shortUrl',\n    'shortLink',\n    'dateLastActivity',\n    'idOrganization',\n    'closed',\n    'starred',\n  ].join(',')\n  const res = await integration.fetch(`/members/me/boards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  if (!Array.isArray(raw))\n    return { count: 0, boards: [], note: 'Unexpected response from Trello; expected a list of boards.' }\n\n  const boards = raw.map((b) => ({\n    id: b.id,\n    name: b.name,\n    url: b.url || b.shortUrl || (b.shortLink ? `https://trello.com/b/${b.shortLink}` : undefined),\n    shortLink: b.shortLink,\n    closed: !!b.closed,\n    starred: !!b.starred,\n    workspaceId: b.idOrganization || null,\n    lastActivity: b.dateLastActivity || null,\n    descriptionPreview: truncateDesc(b.desc),\n  }))\n\n  boards.sort((a, b) => {\n    if (a.closed !== b.closed)\n      return a.closed ? 1 : -1\n    if (a.starred !== b.starred)\n      return a.starred ? -1 : 1\n    return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })\n  })\n\n  const open = boards.filter((x) => !x.closed).length\n  return {\n    count: boards.length,\n    openCount: open,\n    closedCount: boards.length - open,\n    note:\n      'Use `id` as `boardId` in other Trello tools (lists, cards, labels). `url` is the human-facing board link. Closed boards are archived.',\n    boards,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11194,7 +11212,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           "properties": {},
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/members/me/organizations`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const fields = ['id', 'name', 'displayName', 'desc', 'url'].join(',')\n  const res = await integration.fetch(`/members/me/organizations?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const organizations = Array.isArray(raw)\n    ? raw.map(org => ({\n      id: org.id,\n      name: org.name || null,\n      displayName: org.displayName || null,\n      url: org.url || null,\n      descriptionPreview: typeof org.desc === 'string' && org.desc.trim()\n        ? (org.desc.trim().length <= 200 ? org.desc.trim() : `${org.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    count: organizations.length,\n    note: 'Use org id with get_organization for full organization details.',\n    organizations,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11230,7 +11248,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/lists`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const fields = ['id', 'name', 'idBoard', 'closed', 'pos', 'softLimit'].join(',')\n  const res = await integration.fetch(`/boards/${input.boardId}/lists?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const lists = Array.isArray(raw)\n    ? raw.map(list => ({\n      id: list.id,\n      name: list.name,\n      idBoard: list.idBoard || null,\n      closed: !!list.closed,\n      position: list.pos ?? null,\n      softLimit: typeof list.softLimit === 'number' ? list.softLimit : null,\n    }))\n    : []\n  return {\n    boardId: input.boardId,\n    count: lists.length,\n    note: 'Use list id with get_list for full list details.',\n    lists,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11248,7 +11266,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/cards`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'idBoard',\n    'idList',\n    'shortLink',\n    'shortUrl',\n    'url',\n    'closed',\n    'due',\n    'dateLastActivity',\n    'labels',\n    'pos',\n  ].join(',')\n  const res = await integration.fetch(`/boards/${input.boardId}/cards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const cards = Array.isArray(raw)\n    ? raw.map(card => ({\n      id: card.id,\n      name: card.name,\n      idBoard: card.idBoard || null,\n      idList: card.idList || null,\n      url: card.url || card.shortUrl || (card.shortLink ? `https://trello.com/c/${card.shortLink}` : null),\n      shortLink: card.shortLink || null,\n      closed: !!card.closed,\n      due: card.due || null,\n      lastActivity: card.dateLastActivity || null,\n      position: card.pos ?? null,\n      labels: Array.isArray(card.labels)\n        ? card.labels.map(label => ({ id: label.id, name: label.name || null, color: label.color || null }))\n        : [],\n      descriptionPreview: typeof card.desc === 'string' && card.desc.trim()\n        ? (card.desc.trim().length <= 200 ? card.desc.trim() : `${card.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    boardId: input.boardId,\n    count: cards.length,\n    note: 'Use card id with get_card for full card details.',\n    cards,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11356,7 +11374,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/lists/${input.listId}/cards`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'idBoard',\n    'idList',\n    'shortLink',\n    'shortUrl',\n    'url',\n    'closed',\n    'due',\n    'dateLastActivity',\n    'labels',\n    'pos',\n  ].join(',')\n  const res = await integration.fetch(`/lists/${input.listId}/cards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const cards = Array.isArray(raw)\n    ? raw.map(card => ({\n      id: card.id,\n      name: card.name,\n      idBoard: card.idBoard || null,\n      idList: card.idList || null,\n      url: card.url || card.shortUrl || (card.shortLink ? `https://trello.com/c/${card.shortLink}` : null),\n      shortLink: card.shortLink || null,\n      closed: !!card.closed,\n      due: card.due || null,\n      lastActivity: card.dateLastActivity || null,\n      position: card.pos ?? null,\n      labels: Array.isArray(card.labels)\n        ? card.labels.map(label => ({ id: label.id, name: label.name || null, color: label.color || null }))\n        : [],\n      descriptionPreview: typeof card.desc === 'string' && card.desc.trim()\n        ? (card.desc.trim().length <= 200 ? card.desc.trim() : `${card.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    listId: input.listId,\n    count: cards.length,\n    note: 'Use card id with get_card for full card details.',\n    cards,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11500,7 +11518,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/organizations/${input.orgId}/boards`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'url',\n    'shortUrl',\n    'shortLink',\n    'dateLastActivity',\n    'idOrganization',\n    'closed',\n    'starred',\n  ].join(',')\n  const res = await integration.fetch(`/organizations/${input.orgId}/boards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const boards = Array.isArray(raw)\n    ? raw.map(b => ({\n      id: b.id,\n      name: b.name,\n      url: b.url || b.shortUrl || (b.shortLink ? `https://trello.com/b/${b.shortLink}` : null),\n      shortLink: b.shortLink || null,\n      closed: !!b.closed,\n      starred: !!b.starred,\n      workspaceId: b.idOrganization || null,\n      lastActivity: b.dateLastActivity || null,\n      descriptionPreview: typeof b.desc === 'string' && b.desc.trim()\n        ? (b.desc.trim().length <= 200 ? b.desc.trim() : `${b.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    orgId: input.orgId,\n    count: boards.length,\n    note: 'Use board id with get_board for full board details.',\n    boards,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11518,7 +11536,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ query: input.query })\n  const res = await integration.fetch(`/search?${params.toString()}`)\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ query: input.query })\n  const res = await integration.fetch(`/search?${params.toString()}`)\n  const data = await res.json()\n\n  const boards = Array.isArray(data?.boards)\n    ? data.boards.map(board => ({\n      id: board.id,\n      name: board.name,\n      shortLink: board.shortLink || null,\n      url: board.url || (board.shortLink ? `https://trello.com/b/${board.shortLink}` : null),\n      closed: !!board.closed,\n    }))\n    : []\n\n  const cards = Array.isArray(data?.cards)\n    ? data.cards.map(card => ({\n      id: card.id,\n      name: card.name,\n      idBoard: card.idBoard || null,\n      idList: card.idList || null,\n      shortLink: card.shortLink || null,\n      url: card.url || card.shortUrl || (card.shortLink ? `https://trello.com/c/${card.shortLink}` : null),\n      closed: !!card.closed,\n    }))\n    : []\n\n  return {\n    query: input.query,\n    count: boards.length + cards.length,\n    boardCount: boards.length,\n    cardCount: cards.length,\n    note: 'Use get_board with board id or get_card with card id for full details.',\n    boards,\n    cards,\n  }\n}",
         "scope": "read"
       },
       {

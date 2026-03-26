@@ -8,6 +8,8 @@
   "scripts": {
     "build": "yarn workspaces foreach -A -t run build",
     "dev": "yarn workspace @commandable/mcp dev",
+    "generate:registry": "yarn workspace @commandable/integration-data run generate:registry",
+    "check:generated": "yarn workspace @commandable/integration-data run generate:registry:check",
     "lint": "yarn workspace @commandable/mcp lint",
     "test": "yarn workspace @commandable/mcp-core test",
     "test:integrations": "node scripts/run-integration-tests.mjs",
