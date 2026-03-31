@@ -19,9 +19,9 @@
 | `get_table_schema` | read | Fetch a table's schema (fields, views) by tableId via metadata. |
 | `list_table_fields` | read | List fields for a table (metadata). |
 | `list_views` | read | List views for a table (metadata). |
-| `list_records` | read | List records from a table with optional filters. |
+| `list_records` | read | List records from a table with optional filters (compact summaries; use `get_record` for full fields). |
 | `get_record` | read | Fetch a single record by recordId. |
-| `search_records` | read | Search records in a table using a field and value (filterByFormula). |
+| `search_records` | read | Search records in a table using a field and value (compact summaries; use `get_record` for full fields). |
 | `create_record` | write | Create a record in a table. |
 | `update_record` | write | Update a record in a table. |
 | `delete_record` | write | Delete a record from a table. |

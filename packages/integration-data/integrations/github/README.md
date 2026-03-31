@@ -73,3 +73,8 @@
 | `comment_on_issue` | write | `issues` | Add a comment to an issue or pull request (GitHub PRs share the issue comment thread). Us… |
 | `add_labels_to_issue` | write | `issues` | Add labels to an issue or pull request. Use list_labels to discover available labels befo… |
 | `create_release` | write | `releases` | Create a new release from a tag. Can auto-generate release notes from commits. Set draft=… |
+
+## Compact response notes
+
+- `search_repos`, `search_code`, `list_commits`, `list_issues`, `search_issues`, `list_pull_requests`, `search_pull_requests`, `list_workflow_runs`, and `get_repo_tree` return compact summaries.
+- For full payloads, follow up with detail tools (`get_repo`, `get_file_contents`, `get_commit`, `get_issue`, `get_pull_request`, `get_workflow_run`).

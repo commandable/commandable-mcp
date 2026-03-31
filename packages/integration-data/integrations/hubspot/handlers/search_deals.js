@@ -1,4 +1,16 @@
 async (input) => {
+  const summarize = (row) => ({
+    id: row?.id ?? null,
+    archived: !!row?.archived,
+    createdAt: row?.createdAt ?? null,
+    updatedAt: row?.updatedAt ?? null,
+    dealname: row?.properties?.dealname ?? null,
+    dealstage: row?.properties?.dealstage ?? null,
+    pipeline: row?.properties?.pipeline ?? null,
+    amount: row?.properties?.amount ?? null,
+    closedate: row?.properties?.closedate ?? null,
+  })
+
   const filterGroups = []
   if (Array.isArray(input.filters) && input.filters.length > 0) {
     const filters = input.filters.map((f) => {
@@ -38,6 +50,14 @@ async (input) => {
     method: 'POST',
     body,
   })
-  return await res.json()
+  const data = await res.json()
+  const deals = Array.isArray(data?.results) ? data.results.map(summarize) : []
+  return {
+    total: typeof data?.total === 'number' ? data.total : deals.length,
+    count: deals.length,
+    paging: data?.paging ?? null,
+    note: 'Use id with get_deal for full record details.',
+    deals,
+  }
 }
 

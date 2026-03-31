@@ -57,19 +57,19 @@ suite('google-calendar read handlers (live)', () => {
 
     const list_calendars = buildHandler('list_calendars')
     const calendars = await list_calendars({})
-    ctx.calendarId = calendars?.items?.[0]?.id || 'primary'
+    ctx.calendarId = calendars?.calendars?.[0]?.id || 'primary'
 
     if (ctx.calendarId) {
       const list_events = buildHandler('list_events')
       const events = await list_events({ calendarId: ctx.calendarId, maxResults: 1, singleEvents: true, orderBy: 'startTime', timeMin: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString() })
-      ctx.eventId = events?.items?.[0]?.id
+      ctx.eventId = events?.events?.[0]?.id
     }
   }, 60000)
 
   it('list_calendars returns calendars', async () => {
     const handler = buildHandler('list_calendars')
     const result = await handler({})
-    expect(result).toBeTruthy()
+    expect(Array.isArray(result?.calendars)).toBe(true)
   }, 30000)
 
   it('get_calendar returns a calendar', async () => {
@@ -83,7 +83,7 @@ suite('google-calendar read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = buildHandler('list_events')
     const result = await handler({ calendarId: ctx.calendarId, maxResults: 3, singleEvents: true })
-    expect(result).toBeTruthy()
+    expect(Array.isArray(result?.events)).toBe(true)
   }, 30000)
 
   it('get_event returns an event by id when available', async () => {

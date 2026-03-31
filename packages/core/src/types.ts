@@ -73,7 +73,7 @@ export interface IntegrationCredentialVariant {
   baseUrl?: string | null
   /** Template for constructing the base URL from credential fields, e.g. "https://{{domain}}.atlassian.net". */
   baseUrlTemplate?: string | null
-  healthCheck?: { path: string, method?: string } | null
+  healthCheck?: { path: string, method?: string } | { notViable: true } | null
   hintMarkdown?: string | null
   /** Named server-side hook for credential transforms that require async work (e.g. JWT signing).
    *  Currently only 'google_service_account' is supported. For simple transforms like Basic auth

@@ -1,4 +1,3 @@
-import type { MetaToolContext } from '@commandable/mcp-core'
 import type { Implementation } from '@modelcontextprotocol/sdk/types.js'
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http'
 import { randomUUID } from 'node:crypto'
@@ -27,10 +26,13 @@ interface SharedState {
   db: unknown
   credentialStore: SqlCredentialStore
   proxy: IntegrationProxy
-  toolIndexRef: { list: Array<{ name: string, description?: string, inputSchema: unknown }>, byName: Map<string, unknown> }
+  toolIndexRef: {
+    list: ReturnType<typeof buildMcpToolIndex>['tools']
+    byName: ReturnType<typeof buildMcpToolIndex>['byName']
+  }
   sessionState?: SessionAbilityState
   catalogRef?: { current: AbilityCatalog }
-  ctx?: MetaToolContext
+  ctx?: any
 }
 
 interface SessionRecord {
@@ -94,7 +96,6 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
 
   const proxy = new IntegrationProxy({
     credentialStore,
-    trelloApiKey: process.env.TRELLO_API_KEY,
     integrationTypeConfigsRef,
   })
 
@@ -119,7 +120,7 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
         }),
       }
     : undefined
-  const ctx: MetaToolContext | undefined = includeBuilderAbility
+  const ctx = includeBuilderAbility
     ? {
         spaceId,
         db,

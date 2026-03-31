@@ -249,13 +249,21 @@ export function getBuilderToolDefinitions(): McpToolDefinition[] {
           },
           basic_username_field: { type: 'string' },
           basic_password_field: { type: 'string' },
-          health_check_path: { type: 'string' },
+          health_check: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              path: { type: 'string', minLength: 1 },
+              method: { type: 'string', minLength: 1 },
+              not_viable: { type: 'boolean' },
+            },
+          },
           connection_hint: {
             type: 'string',
             description: 'Markdown shown in the credential form. Must be a numbered list of every step the user needs to follow to obtain the credentials — starting from navigating to the correct web page..',
           },
         },
-        required: ['label', 'base_url', 'auth_type', 'credential_fields'],
+        required: ['label', 'base_url', 'auth_type', 'credential_fields', 'health_check'],
       },
     },
     {
@@ -630,7 +638,13 @@ export async function handleMetaToolCall(params: {
       : (typeof rawCredInjection === 'string' ? (() => { try { const p = JSON.parse(rawCredInjection); return (p && typeof p === 'object' && !Array.isArray(p)) ? p : null } catch { return null } })() : null)
     const basicUsernameField = typeof args?.basic_username_field === 'string' ? args.basic_username_field.trim() : ''
     const basicPasswordField = typeof args?.basic_password_field === 'string' ? args.basic_password_field.trim() : ''
-    const healthCheckPath = typeof args?.health_check_path === 'string' ? args.health_check_path.trim() : ''
+    const rawHealthCheck = args?.health_check
+    const healthCheck = rawHealthCheck && typeof rawHealthCheck === 'object' && !Array.isArray(rawHealthCheck)
+      ? rawHealthCheck as Record<string, unknown>
+      : null
+    const healthCheckPath = typeof healthCheck?.path === 'string' ? healthCheck.path.trim() : ''
+    const healthCheckMethod = typeof healthCheck?.method === 'string' ? healthCheck.method.trim().toUpperCase() : ''
+    const healthCheckNotViable = healthCheck?.not_viable === true
     const connectionHint = typeof args?.connection_hint === 'string' ? normalizeHintMarkdown(args.connection_hint).trim() : ''
 
     if (!label)
@@ -641,6 +655,11 @@ export async function handleMetaToolCall(params: {
       throw new Error('auth_type must be basic or custom')
     if (!credentialFields.length)
       throw new Error('credential_fields is required')
+    if (!healthCheck)
+      throw new Error('health_check is required')
+
+    if (!!healthCheckPath === healthCheckNotViable)
+      throw new Error('health_check must declare exactly one of path or not_viable: true')
 
     if (authType === 'custom') {
       const hasAny = credentialInjection && (credentialInjection.headers || credentialInjection.query)
@@ -718,7 +737,9 @@ export async function handleMetaToolCall(params: {
         ? { kind: 'basic', usernameField: basicUsernameField, passwordField: basicPasswordField }
         : { kind: 'template', injection: credentialInjection || {} },
       baseUrl,
-      healthCheck: healthCheckPath ? { path: healthCheckPath } : null,
+      healthCheck: healthCheckNotViable
+        ? { notViable: true }
+        : { path: healthCheckPath, ...(healthCheckMethod ? { method: healthCheckMethod } : {}) },
       hintMarkdown: connectionHint || null,
     }
 

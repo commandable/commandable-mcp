@@ -1,6 +1,6 @@
 {
   "name": "@commandable/integration-data",
-  "version": "0.4.1",
+  "version": "0.6.0",
   "description": "Integration data (manifests, schemas, handlers, credential configs) for Commandable integrations.",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -37,17 +37,19 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
+    "dotenv": "^17.3.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "generate:registry": "node scripts/generate-registry.mjs",
+    "generate:registry:check": "yarn run generate:registry && git diff --exit-code -- src/generated/registry.ts",
+    "build": "npm run clean && yarn run generate:registry && tsc -p tsconfig.json",
     "prepack": "npm run build",
     "test": "vitest run"
   },
   "files": [
-    "dist",
-    "integrations"
+    "dist"
   ]
 }

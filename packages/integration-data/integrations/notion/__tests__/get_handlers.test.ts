@@ -91,7 +91,7 @@ suite('notion read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = buildHandler('query_database')
     const result = await handler({ database_id: ctx.database_id, page_size: 3 })
-    expect(result?.results).toBeTruthy()
+    expect(Array.isArray(result?.pages)).toBe(true)
   }, 30000)
 
   it('retrieve_block returns a block', async () => {
@@ -107,7 +107,7 @@ suite('notion read handlers (live)', () => {
       return expect(true).toBe(true)
     const handler = buildHandler('list_block_children')
     const result = await handler({ block_id: ctx.block_id, page_size: 5 })
-    expect(Array.isArray(result?.results)).toBe(true)
+    expect(Array.isArray(result?.blocks)).toBe(true)
   }, 30000)
 
   it('list_users returns users', async () => {
@@ -125,7 +125,7 @@ suite('notion read handlers (live)', () => {
   it('retrieve_user returns a user', async () => {
     const list = buildHandler('list_users')
     const users = await list({ page_size: 1 })
-    const uid = users?.results?.[0]?.id
+    const uid = users?.users?.[0]?.id
     if (!uid)
       return expect(true).toBe(true)
     const handler = buildHandler('retrieve_user')

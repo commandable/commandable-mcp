@@ -7,5 +7,21 @@ async (input) => {
   if (input.per_page) params.set('per_page', String(input.per_page))
   const query = params.toString() ? `?${params.toString()}` : ''
   const res = await integration.fetch(`/repos/${input.owner}/${input.repo}/commits${query}`)
-  return await res.json()
+  const data = await res.json()
+  const commits = Array.isArray(data)
+    ? data.map(commit => ({
+      sha: commit.sha,
+      message: commit.commit?.message?.split('\n')[0] ?? null,
+      authorName: commit.commit?.author?.name ?? null,
+      authorDate: commit.commit?.author?.date ?? null,
+      committerName: commit.commit?.committer?.name ?? null,
+      committerDate: commit.commit?.committer?.date ?? null,
+      htmlUrl: commit.html_url ?? null,
+    }))
+    : []
+  return {
+    count: commits.length,
+    note: 'Use sha with get_commit for full commit details.',
+    commits,
+  }
 }

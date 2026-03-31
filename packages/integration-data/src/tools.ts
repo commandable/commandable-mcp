@@ -1,6 +1,6 @@
 export type {
   ToolData,
-} from './loader.js'
+} from './types.js'
 
 export {
   loadIntegrationTools,

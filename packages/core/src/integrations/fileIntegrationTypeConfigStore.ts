@@ -14,7 +14,7 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
   const manifestBaseUrl = manifest?.baseUrl ?? null
 
   const variants: Record<string, IntegrationCredentialVariant> = {}
-  for (const [key, variant] of Object.entries(variantsFile.variants)) {
+  for (const [key, variant] of Object.entries(variantsFile.variants) as [string, typeof variantsFile.variants[string]][]) {
     const preprocess = variant.preprocess ?? null
     if (preprocess !== null && preprocess !== 'google_service_account') {
       throw new Error(`Unsupported preprocess '${preprocess}' for built-in integration '${typeSlug}/${key}'. Only 'google_service_account' is allowed.`)
@@ -26,7 +26,7 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
       auth: { kind: 'template', injection: variant.injection || {} },
       baseUrl: manifestBaseUrl,
       baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : null,
-      healthCheck: (variant as any).healthCheck ?? null,
+      healthCheck: variant.healthCheck ?? null,
       hintMarkdown: loadIntegrationHint(typeSlug, key),
       preprocess,
     }
