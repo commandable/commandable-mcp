@@ -1,126 +1,12 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { readFileSync, statSync } from 'node:fs'
+import { extname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { getGoogleAccessToken } from '../../../../core/src/integrations/googleServiceAccount.js'
 import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
 
-vi.mock('node:child_process', () => ({
-  execFile: vi.fn((file: string, args: string[], _opts: unknown, callback: (err: Error | null, result?: { stdout: string, stderr: string }) => void) => {
-    const outputPath = args[args.indexOf('--output') + 1]
-    mkdirSync(dirname(outputPath), { recursive: true })
-    writeFileSync(outputPath, JSON.stringify({
-      kind: 'pdf',
-      content: 'Extracted PDF content',
-      metadata: { pageCount: 2 },
-    }))
-    callback(null, { stdout: '', stderr: '' })
-  }),
-}))
-
-describe('google-drive read_file_content (unit)', () => {
-  const originalFetch = globalThis.fetch
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch
-    vi.restoreAllMocks()
-  })
-
-  it('downloads a non-Google-native file and returns extracted text', async () => {
-    const credentialStore = createCredentialStore(async () => ({ token: 'google-token' }))
-    const proxy = createProxy(credentialStore)
-    const drive = createToolbox(
-      'google-drive',
-      proxy,
-      createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds', credentialVariant: 'oauth_token' }),
-      'oauth_token',
-    )
-
-    globalThis.fetch = vi.fn(async (url: any) => {
-      const asString = String(url)
-      if (asString.includes('/drive/v3/files/abc?alt=media')) {
-        return new Response('%PDF-1.4 fake', {
-          status: 200,
-          headers: {
-            'content-type': 'application/pdf',
-            'content-disposition': 'attachment; filename="report.pdf"',
-          },
-        })
-      }
-      throw new Error(`Unexpected fetch URL: ${asString}`)
-    }) as any
-
-    const result = await drive.read('read_file_content')({
-      fileId: 'abc',
-      mimeType: 'application/pdf',
-    })
-
-    expect(result?.fileId).toBe('abc')
-    expect(result?.kind).toBe('pdf')
-    expect(result?.content).toContain('Extracted PDF content')
-  })
-
-  it('exports a Google Doc as Markdown text', async () => {
-    const credentialStore = createCredentialStore(async () => ({ token: 'google-token' }))
-    const proxy = createProxy(credentialStore)
-    const drive = createToolbox(
-      'google-drive',
-      proxy,
-      createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds', credentialVariant: 'oauth_token' }),
-      'oauth_token',
-    )
-
-    globalThis.fetch = vi.fn(async (url: any) => {
-      const asString = String(url)
-      if (asString.includes('/drive/v3/files/native-doc/export?mimeType=text%2Fmarkdown')) {
-        return new Response('# Quarterly update\n\nHello world', {
-          status: 200,
-          headers: { 'content-type': 'text/markdown; charset=utf-8' },
-        })
-      }
-      throw new Error(`Unexpected fetch URL: ${asString}`)
-    }) as any
-
-    const result = await drive.read('read_file_content')({
-      fileId: 'native-doc',
-      mimeType: 'application/vnd.google-apps.document',
-    })
-
-    expect(result?.content).toContain('# Quarterly update')
-    expect(result?.contentMimeType).toContain('text/markdown')
-  })
-
-  it('exports a Google Slides deck and extracts readable text from the binary export', async () => {
-    const credentialStore = createCredentialStore(async () => ({ token: 'google-token' }))
-    const proxy = createProxy(credentialStore)
-    const drive = createToolbox(
-      'google-drive',
-      proxy,
-      createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds', credentialVariant: 'oauth_token' }),
-      'oauth_token',
-    )
-
-    globalThis.fetch = vi.fn(async (url: any) => {
-      const asString = String(url)
-      if (asString.includes('/drive/v3/files/slides-123/export?mimeType=application%2Fvnd.openxmlformats-officedocument.presentationml.presentation')) {
-        return new Response('pptx-bytes', {
-          status: 200,
-          headers: {
-            'content-type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'content-disposition': 'attachment; filename="deck.pptx"',
-          },
-        })
-      }
-      throw new Error(`Unexpected fetch URL: ${asString}`)
-    }) as any
-
-    const result = await drive.read('read_file_content')({
-      fileId: 'slides-123',
-      mimeType: 'application/vnd.google-apps.presentation',
-    })
-
-    expect(result?.kind).toBe('pdf')
-    expect(result?.content).toContain('Extracted PDF content')
-  })
-})
+/** Must appear in extractable text in every shared fixture under `integrations/__tests__/fixtures/file-extraction/`. */
+const INTEGRATION_TEST_MARKER = 'Commandable Integration Test'
 
 // LIVE Google Drive tests -- runs once per available credential variant.
 // Required env vars (at least one):
@@ -128,6 +14,98 @@ describe('google-drive read_file_content (unit)', () => {
 // - GOOGLE_TOKEN                 (oauth_token variant)
 
 const env = process.env as Record<string, string | undefined>
+const DRIVE_UPLOAD_SCOPES = ['https://www.googleapis.com/auth/drive']
+const DRIVE_UPLOAD_FIELDS = 'id,name,mimeType,size,parents'
+
+const LIVE_BINARY_FIXTURES = [
+  { fileName: 'sample.docx', expectedKind: 'docx' },
+  { fileName: 'sample.xlsx', expectedKind: 'xlsx' },
+  { fileName: 'sample.pptx', expectedKind: 'pptx' },
+  { fileName: 'sample.pdf', expectedKind: 'pdf' },
+] as const
+
+function fixturePath(fileName: string): string {
+  return fileURLToPath(new URL(`../../__tests__/fixtures/file-extraction/${fileName}`, import.meta.url))
+}
+
+function fixtureMimeType(fileName: string): string {
+  switch (extname(fileName).toLowerCase()) {
+    case '.docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    case '.xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    case '.pptx':
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    case '.pdf':
+      return 'application/pdf'
+    default:
+      return 'application/octet-stream'
+  }
+}
+
+function ensureFixtureReady(fileName: string): string {
+  const path = fixturePath(fileName)
+  const stats = statSync(path, { throwIfNoEntry: false })
+  if (!stats) {
+    throw new Error(`Missing integration test fixture: ${path}`)
+  }
+  if (stats.size === 0) {
+    throw new Error(`Integration test fixture is still an empty placeholder: ${path}. Replace it with a real file that contains "${INTEGRATION_TEST_MARKER}" in extractable text.`)
+  }
+  return path
+}
+
+async function resolveDriveUploadToken(variant: VariantConfig): Promise<string> {
+  if (variant.key === 'service_account') {
+    return await getGoogleAccessToken({
+      serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+      subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
+      scopes: DRIVE_UPLOAD_SCOPES,
+    })
+  }
+
+  const token = env.GOOGLE_TOKEN || ''
+  if (!token.trim())
+    throw new Error('Missing GOOGLE_TOKEN for oauth_token Google Drive upload tests.')
+  return token
+}
+
+async function uploadDriveFixture(args: {
+  token: string
+  parentId: string
+  fileName: string
+  fixturePath: string
+}): Promise<{ id: string, name: string, mimeType: string }> {
+  const bytes = readFileSync(args.fixturePath)
+  const boundary = `commandable-drive-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const metadata = JSON.stringify({
+    name: args.fileName,
+    parents: [args.parentId],
+  })
+
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Type: ${fixtureMimeType(args.fileName)}\r\n\r\n`),
+    bytes,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ])
+
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=${encodeURIComponent(DRIVE_UPLOAD_FIELDS)}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${args.token}`,
+      'Content-Type': `multipart/related; boundary=${boundary}`,
+    },
+    body,
+  })
+
+  if (!res.ok) {
+    const bodyText = await res.text().catch(() => '')
+    throw new Error(`Drive fixture upload failed (${res.status})${bodyText ? `: ${bodyText}` : ''}`)
+  }
+
+  return await res.json()
+}
 
 interface VariantConfig {
   key: string
@@ -225,6 +203,45 @@ suiteOrSkip('google-drive handlers (live)', () => {
         // A newly created empty doc may have empty content -- just verify the shape
         expect(result?.content !== undefined || result?.message !== undefined).toBe(true)
       }, 30000)
+
+      it.each(LIVE_BINARY_FIXTURES)('read_file_content extracts uploaded $fileName fixtures', async ({ fileName, expectedKind }) => {
+        if (!ctx.folderId)
+          return expect(true).toBe(true)
+
+        const sourcePath = ensureFixtureReady(fileName)
+        const token = await resolveDriveUploadToken(variant)
+        let uploadedId = ''
+
+        try {
+          const uploaded = await uploadDriveFixture({
+            token,
+            parentId: ctx.folderId,
+            fileName,
+            fixturePath: sourcePath,
+          })
+          uploadedId = uploaded.id
+          expect(uploadedId).toBeTruthy()
+
+          const meta = await drive.read('get_file_meta')({ fileId: uploadedId })
+          expect(meta?.id).toBe(uploadedId)
+          expect(typeof meta?.mimeType).toBe('string')
+
+          const result = await drive.read('read_file_content')({
+            fileId: uploadedId,
+            mimeType: meta?.mimeType,
+          })
+
+          expect(result?.fileId).toBe(uploadedId)
+          expect(result?.kind).toBe(expectedKind)
+          expect(typeof result?.content).toBe('string')
+          expect(String(result?.content || '').trim().length).toBeGreaterThan(0)
+          expect(String(result?.content || '')).toContain(INTEGRATION_TEST_MARKER)
+          expect(result?.message).toBeUndefined()
+        }
+        finally {
+          await safeCleanup(async () => uploadedId ? drive.write('delete_file')({ fileId: uploadedId }) : Promise.resolve())
+        }
+      }, 90000)
 
       it('share_file shares a file with anyone reader', async () => {
         if (!ctx.fileId)
