@@ -44,6 +44,13 @@ Handler pattern
 
 Handlers use the `integration.fetch(path, options?)` pattern rather than binding to a concrete integration id. At runtime, the host binds the task's selected integration instance as `integration` in the sandbox.
 
+For downloadable files and attachments, handlers can also call `utils.extractFileContent()`:
+
+- `utils.extractFileContent({ auth: false, source: <absolute-url> })` for public or pre-signed downloads
+- `utils.extractFileContent({ auth: true, integration: <integration-id-or-reference>, source: <relative-or-absolute-url> })` when the host should fetch using an existing integration's auth
+
+This utility is for downloadable files only. Native structured resources like Google Docs, Sheets, and Slides should continue to use their native APIs or export endpoints.
+
 Notes
 -----
 

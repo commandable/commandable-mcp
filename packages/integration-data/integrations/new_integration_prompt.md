@@ -61,6 +61,37 @@ Raw API responses (nested JSON, base64-encoded bodies, massive resource trees) w
 
 **Pattern**: if the API returns structured data meant for programmatic consumption, build a `read_*` tool that converts it into the simplest text format an LLM can understand (usually Markdown). Reserve `get_*` tools for metadata that enables further API calls (e.g. `get_spreadsheet` for sheet names/IDs).
 
+### 1b. Downloadable files and attachments should use `utils.extractFileContent()`
+
+If an API exposes downloadable files or attachments, prefer a high-level `read_*` or `extract_*` tool that:
+
+1. Discovers the file or attachment through normal API calls
+2. Calls `utils.extractFileContent(...)`
+3. Returns extracted text plus small metadata
+
+Use the utility like this:
+
+```js
+await utils.extractFileContent({
+  auth: false,
+  source: item.downloadUrl,
+})
+
+await utils.extractFileContent({
+  auth: true,
+  integration: 'google-drive-a23aj4',
+  source: `/files/${fileId}?alt=media`,
+})
+```
+
+Rules:
+
+- `auth: false` is for public or pre-signed absolute URLs
+- `auth: true` is for downloads that should use an existing integration's auth
+- when `auth: true`, `source` may be relative or absolute
+- do not use this utility for native structured resources like Google Docs, Sheets, or Slides; use their native APIs or export endpoints instead
+- do not return raw binary or base64 blobs to the agent unless the tool is explicitly a download tool
+
 ### 2. Delete tools that agents cannot realistically use
 
 We deleted 14 tools that were either too programmatic, too verbose, or redundant:

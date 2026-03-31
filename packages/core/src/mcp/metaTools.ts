@@ -10,6 +10,8 @@ import { listIntegrationCatalog } from '../integrations/catalog.js'
 import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegrationTypeConfigStore.js'
 import { createGetIntegration } from '../integrations/getIntegration.js'
 import { loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
+import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
+import { createExtractFileContent } from '../integrations/fileExtractor.js'
 import type { DbClient } from '../db/client.js'
 import { deleteIntegrationById, listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { SqlCredentialStore } from '../db/credentialStore.js'
@@ -809,7 +811,8 @@ export async function handleMetaToolCall(params: {
 
     const getIntegration = createGetIntegration(ctx.integrationsRef, ctx.proxy)
     const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${handlerCode};\n  return await __inner(input);\n}`
-    const safe = createSafeHandlerFromString(wrapper, getIntegration)
+    const utils = buildSandboxUtils([], { extractFileContent: createExtractFileContent(getIntegration) })
+    const safe = createSafeHandlerFromString(wrapper, getIntegration, utils)
     const res = await safe(testInput)
     return { handled: true, listChanged: false, result: res }
   }

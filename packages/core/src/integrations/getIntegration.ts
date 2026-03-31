@@ -10,7 +10,9 @@ export function createGetIntegration(
 ) {
   return (refOrId: string) => {
     const list = Array.isArray(integrations) ? integrations : integrations?.current
-    const integration = list?.find(i => i.id === refOrId || (i as any).referenceId === refOrId)
+    const exactMatch = list?.find(i => i.id === refOrId || (i as any).referenceId === refOrId)
+    const typeMatches = list?.filter(i => i.type === refOrId) || []
+    const integration = exactMatch || (typeMatches.length === 1 ? typeMatches[0] : undefined)
     if (!integration)
       throw new Error('Invalid or unauthorized integration reference/id')
 

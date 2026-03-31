@@ -1,5 +1,126 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+
+vi.mock('node:child_process', () => ({
+  execFile: vi.fn((file: string, args: string[], _opts: unknown, callback: (err: Error | null, result?: { stdout: string, stderr: string }) => void) => {
+    const outputPath = args[args.indexOf('--output') + 1]
+    mkdirSync(dirname(outputPath), { recursive: true })
+    writeFileSync(outputPath, JSON.stringify({
+      kind: 'pdf',
+      content: 'Extracted PDF content',
+      metadata: { pageCount: 2 },
+    }))
+    callback(null, { stdout: '', stderr: '' })
+  }),
+}))
+
+describe('google-drive read_file_content (unit)', () => {
+  const originalFetch = globalThis.fetch
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  it('downloads a non-Google-native file and returns extracted text', async () => {
+    const credentialStore = createCredentialStore(async () => ({ token: 'google-token' }))
+    const proxy = createProxy(credentialStore)
+    const drive = createToolbox(
+      'google-drive',
+      proxy,
+      createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds', credentialVariant: 'oauth_token' }),
+      'oauth_token',
+    )
+
+    globalThis.fetch = vi.fn(async (url: any) => {
+      const asString = String(url)
+      if (asString.includes('/drive/v3/files/abc?alt=media')) {
+        return new Response('%PDF-1.4 fake', {
+          status: 200,
+          headers: {
+            'content-type': 'application/pdf',
+            'content-disposition': 'attachment; filename="report.pdf"',
+          },
+        })
+      }
+      throw new Error(`Unexpected fetch URL: ${asString}`)
+    }) as any
+
+    const result = await drive.read('read_file_content')({
+      fileId: 'abc',
+      mimeType: 'application/pdf',
+    })
+
+    expect(result?.fileId).toBe('abc')
+    expect(result?.kind).toBe('pdf')
+    expect(result?.content).toContain('Extracted PDF content')
+  })
+
+  it('exports a Google Doc as Markdown text', async () => {
+    const credentialStore = createCredentialStore(async () => ({ token: 'google-token' }))
+    const proxy = createProxy(credentialStore)
+    const drive = createToolbox(
+      'google-drive',
+      proxy,
+      createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds', credentialVariant: 'oauth_token' }),
+      'oauth_token',
+    )
+
+    globalThis.fetch = vi.fn(async (url: any) => {
+      const asString = String(url)
+      if (asString.includes('/drive/v3/files/native-doc/export?mimeType=text%2Fmarkdown')) {
+        return new Response('# Quarterly update\n\nHello world', {
+          status: 200,
+          headers: { 'content-type': 'text/markdown; charset=utf-8' },
+        })
+      }
+      throw new Error(`Unexpected fetch URL: ${asString}`)
+    }) as any
+
+    const result = await drive.read('read_file_content')({
+      fileId: 'native-doc',
+      mimeType: 'application/vnd.google-apps.document',
+    })
+
+    expect(result?.content).toContain('# Quarterly update')
+    expect(result?.contentMimeType).toContain('text/markdown')
+  })
+
+  it('exports a Google Slides deck and extracts readable text from the binary export', async () => {
+    const credentialStore = createCredentialStore(async () => ({ token: 'google-token' }))
+    const proxy = createProxy(credentialStore)
+    const drive = createToolbox(
+      'google-drive',
+      proxy,
+      createIntegrationNode('google-drive', { label: 'Google Drive', credentialId: 'google-drive-creds', credentialVariant: 'oauth_token' }),
+      'oauth_token',
+    )
+
+    globalThis.fetch = vi.fn(async (url: any) => {
+      const asString = String(url)
+      if (asString.includes('/drive/v3/files/slides-123/export?mimeType=application%2Fvnd.openxmlformats-officedocument.presentationml.presentation')) {
+        return new Response('pptx-bytes', {
+          status: 200,
+          headers: {
+            'content-type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'content-disposition': 'attachment; filename="deck.pptx"',
+          },
+        })
+      }
+      throw new Error(`Unexpected fetch URL: ${asString}`)
+    }) as any
+
+    const result = await drive.read('read_file_content')({
+      fileId: 'slides-123',
+      mimeType: 'application/vnd.google-apps.presentation',
+    })
+
+    expect(result?.kind).toBe('pdf')
+    expect(result?.content).toContain('Extracted PDF content')
+  })
+})
 
 // LIVE Google Drive tests -- runs once per available credential variant.
 // Required env vars (at least one):
@@ -76,7 +197,7 @@ suiteOrSkip('google-drive handlers (live)', () => {
       it('search_files finds file by name', async () => {
         if (!ctx.fileId)
           return expect(true).toBe(true)
-        const meta = await drive.read('get_file')({ fileId: ctx.fileId })
+        const meta = await drive.read('get_file_meta')({ fileId: ctx.fileId })
         const name = meta?.name
         if (!name)
           return expect(true).toBe(true)
@@ -84,19 +205,19 @@ suiteOrSkip('google-drive handlers (live)', () => {
         expect(Array.isArray(result?.files)).toBe(true)
       }, 30000)
 
-      it('get_file returns file metadata', async () => {
+      it('get_file_meta returns file metadata', async () => {
         if (!ctx.fileId)
           return expect(true).toBe(true)
-        const result = await drive.read('get_file')({ fileId: ctx.fileId })
+        const result = await drive.read('get_file_meta')({ fileId: ctx.fileId })
         expect(result?.id).toBe(ctx.fileId)
         expect(typeof result?.name).toBe('string')
         expect(typeof result?.mimeType).toBe('string')
       }, 30000)
 
-      it('get_file_content exports a Google Doc as text', async () => {
+      it('read_file_content exports a Google Doc as text', async () => {
         if (!ctx.fileId)
           return expect(true).toBe(true)
-        const result = await drive.read('get_file_content')({
+        const result = await drive.read('read_file_content')({
           fileId: ctx.fileId,
           mimeType: 'application/vnd.google-apps.document',
         })
@@ -126,7 +247,7 @@ suiteOrSkip('google-drive handlers (live)', () => {
           removeParents: ctx.folderId,
         })
         expect(result?.id).toBe(ctx.fileId)
-        const meta = await drive.read('get_file')({ fileId: ctx.fileId })
+        const meta = await drive.read('get_file_meta')({ fileId: ctx.fileId })
         expect(meta?.parents).toContain(ctx.destFolderId)
       }, 30000)
 
@@ -138,7 +259,7 @@ suiteOrSkip('google-drive handlers (live)', () => {
         const tempId = tempFile?.id
         expect(tempId).toBeTruthy()
         await drive.write('delete_file')({ fileId: tempId })
-        await expect(drive.read('get_file')({ fileId: tempId })).rejects.toThrow()
+        await expect(drive.read('get_file_meta')({ fileId: tempId })).rejects.toThrow()
       }, 30000)
     })
   }

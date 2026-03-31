@@ -2,6 +2,8 @@ import { IntegrationProxy } from '../../../core/src/integrations/proxy.js'
 import { loadIntegrationTools } from '../../../core/src/integrations/dataLoader.js'
 import { createSafeHandlerFromString } from '../../../core/src/integrations/sandbox.js'
 import { buildSandboxUtils } from '../../../core/src/integrations/sandboxUtils.js'
+import { createGetIntegration } from '../../../core/src/integrations/getIntegration.js'
+import { createExtractFileContent } from '../../../core/src/integrations/fileExtractor.js'
 
 type ToolDef = {
   name: string
@@ -55,8 +57,11 @@ function getTools(type: string, credentialVariant?: string): ToolSet {
 
 function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(node, path, init) }
+  const getIntegration = createGetIntegration([node], proxy)
   const wrapper = `async (input) => {\n  const integration = getIntegration('${String(node?.id || 'node')}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
-  const utils = buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined)
+  const utils = buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, {
+    extractFileContent: createExtractFileContent(getIntegration),
+  })
   const safeHandler = createSafeHandlerFromString(wrapper, () => integration, utils)
   return async (input: any) => {
     const res = await safeHandler(input)

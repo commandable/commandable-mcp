@@ -38,9 +38,10 @@ Combine with `and`, `or`, `not`: `name contains 'report' and mimeType = 'applica
 ## Reading file contents
 
 1. Use `search_files` or `list_files` to find the file (note its `id` and `mimeType`)
-2. Call `get_file_content` with `fileId` and `mimeType`
-   - For Google Workspace files, the `mimeType` triggers automatic export
-   - For text/CSV/JSON files, content is returned directly
+2. Call `read_file_content` with `fileId` and `mimeType`
+   - Google Docs export to Markdown natively
+   - Other Google Workspace files use the best available export, then fall back to the extraction side process when the export is binary
+   - Uploaded PDF, DOCX, XLSX, PPTX, CSV, JSON, HTML, and text files are downloaded and converted automatically when needed
 
 ## Export formats
 
@@ -48,9 +49,9 @@ Google Workspace files must be exported (they have no binary content):
 
 | Source | Default export | Alternative exports |
 |---|---|---|
-| Google Docs | `text/plain` | `text/html`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/pdf` |
-| Google Sheets | `text/csv` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/pdf` |
-| Google Slides | `text/plain` | `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `application/pdf` |
+| Google Docs | `text/markdown` | `text/plain`, `text/html`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/pdf` |
+| Google Sheets | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `text/csv`, `application/pdf` |
+| Google Slides | `application/vnd.openxmlformats-officedocument.presentationml.presentation` | `text/plain`, `application/pdf` |
 
 ## Sharing files
 

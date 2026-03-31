@@ -1,7 +1,9 @@
 import TurndownService from 'turndown'
 import { marked } from 'marked'
+import type { ExtractFileContentArgs, ExtractedFileContent } from './fileExtractor.js'
 
 export type SandboxUtils = {
+  extractFileContent?: (args: ExtractFileContentArgs) => Promise<ExtractedFileContent>
   html?: {
     toMarkdown: (html: string) => string
     toText: (html: string) => string
@@ -13,6 +15,10 @@ export type SandboxUtils = {
     fromText: (text: string) => any
     fromMarkdown: (markdown: string) => any
   }
+}
+
+export interface SandboxUtilOptions {
+  extractFileContent?: (args: ExtractFileContentArgs) => Promise<ExtractedFileContent>
 }
 
 const turndown = new TurndownService({
@@ -511,9 +517,12 @@ function markdownToAdf(markdown: any) {
   }
 }
 
-export function buildSandboxUtils(bundles?: string[]): SandboxUtils {
+export function buildSandboxUtils(bundles?: string[], opts: SandboxUtilOptions = {}): SandboxUtils {
   const enabled = new Set((bundles || []).filter(Boolean))
   const utils: SandboxUtils = {}
+
+  if (opts.extractFileContent)
+    utils.extractFileContent = opts.extractFileContent
 
   if (enabled.has('html')) {
     utils.html = {

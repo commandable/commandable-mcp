@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Native deps (better-sqlite3) need a build toolchain on slim images.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
+  && apt-get install -y --no-install-recommends python3 python3-pip make g++ \
   && rm -rf /var/lib/apt/lists/*
 
 # Install deps (workspace-aware)
@@ -20,7 +20,8 @@ RUN corepack enable \
 
 # Copy source and build
 COPY . .
-RUN yarn build
+RUN pip3 install --no-cache-dir -r packages/core/src/file-extractor/requirements.txt \
+  && yarn build
 
 ENV NODE_ENV=production
 ENV PORT=3000

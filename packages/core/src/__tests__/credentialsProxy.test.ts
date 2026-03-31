@@ -75,5 +75,37 @@ describe('IntegrationProxy credentials injection', () => {
     expect(credentialStore.getCredentials).toHaveBeenCalledWith('local', 'trello-creds')
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
+
+  it('supports authenticated absolute URLs for credentials-based integrations', async () => {
+    const credentialStore = {
+      getCredentials: vi.fn(async () => ({ token: 'secret_test_token' })),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+
+    const fetchSpy = vi.fn(async (url: any, init?: RequestInit) => {
+      expect(String(url)).toBe('https://downloads.example.com/files/report.pdf')
+      const headers = (init?.headers || {}) as Record<string, string>
+      expect(headers.Authorization).toBe('Bearer secret_test_token')
+      expect(headers['Notion-Version']).toBe('2022-06-28')
+      return new Response('ok', {
+        status: 200,
+        headers: { 'content-type': 'text/plain' },
+      })
+    })
+    globalThis.fetch = fetchSpy as any
+
+    await proxy.call({
+      spaceId: 'local',
+      id: 'notion',
+      referenceId: 'notion',
+      type: 'notion',
+      label: 'Notion',
+      connectionMethod: 'credentials',
+      credentialId: 'notion-creds',
+    }, 'https://downloads.example.com/files/report.pdf')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
 })
 

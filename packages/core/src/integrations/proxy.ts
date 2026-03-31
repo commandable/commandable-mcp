@@ -54,6 +54,16 @@ function buildCredentialUrl(integrationId: string): string {
   return `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integrationId)}`
 }
 
+function isAbsoluteHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  }
+  catch {
+    return false
+  }
+}
+
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 
@@ -240,7 +250,7 @@ export class IntegrationProxy {
           resolvedQuery.set(k, resolveTemplate(v as any))
       }
 
-      let finalUrl = joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
+      let finalUrl = isAbsoluteHttpUrl(path) ? path : joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
 
       const queryString = resolvedQuery.toString()
       if (queryString)
