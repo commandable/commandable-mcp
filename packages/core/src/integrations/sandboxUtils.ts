@@ -541,3 +541,18 @@ export function buildSandboxUtils(bundles?: string[]): SandboxUtils {
   return utils
 }
 
+/**
+ * Resolves the `utils` object passed to integration handler sandboxes.
+ * When `inject` is defined, it is the **full** utils object — the host is responsible for
+ * composition (e.g. `{ ...buildSandboxUtils(['html']), ...appUtils }`).
+ * When `inject` is undefined, manifest `utils` bundles are applied via {@link buildSandboxUtils}.
+ */
+export function resolveSandboxUtils(
+  bundles: string[] | undefined,
+  inject: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (inject !== undefined)
+    return inject
+  return buildSandboxUtils(bundles) as Record<string, unknown>
+}
+
