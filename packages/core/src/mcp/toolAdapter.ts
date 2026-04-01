@@ -17,10 +17,12 @@ export function buildMcpToolIndex(params: {
   proxy: IntegrationProxy
   integrationsRef?: { current: IntegrationData[] }
   toolDefinitions?: ToolDefinition[]
+  utils?: Record<string, unknown>
 }): { tools: McpToolDefinition[], byName: Map<string, ExecutableTool> } {
   const toolsByIntegration = buildToolsByIntegration(params.spaceId, params.integrations, params.proxy, {
     integrationsRef: params.integrationsRef,
     toolDefinitions: params.toolDefinitions,
+    utils: params.utils,
   })
 
   const byName = new Map<string, ExecutableTool>()
