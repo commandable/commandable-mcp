@@ -64,6 +64,29 @@ function isAbsoluteHttpUrl(value: string): boolean {
   }
 }
 
+/** Prevents credential-bearing requests to arbitrary origins (SSRF-style token exfiltration). */
+function assertAbsoluteUrlMatchesBaseOrigin(absolutePath: string, baseUrl: string): void {
+  let baseOrigin: string
+  try {
+    baseOrigin = new URL(baseUrl).origin
+  }
+  catch {
+    throw new HttpError(400, 'Invalid integration base URL.')
+  }
+  let requestOrigin: string
+  try {
+    requestOrigin = new URL(absolutePath).origin
+  }
+  catch {
+    throw new HttpError(400, 'Invalid absolute request URL.')
+  }
+  if (requestOrigin !== baseOrigin) {
+    throw new HttpError(
+      400,
+      `Absolute request URL origin must match the integration API origin (${baseOrigin}).`,
+    )
+  }
+}
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 
@@ -250,7 +273,14 @@ export class IntegrationProxy {
           resolvedQuery.set(k, resolveTemplate(v as any))
       }
 
-      let finalUrl = isAbsoluteHttpUrl(path) ? path : joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
+      let finalUrl: string
+      if (isAbsoluteHttpUrl(path)) {
+        assertAbsoluteUrlMatchesBaseOrigin(path, typeConfig.baseUrl)
+        finalUrl = path
+      }
+      else {
+        finalUrl = joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
+      }
 
       const queryString = resolvedQuery.toString()
       if (queryString)

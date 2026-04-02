@@ -22,11 +22,12 @@ export function buildExecutableToolFromDefinition(params: {
   proxy: IntegrationProxy
   integrationsRef?: { current: IntegrationData[] }
   requireWriteConfirmation?: boolean
+  utils?: Record<string, unknown>
 }): ExecutableTool {
-  const { integration, tool, proxy, integrationsRef, requireWriteConfirmation = false } = params
+  const { integration, tool, proxy, integrationsRef, requireWriteConfirmation = false, utils: injectUtils } = params
 
   const getIntegration = createGetIntegration(integrationsRef || { current: [integration] }, proxy)
-  const utils = buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, {
+  const resolvedUtils = injectUtils ?? buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, {
     extractFileContent: createExtractFileContent(getIntegration),
   })
   const scope: ToolScope = tool.scope || 'write'
@@ -36,7 +37,7 @@ export function buildExecutableToolFromDefinition(params: {
   const inputSchema = sanitizeJsonSchema(tool.inputSchema || { type: 'object', additionalProperties: true })
 
   const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
-  const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
+  const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, resolvedUtils)
 
   return {
     name: toolName,

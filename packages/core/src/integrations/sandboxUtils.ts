@@ -282,7 +282,7 @@ function renderBlock(node: any, depth = 0): string {
   return renderInline(node)
 }
 
-function adfToMarkdown(adf: any) {
+export function adfToMarkdown(adf: any) {
   try {
     if (!adf || typeof adf !== 'object')
       return ''
@@ -294,7 +294,7 @@ function adfToMarkdown(adf: any) {
   }
 }
 
-function adfToPlainText(adf: any) {
+export function adfToPlainText(adf: any) {
   try {
     if (!adf || typeof adf !== 'object')
       return ''
@@ -306,7 +306,7 @@ function adfToPlainText(adf: any) {
   }
 }
 
-function textToAdf(text: any) {
+export function textToAdf(text: any) {
   const s = normalizeNewlines(text || '').trim()
   if (!s) {
     return {
@@ -506,7 +506,7 @@ function blockTokensToAdf(tokens: any[]) {
   return out
 }
 
-function markdownToAdf(markdown: any) {
+export function markdownToAdf(markdown: any) {
   const src = String(markdown ?? '')
   const tokens = marked.lexer(src)
   const content = blockTokensToAdf(tokens as any[])
@@ -514,6 +514,33 @@ function markdownToAdf(markdown: any) {
     type: 'doc',
     version: 1,
     content: content.length ? content : [{ type: 'paragraph', content: [] }],
+  }
+}
+
+export function htmlToMarkdown(html: string): string {
+  try {
+    return turndown.turndown(String(html ?? ''))
+  }
+  catch {
+    return ''
+  }
+}
+
+export function htmlToText(html: string): string {
+  try {
+    return stripTagsToText(html)
+  }
+  catch {
+    return ''
+  }
+}
+
+export function markdownToHtml(md: string): string {
+  try {
+    return marked.parse(String(md ?? ''), { async: false }) as string
+  }
+  catch {
+    return ''
   }
 }
 
@@ -526,15 +553,9 @@ export function buildSandboxUtils(bundles?: string[], opts: SandboxUtilOptions =
 
   if (enabled.has('html')) {
     utils.html = {
-      toMarkdown: (html: string) => {
-        try { return turndown.turndown(String(html ?? '')) } catch { return '' }
-      },
-      toText: (html: string) => {
-        try { return stripTagsToText(html) } catch { return '' }
-      },
-      fromMarkdown: (md: string) => {
-        try { return marked.parse(String(md ?? ''), { async: false }) as string } catch { return '' }
-      },
+      toMarkdown: htmlToMarkdown,
+      toText: htmlToText,
+      fromMarkdown: markdownToHtml,
     }
   }
 
@@ -548,5 +569,20 @@ export function buildSandboxUtils(bundles?: string[], opts: SandboxUtilOptions =
   }
 
   return utils
+}
+
+/**
+ * Resolves the `utils` object passed to integration handler sandboxes.
+ * When `inject` is defined, it is the **full** utils object — the host is responsible for
+ * composition (e.g. `{ ...buildSandboxUtils(['html']), ...appUtils }`).
+ * When `inject` is undefined, manifest `utils` bundles are applied via {@link buildSandboxUtils}.
+ */
+export function resolveSandboxUtils(
+  bundles: string[] | undefined,
+  inject: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (inject !== undefined)
+    return inject
+  return buildSandboxUtils(bundles) as Record<string, unknown>
 }
 

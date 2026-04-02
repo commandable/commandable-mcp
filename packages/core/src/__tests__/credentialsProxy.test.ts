@@ -76,15 +76,16 @@ describe('IntegrationProxy credentials injection', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('supports authenticated absolute URLs for credentials-based integrations', async () => {
+  it('uses authenticated absolute URLs when origin matches integration baseUrl', async () => {
     const credentialStore = {
       getCredentials: vi.fn(async () => ({ token: 'secret_test_token' })),
     }
 
     const proxy = new IntegrationProxy({ credentialStore })
 
+    const absolutePath = 'https://api.notion.com/v1/files/attached/foo.pdf'
     const fetchSpy = vi.fn(async (url: any, init?: RequestInit) => {
-      expect(String(url)).toBe('https://downloads.example.com/files/report.pdf')
+      expect(String(url)).toBe(absolutePath)
       const headers = (init?.headers || {}) as Record<string, string>
       expect(headers.Authorization).toBe('Bearer secret_test_token')
       expect(headers['Notion-Version']).toBe('2022-06-28')
@@ -103,9 +104,34 @@ describe('IntegrationProxy credentials injection', () => {
       label: 'Notion',
       connectionMethod: 'credentials',
       credentialId: 'notion-creds',
-    }, 'https://downloads.example.com/files/report.pdf')
+    }, absolutePath)
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects absolute URLs whose origin does not match integration baseUrl', async () => {
+    const credentialStore = {
+      getCredentials: vi.fn(async () => ({ token: 'secret_test_token' })),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    await expect(
+      proxy.call({
+        spaceId: 'local',
+        id: 'notion',
+        referenceId: 'notion',
+        type: 'notion',
+        label: 'Notion',
+        connectionMethod: 'credentials',
+        credentialId: 'notion-creds',
+      }, 'https://evil.example.com/steal'),
+    ).rejects.toThrow(/origin must match/)
+
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
 
