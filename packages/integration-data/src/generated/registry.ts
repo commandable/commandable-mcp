@@ -4630,7 +4630,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
   "google-drive": {
     "manifest": {
       "name": "google-drive",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "baseUrl": "https://www.googleapis.com/drive/v3",
       "tools": [
         {
@@ -4648,17 +4648,17 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           "scope": "read"
         },
         {
-          "name": "get_file",
-          "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use get_file_content. To find a file by name, use search_files.",
-          "inputSchema": "schemas/get_file.json",
-          "handler": "handlers/get_file.js",
+          "name": "get_file_meta",
+          "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use read_file_content. To find a file by name, use search_files.",
+          "inputSchema": "schemas/get_file_meta.json",
+          "handler": "handlers/get_file_meta.js",
           "scope": "read"
         },
         {
-          "name": "get_file_content",
-          "description": "Read the text content of a Drive file. For Google Workspace files (Docs, Sheets, Slides), automatically exports to text/plain or text/csv. Pass the 'mimeType' from get_file or search_files results to enable automatic export format detection. Use 'exportMimeType' to override the format (e.g. 'text/html' for formatted HTML, 'text/csv' for Sheets data). Returns {fileId, mimeType, content} for text files. Binary files (PDFs, images) return a message suggesting an export format.",
-          "inputSchema": "schemas/get_file_content.json",
-          "handler": "handlers/get_file_content.js",
+          "name": "read_file_content",
+          "description": "Read any Drive file into agent-friendly text. Supports all workspace documents such as Google Docs, Sheets, Slides, and common files such as PDF, DOCX, XLSX, and PPTX. Pass the mimeType from get_file_meta or search_files when available for the best behavior.",
+          "inputSchema": "schemas/read_file_content.json",
+          "handler": "handlers/read_file_content.js",
           "scope": "read"
         },
         {
@@ -4677,7 +4677,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         },
         {
           "name": "move_file",
-          "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file.",
+          "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file_meta.",
           "inputSchema": "schemas/move_file.json",
           "handler": "handlers/move_file.js",
           "scope": "write"
@@ -4698,7 +4698,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         }
       ]
     },
-    "prompt": "## File and folder IDs\n\nDrive file and folder IDs appear in the URL:\n- Files: `https://drive.google.com/file/d/{fileId}/view`\n- Folders: `https://drive.google.com/drive/folders/{folderId}`\n- Google Docs: `https://docs.google.com/document/d/{documentId}/edit`\n\nUse `search_files` or `list_files` to find IDs programmatically.\n\n## MIME types for Google Workspace files\n\nWhen creating files with `create_file`, use these MIME types:\n\n| File type | MIME type |\n|---|---|\n| Google Doc | `application/vnd.google-apps.document` |\n| Google Sheet | `application/vnd.google-apps.spreadsheet` |\n| Google Slides | `application/vnd.google-apps.presentation` |\n| Google Forms | `application/vnd.google-apps.form` |\n| Google Folder | `application/vnd.google-apps.folder` |\n\n## Drive search query syntax\n\nThe `query` parameter in `search_files` uses the Drive search syntax:\n\n- `name contains 'budget'` — file name contains string\n- `name = 'exact name'` — exact file name match\n- `mimeType = 'application/pdf'` — filter by MIME type\n- `mimeType != 'application/vnd.google-apps.folder'` — exclude folders\n- `'folderId' in parents` — files in a specific folder\n- `modifiedTime > '2024-01-01T00:00:00'` — modified after date (RFC3339)\n- `trashed = true` — only trashed files\n- `starred = true` — only starred files\n- `sharedWithMe = true` — files shared with the user\n\nCombine with `and`, `or`, `not`: `name contains 'report' and mimeType = 'application/pdf' and modifiedTime > '2024-01-01T00:00:00'`\n\n## Reading file contents\n\n1. Use `search_files` or `list_files` to find the file (note its `id` and `mimeType`)\n2. Call `get_file_content` with `fileId` and `mimeType`\n   - For Google Workspace files, the `mimeType` triggers automatic export\n   - For text/CSV/JSON files, content is returned directly\n\n## Export formats\n\nGoogle Workspace files must be exported (they have no binary content):\n\n| Source | Default export | Alternative exports |\n|---|---|---|\n| Google Docs | `text/plain` | `text/html`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/pdf` |\n| Google Sheets | `text/csv` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/pdf` |\n| Google Slides | `text/plain` | `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `application/pdf` |\n\n## Sharing files\n\n- Individual user: `share_file` with `type='user'`, `role='writer'`, `emailAddress='user@example.com'`\n- Anyone with link: `share_file` with `type='anyone'`, `role='reader'`\n- Whole domain: `share_file` with `type='domain'`, `role='reader'`, `domain='example.com'`\n",
+    "prompt": "## File and folder IDs\n\nDrive file and folder IDs appear in the URL:\n- Files: `https://drive.google.com/file/d/{fileId}/view`\n- Folders: `https://drive.google.com/drive/folders/{folderId}`\n- Google Docs: `https://docs.google.com/document/d/{documentId}/edit`\n\nUse `search_files` or `list_files` to find IDs programmatically.\n\n## MIME types for Google Workspace files\n\nWhen creating files with `create_file`, use these MIME types:\n\n| File type | MIME type |\n|---|---|\n| Google Doc | `application/vnd.google-apps.document` |\n| Google Sheet | `application/vnd.google-apps.spreadsheet` |\n| Google Slides | `application/vnd.google-apps.presentation` |\n| Google Forms | `application/vnd.google-apps.form` |\n| Google Folder | `application/vnd.google-apps.folder` |\n\n## Drive search query syntax\n\nThe `query` parameter in `search_files` uses the Drive search syntax:\n\n- `name contains 'budget'` — file name contains string\n- `name = 'exact name'` — exact file name match\n- `mimeType = 'application/pdf'` — filter by MIME type\n- `mimeType != 'application/vnd.google-apps.folder'` — exclude folders\n- `'folderId' in parents` — files in a specific folder\n- `modifiedTime > '2024-01-01T00:00:00'` — modified after date (RFC3339)\n- `trashed = true` — only trashed files\n- `starred = true` — only starred files\n- `sharedWithMe = true` — files shared with the user\n\nCombine with `and`, `or`, `not`: `name contains 'report' and mimeType = 'application/pdf' and modifiedTime > '2024-01-01T00:00:00'`\n\n## Reading file contents\n\n1. Use `search_files` or `list_files` to find the file (note its `id` and `mimeType`)\n2. Call `read_file_content` with `fileId` and `mimeType`\n   - Google Docs export to Markdown natively\n   - Other Google Workspace files use the best available export, then fall back to the extraction side process when the export is binary\n   - Uploaded PDF, DOCX, XLSX, PPTX, CSV, JSON, HTML, and text files are downloaded and converted automatically when needed\n\n## Export formats\n\nGoogle Workspace files must be exported (they have no binary content):\n\n| Source | Default export | Alternative exports |\n|---|---|---|\n| Google Docs | `text/markdown` | `text/plain`, `text/html`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/pdf` |\n| Google Sheets | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | `text/csv`, `application/pdf` |\n| Google Slides | `application/vnd.openxmlformats-officedocument.presentationml.presentation` | `text/plain`, `application/pdf` |\n\n## Sharing files\n\n- Individual user: `share_file` with `type='user'`, `role='writer'`, `emailAddress='user@example.com'`\n- Anyone with link: `share_file` with `type='anyone'`, `role='reader'`\n- Whole domain: `share_file` with `type='domain'`, `role='reader'`, `domain='example.com'`\n",
     "variants": {
       "variants": {
         "service_account": {
@@ -4855,8 +4855,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "read"
       },
       {
-        "name": "get_file",
-        "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use get_file_content. To find a file by name, use search_files.",
+        "name": "get_file_meta",
+        "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use read_file_content. To find a file by name, use search_files.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -4879,8 +4879,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "read"
       },
       {
-        "name": "get_file_content",
-        "description": "Read the text content of a Drive file. For Google Workspace files (Docs, Sheets, Slides), automatically exports to text/plain or text/csv. Pass the 'mimeType' from get_file or search_files results to enable automatic export format detection. Use 'exportMimeType' to override the format (e.g. 'text/html' for formatted HTML, 'text/csv' for Sheets data). Returns {fileId, mimeType, content} for text files. Binary files (PDFs, images) return a message suggesting an export format.",
+        "name": "read_file_content",
+        "description": "Read any Drive file into agent-friendly text. Supports all workspace documents such as Google Docs, Sheets, Slides, and common files such as PDF, DOCX, XLSX, and PPTX. Pass the mimeType from get_file_meta or search_files when available for the best behavior.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -4894,16 +4894,12 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             },
             "mimeType": {
               "type": "string",
-              "description": "The file's MIME type, obtained from get_file or search_files. Required for Google Workspace files (Docs, Sheets, Slides) to trigger automatic text export. Google Docs files start with 'application/vnd.google-apps.'."
-            },
-            "exportMimeType": {
-              "type": "string",
-              "description": "Override the export format. For Google Docs: 'text/plain', 'text/html', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'. For Sheets: 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'. For Slides: 'text/plain', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'. For any: 'application/pdf'."
+              "description": "Optional Drive MIME type from get_file_meta or search_files."
             }
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const fileId = encodeURIComponent(input.fileId)\n  const googleExportMap = {\n    'application/vnd.google-apps.document': 'text/plain',\n    'application/vnd.google-apps.spreadsheet': 'text/csv',\n    'application/vnd.google-apps.presentation': 'text/plain',\n    'application/vnd.google-apps.drawing': 'image/svg+xml',\n    'application/vnd.google-apps.script': 'application/vnd.google-apps.script+json',\n  }\n  const exportMimeType = input.exportMimeType\n    || (input.mimeType ? googleExportMap[input.mimeType] : null)\n    || null\n\n  let res\n  if (exportMimeType) {\n    res = await integration.fetch(`/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`)\n  }\n  else {\n    res = await integration.fetch(`/files/${fileId}?alt=media`)\n  }\n\n  const contentType = res.headers?.get?.('content-type') || ''\n  const isText = contentType.startsWith('text/')\n    || contentType.includes('json')\n    || contentType.includes('csv')\n    || contentType.includes('xml')\n    || contentType.includes('javascript')\n\n  if (isText) {\n    const content = await res.text()\n    return { fileId: input.fileId, mimeType: contentType, content }\n  }\n\n  // Binary content: inform the agent it needs a text export\n  return {\n    fileId: input.fileId,\n    mimeType: contentType,\n    content: null,\n    message: `Binary content (${contentType}). To get readable text, provide exportMimeType='text/plain' for documents, 'text/csv' for spreadsheets, or 'text/html'. For PDFs and images this is not possible via export.`,\n  }\n}",
+        "handlerCode": "async (input) => {\n  const googleNativeExports = {\n    'application/vnd.google-apps.document': 'text/markdown',\n    'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n    'application/vnd.google-apps.presentation': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',\n    'application/vnd.google-apps.drawing': 'image/svg+xml',\n    'application/vnd.google-apps.script': 'application/vnd.google-apps.script+json',\n  }\n  const isTextLikeMimeType = (value) => {\n    const mimeType = String(value || '').split(';', 1)[0].trim().toLowerCase()\n    return mimeType.startsWith('text/')\n      || mimeType.includes('json')\n      || mimeType.includes('csv')\n      || mimeType === 'application/xml'\n      || mimeType === 'text/xml'\n      || mimeType.endsWith('+xml')\n      || mimeType.includes('javascript')\n      || mimeType.includes('svg')\n  }\n  const resolveMimeType = async () => {\n    if (typeof input.mimeType === 'string' && input.mimeType.trim())\n      return input.mimeType.trim()\n\n    const metaRes = await integration.fetch(`/files/${fileId}?fields=id,name,mimeType`)\n    const meta = await metaRes.json()\n    return meta?.mimeType || ''\n  }\n  const readTextContent = async (source) => {\n    const res = await integration.fetch(source)\n    const contentMimeType = res.headers?.get?.('content-type') || ''\n    const content = await res.text()\n    return { contentMimeType, content }\n  }\n\n  const fileId = encodeURIComponent(input.fileId)\n  const mimeType = await resolveMimeType()\n\n  if (!mimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType: null,\n      content: null,\n      message: 'Could not determine the Drive file MIME type.',\n    }\n  }\n\n  if (mimeType === 'application/vnd.google-apps.folder') {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const isGoogleNative = mimeType.startsWith('application/vnd.google-apps.')\n  const exportMimeType = isGoogleNative\n    ? (typeof input.exportMimeType === 'string' && input.exportMimeType.trim())\n        ? input.exportMimeType.trim()\n        : googleNativeExports[mimeType] || null\n    : null\n\n  if (isGoogleNative && !exportMimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'This Google-native file type does not have a configured export path for read_file_content.',\n    }\n  }\n\n  const source = isGoogleNative\n    ? `/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`\n    : `/files/${fileId}?alt=media`\n\n  if (isTextLikeMimeType(exportMimeType || mimeType)) {\n    const textResult = await readTextContent(source)\n    return {\n      fileId: input.fileId,\n      mimeType,\n      contentMimeType: textResult.contentMimeType || exportMimeType || mimeType,\n      content: textResult.content,\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    integration: 'google-drive',\n    source,\n  })\n\n  return {\n    fileId: input.fileId,\n    mimeType,\n    contentMimeType: exportMimeType || mimeType,\n    ...extracted,\n  }\n}",
         "scope": "read"
       },
       {
@@ -4959,7 +4955,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       },
       {
         "name": "move_file",
-        "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file.",
+        "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file_meta.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
