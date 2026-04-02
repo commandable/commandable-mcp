@@ -145,18 +145,44 @@ export function loadIntegrationTools(
   return { read, write, admin }
 }
 
-export function loadIntegrationToolList(type: string): ToolListItem[] {
+export function loadIntegrationToolList(
+  type: string,
+  opts?: {
+    credentialVariant?: string
+    toolsets?: string[]
+    maxScope?: 'read' | 'write' | null
+    disabledTools?: string[] | null
+  },
+): ToolListItem[] {
   const manifest = getIntegration(type)?.manifest
   if (!manifest)
     return []
 
-  return manifest.tools.map(tool => ({
-    name: tool.name,
-    displayName: humanizeName(tool.name),
-    description: tool.description,
-    scope: (tool.scope || 'read') as 'read' | 'write' | 'admin',
-    toolset: tool.toolset,
-  }))
+  const activeVariant = opts?.credentialVariant
+  const activeToolsets = opts?.toolsets
+  const maxRank = opts?.maxScope != null ? (SCOPE_RANK[opts.maxScope] ?? 2) : 2
+  const blocked = opts?.disabledTools?.length ? new Set(opts.disabledTools) : null
+
+  return manifest.tools
+    .filter((tool) => {
+      if (activeVariant && tool.credentialVariants && !tool.credentialVariants.includes(activeVariant))
+        return false
+      if (activeToolsets && tool.toolset && !activeToolsets.includes(tool.toolset))
+        return false
+      const scope = tool.scope || 'read'
+      if ((SCOPE_RANK[scope] ?? 0) > maxRank)
+        return false
+      if (blocked?.has(tool.name))
+        return false
+      return true
+    })
+    .map(tool => ({
+      name: tool.name,
+      displayName: humanizeName(tool.name),
+      description: tool.description,
+      scope: (tool.scope || 'read') as 'read' | 'write' | 'admin',
+      toolset: tool.toolset,
+    }))
 }
 
 export function loadIntegrationVariants(type: string): CredentialVariantsFile | null {

@@ -49,6 +49,16 @@ Then run:
 yarn test
 ```
 
+### Local file-processing prerequisites
+
+Binary extraction tests and manual checks for tools such as Google Drive `read_file_content` require Python 3 plus MarkItDown when you run Commandable directly on the host:
+
+```bash
+pip3 install -r packages/core/src/file-extractor/requirements.txt
+```
+
+If those dependencies are missing, Commandable now degrades gracefully: extraction-backed tools are filtered out, and `commandable-mcp doctor` plus `/_commandable/status` report `fileProcessing.enabled: false`.
+
 Notes:
 - Many suites perform **write operations** (create/update/delete/archive). Use a dedicated test account/workspace if possible.
 - Trello tests create a board per run and attempt to close + delete it in `afterAll`.
@@ -85,6 +95,14 @@ Then verify the server is up:
 ```bash
 curl http://localhost:3000/health
 ```
+
+And confirm file processing is available inside the container:
+
+```bash
+curl http://localhost:3000/_commandable/status
+```
+
+The JSON response should include `"fileProcessing": { "enabled": true, ... }`.
 
 ---
 

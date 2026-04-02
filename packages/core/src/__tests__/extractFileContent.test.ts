@@ -4,7 +4,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
 
-const execFileMock = vi.fn((file: string, args: string[], _opts: unknown, callback: (err: Error | null, result?: { stdout: string, stderr: string }) => void) => {
+function resolveCallback(
+  maybeOpts: unknown,
+  maybeCallback: unknown,
+): (err: Error | null, result?: { stdout: string, stderr: string }) => void {
+  return (typeof maybeCallback === 'function' ? maybeCallback : maybeOpts) as (err: Error | null, result?: { stdout: string, stderr: string }) => void
+}
+
+const execFileMock = vi.fn((file: string, args: string[], maybeOpts: unknown, maybeCallback?: unknown) => {
+  const callback = resolveCallback(maybeOpts, maybeCallback)
+  if (args.includes('-c')) {
+    callback(null, { stdout: '', stderr: '' })
+    return
+  }
   const outputPath = args[args.indexOf('--output') + 1]
   mkdirSync(dirname(outputPath), { recursive: true })
   writeFileSync(outputPath, JSON.stringify({
@@ -21,11 +33,19 @@ vi.mock('node:child_process', () => ({
 
 describe('extractFileContent utility', () => {
   const originalFetch = globalThis.fetch
+  const originalFileProcessing = process.env.COMMANDABLE_FILE_PROCESSING
+  const originalPython = process.env.COMMANDABLE_PYTHON
 
-  afterEach(() => {
+  afterEach(async () => {
     globalThis.fetch = originalFetch
     vi.restoreAllMocks()
     execFileMock.mockClear()
+    if (originalFileProcessing === undefined) delete process.env.COMMANDABLE_FILE_PROCESSING
+    else process.env.COMMANDABLE_FILE_PROCESSING = originalFileProcessing
+    if (originalPython === undefined) delete process.env.COMMANDABLE_PYTHON
+    else process.env.COMMANDABLE_PYTHON = originalPython
+    const { resetFileProcessingCapabilityForTests } = await import('../integrations/fileProcessing.js')
+    resetFileProcessingCapabilityForTests()
   })
 
   it('downloads a public/presigned absolute URL when auth is false', async () => {
@@ -99,7 +119,12 @@ describe('extractFileContent utility', () => {
   it('cleans up its temporary workspace after extraction', async () => {
     const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
     let outputPath = ''
-    execFileMock.mockImplementationOnce((_file: string, args: string[], _opts: unknown, callback: (err: Error | null, result?: { stdout: string, stderr: string }) => void) => {
+    execFileMock.mockImplementation((_file: string, args: string[], maybeOpts: unknown, maybeCallback?: unknown) => {
+      const callback = resolveCallback(maybeOpts, maybeCallback)
+      if (args.includes('-c')) {
+        callback(null, { stdout: '', stderr: '' })
+        return
+      }
       outputPath = args[args.indexOf('--output') + 1]
       mkdirSync(dirname(outputPath), { recursive: true })
       writeFileSync(outputPath, JSON.stringify({ kind: 'text', content: 'done' }))
@@ -118,5 +143,72 @@ describe('extractFileContent utility', () => {
 
     expect(outputPath).toBeTruthy()
     expect(existsSync(dirname(outputPath))).toBe(false)
+  })
+
+  it('returns a clear message when file processing is disabled by env', async () => {
+    const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
+    process.env.COMMANDABLE_FILE_PROCESSING = 'off'
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    const util = createExtractFileContent(() => {
+      throw new Error('getIntegration should not be called')
+    })
+
+    await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
+      /COMMANDABLE_FILE_PROCESSING=off/,
+    )
+    await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
+      /pip3 install -r packages\/core\/src\/file-extractor\/requirements.txt/,
+    )
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('returns a clear message when python is missing', async () => {
+    const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
+    execFileMock.mockImplementationOnce((_file: string, _args: string[], maybeOpts: unknown, maybeCallback?: unknown) => {
+      const callback = resolveCallback(maybeOpts, maybeCallback)
+      const error: NodeJS.ErrnoException = new Error('spawn python3 ENOENT')
+      error.code = 'ENOENT'
+      callback(error)
+    })
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    const util = createExtractFileContent(() => {
+      throw new Error('getIntegration should not be called')
+    })
+
+    await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
+      /requires Python 3/,
+    )
+    await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
+      /Run Commandable with Docker/,
+    )
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('returns a clear message when markitdown is missing', async () => {
+    const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
+    execFileMock.mockImplementationOnce((_file: string, _args: string[], maybeOpts: unknown, maybeCallback?: unknown) => {
+      const callback = resolveCallback(maybeOpts, maybeCallback)
+      const error: Error & { stderr?: string } = new Error('probe failed')
+      error.stderr = 'ModuleNotFoundError: No module named \'markitdown\''
+      callback(error)
+    })
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    const util = createExtractFileContent(() => {
+      throw new Error('getIntegration should not be called')
+    })
+
+    await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
+      /MarkItDown/,
+    )
+    await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
+      /pip3 install -r packages\/core\/src\/file-extractor\/requirements.txt/,
+    )
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })

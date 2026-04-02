@@ -24,3 +24,16 @@
 | `move_file` | write | Move a file or folder to a different parent folder by updating its parents. Provide the d… |
 | `share_file` | write | Share a Drive file or folder with a specific user, group, domain, or make it publicly acc… |
 | `delete_file` | write | Permanently and immediately delete a Drive file or folder by ID. This bypasses Trash and … |
+
+## File processing note
+
+`read_file_content` depends on Commandable's host file-processing capability.
+
+- Local `npx` installs need Python 3 plus MarkItDown:
+
+```bash
+pip3 install -r packages/core/src/file-extractor/requirements.txt
+```
+
+- The published Docker image already includes the extraction runtime.
+- If file processing is unavailable, Commandable hides `read_file_content` and reports the disabled state through `commandable-mcp doctor` and `/_commandable/status`.

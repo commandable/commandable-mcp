@@ -1,5 +1,11 @@
 import type { ToolListItem } from '@commandable/mcp-core'
-import { getIntegrationById, listToolDefinitionsForIntegration, loadIntegrationToolList } from '@commandable/mcp-core'
+import {
+  applyFileProcessingCapabilityToIntegration,
+  getFileProcessingCapability,
+  getIntegrationById,
+  listToolDefinitionsForIntegration,
+  loadIntegrationToolList,
+} from '@commandable/mcp-core'
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getDb } from '../../../utils/db'
 
@@ -27,7 +33,16 @@ export default defineEventHandler(async (event): Promise<ToolItem[]> => {
   if (!integration)
     throw createError({ statusCode: 404, statusMessage: 'Integration not found' })
 
-  const builtIn = loadIntegrationToolList(integration.type)
+  const runtimeIntegration = applyFileProcessingCapabilityToIntegration(
+    integration,
+    await getFileProcessingCapability(),
+  )
+  const builtIn = loadIntegrationToolList(runtimeIntegration.type, {
+    credentialVariant: runtimeIntegration.credentialVariant ?? undefined,
+    toolsets: runtimeIntegration.enabledToolsets ?? undefined,
+    maxScope: runtimeIntegration.maxScope ?? undefined,
+    disabledTools: runtimeIntegration.disabledTools ?? undefined,
+  })
   const customDefs = await listToolDefinitionsForIntegration(db, integration.spaceId || 'local', integration.id)
   const custom: ToolItem[] = customDefs.map(def => ({
     name: def.name,

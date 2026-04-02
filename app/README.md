@@ -30,6 +30,14 @@ yarn install
 yarn workspace @commandable/mcp dev
 ```
 
+If you are testing file-processing tools locally, install the extractor dependency on the host first:
+
+```bash
+pip3 install -r packages/core/src/file-extractor/requirements.txt
+```
+
+Without that dependency, the app still boots normally but file-processing-backed tools stay hidden and the status/doctor surfaces report file processing as disabled. The Docker image already includes the required runtime.
+
 For the full local product flow, prefer the root scripts:
 
 ```bash
@@ -57,3 +65,4 @@ Recommended URLs:
 
 - The old embedded-bundle-in-another-package model is gone.
 - This package now publishes and runs the built Nuxt app directly.
+- `/_commandable/status` includes a `fileProcessing` block so hosts can verify whether extraction-backed tools are enabled.

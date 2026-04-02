@@ -40,6 +40,14 @@ docker run --rm -p 3000:3000 \
 curl http://localhost:3000/health
 ```
 
+5. Verify the bundled file-processing runtime is active:
+
+```bash
+curl http://localhost:3000/_commandable/status
+```
+
+Confirm the response includes `"fileProcessing": { "enabled": true, ... }`.
+
 ## Release publish steps
 
 1. Create and push tag:
@@ -53,6 +61,7 @@ git push origin vX.Y.Z
    - `ghcr.io/commandable/commandable-mcp:vX.Y.Z`
    - `ghcr.io/commandable/commandable-mcp:latest`
    - `ghcr.io/commandable/commandable-mcp:main` (from default-branch pushes)
+3. Smoke test the pushed image by checking both `/health` and `/_commandable/status`, and make sure file processing is enabled in the status payload.
 
 ## Troubleshooting
 

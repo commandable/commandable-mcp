@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import crypto from 'node:crypto'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
+import { applyFileProcessingCapabilityToIntegration, applyFileProcessingCapabilityToIntegrations, getFileProcessingCapability } from '../integrations/fileProcessing.js'
 import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegrationTypeConfigStore.js'
 import { createGetIntegration } from '../integrations/getIntegration.js'
 import { loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
@@ -542,7 +543,13 @@ export async function handleMetaToolCall(params: {
 
     // Refresh mutable integrations ref if present (keeps tool handlers from capturing stale config).
     if (ctx.integrationsRef) {
-      try { ctx.integrationsRef.current = await listIntegrations(ctx.db, ctx.spaceId) } catch {}
+      try {
+        ctx.integrationsRef.current = applyFileProcessingCapabilityToIntegrations(
+          await listIntegrations(ctx.db, ctx.spaceId),
+          await getFileProcessingCapability(),
+        )
+      }
+      catch {}
     }
 
     const typeConfig = getBuiltInIntegrationTypeConfig(type)
@@ -561,9 +568,13 @@ export async function handleMetaToolCall(params: {
     let registeredTools = 0
     let registeredToolsets: Array<{ toolset_id: string, label: string, tool_count: number }> = []
     if (ctx.toolIndexRef && ctx.catalogRef) {
+      const runtimeIntegration = applyFileProcessingCapabilityToIntegration(
+        integration,
+        await getFileProcessingCapability(),
+      )
       const toolIndex = buildMcpToolIndexForIntegrations({
         spaceId: ctx.spaceId,
-        integrations: [integration],
+        integrations: [runtimeIntegration],
         proxy: ctx.proxy,
         integrationsRef: ctx.integrationsRef,
       })
@@ -581,7 +592,7 @@ export async function handleMetaToolCall(params: {
         }
       }
 
-      const newAbilities = ctx.catalogRef.current.addIntegration(integration)
+      const newAbilities = ctx.catalogRef.current.addIntegration(runtimeIntegration)
       registeredToolsets = newAbilities.map(a => ({
         toolset_id: a.id,
         label: a.label,

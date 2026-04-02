@@ -2,6 +2,7 @@ import type { Implementation } from '@modelcontextprotocol/sdk/types.js'
 import { listToolDefinitions } from '../db/toolDefinitionStore.js'
 import { listIntegrationTypeConfigs } from '../db/integrationTypeConfigStore.js'
 import { listIntegrations } from '../db/integrationStore.js'
+import { applyFileProcessingCapabilityToIntegrations, getFileProcessingCapability } from '../integrations/fileProcessing.js'
 import { IntegrationProxy } from '../integrations/proxy.js'
 import { buildMcpToolIndex } from '../mcp/toolAdapter.js'
 import { getBuilderToolDefinitions, type MetaToolContext } from '../mcp/metaTools.js'
@@ -30,7 +31,11 @@ function getUiPort(): number {
 export async function runLocalStdioSession(params: RunLocalStdioSessionParams): Promise<void> {
   const spaceId = getSpaceId()
   const { db, credentialStore } = await openLocalState()
-  const integrations = await listIntegrations(db, spaceId)
+  const fileProcessing = await getFileProcessingCapability()
+  const integrations = applyFileProcessingCapabilityToIntegrations(
+    await listIntegrations(db, spaceId),
+    fileProcessing,
+  )
   const toolDefinitions = await listToolDefinitions(db, spaceId)
   const integrationTypeConfigs = await listIntegrationTypeConfigs(db, spaceId)
   const integrationsRef = { current: integrations }

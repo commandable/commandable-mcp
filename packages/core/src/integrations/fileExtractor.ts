@@ -3,8 +3,13 @@ import { execFile as execFileCb } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { fileURLToPath } from 'node:url'
 import { HttpError } from '../errors/httpError.js'
+import {
+  extractorScriptPath,
+  formatFileProcessingUnavailableMessage,
+  getFileProcessingCapability,
+  pythonExecutable,
+} from './fileProcessing.js'
 
 const execFile = promisify(execFileCb)
 
@@ -107,14 +112,6 @@ function inferFilename(response: Response, source: string): string {
   return `downloaded-file${ext}`
 }
 
-function pythonExecutable(): string {
-  return process.env.COMMANDABLE_PYTHON || 'python3'
-}
-
-function extractorScriptPath(): string {
-  return fileURLToPath(new URL('../file-extractor/extract_file.py', import.meta.url))
-}
-
 async function downloadWithAuth(args: ExtractFileContentArgs, getIntegration: (id: string) => { fetch: (path: string, init?: RequestInit) => Promise<Response> }): Promise<Response> {
   if (!args.integration)
     throw new HttpError(400, 'extractFileContent requires `integration` when `auth` is true.')
@@ -138,6 +135,10 @@ export function createExtractFileContent(
       throw new HttpError(400, 'extractFileContent requires `auth` to be a boolean.')
     if (!args.source || typeof args.source !== 'string')
       throw new HttpError(400, 'extractFileContent requires `source` to be a non-empty string.')
+
+    const capability = await getFileProcessingCapability()
+    if (!capability.enabled)
+      throw new HttpError(501, formatFileProcessingUnavailableMessage(capability))
 
     const response = args.auth
       ? await downloadWithAuth(args, getIntegration)
@@ -175,6 +176,9 @@ export function createExtractFileContent(
       const stderr = typeof error?.stderr === 'string' ? error.stderr.trim() : ''
       const stdout = typeof error?.stdout === 'string' ? error.stdout.trim() : ''
       const detail = stderr || stdout || error?.message || 'Unknown extractor failure.'
+      const capability = await getFileProcessingCapability()
+      if (!capability.enabled)
+        throw new HttpError(501, formatFileProcessingUnavailableMessage(capability))
       throw new HttpError(500, `Failed to extract file content. ${detail}`)
     }
     finally {
