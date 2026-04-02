@@ -26,12 +26,12 @@ export function buildMcpToolIndex(params: {
   })
 
   const byName = new Map<string, ExecutableTool>()
-  const tools: McpToolDefinition[] = []
+  const tools = new Map<string, McpToolDefinition>()
 
   for (const group of Object.values(toolsByIntegration)) {
     for (const t of [...group.read, ...group.write, ...group.admin]) {
       byName.set(t.name, t)
-      tools.push({
+      tools.set(t.name, {
         name: t.name,
         description: t.description,
         inputSchema: t.inputSchema,
@@ -39,7 +39,7 @@ export function buildMcpToolIndex(params: {
     }
   }
 
-  return { tools, byName }
+  return { tools: [...tools.values()], byName }
 }
 
 export function buildMcpToolIndexForIntegrations(params: {

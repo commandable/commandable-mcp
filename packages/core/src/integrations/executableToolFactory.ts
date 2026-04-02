@@ -21,6 +21,27 @@ export interface BuildToolsOptions {
   utils?: Record<string, unknown>
 }
 
+function dedupeToolDefinitionsByName(definitions: ToolDefinition[]): ToolDefinition[] {
+  if (definitions.length <= 1)
+    return definitions
+
+  const deduped = new Map<string, ToolDefinition>()
+  for (const definition of definitions)
+    deduped.set(definition.name, definition)
+  return [...deduped.values()]
+}
+
+function filterBuiltInToolsForOverrides<T extends { name: string }>(
+  builtInTools: T[],
+  definitions: ToolDefinition[],
+): T[] {
+  if (!builtInTools.length || !definitions.length)
+    return builtInTools
+
+  const overridingNames = new Set(definitions.map(definition => definition.name))
+  return builtInTools.filter(tool => !overridingNames.has(tool.name))
+}
+
 export function buildToolsByIntegration(
   spaceId: string,
   integrations: IntegrationData[],
@@ -54,9 +75,12 @@ export function buildToolsByIntegration(
     const adminBuiltIn = loaded?.admin || []
 
     const dbDefsForIntegration = (toolDefinitions || []).filter(t => t.integrationId === integ.id)
-    const readDb = dbDefsForIntegration.filter(t => t.scope === 'read')
-    const writeDb = dbDefsForIntegration.filter(t => t.scope === 'write')
-    const adminDb = dbDefsForIntegration.filter(t => t.scope === 'admin')
+    const readDb = dedupeToolDefinitionsByName(dbDefsForIntegration.filter(t => t.scope === 'read'))
+    const writeDb = dedupeToolDefinitionsByName(dbDefsForIntegration.filter(t => t.scope === 'write'))
+    const adminDb = dedupeToolDefinitionsByName(dbDefsForIntegration.filter(t => t.scope === 'admin'))
+    const effectiveReadBuiltIn = filterBuiltInToolsForOverrides(readBuiltIn, readDb)
+    const effectiveWriteBuiltIn = filterBuiltInToolsForOverrides(writeBuiltIn, writeDb)
+    const effectiveAdminBuiltIn = filterBuiltInToolsForOverrides(adminBuiltIn, adminDb)
 
     const buildActions = (arr: any[], scope: Scope): ExecutableTool[] => arr.map((t) => {
       const rawSchema = typeof t.inputSchema === 'string' ? JSON.parse(t.inputSchema) : t.inputSchema
@@ -97,9 +121,9 @@ export function buildToolsByIntegration(
     })
 
     toolsByIntegration[integ.referenceId] = {
-      read: [...buildActions(readBuiltIn, 'read'), ...buildActionsFromToolDefinitions(readDb, 'read')],
-      write: [...buildActions(writeBuiltIn, 'write'), ...buildActionsFromToolDefinitions(writeDb, 'write')],
-      admin: [...buildActions(adminBuiltIn, 'admin'), ...buildActionsFromToolDefinitions(adminDb, 'admin')],
+      read: [...buildActions(effectiveReadBuiltIn, 'read'), ...buildActionsFromToolDefinitions(readDb, 'read')],
+      write: [...buildActions(effectiveWriteBuiltIn, 'write'), ...buildActionsFromToolDefinitions(writeDb, 'write')],
+      admin: [...buildActions(effectiveAdminBuiltIn, 'admin'), ...buildActionsFromToolDefinitions(adminDb, 'admin')],
     }
   }
 
