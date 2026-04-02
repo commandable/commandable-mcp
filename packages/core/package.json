@@ -53,7 +53,7 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
-    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-readme.mjs && node scripts/copy-migrations.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-readme.mjs && node scripts/copy-migrations.mjs && node scripts/copy-file-extractor.mjs",
     "dev": "tsc -p tsconfig.json --watch",
     "db:generate": "drizzle-kit generate",
     "prepack": "npm run build",

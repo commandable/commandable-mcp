@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { cwd } from 'node:process'
 import YAML from 'js-yaml'
@@ -59,7 +59,7 @@ function findConfigPath(): string | null {
   ].map(f => resolve(base, f))
 
   for (const p of candidates) {
-    if (existsSync(p))
+    if (existsSync(p) && statSync(p).isFile())
       return p
   }
   return null
@@ -72,6 +72,9 @@ export function loadConfig(configPath?: string): { path: string, config: Command
 
   if (!existsSync(path))
     throw new ConfigError(`Config file not found: ${path}`)
+
+  if (!statSync(path).isFile())
+    throw new ConfigError(`Config path is not a file: ${path}`)
 
   const raw = readFileSync(path, 'utf8')
   const parsed = parseConfigFile(raw, path)

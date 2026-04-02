@@ -3,13 +3,17 @@ import { BUILDER_ABILITY_ID } from './abilityCatalog.js'
 import type { SessionAbilityState } from './sessionState.js'
 import type { McpToolDefinition } from './toolAdapter.js'
 import { buildMcpToolIndexForIntegrations } from './toolAdapter.js'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import crypto from 'node:crypto'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
+import { applyFileProcessingCapabilityToIntegration, applyFileProcessingCapabilityToIntegrations, getFileProcessingCapability } from '../integrations/fileProcessing.js'
 import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegrationTypeConfigStore.js'
 import { createGetIntegration } from '../integrations/getIntegration.js'
 import { loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
+import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
+import { createExtractFileContent } from '../integrations/fileExtractor.js'
 import type { DbClient } from '../db/client.js'
 import { deleteIntegrationById, listIntegrations, upsertIntegration } from '../db/integrationStore.js'
 import type { SqlCredentialStore } from '../db/credentialStore.js'
@@ -53,8 +57,7 @@ function normalizeHintMarkdown(value: string): string {
 }
 
 function buildReadme(filename: string): string {
-  const path = fileURLToPath(new URL(`./${filename}`, import.meta.url))
-  return readFileSync(path, 'utf8')
+  return readFileSync(resolveMcpAssetPath(filename), 'utf8')
 }
 
 function buildCommandableReadme(hasBuilderCtx: boolean): string {
@@ -68,8 +71,20 @@ function buildStaticReadme(): string {
 }
 
 function buildBuilderGuide(): string {
-  const path = fileURLToPath(new URL('./builder_guide.md', import.meta.url))
-  return readFileSync(path, 'utf8')
+  return readFileSync(resolveMcpAssetPath('builder_guide.md'), 'utf8')
+}
+
+function resolveMcpAssetPath(filename: string): string {
+  const cwd = process.cwd()
+  const candidates = [
+    fileURLToPath(new URL(`./${filename}`, import.meta.url)),
+    resolve(cwd, 'packages/core/src/mcp', filename),
+    resolve(cwd, 'packages/core/dist/mcp', filename),
+    resolve(cwd, 'node_modules/@commandable/mcp-core/dist/mcp', filename),
+    resolve(cwd, 'app/.output/server/node_modules/@commandable/mcp-core/dist/mcp', filename),
+  ]
+
+  return candidates.find(path => existsSync(path)) || candidates[0]!
 }
 
 function providerBaseUrl(integration: IntegrationData, ctx?: MetaToolContext): string {
@@ -540,7 +555,13 @@ export async function handleMetaToolCall(params: {
 
     // Refresh mutable integrations ref if present (keeps tool handlers from capturing stale config).
     if (ctx.integrationsRef) {
-      try { ctx.integrationsRef.current = await listIntegrations(ctx.db, ctx.spaceId) } catch {}
+      try {
+        ctx.integrationsRef.current = applyFileProcessingCapabilityToIntegrations(
+          await listIntegrations(ctx.db, ctx.spaceId),
+          await getFileProcessingCapability(),
+        )
+      }
+      catch {}
     }
 
     const typeConfig = getBuiltInIntegrationTypeConfig(type)
@@ -559,9 +580,13 @@ export async function handleMetaToolCall(params: {
     let registeredTools = 0
     let registeredToolsets: Array<{ toolset_id: string, label: string, tool_count: number }> = []
     if (ctx.toolIndexRef && ctx.catalogRef) {
+      const runtimeIntegration = applyFileProcessingCapabilityToIntegration(
+        integration,
+        await getFileProcessingCapability(),
+      )
       const toolIndex = buildMcpToolIndexForIntegrations({
         spaceId: ctx.spaceId,
-        integrations: [integration],
+        integrations: [runtimeIntegration],
         proxy: ctx.proxy,
         integrationsRef: ctx.integrationsRef,
       })
@@ -579,7 +604,7 @@ export async function handleMetaToolCall(params: {
         }
       }
 
-      const newAbilities = ctx.catalogRef.current.addIntegration(integration)
+      const newAbilities = ctx.catalogRef.current.addIntegration(runtimeIntegration)
       registeredToolsets = newAbilities.map(a => ({
         toolset_id: a.id,
         label: a.label,
@@ -830,7 +855,8 @@ export async function handleMetaToolCall(params: {
 
     const getIntegration = createGetIntegration(ctx.integrationsRef, ctx.proxy)
     const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${handlerCode};\n  return await __inner(input);\n}`
-    const safe = createSafeHandlerFromString(wrapper, getIntegration)
+    const utils = buildSandboxUtils([], { extractFileContent: createExtractFileContent(getIntegration) })
+    const safe = createSafeHandlerFromString(wrapper, getIntegration, utils)
     const res = await safe(testInput)
     return { handled: true, listChanged: false, result: res }
   }

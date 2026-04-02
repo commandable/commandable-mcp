@@ -40,6 +40,43 @@ docker run --rm -p 3000:3000 \
 curl http://localhost:3000/health
 ```
 
+5. Verify the bundled file-processing runtime is active:
+
+```bash
+curl http://localhost:3000/_commandable/status
+```
+
+Confirm the response includes `"fileProcessing": { "enabled": true, ... }`.
+
+## Gated Google Drive smoke
+
+The publish workflow now gates image pushes on a Docker smoke that:
+
+- starts the image locally
+- checks `/health`
+- checks `/_commandable/status`
+- connects to `/mcp/static`
+- creates a temporary Drive folder
+- uploads the shared `sample.pdf` fixture
+- calls Google Drive `get_file_meta`
+- calls Google Drive `read_file_content`
+- asserts the extracted text contains `Commandable Integration Test`
+- deletes the uploaded file and folder
+
+Required GitHub secrets/vars:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_TOKEN`
+- `GOOGLE_IMPERSONATE_SUBJECT` when needed
+
+Run the same smoke locally:
+
+```bash
+docker build -t commandable-mcp:smoke .
+yarn test:docker:smoke
+```
+
+For local runs, the smoke script will automatically reuse `packages/integration-data/.env.test.google` unless you override values in your shell or point `INTEGRATION_TESTS_ENV_FILE` at a different env file.
+
 ## Release publish steps
 
 1. Create and push tag:
@@ -53,6 +90,7 @@ git push origin vX.Y.Z
    - `ghcr.io/commandable/commandable-mcp:vX.Y.Z`
    - `ghcr.io/commandable/commandable-mcp:latest`
    - `ghcr.io/commandable/commandable-mcp:main` (from default-branch pushes)
+3. Smoke test the pushed image by checking both `/health` and `/_commandable/status`, and make sure file processing is enabled in the status payload.
 
 ## Troubleshooting
 

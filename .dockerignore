@@ -1,0 +1,10 @@
+.git
+.cursor
+.DS_Store
+
+**/node_modules
+**/dist
+app/.output
+
+terminals
+agent-transcripts

@@ -4,7 +4,8 @@ import { loadIntegrationTools } from './dataLoader.js'
 import { makeIntegrationToolName, sanitizeJsonSchema } from './tools.js'
 import { createSafeHandlerFromString } from './sandbox.js'
 import { createGetIntegration } from './getIntegration.js'
-import { resolveSandboxUtils } from './sandboxUtils.js'
+import { buildSandboxUtils } from './sandboxUtils.js'
+import { createExtractFileContent } from './fileExtractor.js'
 
 type Scope = 'read' | 'write' | 'admin'
 
@@ -28,6 +29,7 @@ export function buildToolsByIntegration(
 ): Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> {
   const { requireWriteConfirmation = false, integrationsRef, toolDefinitions, utils: injectUtils } = opts
   const getIntegration = createGetIntegration(integrationsRef || { current: integrations }, proxy)
+  const extractFileContent = createExtractFileContent(getIntegration)
   const toolsByIntegration: Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> = {}
 
   for (const integ of integrations) {
@@ -63,7 +65,7 @@ export function buildToolsByIntegration(
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
 
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
-      const utils = resolveSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, injectUtils)
+      const utils = injectUtils ?? buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, { extractFileContent })
       const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
       return {
         name: toolName,
@@ -81,7 +83,7 @@ export function buildToolsByIntegration(
       const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
-      const utils = resolveSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, injectUtils)
+      const utils = injectUtils ?? buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, { extractFileContent })
       const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
       return {
         name: toolName,

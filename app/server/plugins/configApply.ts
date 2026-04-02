@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { applyConfig, getOrCreateEncryptionSecret, loadConfig, SqlCredentialStore } from '@commandable/mcp-core'
 import { defineNitroPlugin } from 'nitropack/runtime'
@@ -11,7 +11,7 @@ function hasAutoConfigFile(): boolean {
     'commandable.config.yml',
     'commandable.config.json',
   ].map(f => resolve(base, f))
-  return candidates.some(p => existsSync(p))
+  return candidates.some(p => existsSync(p) && statSync(p).isFile())
 }
 
 export default defineNitroPlugin(async () => {

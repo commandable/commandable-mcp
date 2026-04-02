@@ -18,17 +18,17 @@
       "scope": "read"
     },
     {
-      "name": "get_file",
-      "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use get_file_content. To find a file by name, use search_files.",
-      "inputSchema": "schemas/get_file.json",
-      "handler": "handlers/get_file.js",
+      "name": "get_file_meta",
+      "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use read_file_content. To find a file by name, use search_files.",
+      "inputSchema": "schemas/get_file_meta.json",
+      "handler": "handlers/get_file_meta.js",
       "scope": "read"
     },
     {
-      "name": "get_file_content",
-      "description": "Read the text content of a Drive file. For Google Workspace files (Docs, Sheets, Slides), automatically exports to text/plain or text/csv. Pass the 'mimeType' from get_file or search_files results to enable automatic export format detection. Use 'exportMimeType' to override the format (e.g. 'text/html' for formatted HTML, 'text/csv' for Sheets data). Returns {fileId, mimeType, content} for text files. Binary files (PDFs, images) return a message suggesting an export format.",
-      "inputSchema": "schemas/get_file_content.json",
-      "handler": "handlers/get_file_content.js",
+      "name": "read_file_content",
+      "description": "Read any Drive file into agent-friendly text. Supports all workspace documents such as Google Docs, Sheets, Slides, and common files such as PDF, DOCX, XLSX, and PPTX. Pass the mimeType from get_file_meta or search_files when available for the best behavior.",
+      "inputSchema": "schemas/read_file_content.json",
+      "handler": "handlers/read_file_content.js",
       "scope": "read"
     },
     {
@@ -47,7 +47,7 @@
     },
     {
       "name": "move_file",
-      "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file.",
+      "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file_meta.",
       "inputSchema": "schemas/move_file.json",
       "handler": "handlers/move_file.js",
       "scope": "write"

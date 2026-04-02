@@ -14,11 +14,18 @@ This repo now has three package layers:
 
 - Node.js **18+**
 - Yarn **4+**
+- Python 3 when you are working on local file-processing features such as Google Drive `read_file_content`
 
 ### Install dependencies
 
 ```bash
 yarn install
+```
+
+If you need local extraction outside Docker, install the Python dependency once:
+
+```bash
+pip3 install -r packages/core/src/file-extractor/requirements.txt
 ```
 
 ## Main Local Workflow
@@ -127,9 +134,17 @@ Run MCP package tests only:
 yarn workspace @commandable/mcp test
 ```
 
+For local file-processing work, also check the capability probe:
+
+```bash
+yarn workspace @commandable/mcp doctor
+```
+
+That output includes a `fileProcessing` block so you can confirm whether extraction-backed tools should be available on your machine.
+
 ### Live integration tests (accounts + CI)
 
-Some tests under `packages/server/integration-data/*/__tests__` are **live integration tests**. They make real API calls and require credentials (usually via **managed OAuth** env vars like `COMMANDABLE_MANAGED_OAUTH_BASE_URL`, `COMMANDABLE_MANAGED_OAUTH_SECRET_KEY`, and `<PROVIDER>_TEST_CONNECTION_ID`).
+Some tests under `packages/integration-data/integrations/*/__tests__` are **live integration tests**. They make real API calls and require credentials (usually via **managed OAuth** env vars like `COMMANDABLE_MANAGED_OAUTH_BASE_URL`, `COMMANDABLE_MANAGED_OAUTH_SECRET_KEY`, and `<PROVIDER>_TEST_CONNECTION_ID`).
 
 - **CI**: these live tests are intended to run against **Commandable-owned test accounts** and connections.
 - **Local development**: please run live tests against **your own accounts** locally. If you don't have the required env vars set, those suites will be skipped automatically.
@@ -144,7 +159,7 @@ Most integrations are implemented as **integration-data** (schemas + sandboxed J
 
 Create a new folder:
 
-`packages/server/integration-data/<integration-type>/`
+`packages/integration-data/integrations/<integration-type>/`
 
 Required files (see `integration-data/new_integration_prompt.md` for the exact contract):
 
@@ -162,17 +177,19 @@ Design guidance:
 - Prefer **small, composable tools** that mirror the API's resources.
 - Handlers should be thin proxies: `integration.fetch(path, init?)` → return JSON.
 
-### 2) Register the provider
+### 2) Regenerate the integration registry
 
-Add your integration to the provider registry so the runtime knows how to talk to it:
+Refresh the generated registry so the runtime picks up the new manifest and handlers:
 
-- `packages/server/src/integrations/providerRegistry.ts`
+```bash
+yarn workspace @commandable/integration-data run generate:registry
+```
 
 ### 3) Add tests
 
 Put integration tests under:
 
-`packages/server/integration-data/<integration-type>/__tests__/`
+`packages/integration-data/integrations/<integration-type>/__tests__/`
 
 At minimum:
 

@@ -3,7 +3,8 @@ import type { IntegrationProxy } from './proxy.js'
 import { createSafeHandlerFromString } from './sandbox.js'
 import { createGetIntegration } from './getIntegration.js'
 import { makeIntegrationToolName, sanitizeJsonSchema } from './tools.js'
-import { resolveSandboxUtils } from './sandboxUtils.js'
+import { buildSandboxUtils } from './sandboxUtils.js'
+import { createExtractFileContent } from './fileExtractor.js'
 
 function humanize(s: string): string {
   return (s || '')
@@ -21,15 +22,14 @@ export function buildExecutableToolFromDefinition(params: {
   proxy: IntegrationProxy
   integrationsRef?: { current: IntegrationData[] }
   requireWriteConfirmation?: boolean
-  /**
-   * When set, full sandbox `utils` for this tool (same replace semantics as
-   * `buildToolsByIntegration` opts.utils). When omitted, uses tool manifest bundles only.
-   */
   utils?: Record<string, unknown>
 }): ExecutableTool {
   const { integration, tool, proxy, integrationsRef, requireWriteConfirmation = false, utils: injectUtils } = params
 
   const getIntegration = createGetIntegration(integrationsRef || { current: [integration] }, proxy)
+  const resolvedUtils = injectUtils ?? buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, {
+    extractFileContent: createExtractFileContent(getIntegration),
+  })
   const scope: ToolScope = tool.scope || 'write'
 
   const toolName = makeIntegrationToolName(integration.type, tool.name, integration.id)
@@ -37,7 +37,6 @@ export function buildExecutableToolFromDefinition(params: {
   const inputSchema = sanitizeJsonSchema(tool.inputSchema || { type: 'object', additionalProperties: true })
 
   const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
-  const resolvedUtils = resolveSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, injectUtils)
   const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, resolvedUtils)
 
   return {

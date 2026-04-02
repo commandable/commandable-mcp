@@ -30,6 +30,16 @@ Use it when you want to:
 npx -y @commandable/mcp serve
 ```
 
+File-processing tools such as Google Drive `read_file_content` work in local `npx` installs only when Python 3 and MarkItDown are available on the host. If they are missing, Commandable keeps running, but file-processing-dependent tools are hidden.
+
+Install the local extractor dependency with:
+
+```bash
+pip3 install -r packages/core/src/file-extractor/requirements.txt
+```
+
+If you prefer not to install Python locally, use Docker. The published image includes the extraction runtime.
+
 ### 2. Connect Claude Code for create mode
 
 ```bash

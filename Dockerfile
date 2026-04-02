@@ -4,8 +4,13 @@ WORKDIR /app
 
 # Native deps (better-sqlite3) need a build toolchain on slim images.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ \
+  && apt-get install -y --no-install-recommends python3 python3-pip python3-venv make g++ \
   && rm -rf /var/lib/apt/lists/*
+
+ENV VIRTUAL_ENV=/opt/commandable-venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+RUN python3 -m venv "$VIRTUAL_ENV"
 
 # Install deps (workspace-aware)
 COPY package.json yarn.lock tsconfig.base.json .yarnrc.yml ./
@@ -20,7 +25,8 @@ RUN corepack enable \
 
 # Copy source and build
 COPY . .
-RUN yarn build
+RUN pip install --no-cache-dir -r packages/core/src/file-extractor/requirements.txt \
+  && yarn build
 
 ENV NODE_ENV=production
 ENV PORT=3000

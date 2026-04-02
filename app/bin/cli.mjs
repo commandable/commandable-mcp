@@ -417,6 +417,7 @@ async function runDoctor() {
       versionMatch: !!runningVersion && runningVersion === COMMANDABLE_VERSION,
       status: probe?.json ?? null,
     },
+    fileProcessing: probe?.json?.fileProcessing ?? null,
   }, null, 2))
 }
 

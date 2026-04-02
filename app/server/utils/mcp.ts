@@ -3,8 +3,10 @@ import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:
 import { randomUUID } from 'node:crypto'
 import {
   AbilityCatalog,
+  applyFileProcessingCapabilityToIntegrations,
   buildMcpToolIndex,
   getBuilderToolDefinitions,
+  getFileProcessingCapability,
   getOrCreateEncryptionSecret,
   IntegrationProxy,
   listIntegrations,
@@ -88,7 +90,11 @@ async function buildState(endpoint: HttpMcpEndpoint): Promise<McpState> {
   const secret = getOrCreateEncryptionSecret()
   const credentialStore = new SqlCredentialStore(db, secret)
   const spaceId = getSpaceId()
-  const integrations = await listIntegrations(db, spaceId)
+  const fileProcessing = await getFileProcessingCapability()
+  const integrations = applyFileProcessingCapabilityToIntegrations(
+    await listIntegrations(db, spaceId),
+    fileProcessing,
+  )
   const toolDefinitions = await listToolDefinitions(db, spaceId)
   const integrationTypeConfigs = await listIntegrationTypeConfigs(db, spaceId)
   const integrationsRef = { current: integrations }
@@ -274,10 +280,9 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   }
 
   await server.connect(transport)
+  await transport.handleRequest(req, res, args.body)
   const sid = transport.sessionId
   if (sid)
     state.sessions.set(sid, { server, transport, ownerApiKeyId })
-
-  await transport.handleRequest(req, res, args.body)
   return { kind: 'handled' }
 }

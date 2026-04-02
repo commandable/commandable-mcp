@@ -87,7 +87,6 @@ function assertAbsoluteUrlMatchesBaseOrigin(absolutePath: string, baseUrl: strin
     )
   }
 }
-
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 

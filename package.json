@@ -13,6 +13,7 @@
     "lint": "yarn workspace @commandable/mcp lint",
     "test": "yarn workspace @commandable/mcp-core test",
     "test:integrations": "node scripts/run-integration-tests.mjs",
+    "test:docker:smoke": "node scripts/docker-smoke-google-drive.mjs --image commandable-mcp:smoke",
     "test:all": "yarn workspaces foreach -A -t run test",
     "generate-docs": "node scripts/generate-integration-docs.mjs",
     "dev:serve": "yarn workspace @commandable/mcp build && COMMANDABLE_DATA_DIR=$HOME/.commandable-dev COMMANDABLE_UI_PORT=23433 node app/bin/commandable-mcp.mjs serve --restart",
