@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { execFile as execFileCb } from 'node:child_process'
+import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import type { IntegrationData } from '../types.js'
@@ -37,8 +38,21 @@ export function pythonExecutable(): string {
   return process.env.COMMANDABLE_PYTHON || 'python3'
 }
 
+function extractorScriptCandidates(): string[] {
+  const cwd = process.cwd()
+  return [
+    fileURLToPath(new URL('../file-extractor/extract_file.py', import.meta.url)),
+    resolve(cwd, 'packages/core/src/file-extractor/extract_file.py'),
+    resolve(cwd, 'packages/core/dist/file-extractor/extract_file.py'),
+    resolve(cwd, 'node_modules/@commandable/mcp-core/dist/file-extractor/extract_file.py'),
+    resolve(cwd, 'app/.output/server/node_modules/@commandable/mcp-core/dist/file-extractor/extract_file.py'),
+  ]
+}
+
 export function extractorScriptPath(): string {
-  return fileURLToPath(new URL('../file-extractor/extract_file.py', import.meta.url))
+  const candidates = extractorScriptCandidates()
+  return candidates.find(path => existsSync(path))
+    || candidates[0]!
 }
 
 export function getFileProcessingMode(): FileProcessingMode {

@@ -280,10 +280,9 @@ export async function handleMcpHttp(args: McpHandleArgs): Promise<
   }
 
   await server.connect(transport)
+  await transport.handleRequest(req, res, args.body)
   const sid = transport.sessionId
   if (sid)
     state.sessions.set(sid, { server, transport, ownerApiKeyId })
-
-  await transport.handleRequest(req, res, args.body)
   return { kind: 'handled' }
 }

@@ -104,6 +104,28 @@ curl http://localhost:3000/_commandable/status
 
 The JSON response should include `"fileProcessing": { "enabled": true, ... }`.
 
+## Docker Google Drive smoke
+
+There is also a gated Docker smoke that verifies the shipped image can boot, expose MCP over HTTP, upload a shared fixture to Google Drive, and extract it through `read_file_content`.
+
+Required environment:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_TOKEN`
+- `GOOGLE_IMPERSONATE_SUBJECT` when your Google test setup needs domain-wide delegation
+
+Local env loading matches the live integration suites:
+
+- exported shell vars win
+- if `INTEGRATION_TESTS_ENV_FILE` is set, that file is loaded
+- otherwise the smoke falls back to `packages/integration-data/.env.test.google`
+
+Run it locally from the repo root:
+
+```bash
+docker build -t commandable-mcp:smoke .
+yarn test:docker:smoke
+```
+
 ---
 
 ## CI: per-integration matrix
