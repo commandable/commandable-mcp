@@ -3,7 +3,8 @@ import { BUILDER_ABILITY_ID } from './abilityCatalog.js'
 import type { SessionAbilityState } from './sessionState.js'
 import type { McpToolDefinition } from './toolAdapter.js'
 import { buildMcpToolIndexForIntegrations } from './toolAdapter.js'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import crypto from 'node:crypto'
 import { listIntegrationCatalog } from '../integrations/catalog.js'
@@ -56,8 +57,7 @@ function normalizeHintMarkdown(value: string): string {
 }
 
 function buildReadme(filename: string): string {
-  const path = fileURLToPath(new URL(`./${filename}`, import.meta.url))
-  return readFileSync(path, 'utf8')
+  return readFileSync(resolveMcpAssetPath(filename), 'utf8')
 }
 
 function buildCommandableReadme(hasBuilderCtx: boolean): string {
@@ -71,8 +71,20 @@ function buildStaticReadme(): string {
 }
 
 function buildBuilderGuide(): string {
-  const path = fileURLToPath(new URL('./builder_guide.md', import.meta.url))
-  return readFileSync(path, 'utf8')
+  return readFileSync(resolveMcpAssetPath('builder_guide.md'), 'utf8')
+}
+
+function resolveMcpAssetPath(filename: string): string {
+  const cwd = process.cwd()
+  const candidates = [
+    fileURLToPath(new URL(`./${filename}`, import.meta.url)),
+    resolve(cwd, 'packages/core/src/mcp', filename),
+    resolve(cwd, 'packages/core/dist/mcp', filename),
+    resolve(cwd, 'node_modules/@commandable/mcp-core/dist/mcp', filename),
+    resolve(cwd, 'app/.output/server/node_modules/@commandable/mcp-core/dist/mcp', filename),
+  ]
+
+  return candidates.find(path => existsSync(path)) || candidates[0]!
 }
 
 function providerBaseUrl(integration: IntegrationData, ctx?: MetaToolContext): string {
