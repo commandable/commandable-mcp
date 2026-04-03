@@ -7348,6 +7348,2073 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       }
     ]
   },
+  "google-workspace": {
+    "manifest": {
+      "name": "google-workspace",
+      "version": "0.1.0",
+      "baseUrl": "https://www.googleapis.com/drive/v3",
+      "allowedOrigins": [
+        "https://*.googleapis.com"
+      ],
+      "toolsets": {
+        "drive": {
+          "label": "Drive",
+          "description": "Find, read, create, move, share, and delete Drive files and folders"
+        },
+        "docs": {
+          "label": "Docs",
+          "description": "Read and edit Google Docs documents"
+        },
+        "sheets": {
+          "label": "Sheets",
+          "description": "Read and edit Google Sheets spreadsheets"
+        },
+        "slides": {
+          "label": "Slides",
+          "description": "Read and edit Google Slides presentations"
+        }
+      },
+      "tools": [
+        {
+          "name": "list_files",
+          "description": "List files in a Google Drive folder or across all of Drive. Returns id, name, mimeType, modifiedTime, size, and parents for each file. Excludes trashed files by default. Use folderId to scope to a specific folder. For name- or type-based search, use search_files instead. Defaults to 50 results per page; use pageToken from the response for the next page.",
+          "inputSchema": "schemas/drive/list_files.json",
+          "handler": "handlers/drive/list_files.js",
+          "scope": "read",
+          "toolset": "drive"
+        },
+        {
+          "name": "search_files",
+          "description": "Search Google Drive for files by name, MIME type, or raw Drive query syntax. Use the 'name' shorthand for simple name searches (e.g. name='quarterly report'). Use 'mimeType' to filter by type. Use 'query' for advanced Drive search expressions (e.g. \"modifiedTime > '2024-01-01'\" or \"'folderId' in parents and mimeType='application/pdf'\"). All provided filters are combined with AND. Defaults to 20 results per page.",
+          "inputSchema": "schemas/drive/search_files.json",
+          "handler": "handlers/drive/search_files.js",
+          "scope": "read",
+          "toolset": "drive"
+        },
+        {
+          "name": "get_file_meta",
+          "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use read_file_content. To find a file by name, use search_files.",
+          "inputSchema": "schemas/drive/get_file_meta.json",
+          "handler": "handlers/drive/get_file_meta.js",
+          "scope": "read",
+          "toolset": "drive"
+        },
+        {
+          "name": "read_file_content",
+          "description": "Read any authorized Google Workspace or uploaded Drive file into agent-friendly text. Supports Docs, Sheets, Slides, PDF, DOCX, XLSX, and PPTX. Pass the mimeType from get_file_meta or search_files when available for the best behavior.",
+          "inputSchema": "schemas/drive/read_file_content.json",
+          "handler": "handlers/drive/read_file_content.js",
+          "scope": "read",
+          "toolset": "drive"
+        },
+        {
+          "name": "create_folder",
+          "description": "Create a new folder in Google Drive. Optionally nest it inside a parent folder using parentId. Returns the created folder's metadata including its ID, which can be used as a parentId for subsequent file creation.",
+          "inputSchema": "schemas/drive/create_folder.json",
+          "handler": "handlers/drive/create_folder.js",
+          "scope": "write",
+          "toolset": "drive"
+        },
+        {
+          "name": "create_file",
+          "description": "Create a new Drive file (metadata only -- no content upload). To create a Google Workspace file, use the appropriate mimeType: 'application/vnd.google-apps.document' for Docs, 'application/vnd.google-apps.spreadsheet' for Sheets, 'application/vnd.google-apps.presentation' for Slides. Optionally place it in a folder with parentId. Returns the created file's metadata including its ID.",
+          "inputSchema": "schemas/drive/create_file.json",
+          "handler": "handlers/drive/create_file.js",
+          "scope": "write",
+          "toolset": "drive"
+        },
+        {
+          "name": "move_file",
+          "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file_meta.",
+          "inputSchema": "schemas/drive/move_file.json",
+          "handler": "handlers/drive/move_file.js",
+          "scope": "write",
+          "toolset": "drive"
+        },
+        {
+          "name": "share_file",
+          "description": "Share a Drive file or folder with a specific user, group, domain, or make it publicly accessible. Use type='user' with emailAddress for individual sharing. Use type='anyone' with role='reader' to create a public view link. Use type='domain' with domain for organization-wide sharing. Returns the created permission resource.",
+          "inputSchema": "schemas/drive/share_file.json",
+          "handler": "handlers/drive/share_file.js",
+          "scope": "write",
+          "toolset": "drive"
+        },
+        {
+          "name": "delete_file",
+          "description": "Permanently and immediately delete a Drive file or folder by ID. This bypasses Trash and cannot be undone. To move to Trash instead, use the Google Drive UI or modify file properties. Use search_files or list_files to find file IDs.",
+          "inputSchema": "schemas/drive/delete_file.json",
+          "handler": "handlers/drive/delete_file.js",
+          "scope": "write",
+          "toolset": "drive"
+        },
+        {
+          "name": "read_document",
+          "description": "Read a Google Doc and return its content as clean Markdown. Preserves headings, bold, italic, strikethrough, links, code spans, ordered/unordered lists with nesting, and tables. This is the standard way to read document content. For editing, use append_text, replace_all_text, first-match tools, or docs_batch_update.",
+          "inputSchema": "schemas/docs/read_document.json",
+          "handler": "handlers/docs/read_document.js",
+          "scope": "read",
+          "toolset": "docs"
+        },
+        {
+          "name": "search_docs",
+          "description": "Search Google Drive for Google Docs only. Use this when the agent needs to discover Docs by name or Drive query without manually constructing a MIME type filter.",
+          "inputSchema": "schemas/docs/search_docs.json",
+          "handler": "handlers/docs/search_docs.js",
+          "scope": "read",
+          "toolset": "docs"
+        },
+        {
+          "name": "create_document",
+          "description": "Create a new empty Google Doc with the given title. Returns the created document's metadata including its documentId, which is needed for all subsequent operations on the document.",
+          "inputSchema": "schemas/docs/create_document.json",
+          "handler": "handlers/docs/create_document.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "docs_batch_update",
+          "description": "Send a documents.batchUpdate request to modify a document with one or more structured requests. Supports insertText, deleteContentRange, replaceAllText, createNamedRange, updateTextStyle, updateParagraphStyle, insertTable, insertInlineImage, and more. For common operations, prefer the higher-level Docs tools.",
+          "inputSchema": "schemas/docs/batch_update.json",
+          "handler": "handlers/docs/batch_update.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "append_text",
+          "description": "Append plain text to the end of a Google Doc. Automatically fetches the document to find the correct end index and inserts the text there. Use this for adding content to the end of a document without needing to know the document structure.",
+          "inputSchema": "schemas/docs/append_text.json",
+          "handler": "handlers/docs/append_text.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "replace_all_text",
+          "description": "Replace all occurrences of a text string in a Google Doc with new text. Case-sensitive by default. More efficient than the first-match tools when you need to replace every occurrence. Returns the number of occurrences replaced.",
+          "inputSchema": "schemas/docs/replace_all_text.json",
+          "handler": "handlers/docs/replace_all_text.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "style_first_match",
+          "description": "Find the first occurrence of text in a document and apply a TextStyle to it (bold, italic, fontSize, foregroundColor, etc.). Uses a marker-based approach: replaces the text with a unique marker, locates the marker's position, applies the style, then restores the original text. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/style_first_match.json",
+          "handler": "handlers/docs/style_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "insert_text_after_first_match",
+          "description": "Find the first occurrence of text and insert new text immediately before or after it. Useful for inserting content at a specific anchor point in the document without knowing exact character indices. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/insert_text_after_first_match.json",
+          "handler": "handlers/docs/insert_text_after_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "insert_table_after_first_match",
+          "description": "Find the first occurrence of text and insert a table with the specified number of rows and columns nearby. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/insert_table_after_first_match.json",
+          "handler": "handlers/docs/insert_table_after_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "insert_page_break_after_first_match",
+          "description": "Find the first occurrence of text and insert a page break nearby. Useful for structuring long documents. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/insert_page_break_after_first_match.json",
+          "handler": "handlers/docs/insert_page_break_after_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "insert_inline_image_after_first_match",
+          "description": "Find the first occurrence of text and insert an inline image nearby, referenced by URL. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/insert_inline_image_after_first_match.json",
+          "handler": "handlers/docs/insert_inline_image_after_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "delete_first_match",
+          "description": "Find the first occurrence of text in the document and delete it. Only the first match is removed. Use replace_all_text with an empty string to remove all occurrences. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/delete_first_match.json",
+          "handler": "handlers/docs/delete_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "update_paragraph_style_for_first_match",
+          "description": "Find the first occurrence of text and update the paragraph style for the paragraph containing it. Use to apply heading levels (HEADING_1 through HEADING_6), NORMAL_TEXT, or adjust spacing, alignment, and indentation. Returns {applied: true/false}.",
+          "inputSchema": "schemas/docs/update_paragraph_style_for_first_match.json",
+          "handler": "handlers/docs/update_paragraph_style_for_first_match.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "update_document_style",
+          "description": "Update document-level style properties such as page size (pageSize.width, pageSize.height in pt), margins (marginTop, marginBottom, marginLeft, marginRight in pt), and page orientation. Does not affect individual paragraph or text styles.",
+          "inputSchema": "schemas/docs/update_document_style.json",
+          "handler": "handlers/docs/update_document_style.js",
+          "scope": "write",
+          "toolset": "docs"
+        },
+        {
+          "name": "get_spreadsheet",
+          "description": "Retrieve spreadsheet metadata including all sheet names, IDs, and properties. Set includeGridData=false (the default) to get only metadata without cell values. Use read_sheet for cell content. Use the 'fields' parameter to limit the response (e.g. fields='sheets.properties' to get only sheet names and IDs). The spreadsheetId appears in the URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/.",
+          "inputSchema": "schemas/sheets/get_spreadsheet.json",
+          "handler": "handlers/sheets/get_spreadsheet.js",
+          "scope": "read",
+          "toolset": "sheets"
+        },
+        {
+          "name": "search_sheets",
+          "description": "Search Google Drive for Google Sheets only. Use this when the agent needs to discover spreadsheets by name or Drive query without manually constructing a MIME type filter.",
+          "inputSchema": "schemas/sheets/search_sheets.json",
+          "handler": "handlers/sheets/search_sheets.js",
+          "scope": "read",
+          "toolset": "sheets"
+        },
+        {
+          "name": "read_sheet",
+          "description": "Read cell values from a sheet range and return as a Markdown table with A1 column headers and row numbers. Use this to read and understand spreadsheet data -- the coordinates in the output can be used directly with update_values and append_values for writes. Supports optional valueRenderOption for formulas or raw numbers. Use get_spreadsheet first to discover sheet names.",
+          "inputSchema": "schemas/sheets/read_sheet.json",
+          "handler": "handlers/sheets/read_sheet.js",
+          "scope": "read",
+          "toolset": "sheets"
+        },
+        {
+          "name": "create_spreadsheet",
+          "description": "Create a new Google Spreadsheet. Accepts a full spreadsheet resource body, allowing you to specify the title, initial sheets, and cell data. Minimum: provide {title: 'My Spreadsheet'}. Returns the created spreadsheet including its spreadsheetId.",
+          "inputSchema": "schemas/sheets/create_spreadsheet.json",
+          "handler": "handlers/sheets/create_spreadsheet.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "update_values",
+          "description": "Write values to a specific A1 range, replacing existing content. Use valueInputOption='USER_ENTERED' to parse values as the user would type them (supports formulas, dates, currency). Use 'RAW' to store values as literal strings. Provide values as a 2D array (rows of columns).",
+          "inputSchema": "schemas/sheets/update_values.json",
+          "handler": "handlers/sheets/update_values.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "append_values",
+          "description": "Append rows of values after the last row of existing data in a range. Useful for adding new rows to a table without knowing the exact next row number. Uses USER_ENTERED valueInputOption by default. The range determines which sheet to append to.",
+          "inputSchema": "schemas/sheets/append_values.json",
+          "handler": "handlers/sheets/append_values.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "batch_update_values",
+          "description": "Write values to multiple A1 ranges in a single API call. More efficient than calling update_values multiple times. Provide a data array where each item has range and values. Use valueInputOption='USER_ENTERED' for formulas and dates.",
+          "inputSchema": "schemas/sheets/batch_update_values.json",
+          "handler": "handlers/sheets/batch_update_values.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "clear_values",
+          "description": "Clear all values (but not formatting) in the specified A1 range. The cells remain but their content is removed. To clear formatting as well, use sheets_batch_update with a repeatCell request.",
+          "inputSchema": "schemas/sheets/clear_values.json",
+          "handler": "handlers/sheets/clear_values.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "batch_clear_values",
+          "description": "Clear values from multiple A1 ranges in a single API call. More efficient than calling clear_values multiple times.",
+          "inputSchema": "schemas/sheets/batch_clear_values.json",
+          "handler": "handlers/sheets/batch_clear_values.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "sheets_batch_update",
+          "description": "Send a spreadsheets.batchUpdate request for structural changes such as addSheet, deleteSheet, duplicateSheet, insertDimension, deleteDimension, mergeCells, sortRange, addConditionalFormatRule, and more. Accepts a requests array. Use update_values or batch_update_values for writing cell data.",
+          "inputSchema": "schemas/sheets/batch_update.json",
+          "handler": "handlers/sheets/batch_update.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "copy_to_spreadsheet",
+          "description": "Copy a specific sheet (tab) from one spreadsheet to another. Provide the source spreadsheetId, the sheetId (integer, from get_spreadsheet), and the destination spreadsheetId. Returns the copied sheet's properties in the destination spreadsheet.",
+          "inputSchema": "schemas/sheets/copy_to_spreadsheet.json",
+          "handler": "handlers/sheets/copy_to_spreadsheet.js",
+          "scope": "write",
+          "toolset": "sheets"
+        },
+        {
+          "name": "read_presentation",
+          "description": "Read a Google Slides presentation and return a human-readable summary including the title, slide count, and text content extracted from each slide. Returns the text found in all shapes on each slide with slide IDs for reference. Use this to understand what is in a presentation before editing. For low-level modifications, use slides_batch_update.",
+          "inputSchema": "schemas/slides/get_presentation.json",
+          "handler": "handlers/slides/read_presentation.js",
+          "scope": "read",
+          "toolset": "slides"
+        },
+        {
+          "name": "search_slides",
+          "description": "Search Google Drive for Google Slides only. Use this when the agent needs to discover presentations by name or Drive query without manually constructing a MIME type filter.",
+          "inputSchema": "schemas/slides/search_slides.json",
+          "handler": "handlers/slides/search_slides.js",
+          "scope": "read",
+          "toolset": "slides"
+        },
+        {
+          "name": "get_page_thumbnail",
+          "description": "Generate a thumbnail image URL for a specific slide (page) in a presentation. Requires the presentation ID and the slide's objectId (page ID from read_presentation). Returns a contentUrl for the thumbnail image. Useful for previewing slides.",
+          "inputSchema": "schemas/slides/get_page_thumbnail.json",
+          "handler": "handlers/slides/get_page_thumbnail.js",
+          "scope": "read",
+          "toolset": "slides"
+        },
+        {
+          "name": "create_presentation",
+          "description": "Create a new empty Google Slides presentation with an optional title. Returns the created presentation's metadata including its presentationId, which is needed for all subsequent operations.",
+          "inputSchema": "schemas/slides/create_presentation.json",
+          "handler": "handlers/slides/create_presentation.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "slides_batch_update",
+          "description": "Send a presentations.batchUpdate request for low-level slide modifications. Accepts an array of requests (createSlide, deleteObject, insertText, deleteText, createShape, createTable, replaceAllText, updateTextStyle, updateShapeProperties, etc.). For common text and styling operations, prefer the higher-level Slides tools.",
+          "inputSchema": "schemas/slides/batch_update.json",
+          "handler": "handlers/slides/batch_update.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "append_text_to_title_of_slide_index",
+          "description": "Append text to the title shape of a specific slide by its 0-based index (slideIndex=0 is the first slide, default). Fetches the presentation to find the title shape's objectId then inserts text at the end of its content.",
+          "inputSchema": "schemas/slides/append_text_to_title_of_first_slide.json",
+          "handler": "handlers/slides/append_text_to_title_of_first_slide.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "replace_text_first_match",
+          "description": "Replace the first occurrence of text anywhere in the presentation with new text. Note: the Slides API replaceAllText always replaces all occurrences; this tool uses replaceAllText internally. For replacing only one instance, use style_text_first_match to locate and style the match, then follow up with slides_batch_update. Returns the API response.",
+          "inputSchema": "schemas/slides/replace_text_first_match.json",
+          "handler": "handlers/slides/replace_text_first_match.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "style_text_first_match",
+          "description": "Find the first occurrence of text in the presentation and apply a text style to it (bold, italic, fontSize, foregroundColor, etc.). Uses a marker pattern: replaces the text with a unique marker, finds the marker's objectId and range, applies the style, then restores the original text. Returns {applied: true/false}.",
+          "inputSchema": "schemas/slides/style_text_first_match.json",
+          "handler": "handlers/slides/style_text_first_match.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "insert_shape_after_first_match",
+          "description": "Find the first slide containing a text match and insert a rectangle shape on that slide at the specified position. Positions use EMU units (1 inch = 914400 EMU). Returns {applied: true/false}.",
+          "inputSchema": "schemas/slides/insert_shape_after_first_match.json",
+          "handler": "handlers/slides/insert_shape_after_first_match.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "insert_image_after_first_match",
+          "description": "Find the first slide containing a text match and insert an image on that slide from a URL. Position and size use EMU units (1 inch = 914400 EMU). Returns {applied: true/false}.",
+          "inputSchema": "schemas/slides/insert_image_after_first_match.json",
+          "handler": "handlers/slides/insert_image_after_first_match.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "create_slide_after_first_match",
+          "description": "Find the first slide containing a text match and create a new blank slide immediately after it. Useful for inserting slides at a specific position in the deck. Returns {applied: true/false} and the new slide's objectId.",
+          "inputSchema": "schemas/slides/create_slide_after_first_match.json",
+          "handler": "handlers/slides/create_slide_after_first_match.js",
+          "scope": "write",
+          "toolset": "slides"
+        },
+        {
+          "name": "set_background_color_for_slide_index",
+          "description": "Set the background color for a specific slide by its 0-based index (slideIndex=0 is the first slide). Provide r, g, b values in 0.0-1.0 range (e.g. r=1.0, g=0.0, b=0.0 for red). Fetches the presentation first to resolve the slide's objectId from the index.",
+          "inputSchema": "schemas/slides/set_background_color_for_slide_index.json",
+          "handler": "handlers/slides/set_background_color_for_slide_index.js",
+          "scope": "write",
+          "toolset": "slides"
+        }
+      ]
+    },
+    "prompt": "## IDs and URLs\n\nGoogle Workspace resources use product-specific URLs:\n\n- Drive files: `https://drive.google.com/file/d/{fileId}/view`\n- Drive folders: `https://drive.google.com/drive/folders/{folderId}`\n- Docs: `https://docs.google.com/document/d/{documentId}/edit`\n- Sheets: `https://docs.google.com/spreadsheets/d/{spreadsheetId}/edit`\n- Slides: `https://docs.google.com/presentation/d/{presentationId}/edit`\n\nUse Drive search/list tools to discover files when the Drive toolset is enabled.\n\n## When to use Drive vs native product tools\n\n- Use Drive tools to search, list, move, share, create metadata-only files, and read arbitrary uploaded files.\n- Use Docs tools when you need structured document editing or rich document reads.\n- Use Sheets tools when you need sheet metadata, ranges, values, or structural spreadsheet updates.\n- Use Slides tools when you need deck-level reads, thumbnails, or structured slide edits.\n- Use `search_docs`, `search_sheets`, and `search_slides` when you want product-specific discovery without manually writing Drive MIME filters.\n\n`read_file_content` is a good default for reading arbitrary files, but native Docs/Sheets/Slides tools are better when you need structure-preserving operations.\n\n## Batch update tools\n\nThis merged integration has three product-specific batch update tools:\n\n- `docs_batch_update`\n- `sheets_batch_update`\n- `slides_batch_update`\n\nUse the one that matches the product you are editing.\n",
+    "variants": {
+      "variants": {
+        "service_account": {
+          "label": "Service Account (recommended for enterprise)",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "serviceAccountJson": {
+                "type": "string",
+                "title": "Service Account JSON",
+                "description": "Full service account key JSON (contents of the downloaded JSON file from Google Cloud)."
+              },
+              "subject": {
+                "type": "string",
+                "title": "Subject / impersonated user (optional)",
+                "description": "Optional user email to impersonate when using Google Workspace domain-wide delegation."
+              },
+              "scopes": {
+                "type": "array",
+                "title": "OAuth scopes (optional)",
+                "description": "Optional override for OAuth scopes. Defaults to drive + documents + spreadsheets + presentations.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "serviceAccountJson"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          },
+          "preprocess": "google_service_account",
+          "healthCheck": {
+            "notViable": true
+          }
+        },
+        "oauth_token": {
+          "label": "OAuth Access Token (short-lived)",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "title": "OAuth Access Token",
+                "description": "Short-lived Google OAuth access token with drive.file, documents, spreadsheets, and presentations scopes."
+              }
+            },
+            "required": [
+              "token"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          },
+          "healthCheck": {
+            "notViable": true
+          }
+        }
+      },
+      "default": "service_account"
+    },
+    "hint": null,
+    "hintsByVariant": {
+      "oauth_token": "Obtain a short-lived Google OAuth access token using these scopes:\n\n- `https://www.googleapis.com/auth/drive.file`\n- `https://www.googleapis.com/auth/documents`\n- `https://www.googleapis.com/auth/spreadsheets`\n- `https://www.googleapis.com/auth/presentations`\n\nYou can use the Google OAuth 2.0 Playground (`https://developers.google.com/oauthplayground/`) or your own OAuth flow.\n\nNote: OAuth access tokens are short-lived (typically 1 hour). For long-running use or full enterprise access, prefer the Service Account variant.",
+      "service_account": "Provide a Google service account JSON key.\n\nOptional fields:\n\n1. `subject` if you are using domain-wide delegation and want to impersonate a user\n2. `scopes` if you need to override the defaults\n\nDefault scopes for this integration:\n\n- `https://www.googleapis.com/auth/drive`\n- `https://www.googleapis.com/auth/documents`\n- `https://www.googleapis.com/auth/spreadsheets`\n- `https://www.googleapis.com/auth/presentations`\n\nFor full Workspace access, make sure the service account has been granted access to the relevant Drive files or shared drives, or use domain-wide delegation where appropriate."
+    },
+    "tools": [
+      {
+        "name": "list_files",
+        "description": "List files in a Google Drive folder or across all of Drive. Returns id, name, mimeType, modifiedTime, size, and parents for each file. Excludes trashed files by default. Use folderId to scope to a specific folder. For name- or type-based search, use search_files instead. Defaults to 50 results per page; use pageToken from the response for the next page.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "folderId": {
+              "type": "string",
+              "description": "Parent folder ID to list contents of. Omit to list files across all of Drive (not scoped to a folder). Use search_files with query=\"'root' in parents\" to list only root-level files."
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 50,
+              "description": "Maximum results per page. Defaults to 50. Use pageToken from the response for the next page."
+            },
+            "pageToken": {
+              "type": "string",
+              "description": "Page token from a previous list_files response to retrieve the next page of results."
+            },
+            "orderBy": {
+              "type": "string",
+              "description": "Sort order. Examples: 'modifiedTime desc', 'name', 'createdTime desc'. Default is unspecified."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const qParts = ['trashed = false']\n  if (input.folderId)\n    qParts.push(`'${input.folderId}' in parents`)\n  params.set('q', qParts.join(' and '))\n  params.set('fields', input.fields || 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)')\n  params.set('pageSize', String(input.pageSize || 50))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  if (input.orderBy)\n    params.set('orderBy', input.orderBy)\n  const res = await integration.fetch(`/files?${params.toString()}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "drive"
+      },
+      {
+        "name": "search_files",
+        "description": "Search Google Drive for files by name, MIME type, or raw Drive query syntax. Use the 'name' shorthand for simple name searches (e.g. name='quarterly report'). Use 'mimeType' to filter by type. Use 'query' for advanced Drive search expressions (e.g. \"modifiedTime > '2024-01-01'\" or \"'folderId' in parents and mimeType='application/pdf'\"). All provided filters are combined with AND. Defaults to 20 results per page.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Raw Drive query string using the Drive search syntax. Examples: \"name contains 'budget' and mimeType = 'application/vnd.google-apps.spreadsheet'\", \"modifiedTime > '2024-01-01'\", \"'folderId' in parents\". Combined with name/mimeType shorthand via AND."
+            },
+            "name": {
+              "type": "string",
+              "description": "Shorthand for name-based search. Translates to \"name contains 'value'\". Combined with query and mimeType via AND."
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "Filter by MIME type. Common values: 'application/vnd.google-apps.document' (Docs), 'application/vnd.google-apps.spreadsheet' (Sheets), 'application/vnd.google-apps.presentation' (Slides), 'application/vnd.google-apps.folder' (folders), 'application/pdf', 'text/plain'."
+            },
+            "includeTrashed": {
+              "type": "boolean",
+              "description": "Include trashed files in results. Defaults to false (trashed files excluded)."
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 20,
+              "description": "Maximum results per page. Defaults to 20. Use pageToken from the response for the next page."
+            },
+            "pageToken": {
+              "type": "string",
+              "description": "Page token from a previous search_files response to retrieve the next page of results."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const qParts = []\n  if (input.query)\n    qParts.push(input.query)\n  if (input.name)\n    qParts.push(`name contains '${input.name.replace(/\\\\/g, '\\\\\\\\').replace(/'/g, \"\\\\'\")}'`)\n  if (input.mimeType)\n    qParts.push(`mimeType = '${input.mimeType}'`)\n  if (!input.includeTrashed)\n    qParts.push('trashed = false')\n  if (qParts.length > 0)\n    params.set('q', qParts.join(' and '))\n  params.set('fields', input.fields || 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)')\n  params.set('pageSize', String(input.pageSize || 20))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  const res = await integration.fetch(`/files?${params.toString()}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "drive"
+      },
+      {
+        "name": "get_file_meta",
+        "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use read_file_content. To find a file by name, use search_files.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "fileId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "fileId": {
+              "type": "string",
+              "description": "Drive file or folder ID. Use search_files or list_files to find file IDs."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Comma-separated list of fields to return. Defaults to 'id,name,mimeType,modifiedTime,createdTime,size,parents,trashed,webViewLink'. See the Drive API fields reference for all available fields."
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const fields = input.fields || 'id,name,mimeType,modifiedTime,createdTime,size,parents,trashed,webViewLink'\n  const res = await integration.fetch(`/files/${encodeURIComponent(input.fileId)}?fields=${encodeURIComponent(fields)}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "drive"
+      },
+      {
+        "name": "read_file_content",
+        "description": "Read any authorized Google Workspace or uploaded Drive file into agent-friendly text. Supports Docs, Sheets, Slides, PDF, DOCX, XLSX, and PPTX. Pass the mimeType from get_file_meta or search_files when available for the best behavior.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "fileId"
+          ],
+          "properties": {
+            "fileId": {
+              "type": "string",
+              "description": "Drive file ID. Use search_files or list_files to find file IDs."
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "Optional Drive MIME type from get_file_meta or search_files."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const googleNativeExports = {\n    'application/vnd.google-apps.document': 'text/markdown',\n    'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n    'application/vnd.google-apps.presentation': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',\n    'application/vnd.google-apps.drawing': 'image/svg+xml',\n    'application/vnd.google-apps.script': 'application/vnd.google-apps.script+json',\n  }\n  const isTextLikeMimeType = (value) => {\n    const mimeType = String(value || '').split(';', 1)[0].trim().toLowerCase()\n    return mimeType.startsWith('text/')\n      || mimeType.includes('json')\n      || mimeType.includes('csv')\n      || mimeType === 'application/xml'\n      || mimeType === 'text/xml'\n      || mimeType.endsWith('+xml')\n      || mimeType.includes('javascript')\n      || mimeType.includes('svg')\n  }\n  const resolveMimeType = async () => {\n    if (typeof input.mimeType === 'string' && input.mimeType.trim())\n      return input.mimeType.trim()\n\n    const metaRes = await integration.fetch(`/files/${fileId}?fields=id,name,mimeType`)\n    const meta = await metaRes.json()\n    return meta?.mimeType || ''\n  }\n  const readTextContent = async (source) => {\n    const res = await integration.fetch(source)\n    const contentMimeType = res.headers?.get?.('content-type') || ''\n    const content = await res.text()\n    return { contentMimeType, content }\n  }\n\n  const fileId = encodeURIComponent(input.fileId)\n  const mimeType = await resolveMimeType()\n\n  if (!mimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType: null,\n      content: null,\n      message: 'Could not determine the Drive file MIME type.',\n    }\n  }\n\n  if (mimeType === 'application/vnd.google-apps.folder') {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const isGoogleNative = mimeType.startsWith('application/vnd.google-apps.')\n  const exportMimeType = isGoogleNative\n    ? (typeof input.exportMimeType === 'string' && input.exportMimeType.trim())\n        ? input.exportMimeType.trim()\n        : googleNativeExports[mimeType] || null\n    : null\n\n  if (isGoogleNative && !exportMimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'This Google-native file type does not have a configured export path for read_file_content.',\n    }\n  }\n\n  const source = isGoogleNative\n    ? `/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`\n    : `/files/${fileId}?alt=media`\n\n  if (isTextLikeMimeType(exportMimeType || mimeType)) {\n    const textResult = await readTextContent(source)\n    return {\n      fileId: input.fileId,\n      mimeType,\n      contentMimeType: textResult.contentMimeType || exportMimeType || mimeType,\n      content: textResult.content,\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    integration: 'google-drive',\n    source,\n  })\n\n  return {\n    fileId: input.fileId,\n    mimeType,\n    contentMimeType: exportMimeType || mimeType,\n    ...extracted,\n  }\n}",
+        "scope": "read",
+        "toolset": "drive"
+      },
+      {
+        "name": "create_folder",
+        "description": "Create a new folder in Google Drive. Optionally nest it inside a parent folder using parentId. Returns the created folder's metadata including its ID, which can be used as a parentId for subsequent file creation.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "parentId": {
+              "type": "string",
+              "description": "Optional parent folder fileId"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const body = {\n    name: input.name,\n    mimeType: 'application/vnd.google-apps.folder',\n  }\n  if (input.parentId)\n    body.parents = [input.parentId]\n\n  const res = await integration.fetch('/files', {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "drive"
+      },
+      {
+        "name": "create_file",
+        "description": "Create a new Drive file (metadata only -- no content upload). To create a Google Workspace file, use the appropriate mimeType: 'application/vnd.google-apps.document' for Docs, 'application/vnd.google-apps.spreadsheet' for Sheets, 'application/vnd.google-apps.presentation' for Slides. Optionally place it in a folder with parentId. Returns the created file's metadata including its ID.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "name",
+            "mimeType"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "Drive mimeType (e.g. application/vnd.google-apps.document)"
+            },
+            "parentId": {
+              "type": "string",
+              "description": "Optional parent folder fileId"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const body = {\n    name: input.name,\n    mimeType: input.mimeType,\n  }\n  if (input.parentId)\n    body.parents = [input.parentId]\n\n  const res = await integration.fetch('/files', {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "drive"
+      },
+      {
+        "name": "move_file",
+        "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file_meta.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "fileId",
+            "addParents"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "fileId": {
+              "type": "string"
+            },
+            "addParents": {
+              "type": "string",
+              "description": "Comma-separated parent IDs to add"
+            },
+            "removeParents": {
+              "type": "string",
+              "description": "Comma-separated parent IDs to remove (optional)"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('addParents', input.addParents)\n  if (input.removeParents)\n    params.set('removeParents', input.removeParents)\n\n  const res = await integration.fetch(`/files/${encodeURIComponent(input.fileId)}?${params.toString()}`, {\n    method: 'PATCH',\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "drive"
+      },
+      {
+        "name": "share_file",
+        "description": "Share a Drive file or folder with a specific user, group, domain, or make it publicly accessible. Use type='user' with emailAddress for individual sharing. Use type='anyone' with role='reader' to create a public view link. Use type='domain' with domain for organization-wide sharing. Returns the created permission resource.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "fileId",
+            "role",
+            "type"
+          ],
+          "properties": {
+            "fileId": {
+              "type": "string",
+              "description": "Drive file or folder ID to share."
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "reader",
+                "commenter",
+                "writer",
+                "organizer",
+                "owner"
+              ],
+              "description": "Permission level. 'reader' = view only, 'commenter' = view + comment, 'writer' = edit, 'organizer' = organize in shared drives, 'owner' = full ownership transfer."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "user",
+                "group",
+                "domain",
+                "anyone"
+              ],
+              "description": "Grantee type. 'user' requires emailAddress, 'group' requires emailAddress, 'domain' requires domain, 'anyone' grants access to all (use role='reader' for public link)."
+            },
+            "emailAddress": {
+              "type": "string",
+              "description": "Email address of the user or group to share with. Required when type is 'user' or 'group'."
+            },
+            "domain": {
+              "type": "string",
+              "description": "Domain to share with (e.g. 'example.com'). Required when type is 'domain'."
+            },
+            "sendNotificationEmail": {
+              "type": "boolean",
+              "description": "Whether to send a notification email to the new recipient. Defaults to true. Set to false to share silently."
+            },
+            "emailMessage": {
+              "type": "string",
+              "description": "Custom message to include in the notification email."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const fileId = encodeURIComponent(input.fileId)\n  const params = new URLSearchParams()\n  if (input.sendNotificationEmail !== undefined)\n    params.set('sendNotificationEmail', String(input.sendNotificationEmail))\n  if (input.emailMessage)\n    params.set('emailMessage', input.emailMessage)\n  const body = {\n    role: input.role,\n    type: input.type,\n  }\n  if (input.emailAddress) body.emailAddress = input.emailAddress\n  if (input.domain) body.domain = input.domain\n  const qs = params.toString()\n  const res = await integration.fetch(`/files/${fileId}/permissions${qs ? `?${qs}` : ''}`, {\n    method: 'POST',\n    body,\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "drive"
+      },
+      {
+        "name": "delete_file",
+        "description": "Permanently and immediately delete a Drive file or folder by ID. This bypasses Trash and cannot be undone. To move to Trash instead, use the Google Drive UI or modify file properties. Use search_files or list_files to find file IDs.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "fileId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "fileId": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/files/${encodeURIComponent(input.fileId)}`, {\n    method: 'DELETE',\n  })\n  if (res.status === 204)\n    return { success: true, status: 204 }\n  try {\n    return await res.json()\n  }\n  catch {\n    return { success: res.ok, status: res.status }\n  }\n}",
+        "scope": "write",
+        "toolset": "drive"
+      },
+      {
+        "name": "read_document",
+        "description": "Read a Google Doc and return its content as clean Markdown. Preserves headings, bold, italic, strikethrough, links, code spans, ordered/unordered lists with nesting, and tables. This is the standard way to read document content. For editing, use append_text, replace_all_text, first-match tools, or docs_batch_update.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "documentId"
+          ],
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "description": "Google Doc documentId from URL: https://docs.google.com/document/d/{documentId}/edit"
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const MONO_FONTS = new Set([\n    'Courier',\n    'Courier New',\n    'Consolas',\n    'Menlo',\n    'Monaco',\n    'Roboto Mono',\n    'Source Code Pro',\n  ])\n\n  const HEADING_MAP = {\n    TITLE: '#',\n    SUBTITLE: '##',\n    HEADING_1: '#',\n    HEADING_2: '##',\n    HEADING_3: '###',\n    HEADING_4: '####',\n    HEADING_5: '#####',\n    HEADING_6: '######',\n  }\n\n  const BULLET_GLYPHS = new Set([\n    'BULLET_DISC_CIRCLE_SQUARE',\n    'BULLET_DIAMONDX_ARROW3D_SQUARE',\n    'BULLET_CHECKBOX',\n    'BULLET_ARROW_DIAMOND_DISC',\n    'BULLET_STAR_CIRCLE_SQUARE',\n  ])\n\n  const LIST_NUMBER_GLYPHS = new Set([\n    'DECIMAL',\n    'ZERO_DECIMAL',\n    'UPPER_ALPHA',\n    'ALPHA',\n    'UPPER_ROMAN',\n    'ROMAN',\n  ])\n\n  const trimEndWhitespace = (value) => (value || '').replace(/[ \\t]+$/g, '')\n\n  const escapeCell = (value) =>\n    String(value ?? '')\n      .replace(/\\|/g, '\\\\|')\n      .replace(/\\r?\\n/g, '<br>')\n\n  const extractPlainTextFromParagraph = (paragraph) => {\n    let text = ''\n    for (const element of paragraph?.elements || []) {\n      text += element?.textRun?.content || ''\n    }\n    return trimEndWhitespace(text)\n  }\n\n  const applyTextStyle = (text, textStyle = {}) => {\n    const raw = (text || '').replace(/\\n/g, '')\n    if (!raw) return ''\n\n    let out = raw\n    if (textStyle.link?.url) out = `[${out}](${textStyle.link.url})`\n\n    const fontFamily = textStyle.weightedFontFamily?.fontFamily || ''\n    const isMono = textStyle.smallCaps || MONO_FONTS.has(fontFamily)\n\n    if (isMono) out = `\\`${out}\\``\n    if (textStyle.bold) out = `**${out}**`\n    if (textStyle.italic) out = `*${out}*`\n    if (textStyle.strikethrough) out = `~~${out}~~`\n\n    return out\n  }\n\n  const paragraphToMarkdown = (paragraph, docLists) => {\n    const styleType = paragraph?.paragraphStyle?.namedStyleType\n    const headingPrefix = HEADING_MAP[styleType] || ''\n\n    let line = ''\n    for (const element of paragraph?.elements || []) {\n      line += applyTextStyle(element?.textRun?.content || '', element?.textRun?.textStyle || {})\n    }\n    line = trimEndWhitespace(line)\n\n    if (!line) return ''\n\n    const bullet = paragraph?.bullet\n    if (bullet) {\n      const nestingLevel = bullet.nestingLevel || 0\n      const listMeta = docLists?.[bullet.listId]\n      const nesting = listMeta?.listProperties?.nestingLevels?.[nestingLevel]\n      const glyphType = nesting?.glyphType || ''\n      const isNumbered = LIST_NUMBER_GLYPHS.has(glyphType) && !BULLET_GLYPHS.has(glyphType)\n      const indent = '  '.repeat(Math.max(0, nestingLevel))\n      return `${indent}${isNumbered ? '1.' : '-'} ${line}`\n    }\n\n    if (headingPrefix) return `${headingPrefix} ${line}`\n    return line\n  }\n\n  const tableToMarkdown = (table, docLists) => {\n    const rows = table?.tableRows || []\n    if (!rows.length) return ''\n\n    const normalized = rows.map((row) =>\n      (row?.tableCells || []).map((cell) => {\n        const parts = []\n        for (const c of cell?.content || []) {\n          if (c?.paragraph) {\n            const p = paragraphToMarkdown(c.paragraph, docLists)\n            if (p) parts.push(p)\n          }\n        }\n        return escapeCell(parts.join('<br>'))\n      }),\n    )\n\n    const width = Math.max(...normalized.map((r) => r.length), 1)\n    const padded = normalized.map((r) => [...r, ...Array(width - r.length).fill('')])\n    const header = padded[0] || Array(width).fill('')\n    const separator = Array(width).fill('---')\n    const body = padded.slice(1)\n\n    const lines = [\n      `| ${header.join(' | ')} |`,\n      `| ${separator.join(' | ')} |`,\n      ...body.map((r) => `| ${r.join(' | ')} |`),\n    ]\n    return lines.join('\\n')\n  }\n\n  const docToPlainText = (docBodyContent) => {\n    const lines = []\n    for (const item of docBodyContent || []) {\n      if (item?.paragraph) {\n        const text = extractPlainTextFromParagraph(item.paragraph)\n        if (text) lines.push(text)\n      } else if (item?.table) {\n        for (const row of item.table.tableRows || []) {\n          const cells = (row.tableCells || []).map((cell) => {\n            const pieces = []\n            for (const contentItem of cell.content || []) {\n              if (contentItem?.paragraph) {\n                const text = extractPlainTextFromParagraph(contentItem.paragraph)\n                if (text) pieces.push(text)\n              }\n            }\n            return pieces.join(' ')\n          })\n          if (cells.some(Boolean)) lines.push(cells.join(' | '))\n        }\n      }\n    }\n    return lines.join('\\n\\n').trim()\n  }\n\n  const { documentId } = input\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await res.json()\n\n  const content = doc?.body?.content || []\n  const lists = doc?.lists || {}\n\n  const blocks = []\n  for (const item of content) {\n    if (item?.paragraph) {\n      const line = paragraphToMarkdown(item.paragraph, lists)\n      if (line) blocks.push(line)\n    } else if (item?.table) {\n      const table = tableToMarkdown(item.table, lists)\n      if (table) blocks.push(table)\n    }\n  }\n\n  const markdown = blocks.join('\\n\\n').trim()\n  if (markdown) {\n    return {\n      documentId: doc?.documentId || documentId,\n      title: doc?.title || '',\n      markdown,\n    }\n  }\n\n  // Escape hatch: return plain text if markdown conversion produced nothing.\n  return {\n    documentId: doc?.documentId || documentId,\n    title: doc?.title || '',\n    markdown: docToPlainText(content),\n  }\n}",
+        "scope": "read",
+        "toolset": "docs"
+      },
+      {
+        "name": "search_docs",
+        "description": "Search Google Drive for Google Docs only. Use this when the agent needs to discover Docs by name or Drive query without manually constructing a MIME type filter.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Raw Drive query string for Google Docs only. Examples: \"modifiedTime > '2024-01-01'\", \"'folderId' in parents\". Combined with the fixed Docs MIME type and name filter via AND."
+            },
+            "name": {
+              "type": "string",
+              "description": "Shorthand for name-based search. Translates to \"name contains 'value'\" and is combined with the fixed Docs MIME type."
+            },
+            "includeTrashed": {
+              "type": "boolean",
+              "description": "Include trashed Docs in results. Defaults to false."
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 20,
+              "description": "Maximum results per page. Defaults to 20. Use pageToken from the response for the next page."
+            },
+            "pageToken": {
+              "type": "string",
+              "description": "Page token from a previous search_docs response to retrieve the next page of results."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const qParts = [`mimeType = 'application/vnd.google-apps.document'`]\n  if (input.query)\n    qParts.push(input.query)\n  if (input.name)\n    qParts.push(`name contains '${input.name.replace(/\\\\/g, '\\\\\\\\').replace(/'/g, \"\\\\'\")}'`)\n  if (!input.includeTrashed)\n    qParts.push('trashed = false')\n  if (qParts.length > 0)\n    params.set('q', qParts.join(' and '))\n  params.set('fields', input.fields || 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)')\n  params.set('pageSize', String(input.pageSize || 20))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  const res = await integration.fetch(`/files?${params.toString()}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "docs"
+      },
+      {
+        "name": "create_document",
+        "description": "Create a new empty Google Doc with the given title. Returns the created document's metadata including its documentId, which is needed for all subsequent operations on the document.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title for the new document."
+            }
+          },
+          "additionalProperties": true
+        },
+        "handlerCode": "async (input) => {\n  const { title, ...rest } = input\n  const body = {}\n  if (title !== undefined)\n    body.title = title\n  Object.assign(body, rest)\n  const res = await integration.fetch(`/documents`, { method: 'POST', body })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "docs_batch_update",
+        "description": "Send a documents.batchUpdate request to modify a document with one or more structured requests. Supports insertText, deleteContentRange, replaceAllText, createNamedRange, updateTextStyle, updateParagraphStyle, insertTable, insertInlineImage, and more. For common operations, prefer the higher-level Docs tools.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string",
+              "description": "The document ID of the Google Doc."
+            },
+            "requests": {
+              "type": "array",
+              "description": "Array of Docs API requests (insertText, updateParagraphStyle, replaceAllText, etc).",
+              "items": {
+                "type": "object"
+              }
+            },
+            "writeControl": {
+              "type": "object",
+              "description": "Write control to ensure idempotency (requiredRevisionId, targetRevisionId)."
+            },
+            "includeTabStops": {
+              "type": "boolean",
+              "description": "Include tab stops in responses where applicable."
+            }
+          },
+          "required": [
+            "documentId",
+            "requests"
+          ],
+          "additionalProperties": true
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, requests, writeControl, includeTabStops } = input\n  const params = new URLSearchParams()\n  if (includeTabStops !== undefined)\n    params.set('includeTabStops', String(includeTabStops))\n  const qs = params.toString()\n  const path = `/documents/${encodeURIComponent(documentId)}:batchUpdate${qs ? `?${qs}` : ''}`\n  const body = { requests }\n  if (writeControl)\n    body.writeControl = writeControl\n  const res = await integration.fetch(path, { method: 'POST', body })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "append_text",
+        "description": "Append plain text to the end of a Google Doc. Automatically fetches the document to find the correct end index and inserts the text there. Use this for adding content to the end of a document without needing to know the document structure.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "documentId",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, text } = input\n  // Get doc to find end index\n  const metaRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const meta = await metaRes.json()\n  const endIndex = meta?.body?.content?.[meta.body.content.length - 1]?.endIndex || 1\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ insertText: { text, location: { index: endIndex - 1 } } }] },\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "replace_all_text",
+        "description": "Replace all occurrences of a text string in a Google Doc with new text. Case-sensitive by default. More efficient than the first-match tools when you need to replace every occurrence. Returns the number of occurrences replaced.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "replaceText": {
+              "type": "string"
+            },
+            "matchCase": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText",
+            "replaceText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, replaceText, matchCase } = input\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: Boolean(matchCase) }, replaceText } }] },\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "style_first_match",
+        "description": "Find the first occurrence of text in a document and apply a TextStyle to it (bold, italic, fontSize, foregroundColor, etc.). Uses a marker-based approach: replaces the text with a unique marker, locates the marker's position, applies the style, then restores the original text. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "textStyle": {
+              "type": "object"
+            },
+            "fields": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText",
+            "textStyle"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, textStyle, fields } = input\n  // 1) Find first match via replaceAllText with unique marker\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  const rep = await replaceRes.json()\n  // 2) Get doc, locate marker, compute indices\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let startIndex = -1\n  let endIndex = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        const elStart = e.startIndex || 1\n        startIndex = elStart + idx\n        endIndex = startIndex + marker.length\n        break\n      }\n    }\n    if (startIndex >= 0)\n      break\n  }\n  if (startIndex < 0)\n    return rep\n  // 3) Apply style and restore original text\n  const requests = []\n  requests.push({ updateTextStyle: { range: { startIndex, endIndex }, textStyle, fields: fields || Object.keys(textStyle || {}).join(',') } })\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "insert_text_after_first_match",
+        "description": "Find the first occurrence of text and insert new text immediately before or after it. Useful for inserting content at a specific anchor point in the document without knowing exact character indices. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "insertText": {
+              "type": "string"
+            },
+            "position": {
+              "type": "string",
+              "enum": [
+                "after",
+                "before"
+              ],
+              "default": "after"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText",
+            "insertText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, insertText, position } = input\n  const marker = `__CMD_MARK_${Date.now()}__`\n  // Replace first occurrence by marker only (simulate single by replacing all, then revert later to first span)\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await replaceRes.json()\n\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let insertIndex = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        const elStart = e.startIndex || 1\n        const startIndex = elStart + idx\n        const endIndex = startIndex + marker.length\n        insertIndex = position === 'before' ? startIndex : endIndex\n        break\n      }\n    }\n    if (insertIndex >= 0)\n      break\n  }\n  if (insertIndex < 0) {\n    const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n    const got = await confirm.json()\n    return { documentId: got?.documentId || documentId, applied: false, replies: [] }\n  }\n\n  const requests = []\n  requests.push({ insertText: { text: insertText, location: { index: insertIndex } } })\n  // restore marker back to original findText everywhere\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  if (out?.documentId || Array.isArray(out?.replies))\n    return { ...out, applied: true }\n  const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const got = await confirm.json()\n  return { documentId: got?.documentId || documentId, applied: true, replies: Array.isArray(out?.replies) ? out.replies : [] }\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "insert_table_after_first_match",
+        "description": "Find the first occurrence of text and insert a table with the specified number of rows and columns nearby. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "rows": {
+              "type": "number",
+              "minimum": 1
+            },
+            "columns": {
+              "type": "number",
+              "minimum": 1
+            },
+            "position": {
+              "type": "string",
+              "enum": [
+                "after",
+                "before"
+              ],
+              "default": "after"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText",
+            "rows",
+            "columns"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, rows, columns, position } = input\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await replaceRes.json()\n\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let baseIndex = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        const elStart = e.startIndex || 1\n        const startIndex = elStart + idx\n        const endIndex = startIndex + marker.length\n        baseIndex = position === 'before' ? startIndex : endIndex\n        break\n      }\n    }\n    if (baseIndex >= 0)\n      break\n  }\n  if (baseIndex < 0) {\n    const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n    const got = await confirm.json()\n    return { documentId: got?.documentId || documentId, applied: false, replies: [] }\n  }\n\n  const requests = []\n  requests.push({ insertTable: { location: { index: baseIndex }, rows, columns } })\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  if (out?.documentId || Array.isArray(out?.replies))\n    return { ...out, applied: true }\n  const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const got = await confirm.json()\n  return { documentId: got?.documentId || documentId, applied: true, replies: Array.isArray(out?.replies) ? out.replies : [] }\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "insert_page_break_after_first_match",
+        "description": "Find the first occurrence of text and insert a page break nearby. Useful for structuring long documents. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "position": {
+              "type": "string",
+              "enum": [
+                "after",
+                "before"
+              ],
+              "default": "after"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, position } = input\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await replaceRes.json()\n\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let baseIndex = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        const elStart = e.startIndex || 1\n        const startIndex = elStart + idx\n        const endIndex = startIndex + marker.length\n        baseIndex = position === 'before' ? startIndex : endIndex\n        break\n      }\n    }\n    if (baseIndex >= 0)\n      break\n  }\n  if (baseIndex < 0) {\n    const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n    const got = await confirm.json()\n    return { documentId: got?.documentId || documentId, applied: false, replies: [] }\n  }\n\n  const requests = []\n  requests.push({ insertPageBreak: { location: { index: baseIndex } } })\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  if (out?.documentId || Array.isArray(out?.replies))\n    return { ...out, applied: true }\n  const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const got = await confirm.json()\n  return { documentId: got?.documentId || documentId, applied: true, replies: Array.isArray(out?.replies) ? out.replies : [] }\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "insert_inline_image_after_first_match",
+        "description": "Find the first occurrence of text and insert an inline image nearby, referenced by URL. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "uri": {
+              "type": "string"
+            },
+            "position": {
+              "type": "string",
+              "enum": [
+                "after",
+                "before"
+              ],
+              "default": "after"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText",
+            "uri"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, uri, altText, position } = input\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await replaceRes.json()\n\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let baseIndex = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        const elStart = e.startIndex || 1\n        const startIndex = elStart + idx\n        const endIndex = startIndex + marker.length\n        baseIndex = position === 'before' ? startIndex : endIndex\n        break\n      }\n    }\n    if (baseIndex >= 0)\n      break\n  }\n  if (baseIndex < 0)\n    return { ok: true }\n\n  const requests = []\n  requests.push({ insertInlineImage: { location: { index: baseIndex }, uri } })\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "delete_first_match",
+        "description": "Find the first occurrence of text in the document and delete it. Only the first match is removed. Use replace_all_text with an empty string to remove all occurrences. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText } = input\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await replaceRes.json()\n\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let startIndex = -1\n  let endIndex = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        const elStart = e.startIndex || 1\n        startIndex = elStart + idx\n        endIndex = startIndex + marker.length\n        break\n      }\n    }\n    if (startIndex >= 0)\n      break\n  }\n  if (startIndex < 0) {\n    const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n    const got = await confirm.json()\n    return { documentId: got?.documentId || documentId, applied: false, replies: [] }\n  }\n\n  const requests = []\n  requests.push({ deleteContentRange: { range: { startIndex, endIndex } } })\n  // also clean any remaining markers\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: '' } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  if (out?.documentId || Array.isArray(out?.replies))\n    return { ...out, applied: true }\n  const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const got = await confirm.json()\n  return { documentId: got?.documentId || documentId, applied: true, replies: Array.isArray(out?.replies) ? out.replies : [] }\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "update_paragraph_style_for_first_match",
+        "description": "Find the first occurrence of text and update the paragraph style for the paragraph containing it. Use to apply heading levels (HEADING_1 through HEADING_6), NORMAL_TEXT, or adjust spacing, alignment, and indentation. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "paragraphStyle": {
+              "type": "object"
+            },
+            "fields": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "documentId",
+            "findText",
+            "paragraphStyle"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, findText, paragraphStyle, fields } = input\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await replaceRes.json()\n\n  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const doc = await getRes.json()\n  let paragraphStart = -1\n  let paragraphEnd = -1\n  for (const el of (doc?.body?.content || [])) {\n    const p = el.paragraph\n    if (!p)\n      continue\n    for (const e of (p.elements || [])) {\n      const t = e?.textRun?.content\n      if (!t)\n        continue\n      const idx = t.indexOf(marker)\n      if (idx >= 0) {\n        paragraphStart = p.elements?.[0]?.startIndex || e.startIndex || 1\n        paragraphEnd = (p.elements?.[p.elements.length - 1]?.endIndex) || (e.endIndex) || (paragraphStart + marker.length)\n        break\n      }\n    }\n    if (paragraphStart >= 0)\n      break\n  }\n  if (paragraphStart < 0) {\n    const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n    const got = await confirm.json()\n    return { documentId: got?.documentId || documentId, applied: false, replies: [] }\n  }\n\n  const requests = []\n  requests.push({ updateParagraphStyle: { range: { startIndex: paragraphStart, endIndex: paragraphEnd }, paragraphStyle, fields: fields || Object.keys(paragraphStyle || {}).join(',') } })\n  requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  if (out?.documentId || Array.isArray(out?.replies))\n    return { ...out, applied: true }\n  const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)\n  const got = await confirm.json()\n  return { documentId: got?.documentId || documentId, applied: true, replies: Array.isArray(out?.replies) ? out.replies : [] }\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "update_document_style",
+        "description": "Update document-level style properties such as page size (pageSize.width, pageSize.height in pt), margins (marginTop, marginBottom, marginLeft, marginRight in pt), and page orientation. Does not affect individual paragraph or text styles.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "documentId": {
+              "type": "string"
+            },
+            "documentStyle": {
+              "type": "object",
+              "description": "Docs API DocumentStyle object"
+            },
+            "fields": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "documentId",
+            "documentStyle"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { documentId, documentStyle, fields } = input\n  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ updateDocumentStyle: { documentStyle, fields: fields || Object.keys(documentStyle || {}).join(',') } }] },\n  })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "docs"
+      },
+      {
+        "name": "get_spreadsheet",
+        "description": "Retrieve spreadsheet metadata including all sheet names, IDs, and properties. Set includeGridData=false (the default) to get only metadata without cell values. Use read_sheet for cell content. Use the 'fields' parameter to limit the response (e.g. fields='sheets.properties' to get only sheet names and IDs). The spreadsheetId appears in the URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string",
+              "description": "Spreadsheet ID. Found in the spreadsheet URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/."
+            },
+            "includeGridData": {
+              "type": "boolean",
+              "description": "Whether to include cell grid data. Defaults to false. Set to true only when you need cell values -- use get_values or batch_get_values for targeted range reads instead."
+            },
+            "ranges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Optional A1 notation ranges to include when includeGridData is true. Example: ['Sheet1!A1:D10', 'Sheet2!A:A']."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Partial response fields selector to reduce response size. Example: 'sheets.properties' to get only sheet names and IDs without cell data. See Sheets API fields reference."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, includeGridData, ranges } = input\n  const params = new URLSearchParams()\n  if (includeGridData !== undefined)\n    params.set('includeGridData', String(includeGridData))\n  if (Array.isArray(ranges))\n    ranges.forEach(r => params.append('ranges', String(r)))\n  if (input.fields)\n    params.set('fields', input.fields)\n  const qs = params.toString()\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "sheets"
+      },
+      {
+        "name": "search_sheets",
+        "description": "Search Google Drive for Google Sheets only. Use this when the agent needs to discover spreadsheets by name or Drive query without manually constructing a MIME type filter.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Raw Drive query string for Google Sheets only. Examples: \"modifiedTime > '2024-01-01'\", \"'folderId' in parents\". Combined with the fixed Sheets MIME type and name filter via AND."
+            },
+            "name": {
+              "type": "string",
+              "description": "Shorthand for name-based search. Translates to \"name contains 'value'\" and is combined with the fixed Sheets MIME type."
+            },
+            "includeTrashed": {
+              "type": "boolean",
+              "description": "Include trashed Sheets in results. Defaults to false."
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 20,
+              "description": "Maximum results per page. Defaults to 20. Use pageToken from the response for the next page."
+            },
+            "pageToken": {
+              "type": "string",
+              "description": "Page token from a previous search_sheets response to retrieve the next page of results."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const qParts = [`mimeType = 'application/vnd.google-apps.spreadsheet'`]\n  if (input.query)\n    qParts.push(input.query)\n  if (input.name)\n    qParts.push(`name contains '${input.name.replace(/\\\\/g, '\\\\\\\\').replace(/'/g, \"\\\\'\")}'`)\n  if (!input.includeTrashed)\n    qParts.push('trashed = false')\n  if (qParts.length > 0)\n    params.set('q', qParts.join(' and '))\n  params.set('fields', input.fields || 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)')\n  params.set('pageSize', String(input.pageSize || 20))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  const res = await integration.fetch(`/files?${params.toString()}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "sheets"
+      },
+      {
+        "name": "read_sheet",
+        "description": "Read cell values from a sheet range and return as a Markdown table with A1 column headers and row numbers. Use this to read and understand spreadsheet data -- the coordinates in the output can be used directly with update_values and append_values for writes. Supports optional valueRenderOption for formulas or raw numbers. Use get_spreadsheet first to discover sheet names.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string",
+              "description": "Spreadsheet ID from URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/edit"
+            },
+            "range": {
+              "type": "string",
+              "description": "A1 notation range to read, e.g. 'Sheet1!A1:D20'. Defaults to 'A1:Z1000'."
+            },
+            "valueRenderOption": {
+              "type": "string",
+              "enum": [
+                "FORMATTED_VALUE",
+                "UNFORMATTED_VALUE",
+                "FORMULA"
+              ],
+              "description": "How values should be represented in the output."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const toColumnName = (index) => {\n    let n = index + 1\n    let out = ''\n    while (n > 0) {\n      const rem = (n - 1) % 26\n      out = String.fromCharCode(65 + rem) + out\n      n = Math.floor((n - 1) / 26)\n    }\n    return out\n  }\n\n  const columnNameToIndex = (name) => {\n    let value = 0\n    for (const ch of name.toUpperCase()) {\n      const code = ch.charCodeAt(0)\n      if (code < 65 || code > 90) continue\n      value = value * 26 + (code - 64)\n    }\n    return Math.max(0, value - 1)\n  }\n\n  const parseResolvedRange = (resolvedRange) => {\n    // Examples: \"Sheet1!A1:D5\", \"Sheet1!B:B\", \"Sheet1!2:9\"\n    const a1 = String(resolvedRange || '').split('!')[1] || ''\n    const [start = 'A1'] = a1.split(':')\n    const letters = (start.match(/[A-Za-z]+/) || ['A'])[0]\n    const rowDigits = (start.match(/\\d+/) || ['1'])[0]\n    return {\n      startColumn: columnNameToIndex(letters),\n      startRow: Math.max(1, parseInt(rowDigits, 10) || 1),\n    }\n  }\n\n  const escapeCell = (value) =>\n    String(value ?? '')\n      .replace(/\\|/g, '\\\\|')\n      .replace(/\\r?\\n/g, '<br>')\n\n  const spreadsheetId = input.spreadsheetId\n  const range = input.range || 'A1:Z1000'\n  const params = new URLSearchParams()\n  if (input.valueRenderOption) params.set('valueRenderOption', input.valueRenderOption)\n\n  const qs = params.toString()\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  const payload = await res.json()\n\n  const values = Array.isArray(payload?.values) ? payload.values : []\n  const resolvedRange = payload?.range || range\n  const { startColumn, startRow } = parseResolvedRange(resolvedRange)\n\n  const width = Math.max(1, ...values.map((row) => (Array.isArray(row) ? row.length : 0)))\n  const headerCells = Array.from({ length: width }, (_, i) => toColumnName(startColumn + i))\n  const lines = [\n    `|   | ${headerCells.join(' | ')} |`,\n    `|---|${Array(width).fill('---').join('|')}|`,\n  ]\n\n  for (let i = 0; i < values.length; i += 1) {\n    const row = Array.isArray(values[i]) ? values[i] : []\n    const padded = [...row, ...Array(width - row.length).fill('')]\n    const escaped = padded.map((cell) => escapeCell(cell))\n    lines.push(`| ${startRow + i} | ${escaped.join(' | ')} |`)\n  }\n\n  return {\n    spreadsheetId,\n    range: resolvedRange,\n    rowCount: values.length,\n    columnCount: width,\n    markdown: lines.join('\\n'),\n  }\n}",
+        "scope": "read",
+        "toolset": "sheets"
+      },
+      {
+        "name": "create_spreadsheet",
+        "description": "Create a new Google Spreadsheet. Accepts a full spreadsheet resource body, allowing you to specify the title, initial sheets, and cell data. Minimum: provide {title: 'My Spreadsheet'}. Returns the created spreadsheet including its spreadsheetId.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "properties": {
+              "type": "object",
+              "description": "Spreadsheet properties"
+            },
+            "sheets": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "namedRanges": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "dataSources": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          },
+          "additionalProperties": true
+        },
+        "handlerCode": "async (input) => {\n  const path = `/spreadsheets`\n  const res = await integration.fetch(path, { method: 'POST', body: input })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "update_values",
+        "description": "Write values to a specific A1 range, replacing existing content. Use valueInputOption='USER_ENTERED' to parse values as the user would type them (supports formulas, dates, currency). Use 'RAW' to store values as literal strings. Provide values as a 2D array (rows of columns).",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "range",
+            "values"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string"
+            },
+            "range": {
+              "type": "string"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "valueInputOption": {
+              "type": "string",
+              "enum": [
+                "RAW",
+                "USER_ENTERED"
+              ]
+            },
+            "includeValuesInResponse": {
+              "type": "boolean"
+            },
+            "responseValueRenderOption": {
+              "type": "string",
+              "enum": [
+                "FORMATTED_VALUE",
+                "UNFORMATTED_VALUE",
+                "FORMULA"
+              ]
+            },
+            "responseDateTimeRenderOption": {
+              "type": "string",
+              "enum": [
+                "SERIAL_NUMBER",
+                "FORMATTED_STRING"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, range, values, valueInputOption, includeValuesInResponse, responseValueRenderOption, responseDateTimeRenderOption } = input\n  const params = new URLSearchParams()\n  if (valueInputOption)\n    params.set('valueInputOption', valueInputOption)\n  if (includeValuesInResponse !== undefined)\n    params.set('includeValuesInResponse', String(includeValuesInResponse))\n  if (responseValueRenderOption)\n    params.set('responseValueRenderOption', responseValueRenderOption)\n  if (responseDateTimeRenderOption)\n    params.set('responseDateTimeRenderOption', responseDateTimeRenderOption)\n  const qs = params.toString()\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path, { method: 'PUT', body: { values } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "append_values",
+        "description": "Append rows of values after the last row of existing data in a range. Useful for adding new rows to a table without knowing the exact next row number. Uses USER_ENTERED valueInputOption by default. The range determines which sheet to append to.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "range",
+            "values"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string"
+            },
+            "range": {
+              "type": "string"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {}
+              }
+            },
+            "valueInputOption": {
+              "type": "string",
+              "enum": [
+                "RAW",
+                "USER_ENTERED"
+              ]
+            },
+            "insertDataOption": {
+              "type": "string",
+              "enum": [
+                "OVERWRITE",
+                "INSERT_ROWS"
+              ]
+            },
+            "includeValuesInResponse": {
+              "type": "boolean"
+            },
+            "responseValueRenderOption": {
+              "type": "string",
+              "enum": [
+                "FORMATTED_VALUE",
+                "UNFORMATTED_VALUE",
+                "FORMULA"
+              ]
+            },
+            "responseDateTimeRenderOption": {
+              "type": "string",
+              "enum": [
+                "SERIAL_NUMBER",
+                "FORMATTED_STRING"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, range, values, valueInputOption, insertDataOption, includeValuesInResponse, responseValueRenderOption, responseDateTimeRenderOption } = input\n  const params = new URLSearchParams()\n  if (valueInputOption)\n    params.set('valueInputOption', valueInputOption)\n  if (insertDataOption)\n    params.set('insertDataOption', insertDataOption)\n  if (includeValuesInResponse !== undefined)\n    params.set('includeValuesInResponse', String(includeValuesInResponse))\n  if (responseValueRenderOption)\n    params.set('responseValueRenderOption', responseValueRenderOption)\n  if (responseDateTimeRenderOption)\n    params.set('responseDateTimeRenderOption', responseDateTimeRenderOption)\n  const qs = params.toString()\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:append${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path, { method: 'POST', body: { values } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "batch_update_values",
+        "description": "Write values to multiple A1 ranges in a single API call. More efficient than calling update_values multiple times. Provide a data array where each item has range and values. Use valueInputOption='USER_ENTERED' for formulas and dates.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "data"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string"
+            },
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "range",
+                  "values"
+                ],
+                "properties": {
+                  "range": {
+                    "type": "string"
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "majorDimension": {
+                    "type": "string",
+                    "enum": [
+                      "ROWS",
+                      "COLUMNS"
+                    ]
+                  }
+                }
+              }
+            },
+            "valueInputOption": {
+              "type": "string",
+              "enum": [
+                "RAW",
+                "USER_ENTERED"
+              ]
+            },
+            "includeValuesInResponse": {
+              "type": "boolean"
+            },
+            "responseValueRenderOption": {
+              "type": "string",
+              "enum": [
+                "FORMATTED_VALUE",
+                "UNFORMATTED_VALUE",
+                "FORMULA"
+              ]
+            },
+            "responseDateTimeRenderOption": {
+              "type": "string",
+              "enum": [
+                "SERIAL_NUMBER",
+                "FORMATTED_STRING"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, data, valueInputOption, includeValuesInResponse, responseValueRenderOption, responseDateTimeRenderOption } = input\n  const params = new URLSearchParams()\n  if (valueInputOption)\n    params.set('valueInputOption', valueInputOption)\n  if (includeValuesInResponse !== undefined)\n    params.set('includeValuesInResponse', String(includeValuesInResponse))\n  if (responseValueRenderOption)\n    params.set('responseValueRenderOption', responseValueRenderOption)\n  if (responseDateTimeRenderOption)\n    params.set('responseDateTimeRenderOption', responseDateTimeRenderOption)\n  const qs = params.toString()\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values:batchUpdate${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path, { method: 'POST', body: { data } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "clear_values",
+        "description": "Clear all values (but not formatting) in the specified A1 range. The cells remain but their content is removed. To clear formatting as well, use sheets_batch_update with a repeatCell request.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "range"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string"
+            },
+            "range": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, range } = input\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:clear`\n  const res = await integration.fetch(path, { method: 'POST', body: {} })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "batch_clear_values",
+        "description": "Clear values from multiple A1 ranges in a single API call. More efficient than calling clear_values multiple times.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "ranges"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string"
+            },
+            "ranges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, ranges } = input\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values:batchClear`\n  const res = await integration.fetch(path, { method: 'POST', body: { ranges } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "sheets_batch_update",
+        "description": "Send a spreadsheets.batchUpdate request for structural changes such as addSheet, deleteSheet, duplicateSheet, insertDimension, deleteDimension, mergeCells, sortRange, addConditionalFormatRule, and more. Accepts a requests array. Use update_values or batch_update_values for writing cell data.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "requests"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string"
+            },
+            "requests": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "includeSpreadsheetInResponse": {
+              "type": "boolean"
+            },
+            "responseRanges": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "responseIncludeGridData": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, requests, includeSpreadsheetInResponse, responseRanges, responseIncludeGridData } = input\n  const params = new URLSearchParams()\n  if (includeSpreadsheetInResponse !== undefined)\n    params.set('includeSpreadsheetInResponse', String(includeSpreadsheetInResponse))\n  if (Array.isArray(responseRanges))\n    responseRanges.forEach(r => params.append('responseRanges', String(r)))\n  if (responseIncludeGridData !== undefined)\n    params.set('responseIncludeGridData', String(responseIncludeGridData))\n  const qs = params.toString()\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}:batchUpdate${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path, { method: 'POST', body: { requests } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "copy_to_spreadsheet",
+        "description": "Copy a specific sheet (tab) from one spreadsheet to another. Provide the source spreadsheetId, the sheetId (integer, from get_spreadsheet), and the destination spreadsheetId. Returns the copied sheet's properties in the destination spreadsheet.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "spreadsheetId",
+            "sheetId",
+            "destinationSpreadsheetId"
+          ],
+          "properties": {
+            "spreadsheetId": {
+              "type": "string",
+              "description": "Source spreadsheet ID"
+            },
+            "sheetId": {
+              "type": "integer",
+              "description": "Source sheet numeric ID"
+            },
+            "destinationSpreadsheetId": {
+              "type": "string",
+              "description": "Destination spreadsheet ID"
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { spreadsheetId, sheetId, destinationSpreadsheetId } = input\n  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/sheets/${encodeURIComponent(sheetId)}:copyTo`\n  const res = await integration.fetch(path, { method: 'POST', body: { destinationSpreadsheetId } })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "sheets"
+      },
+      {
+        "name": "read_presentation",
+        "description": "Read a Google Slides presentation and return a human-readable summary including the title, slide count, and text content extracted from each slide. Returns the text found in all shapes on each slide with slide IDs for reference. Use this to understand what is in a presentation before editing. For low-level modifications, use slides_batch_update.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "presentationId"
+          ],
+          "properties": {
+            "presentationId": {
+              "type": "string",
+              "description": "ID of the presentation."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const extractSlideText = (slide) => {\n    const lines = []\n    for (const element of slide?.pageElements || []) {\n      const textElements = element?.shape?.text?.textElements || []\n      let combined = ''\n      for (const t of textElements) {\n        combined += t?.textRun?.content || ''\n      }\n      const trimmed = combined\n        .split('\\n')\n        .map((line) => line.trim())\n        .filter(Boolean)\n      lines.push(...trimmed)\n    }\n    return lines\n  }\n\n  const { presentationId } = input\n  const path = `/presentations/${encodeURIComponent(presentationId)}`\n  const res = await integration.fetch(path)\n  const presentation = await res.json()\n\n  const title = presentation?.title || 'Untitled presentation'\n  const deckId = presentation?.presentationId || presentationId\n  const slides = presentation?.slides || []\n\n  const lines = [\n    `Presentation: \"${title}\" (ID: ${deckId})`,\n    `URL: https://docs.google.com/presentation/d/${deckId}/edit`,\n    `Total Slides: ${slides.length}`,\n    '',\n  ]\n\n  for (let i = 0; i < slides.length; i += 1) {\n    const slide = slides[i]\n    const slideId = slide?.objectId || `slide_${i + 1}`\n    const elementCount = (slide?.pageElements || []).length\n    lines.push(`Slide ${i + 1}: ID ${slideId}, ${elementCount} element(s)`)\n\n    const textLines = extractSlideText(slide)\n    if (!textLines.length) {\n      lines.push(' > (No text content)')\n    } else {\n      for (const text of textLines) lines.push(` > ${text}`)\n    }\n    lines.push('')\n  }\n\n  return lines.join('\\n').trim()\n}",
+        "scope": "read",
+        "toolset": "slides"
+      },
+      {
+        "name": "search_slides",
+        "description": "Search Google Drive for Google Slides only. Use this when the agent needs to discover presentations by name or Drive query without manually constructing a MIME type filter.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Raw Drive query string for Google Slides only. Examples: \"modifiedTime > '2024-01-01'\", \"'folderId' in parents\". Combined with the fixed Slides MIME type and name filter via AND."
+            },
+            "name": {
+              "type": "string",
+              "description": "Shorthand for name-based search. Translates to \"name contains 'value'\" and is combined with the fixed Slides MIME type."
+            },
+            "includeTrashed": {
+              "type": "boolean",
+              "description": "Include trashed Slides in results. Defaults to false."
+            },
+            "pageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 20,
+              "description": "Maximum results per page. Defaults to 20. Use pageToken from the response for the next page."
+            },
+            "pageToken": {
+              "type": "string",
+              "description": "Page token from a previous search_slides response to retrieve the next page of results."
+            },
+            "fields": {
+              "type": "string",
+              "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const qParts = [`mimeType = 'application/vnd.google-apps.presentation'`]\n  if (input.query)\n    qParts.push(input.query)\n  if (input.name)\n    qParts.push(`name contains '${input.name.replace(/\\\\/g, '\\\\\\\\').replace(/'/g, \"\\\\'\")}'`)\n  if (!input.includeTrashed)\n    qParts.push('trashed = false')\n  if (qParts.length > 0)\n    params.set('q', qParts.join(' and '))\n  params.set('fields', input.fields || 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)')\n  params.set('pageSize', String(input.pageSize || 20))\n  if (input.pageToken)\n    params.set('pageToken', input.pageToken)\n  const res = await integration.fetch(`/files?${params.toString()}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "slides"
+      },
+      {
+        "name": "get_page_thumbnail",
+        "description": "Generate a thumbnail image URL for a specific slide (page) in a presentation. Requires the presentation ID and the slide's objectId (page ID from read_presentation). Returns a contentUrl for the thumbnail image. Useful for previewing slides.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "presentationId",
+            "pageObjectId"
+          ],
+          "properties": {
+            "presentationId": {
+              "type": "string",
+              "description": "ID of the presentation."
+            },
+            "pageObjectId": {
+              "type": "string",
+              "description": "Object ID of the page (slide)."
+            },
+            "thumbnailProperties.thumbnailSize": {
+              "type": "string",
+              "enum": [
+                "THUMBNAIL_SIZE_UNSPECIFIED",
+                "LARGE",
+                "MEDIUM",
+                "SMALL"
+              ],
+              "description": "Requested size hint for the thumbnail."
+            },
+            "thumbnailProperties.mimeType": {
+              "type": "string",
+              "enum": [
+                "PNG",
+                "JPEG"
+              ],
+              "description": "Requested image MIME type."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, pageObjectId } = input\n  const params = new URLSearchParams()\n  if (input['thumbnailProperties.thumbnailSize'])\n    params.set('thumbnailProperties.thumbnailSize', String(input['thumbnailProperties.thumbnailSize']))\n  if (input['thumbnailProperties.mimeType'])\n    params.set('thumbnailProperties.mimeType', String(input['thumbnailProperties.mimeType']))\n  const qs = params.toString()\n  const path = `/presentations/${encodeURIComponent(presentationId)}/pages/${encodeURIComponent(pageObjectId)}/thumbnail${qs ? `?${qs}` : ''}`\n  const res = await integration.fetch(path)\n  return await res.json()\n}",
+        "scope": "read",
+        "toolset": "slides"
+      },
+      {
+        "name": "create_presentation",
+        "description": "Create a new empty Google Slides presentation with an optional title. Returns the created presentation's metadata including its presentationId, which is needed for all subsequent operations.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Optional title for the new presentation."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const body = {}\n  if (input && typeof input.title === 'string') {\n    body.title = input.title\n  }\n  const res = await integration.fetch('/presentations', { method: 'POST', body })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "slides_batch_update",
+        "description": "Send a presentations.batchUpdate request for low-level slide modifications. Accepts an array of requests (createSlide, deleteObject, insertText, deleteText, createShape, createTable, replaceAllText, updateTextStyle, updateShapeProperties, etc.). For common text and styling operations, prefer the higher-level Slides tools.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "presentationId",
+            "requests"
+          ],
+          "properties": {
+            "presentationId": {
+              "type": "string",
+              "description": "ID of the presentation."
+            },
+            "requests": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "description": "Array of Slides API requests."
+            },
+            "writeControl": {
+              "type": "object",
+              "description": "Optional write control object."
+            },
+            "includePresentationInResponse": {
+              "type": "boolean"
+            },
+            "responsePageObjectIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, requests, includePresentationInResponse, responsePageObjectIds, writeControl } = input\n  const params = new URLSearchParams()\n  if (includePresentationInResponse !== undefined)\n    params.set('includePresentationInResponse', String(includePresentationInResponse))\n  if (Array.isArray(responsePageObjectIds))\n    responsePageObjectIds.forEach(id => params.append('responsePageObjectIds', String(id)))\n  const qs = params.toString()\n  const path = `/presentations/${encodeURIComponent(presentationId)}:batchUpdate${qs ? `?${qs}` : ''}`\n  const body = { requests }\n  if (writeControl)\n    body.writeControl = writeControl\n  const res = await integration.fetch(path, { method: 'POST', body })\n  return await res.json()\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "append_text_to_title_of_slide_index",
+        "description": "Append text to the title shape of a specific slide by its 0-based index (slideIndex=0 is the first slide, default). Fetches the presentation to find the title shape's objectId then inserts text at the end of its content.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "slideIndex": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Zero-based slide index to target (default 0)."
+            }
+          },
+          "required": [
+            "presentationId",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, text, slideIndex = 0 } = input\n  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)\n  const pres = await presRes.json()\n  const slide = (pres?.slides || [])[slideIndex]\n  if (!slide)\n    return { presentationId, applied: false, replies: [] }\n  const titleShape = (slide.pageElements || []).find(el => el.shape?.placeholder?.type === 'TITLE')\n  if (!titleShape?.objectId)\n    return { presentationId, applied: false, replies: [] }\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ insertText: { objectId: titleShape.objectId, insertionIndex: -1, text } }] },\n  })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "replace_text_first_match",
+        "description": "Replace the first occurrence of text anywhere in the presentation with new text. Note: the Slides API replaceAllText always replaces all occurrences; this tool uses replaceAllText internally. For replacing only one instance, use style_text_first_match to locate and style the match, then follow up with slides_batch_update. Returns the API response.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "replaceText": {
+              "type": "string"
+            },
+            "matchCase": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "presentationId",
+            "findText",
+            "replaceText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, findText, replaceText, matchCase } = input\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: Boolean(matchCase) }, replaceText } }] },\n  })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "style_text_first_match",
+        "description": "Find the first occurrence of text in the presentation and apply a text style to it (bold, italic, fontSize, foregroundColor, etc.). Uses a marker pattern: replaces the text with a unique marker, finds the marker's objectId and range, applies the style, then restores the original text. Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "textStyle": {
+              "type": "object"
+            },
+            "fields": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "presentationId",
+            "findText",
+            "textStyle"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, findText, textStyle, fields } = input\n  // Replace first match with a marker to derive objectId/range\n  const marker = `__CMD_MARK_${Date.now()}__`\n  const rep = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },\n  })\n  await rep.json()\n  // Scan pages for marker and apply style to that range on the text element\n  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)\n  const pres = await presRes.json()\n  let targetObjectId = null\n  let startIndex = -1\n  let endIndex = -1\n  for (const slide of (pres?.slides || [])) {\n    for (const el of (slide.pageElements || [])) {\n      const text = el.shape?.text\n      if (!text)\n        continue\n      for (const pe of (text.textElements || [])) {\n        const t = pe.textRun?.content\n        if (!t)\n          continue\n        const idx = t.indexOf(marker)\n        if (idx >= 0) {\n          targetObjectId = el.objectId\n          startIndex = (pe.startIndex || 0) + idx\n          endIndex = startIndex + marker.length\n          break\n        }\n      }\n      if (targetObjectId)\n        break\n    }\n    if (targetObjectId)\n      break\n  }\n  if (!targetObjectId)\n    return { presentationId, applied: false, replies: [] }\n  const requests = [\n    { updateTextStyle: { objectId: targetObjectId, style: textStyle, textRange: { type: 'FIXED_RANGE', startIndex, endIndex }, fields: fields || Object.keys(textStyle || {}).join(',') } },\n    { replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } },\n  ]\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "insert_shape_after_first_match",
+        "description": "Find the first slide containing a text match and insert a rectangle shape on that slide at the specified position. Positions use EMU units (1 inch = 914400 EMU). Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "shapeType": {
+              "type": "string",
+              "default": "RECTANGLE"
+            },
+            "width": {
+              "type": "number",
+              "default": 2000000
+            },
+            "height": {
+              "type": "number",
+              "default": 1000000
+            }
+          },
+          "required": [
+            "presentationId",
+            "findText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, findText, shapeType = 'RECTANGLE', width = 2000000, height = 1000000 } = input\n  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)\n  const pres = await presRes.json()\n  // Find slide with first text match\n  let targetSlideId = null\n  for (const slide of (pres?.slides || [])) {\n    const text = JSON.stringify(slide)\n    if (text && text.includes(findText)) { targetSlideId = slide.objectId; break }\n  }\n  if (!targetSlideId)\n    return { presentationId, applied: false, replies: [] }\n  // Insert a shape at a default position near center\n  const elementId = `shape_${Date.now()}`\n  const requests = [\n    { createShape: { objectId: elementId, shapeType, elementProperties: { pageObjectId: targetSlideId, size: { width: { magnitude: width, unit: 'EMU' }, height: { magnitude: height, unit: 'EMU' } }, transform: { scaleX: 1, scaleY: 1, translateX: 1000000, translateY: 1000000, unit: 'EMU' } } } },\n  ]\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "insert_image_after_first_match",
+        "description": "Find the first slide containing a text match and insert an image on that slide from a URL. Position and size use EMU units (1 inch = 914400 EMU). Returns {applied: true/false}.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "uri": {
+              "type": "string"
+            },
+            "width": {
+              "type": "number",
+              "default": 2000000
+            },
+            "height": {
+              "type": "number",
+              "default": 2000000
+            }
+          },
+          "required": [
+            "presentationId",
+            "findText",
+            "uri"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, findText, uri, width = 2000000, height = 2000000 } = input\n  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)\n  const pres = await presRes.json()\n  let targetSlideId = null\n  for (const slide of (pres?.slides || [])) {\n    const text = JSON.stringify(slide)\n    if (text && text.includes(findText)) { targetSlideId = slide.objectId; break }\n  }\n  if (!targetSlideId)\n    return { presentationId, applied: false, replies: [] }\n  const elementId = `image_${Date.now()}`\n  const requests = [\n    { createImage: { objectId: elementId, url: uri, elementProperties: { pageObjectId: targetSlideId, size: { width: { magnitude: width, unit: 'EMU' }, height: { magnitude: height, unit: 'EMU' } }, transform: { scaleX: 1, scaleY: 1, translateX: 1000000, translateY: 1000000, unit: 'EMU' } } } },\n  ]\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "create_slide_after_first_match",
+        "description": "Find the first slide containing a text match and create a new blank slide immediately after it. Useful for inserting slides at a specific position in the deck. Returns {applied: true/false} and the new slide's objectId.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "findText": {
+              "type": "string"
+            },
+            "layout": {
+              "type": "string",
+              "default": "BLANK"
+            }
+          },
+          "required": [
+            "presentationId",
+            "findText"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, findText, layout = 'BLANK' } = input\n  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)\n  const pres = await presRes.json()\n  let targetSlideId = null\n  for (const slide of (pres?.slides || [])) {\n    const text = JSON.stringify(slide)\n    if (text && text.includes(findText)) { targetSlideId = slide.objectId; break }\n  }\n  if (!targetSlideId)\n    return { presentationId, applied: false, replies: [] }\n  const newSlideId = `slide_${Date.now()}`\n  const currentIndex = (pres?.slides || []).findIndex(s => s.objectId === targetSlideId)\n  const requests = [\n    { createSlide: { objectId: newSlideId, insertionIndex: currentIndex >= 0 ? currentIndex + 1 : (pres?.slides?.length || 0), slideLayoutReference: { predefinedLayout: layout } } },\n  ]\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, { method: 'POST', body: { requests } })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      },
+      {
+        "name": "set_background_color_for_slide_index",
+        "description": "Set the background color for a specific slide by its 0-based index (slideIndex=0 is the first slide). Provide r, g, b values in 0.0-1.0 range (e.g. r=1.0, g=0.0, b=0.0 for red). Fetches the presentation first to resolve the slide's objectId from the index.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "presentationId": {
+              "type": "string"
+            },
+            "slideIndex": {
+              "type": "number",
+              "minimum": 0
+            },
+            "rgbColor": {
+              "type": "object",
+              "properties": {
+                "red": {
+                  "type": "number"
+                },
+                "green": {
+                  "type": "number"
+                },
+                "blue": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "red",
+                "green",
+                "blue"
+              ]
+            }
+          },
+          "required": [
+            "presentationId",
+            "slideIndex",
+            "rgbColor"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const { presentationId, slideIndex, rgbColor } = input\n  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)\n  const pres = await presRes.json()\n  const slide = (pres?.slides || [])[slideIndex]\n  if (!slide?.objectId)\n    return { presentationId, applied: false, replies: [] }\n  const color = { color: { rgbColor } }\n  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {\n    method: 'POST',\n    body: { requests: [{ updatePageProperties: { objectId: slide.objectId, pageProperties: { pageBackgroundFill: { solidFill: color } }, fields: 'pageBackgroundFill.solidFill.color' } }] },\n  })\n  const out = await res.json()\n  return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }\n}",
+        "scope": "write",
+        "toolset": "slides"
+      }
+    ]
+  },
   "hubspot": {
     "manifest": {
       "name": "hubspot",

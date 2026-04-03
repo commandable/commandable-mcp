@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "presentationId": { "type": "string" },
+    "findText": { "type": "string" },
+    "shapeType": { "type": "string", "default": "RECTANGLE" },
+    "width": { "type": "number", "default": 2000000 },
+    "height": { "type": "number", "default": 1000000 }
+  },
+  "required": ["presentationId", "findText"],
+  "additionalProperties": false
+}

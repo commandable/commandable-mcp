@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["spreadsheetId", "range", "values"],
+  "properties": {
+    "spreadsheetId": { "type": "string" },
+    "range": { "type": "string" },
+    "values": { "type": "array", "items": { "type": "array", "items": {} } },
+    "valueInputOption": { "type": "string", "enum": ["RAW", "USER_ENTERED"] },
+    "insertDataOption": { "type": "string", "enum": ["OVERWRITE", "INSERT_ROWS"] },
+    "includeValuesInResponse": { "type": "boolean" },
+    "responseValueRenderOption": { "type": "string", "enum": ["FORMATTED_VALUE", "UNFORMATTED_VALUE", "FORMULA"] },
+    "responseDateTimeRenderOption": { "type": "string", "enum": ["SERIAL_NUMBER", "FORMATTED_STRING"] }
+  },
+  "additionalProperties": false
+}

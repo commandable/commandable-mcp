@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "documentId": { "type": "string", "description": "The document ID of the Google Doc." },
+    "requests": {
+      "type": "array",
+      "description": "Array of Docs API requests (insertText, updateParagraphStyle, replaceAllText, etc).",
+      "items": { "type": "object" }
+    },
+    "writeControl": { "type": "object", "description": "Write control to ensure idempotency (requiredRevisionId, targetRevisionId)." },
+    "includeTabStops": { "type": "boolean", "description": "Include tab stops in responses where applicable." }
+  },
+  "required": ["documentId", "requests"],
+  "additionalProperties": true
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["spreadsheetId", "requests"],
+  "properties": {
+    "spreadsheetId": { "type": "string" },
+    "requests": { "type": "array", "items": { "type": "object" } },
+    "includeSpreadsheetInResponse": { "type": "boolean" },
+    "responseRanges": { "type": "array", "items": { "type": "string" } },
+    "responseIncludeGridData": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

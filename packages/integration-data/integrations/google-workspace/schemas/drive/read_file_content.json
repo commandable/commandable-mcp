@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["fileId"],
+  "properties": {
+    "fileId": { "type": "string", "description": "Drive file ID. Use search_files or list_files to find file IDs." },
+    "mimeType": { "type": "string", "description": "Optional Drive MIME type from get_file_meta or search_files." }
+  },
+  "additionalProperties": false
+}

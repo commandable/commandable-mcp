@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "documentId": { "type": "string" },
+    "startIndex": { "type": "number", "minimum": 1 },
+    "endIndex": { "type": "number", "minimum": 1 }
+  },
+  "required": ["documentId", "startIndex", "endIndex"],
+  "additionalProperties": false
+}
