@@ -79,7 +79,6 @@ await utils.extractFileContent({
 
 await utils.extractFileContent({
   auth: true,
-  integration: 'google-drive-a23aj4',
   source: `/files/${fileId}?alt=media`,
 })
 ```

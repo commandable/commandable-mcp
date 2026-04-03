@@ -85,7 +85,6 @@ async (input) => {
 
   const extracted = await utils.extractFileContent({
     auth: true,
-    integration: 'google-drive',
     source,
   })
 

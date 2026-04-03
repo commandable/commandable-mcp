@@ -84,6 +84,21 @@ describe('extractFileContent utility', () => {
     expect(result.metadata?.pageCount).toBe(3)
   })
 
+  it('defaults auth=true downloads to the current integration id when provided by the host', async () => {
+    const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
+    const integrationFetch = vi.fn(async () => new Response('binary', {
+      status: 200,
+      headers: { 'content-type': 'application/pdf' },
+    }))
+    const getIntegration = vi.fn(() => ({ fetch: integrationFetch }))
+    const util = createExtractFileContent(getIntegration, 'integration-123')
+
+    await util({ auth: true, source: '/files/abc?alt=media' })
+
+    expect(getIntegration).toHaveBeenCalledWith('integration-123')
+    expect(integrationFetch).toHaveBeenCalledWith('/files/abc?alt=media', { method: 'GET' })
+  })
+
   it('uses integration auth for an absolute source when auth is true', async () => {
     const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
     const integrationFetch = vi.fn(async () => new Response('binary', {
