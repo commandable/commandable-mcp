@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "query": { "type": "string", "description": "Raw Drive query string for Google Slides only. Examples: \"modifiedTime > '2024-01-01'\", \"'folderId' in parents\". Combined with the fixed Slides MIME type and name filter via AND." },
+    "name": { "type": "string", "description": "Shorthand for name-based search. Translates to \"name contains 'value'\" and is combined with the fixed Slides MIME type." },
+    "includeTrashed": { "type": "boolean", "description": "Include trashed Slides in results. Defaults to false." },
+    "pageSize": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 20, "description": "Maximum results per page. Defaults to 20. Use pageToken from the response for the next page." },
+    "pageToken": { "type": "string", "description": "Page token from a previous search_slides response to retrieve the next page of results." },
+    "fields": { "type": "string", "description": "Override the fields returned in each file. Defaults to 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)'." }
+  },
+  "additionalProperties": false
+}

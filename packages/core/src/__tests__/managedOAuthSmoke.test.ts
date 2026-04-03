@@ -91,50 +91,18 @@ suite('managed OAuth smoke (hosted-only)', () => {
     expect(resp.ok).toBe(true)
   }, 30_000)
 
-  it('Google Sheets get spreadsheet works via managed OAuth (optional)', async () => {
+  it('Google Workspace get spreadsheet works via managed OAuth (optional)', async () => {
     if (!has('GOOGLE_SHEETS_TEST_CONNECTION_ID', 'GOOGLE_SHEETS_TEST_SPREADSHEET_ID'))
       return expect(true).toBe(true)
 
     const spreadsheetId = env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID!
     const resp = await proxy.call({
-      id: 'google-sheet',
-      referenceId: 'google-sheet',
-      type: 'google-sheet',
-      label: 'Google Sheets',
+      id: 'google-workspace',
+      referenceId: 'google-workspace',
+      type: 'google-workspace',
+      label: 'Google Workspace',
       connectionId: env.GOOGLE_SHEETS_TEST_CONNECTION_ID!,
     } as any, `/spreadsheets/${encodeURIComponent(spreadsheetId)}`)
-
-    expect(resp.ok).toBe(true)
-  }, 30_000)
-
-  it('Google Docs get document works via managed OAuth (optional)', async () => {
-    if (!has('GOOGLE_DOCS_TEST_CONNECTION_ID', 'GOOGLE_DOCS_TEST_DOCUMENT_ID'))
-      return expect(true).toBe(true)
-
-    const documentId = env.GOOGLE_DOCS_TEST_DOCUMENT_ID!
-    const resp = await proxy.call({
-      id: 'google-docs',
-      referenceId: 'google-docs',
-      type: 'google-docs',
-      label: 'Google Docs',
-      connectionId: env.GOOGLE_DOCS_TEST_CONNECTION_ID!,
-    } as any, `/documents/${encodeURIComponent(documentId)}`)
-
-    expect(resp.ok).toBe(true)
-  }, 30_000)
-
-  it('Google Slides get presentation works via managed OAuth (optional)', async () => {
-    if (!has('GOOGLE_SLIDES_TEST_CONNECTION_ID', 'GOOGLE_SLIDES_TEST_PRESENTATION_ID'))
-      return expect(true).toBe(true)
-
-    const presentationId = env.GOOGLE_SLIDES_TEST_PRESENTATION_ID!
-    const resp = await proxy.call({
-      id: 'google-slides',
-      referenceId: 'google-slides',
-      type: 'google-slides',
-      label: 'Google Slides',
-      connectionId: env.GOOGLE_SLIDES_TEST_CONNECTION_ID!,
-    } as any, `/presentations/${encodeURIComponent(presentationId)}`)
 
     expect(resp.ok).toBe(true)
   }, 30_000)

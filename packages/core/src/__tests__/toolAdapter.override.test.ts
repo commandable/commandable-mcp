@@ -26,9 +26,9 @@ describe('buildMcpToolIndex', () => {
 
   it('publishes unique tool names even if duplicate executables are returned', () => {
     mockedBuildToolsByIntegration.mockReturnValue({
-      google_drive_primary: {
-        read: [makeTool('google-drive__read_file_content__nintegrat', 'Manifest reader')],
-        write: [makeTool('google-drive__read_file_content__nintegrat', 'Override reader')],
+      google_workspace_primary: {
+        read: [makeTool('google-workspace__read_file_content__nintegrat', 'Manifest reader')],
+        write: [makeTool('google-workspace__read_file_content__nintegrat', 'Override reader')],
         admin: [],
       },
     } as any)
@@ -41,10 +41,10 @@ describe('buildMcpToolIndex', () => {
 
     expect(index.tools).toEqual([
       expect.objectContaining({
-        name: 'google-drive__read_file_content__nintegrat',
+        name: 'google-workspace__read_file_content__nintegrat',
         description: 'Override reader',
       }),
     ])
-    expect(index.byName.get('google-drive__read_file_content__nintegrat')?.description).toBe('Override reader')
+    expect(index.byName.get('google-workspace__read_file_content__nintegrat')?.description).toBe('Override reader')
   })
 })

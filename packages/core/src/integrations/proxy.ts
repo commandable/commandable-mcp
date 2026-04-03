@@ -65,7 +65,40 @@ function isAbsoluteHttpUrl(value: string): boolean {
 }
 
 /** Prevents credential-bearing requests to arbitrary origins (SSRF-style token exfiltration). */
-function assertAbsoluteUrlMatchesBaseOrigin(absolutePath: string, baseUrl: string): void {
+function matchesAllowedOriginPattern(requestUrl: URL, pattern: string): boolean {
+  let allowedUrl: URL
+  try {
+    allowedUrl = new URL(pattern)
+  }
+  catch {
+    return false
+  }
+
+  if (allowedUrl.protocol !== requestUrl.protocol)
+    return false
+
+  if (allowedUrl.port !== requestUrl.port)
+    return false
+
+  if (allowedUrl.hostname.startsWith('*.')) {
+    const suffix = allowedUrl.hostname.slice(2)
+    return requestUrl.hostname === suffix || requestUrl.hostname.endsWith(`.${suffix}`)
+  }
+
+  return allowedUrl.origin === requestUrl.origin
+}
+
+function defaultAllowedOriginsForProvider(provider: string): string[] {
+  if (provider === 'google-workspace')
+    return ['https://*.googleapis.com']
+  return []
+}
+
+function assertAbsoluteUrlIsAllowed(
+  absolutePath: string,
+  baseUrl: string,
+  allowedOrigins: string[] = [],
+): void {
   let baseOrigin: string
   try {
     baseOrigin = new URL(baseUrl).origin
@@ -73,19 +106,39 @@ function assertAbsoluteUrlMatchesBaseOrigin(absolutePath: string, baseUrl: strin
   catch {
     throw new HttpError(400, 'Invalid integration base URL.')
   }
-  let requestOrigin: string
+
+  let requestUrl: URL
   try {
-    requestOrigin = new URL(absolutePath).origin
+    requestUrl = new URL(absolutePath)
   }
   catch {
     throw new HttpError(400, 'Invalid absolute request URL.')
   }
-  if (requestOrigin !== baseOrigin) {
+
+  const allowed = requestUrl.origin === baseOrigin
+    || allowedOrigins.some(pattern => matchesAllowedOriginPattern(requestUrl, pattern))
+
+  if (!allowed) {
     throw new HttpError(
       400,
-      `Absolute request URL origin must match the integration API origin (${baseOrigin}).`,
+      `Absolute request URL origin must match the integration API origin (${baseOrigin}) or a configured allowed origin.`,
     )
   }
+}
+
+function resolveRelativeBaseUrl(provider: string, baseUrl: string, rawPath: string): string {
+  if (provider !== 'google-workspace')
+    return baseUrl
+
+  const pathOnly = String(rawPath || '').split('?', 1)[0] || ''
+  if (pathOnly === '/documents' || pathOnly.startsWith('/documents/'))
+    return 'https://docs.googleapis.com/v1'
+  if (pathOnly === '/spreadsheets' || pathOnly.startsWith('/spreadsheets/'))
+    return 'https://sheets.googleapis.com/v4'
+  if (pathOnly === '/presentations' || pathOnly.startsWith('/presentations/'))
+    return 'https://slides.googleapis.com/v1'
+
+  return baseUrl
 }
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
@@ -218,7 +271,15 @@ export class IntegrationProxy {
         throw new HttpError(501, `No base URL configured for provider '${provider}'.`)
       })()
 
-      const typeConfig = { baseUrl, auth: variant.auth, preprocess: variant.preprocess ?? null }
+      const typeConfig = {
+        baseUrl,
+        allowedOrigins: [
+          ...defaultAllowedOriginsForProvider(provider),
+          ...(variant.allowedOrigins ?? []),
+        ],
+        auth: variant.auth,
+        preprocess: variant.preprocess ?? null,
+      }
 
       // Preprocess steps (e.g. service account token exchange, Basic Auth encoding).
       if (typeConfig.preprocess === 'google_service_account') {
@@ -236,11 +297,13 @@ export class IntegrationProxy {
               : [])
 
         const defaultScopes: Record<string, string[]> = {
-          'google-sheet': ['https://www.googleapis.com/auth/spreadsheets'],
-          'google-docs': ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive'],
-          'google-slides': ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive'],
+          'google-workspace': [
+            'https://www.googleapis.com/auth/drive',
+            'https://www.googleapis.com/auth/documents',
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/presentations',
+          ],
           'google-calendar': ['https://www.googleapis.com/auth/calendar'],
-          'google-drive': ['https://www.googleapis.com/auth/drive'],
           'google-gmail': ['https://mail.google.com/'],
         }
         const scopes = scopesFromCreds.length ? scopesFromCreds : (defaultScopes[provider] || [])
@@ -275,11 +338,14 @@ export class IntegrationProxy {
 
       let finalUrl: string
       if (isAbsoluteHttpUrl(path)) {
-        assertAbsoluteUrlMatchesBaseOrigin(path, typeConfig.baseUrl)
+        assertAbsoluteUrlIsAllowed(path, typeConfig.baseUrl, typeConfig.allowedOrigins)
         finalUrl = path
       }
       else {
-        finalUrl = joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
+        finalUrl = joinWithoutDuplicateSegments(
+          resolveRelativeBaseUrl(provider, typeConfig.baseUrl, path),
+          path,
+        )
       }
 
       const queryString = resolvedQuery.toString()

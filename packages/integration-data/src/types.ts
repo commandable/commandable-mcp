@@ -80,6 +80,7 @@ export interface Manifest {
   name: string
   version?: string
   baseUrl?: string
+  allowedOrigins?: string[]
   utils?: string[]
   toolsets?: Record<string, ToolsetMeta>
   tools: ToolRef[]

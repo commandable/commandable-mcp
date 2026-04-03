@@ -1,0 +1,18 @@
+async (input) => {
+  const params = new URLSearchParams()
+  const qParts = [`mimeType = 'application/vnd.google-apps.spreadsheet'`]
+  if (input.query)
+    qParts.push(input.query)
+  if (input.name)
+    qParts.push(`name contains '${input.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`)
+  if (!input.includeTrashed)
+    qParts.push('trashed = false')
+  if (qParts.length > 0)
+    params.set('q', qParts.join(' and '))
+  params.set('fields', input.fields || 'nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)')
+  params.set('pageSize', String(input.pageSize || 20))
+  if (input.pageToken)
+    params.set('pageToken', input.pageToken)
+  const res = await integration.fetch(`/files?${params.toString()}`)
+  return await res.json()
+}

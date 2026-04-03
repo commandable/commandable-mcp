@@ -114,7 +114,7 @@ function inferFilename(response: Response, source: string): string {
 
 async function downloadWithAuth(args: ExtractFileContentArgs, getIntegration: (id: string) => { fetch: (path: string, init?: RequestInit) => Promise<Response> }): Promise<Response> {
   if (!args.integration)
-    throw new HttpError(400, 'extractFileContent requires `integration` when `auth` is true.')
+    throw new HttpError(400, 'extractFileContent requires an exact integration id/reference when `auth` is true.')
   const integration = getIntegration(args.integration)
   return integration.fetch(args.source, { method: 'GET' })
 }
@@ -127,6 +127,7 @@ async function downloadWithoutAuth(args: ExtractFileContentArgs): Promise<Respon
 
 export function createExtractFileContent(
   getIntegration: (id: string) => { fetch: (path: string, init?: RequestInit) => Promise<Response> },
+  defaultIntegrationId?: string,
 ) {
   return async function extractFileContent(args: ExtractFileContentArgs): Promise<ExtractedFileContent> {
     if (!args || typeof args !== 'object')
@@ -136,13 +137,17 @@ export function createExtractFileContent(
     if (!args.source || typeof args.source !== 'string')
       throw new HttpError(400, 'extractFileContent requires `source` to be a non-empty string.')
 
+    const resolvedArgs = args.auth && !args.integration && defaultIntegrationId
+      ? { ...args, integration: defaultIntegrationId }
+      : args
+
     const capability = await getFileProcessingCapability()
     if (!capability.enabled)
       throw new HttpError(501, formatFileProcessingUnavailableMessage(capability))
 
-    const response = args.auth
-      ? await downloadWithAuth(args, getIntegration)
-      : await downloadWithoutAuth(args)
+    const response = resolvedArgs.auth
+      ? await downloadWithAuth(resolvedArgs, getIntegration)
+      : await downloadWithoutAuth(resolvedArgs)
 
     if (!response.ok) {
       const bodyText = await response.text().catch(() => '')
@@ -151,7 +156,7 @@ export function createExtractFileContent(
 
     const tempDir = await mkdtemp(join(tmpdir(), 'commandable-extract-'))
     try {
-      const filename = inferFilename(response, args.source)
+      const filename = inferFilename(response, resolvedArgs.source)
       const filePath = join(tempDir, filename)
       const outputPath = join(tempDir, 'result.json')
       const bytes = Buffer.from(await response.arrayBuffer())

@@ -1,0 +1,394 @@
+{
+  "name": "google-workspace",
+  "version": "0.1.0",
+  "baseUrl": "https://www.googleapis.com/drive/v3",
+  "allowedOrigins": ["https://*.googleapis.com"],
+  "toolsets": {
+    "drive": {
+      "label": "Drive",
+      "description": "Find, read, create, move, share, and delete Drive files and folders"
+    },
+    "docs": {
+      "label": "Docs",
+      "description": "Read and edit Google Docs documents"
+    },
+    "sheets": {
+      "label": "Sheets",
+      "description": "Read and edit Google Sheets spreadsheets"
+    },
+    "slides": {
+      "label": "Slides",
+      "description": "Read and edit Google Slides presentations"
+    }
+  },
+  "tools": [
+    {
+      "name": "list_files",
+      "description": "List files in a Google Drive folder or across all of Drive. Returns id, name, mimeType, modifiedTime, size, and parents for each file. Excludes trashed files by default. Use folderId to scope to a specific folder. For name- or type-based search, use search_files instead. Defaults to 50 results per page; use pageToken from the response for the next page.",
+      "inputSchema": "schemas/drive/list_files.json",
+      "handler": "handlers/drive/list_files.js",
+      "scope": "read",
+      "toolset": "drive"
+    },
+    {
+      "name": "search_files",
+      "description": "Search Google Drive for files by name, MIME type, or raw Drive query syntax. Use the 'name' shorthand for simple name searches (e.g. name='quarterly report'). Use 'mimeType' to filter by type. Use 'query' for advanced Drive search expressions (e.g. \"modifiedTime > '2024-01-01'\" or \"'folderId' in parents and mimeType='application/pdf'\"). All provided filters are combined with AND. Defaults to 20 results per page.",
+      "inputSchema": "schemas/drive/search_files.json",
+      "handler": "handlers/drive/search_files.js",
+      "scope": "read",
+      "toolset": "drive"
+    },
+    {
+      "name": "get_file_meta",
+      "description": "Get metadata for a Drive file or folder by ID. Returns id, name, mimeType, modifiedTime, createdTime, size, parents, trashed status, and webViewLink by default. To read the actual file contents, use read_file_content. To find a file by name, use search_files.",
+      "inputSchema": "schemas/drive/get_file_meta.json",
+      "handler": "handlers/drive/get_file_meta.js",
+      "scope": "read",
+      "toolset": "drive"
+    },
+    {
+      "name": "read_file_content",
+      "description": "Read any authorized Google Workspace or uploaded Drive file into agent-friendly text. Supports Docs, Sheets, Slides, PDF, DOCX, XLSX, and PPTX. Pass the mimeType from get_file_meta or search_files when available for the best behavior.",
+      "inputSchema": "schemas/drive/read_file_content.json",
+      "handler": "handlers/drive/read_file_content.js",
+      "scope": "read",
+      "toolset": "drive"
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a new folder in Google Drive. Optionally nest it inside a parent folder using parentId. Returns the created folder's metadata including its ID, which can be used as a parentId for subsequent file creation.",
+      "inputSchema": "schemas/drive/create_folder.json",
+      "handler": "handlers/drive/create_folder.js",
+      "scope": "write",
+      "toolset": "drive"
+    },
+    {
+      "name": "create_file",
+      "description": "Create a new Drive file (metadata only -- no content upload). To create a Google Workspace file, use the appropriate mimeType: 'application/vnd.google-apps.document' for Docs, 'application/vnd.google-apps.spreadsheet' for Sheets, 'application/vnd.google-apps.presentation' for Slides. Optionally place it in a folder with parentId. Returns the created file's metadata including its ID.",
+      "inputSchema": "schemas/drive/create_file.json",
+      "handler": "handlers/drive/create_file.js",
+      "scope": "write",
+      "toolset": "drive"
+    },
+    {
+      "name": "move_file",
+      "description": "Move a file or folder to a different parent folder by updating its parents. Provide the destination folder ID as addParents and optionally the current parent ID as removeParents (to remove it from the old location). Get the current parents from get_file_meta.",
+      "inputSchema": "schemas/drive/move_file.json",
+      "handler": "handlers/drive/move_file.js",
+      "scope": "write",
+      "toolset": "drive"
+    },
+    {
+      "name": "share_file",
+      "description": "Share a Drive file or folder with a specific user, group, domain, or make it publicly accessible. Use type='user' with emailAddress for individual sharing. Use type='anyone' with role='reader' to create a public view link. Use type='domain' with domain for organization-wide sharing. Returns the created permission resource.",
+      "inputSchema": "schemas/drive/share_file.json",
+      "handler": "handlers/drive/share_file.js",
+      "scope": "write",
+      "toolset": "drive"
+    },
+    {
+      "name": "delete_file",
+      "description": "Permanently and immediately delete a Drive file or folder by ID. This bypasses Trash and cannot be undone. To move to Trash instead, use the Google Drive UI or modify file properties. Use search_files or list_files to find file IDs.",
+      "inputSchema": "schemas/drive/delete_file.json",
+      "handler": "handlers/drive/delete_file.js",
+      "scope": "write",
+      "toolset": "drive"
+    },
+    {
+      "name": "read_document",
+      "description": "Read a Google Doc and return its content as clean Markdown. Preserves headings, bold, italic, strikethrough, links, code spans, ordered/unordered lists with nesting, and tables. This is the standard way to read document content. For editing, use append_text, replace_all_text, first-match tools, or docs_batch_update.",
+      "inputSchema": "schemas/docs/read_document.json",
+      "handler": "handlers/docs/read_document.js",
+      "scope": "read",
+      "toolset": "docs"
+    },
+    {
+      "name": "search_docs",
+      "description": "Search Google Drive for Google Docs only. Use this when the agent needs to discover Docs by name or Drive query without manually constructing a MIME type filter.",
+      "inputSchema": "schemas/docs/search_docs.json",
+      "handler": "handlers/docs/search_docs.js",
+      "scope": "read",
+      "toolset": "docs"
+    },
+    {
+      "name": "create_document",
+      "description": "Create a new empty Google Doc with the given title. Returns the created document's metadata including its documentId, which is needed for all subsequent operations on the document.",
+      "inputSchema": "schemas/docs/create_document.json",
+      "handler": "handlers/docs/create_document.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "docs_batch_update",
+      "description": "Send a documents.batchUpdate request to modify a document with one or more structured requests. Supports insertText, deleteContentRange, replaceAllText, createNamedRange, updateTextStyle, updateParagraphStyle, insertTable, insertInlineImage, and more. For common operations, prefer the higher-level Docs tools.",
+      "inputSchema": "schemas/docs/batch_update.json",
+      "handler": "handlers/docs/batch_update.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "append_text",
+      "description": "Append plain text to the end of a Google Doc. Automatically fetches the document to find the correct end index and inserts the text there. Use this for adding content to the end of a document without needing to know the document structure.",
+      "inputSchema": "schemas/docs/append_text.json",
+      "handler": "handlers/docs/append_text.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "replace_all_text",
+      "description": "Replace all occurrences of a text string in a Google Doc with new text. Case-sensitive by default. More efficient than the first-match tools when you need to replace every occurrence. Returns the number of occurrences replaced.",
+      "inputSchema": "schemas/docs/replace_all_text.json",
+      "handler": "handlers/docs/replace_all_text.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "style_first_match",
+      "description": "Find the first occurrence of text in a document and apply a TextStyle to it (bold, italic, fontSize, foregroundColor, etc.). Uses a marker-based approach: replaces the text with a unique marker, locates the marker's position, applies the style, then restores the original text. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/style_first_match.json",
+      "handler": "handlers/docs/style_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "insert_text_after_first_match",
+      "description": "Find the first occurrence of text and insert new text immediately before or after it. Useful for inserting content at a specific anchor point in the document without knowing exact character indices. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/insert_text_after_first_match.json",
+      "handler": "handlers/docs/insert_text_after_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "insert_table_after_first_match",
+      "description": "Find the first occurrence of text and insert a table with the specified number of rows and columns nearby. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/insert_table_after_first_match.json",
+      "handler": "handlers/docs/insert_table_after_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "insert_page_break_after_first_match",
+      "description": "Find the first occurrence of text and insert a page break nearby. Useful for structuring long documents. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/insert_page_break_after_first_match.json",
+      "handler": "handlers/docs/insert_page_break_after_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "insert_inline_image_after_first_match",
+      "description": "Find the first occurrence of text and insert an inline image nearby, referenced by URL. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/insert_inline_image_after_first_match.json",
+      "handler": "handlers/docs/insert_inline_image_after_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "delete_first_match",
+      "description": "Find the first occurrence of text in the document and delete it. Only the first match is removed. Use replace_all_text with an empty string to remove all occurrences. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/delete_first_match.json",
+      "handler": "handlers/docs/delete_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "update_paragraph_style_for_first_match",
+      "description": "Find the first occurrence of text and update the paragraph style for the paragraph containing it. Use to apply heading levels (HEADING_1 through HEADING_6), NORMAL_TEXT, or adjust spacing, alignment, and indentation. Returns {applied: true/false}.",
+      "inputSchema": "schemas/docs/update_paragraph_style_for_first_match.json",
+      "handler": "handlers/docs/update_paragraph_style_for_first_match.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "update_document_style",
+      "description": "Update document-level style properties such as page size (pageSize.width, pageSize.height in pt), margins (marginTop, marginBottom, marginLeft, marginRight in pt), and page orientation. Does not affect individual paragraph or text styles.",
+      "inputSchema": "schemas/docs/update_document_style.json",
+      "handler": "handlers/docs/update_document_style.js",
+      "scope": "write",
+      "toolset": "docs"
+    },
+    {
+      "name": "get_spreadsheet",
+      "description": "Retrieve spreadsheet metadata including all sheet names, IDs, and properties. Set includeGridData=false (the default) to get only metadata without cell values. Use read_sheet for cell content. Use the 'fields' parameter to limit the response (e.g. fields='sheets.properties' to get only sheet names and IDs). The spreadsheetId appears in the URL: https://docs.google.com/spreadsheets/d/{spreadsheetId}/.",
+      "inputSchema": "schemas/sheets/get_spreadsheet.json",
+      "handler": "handlers/sheets/get_spreadsheet.js",
+      "scope": "read",
+      "toolset": "sheets"
+    },
+    {
+      "name": "search_sheets",
+      "description": "Search Google Drive for Google Sheets only. Use this when the agent needs to discover spreadsheets by name or Drive query without manually constructing a MIME type filter.",
+      "inputSchema": "schemas/sheets/search_sheets.json",
+      "handler": "handlers/sheets/search_sheets.js",
+      "scope": "read",
+      "toolset": "sheets"
+    },
+    {
+      "name": "read_sheet",
+      "description": "Read cell values from a sheet range and return as a Markdown table with A1 column headers and row numbers. Use this to read and understand spreadsheet data -- the coordinates in the output can be used directly with update_values and append_values for writes. Supports optional valueRenderOption for formulas or raw numbers. Use get_spreadsheet first to discover sheet names.",
+      "inputSchema": "schemas/sheets/read_sheet.json",
+      "handler": "handlers/sheets/read_sheet.js",
+      "scope": "read",
+      "toolset": "sheets"
+    },
+    {
+      "name": "create_spreadsheet",
+      "description": "Create a new Google Spreadsheet. Accepts a full spreadsheet resource body, allowing you to specify the title, initial sheets, and cell data. Minimum: provide {title: 'My Spreadsheet'}. Returns the created spreadsheet including its spreadsheetId.",
+      "inputSchema": "schemas/sheets/create_spreadsheet.json",
+      "handler": "handlers/sheets/create_spreadsheet.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "update_values",
+      "description": "Write values to a specific A1 range, replacing existing content. Use valueInputOption='USER_ENTERED' to parse values as the user would type them (supports formulas, dates, currency). Use 'RAW' to store values as literal strings. Provide values as a 2D array (rows of columns).",
+      "inputSchema": "schemas/sheets/update_values.json",
+      "handler": "handlers/sheets/update_values.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "append_values",
+      "description": "Append rows of values after the last row of existing data in a range. Useful for adding new rows to a table without knowing the exact next row number. Uses USER_ENTERED valueInputOption by default. The range determines which sheet to append to.",
+      "inputSchema": "schemas/sheets/append_values.json",
+      "handler": "handlers/sheets/append_values.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "batch_update_values",
+      "description": "Write values to multiple A1 ranges in a single API call. More efficient than calling update_values multiple times. Provide a data array where each item has range and values. Use valueInputOption='USER_ENTERED' for formulas and dates.",
+      "inputSchema": "schemas/sheets/batch_update_values.json",
+      "handler": "handlers/sheets/batch_update_values.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "clear_values",
+      "description": "Clear all values (but not formatting) in the specified A1 range. The cells remain but their content is removed. To clear formatting as well, use sheets_batch_update with a repeatCell request.",
+      "inputSchema": "schemas/sheets/clear_values.json",
+      "handler": "handlers/sheets/clear_values.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "batch_clear_values",
+      "description": "Clear values from multiple A1 ranges in a single API call. More efficient than calling clear_values multiple times.",
+      "inputSchema": "schemas/sheets/batch_clear_values.json",
+      "handler": "handlers/sheets/batch_clear_values.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "sheets_batch_update",
+      "description": "Send a spreadsheets.batchUpdate request for structural changes such as addSheet, deleteSheet, duplicateSheet, insertDimension, deleteDimension, mergeCells, sortRange, addConditionalFormatRule, and more. Accepts a requests array. Use update_values or batch_update_values for writing cell data.",
+      "inputSchema": "schemas/sheets/batch_update.json",
+      "handler": "handlers/sheets/batch_update.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "copy_to_spreadsheet",
+      "description": "Copy a specific sheet (tab) from one spreadsheet to another. Provide the source spreadsheetId, the sheetId (integer, from get_spreadsheet), and the destination spreadsheetId. Returns the copied sheet's properties in the destination spreadsheet.",
+      "inputSchema": "schemas/sheets/copy_to_spreadsheet.json",
+      "handler": "handlers/sheets/copy_to_spreadsheet.js",
+      "scope": "write",
+      "toolset": "sheets"
+    },
+    {
+      "name": "read_presentation",
+      "description": "Read a Google Slides presentation and return a human-readable summary including the title, slide count, and text content extracted from each slide. Returns the text found in all shapes on each slide with slide IDs for reference. Use this to understand what is in a presentation before editing. For low-level modifications, use slides_batch_update.",
+      "inputSchema": "schemas/slides/get_presentation.json",
+      "handler": "handlers/slides/read_presentation.js",
+      "scope": "read",
+      "toolset": "slides"
+    },
+    {
+      "name": "search_slides",
+      "description": "Search Google Drive for Google Slides only. Use this when the agent needs to discover presentations by name or Drive query without manually constructing a MIME type filter.",
+      "inputSchema": "schemas/slides/search_slides.json",
+      "handler": "handlers/slides/search_slides.js",
+      "scope": "read",
+      "toolset": "slides"
+    },
+    {
+      "name": "get_page_thumbnail",
+      "description": "Generate a thumbnail image URL for a specific slide (page) in a presentation. Requires the presentation ID and the slide's objectId (page ID from read_presentation). Returns a contentUrl for the thumbnail image. Useful for previewing slides.",
+      "inputSchema": "schemas/slides/get_page_thumbnail.json",
+      "handler": "handlers/slides/get_page_thumbnail.js",
+      "scope": "read",
+      "toolset": "slides"
+    },
+    {
+      "name": "create_presentation",
+      "description": "Create a new empty Google Slides presentation with an optional title. Returns the created presentation's metadata including its presentationId, which is needed for all subsequent operations.",
+      "inputSchema": "schemas/slides/create_presentation.json",
+      "handler": "handlers/slides/create_presentation.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "slides_batch_update",
+      "description": "Send a presentations.batchUpdate request for low-level slide modifications. Accepts an array of requests (createSlide, deleteObject, insertText, deleteText, createShape, createTable, replaceAllText, updateTextStyle, updateShapeProperties, etc.). For common text and styling operations, prefer the higher-level Slides tools.",
+      "inputSchema": "schemas/slides/batch_update.json",
+      "handler": "handlers/slides/batch_update.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "append_text_to_title_of_slide_index",
+      "description": "Append text to the title shape of a specific slide by its 0-based index (slideIndex=0 is the first slide, default). Fetches the presentation to find the title shape's objectId then inserts text at the end of its content.",
+      "inputSchema": "schemas/slides/append_text_to_title_of_first_slide.json",
+      "handler": "handlers/slides/append_text_to_title_of_first_slide.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "replace_text_first_match",
+      "description": "Replace the first occurrence of text anywhere in the presentation with new text. Note: the Slides API replaceAllText always replaces all occurrences; this tool uses replaceAllText internally. For replacing only one instance, use style_text_first_match to locate and style the match, then follow up with slides_batch_update. Returns the API response.",
+      "inputSchema": "schemas/slides/replace_text_first_match.json",
+      "handler": "handlers/slides/replace_text_first_match.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "style_text_first_match",
+      "description": "Find the first occurrence of text in the presentation and apply a text style to it (bold, italic, fontSize, foregroundColor, etc.). Uses a marker pattern: replaces the text with a unique marker, finds the marker's objectId and range, applies the style, then restores the original text. Returns {applied: true/false}.",
+      "inputSchema": "schemas/slides/style_text_first_match.json",
+      "handler": "handlers/slides/style_text_first_match.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "insert_shape_after_first_match",
+      "description": "Find the first slide containing a text match and insert a rectangle shape on that slide at the specified position. Positions use EMU units (1 inch = 914400 EMU). Returns {applied: true/false}.",
+      "inputSchema": "schemas/slides/insert_shape_after_first_match.json",
+      "handler": "handlers/slides/insert_shape_after_first_match.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "insert_image_after_first_match",
+      "description": "Find the first slide containing a text match and insert an image on that slide from a URL. Position and size use EMU units (1 inch = 914400 EMU). Returns {applied: true/false}.",
+      "inputSchema": "schemas/slides/insert_image_after_first_match.json",
+      "handler": "handlers/slides/insert_image_after_first_match.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "create_slide_after_first_match",
+      "description": "Find the first slide containing a text match and create a new blank slide immediately after it. Useful for inserting slides at a specific position in the deck. Returns {applied: true/false} and the new slide's objectId.",
+      "inputSchema": "schemas/slides/create_slide_after_first_match.json",
+      "handler": "handlers/slides/create_slide_after_first_match.js",
+      "scope": "write",
+      "toolset": "slides"
+    },
+    {
+      "name": "set_background_color_for_slide_index",
+      "description": "Set the background color for a specific slide by its 0-based index (slideIndex=0 is the first slide). Provide r, g, b values in 0.0-1.0 range (e.g. r=1.0, g=0.0, b=0.0 for red). Fetches the presentation first to resolve the slide's objectId from the index.",
+      "inputSchema": "schemas/slides/set_background_color_for_slide_index.json",
+      "handler": "handlers/slides/set_background_color_for_slide_index.js",
+      "scope": "write",
+      "toolset": "slides"
+    }
+  ]
+}

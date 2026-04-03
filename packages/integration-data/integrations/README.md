@@ -47,7 +47,7 @@ Handlers use the `integration.fetch(path, options?)` pattern rather than binding
 For downloadable files and attachments, handlers can also call `utils.extractFileContent()`:
 
 - `utils.extractFileContent({ auth: false, source: <absolute-url> })` for public or pre-signed downloads
-- `utils.extractFileContent({ auth: true, integration: <integration-id-or-reference>, source: <relative-or-absolute-url> })` when the host should fetch using an existing integration's auth
+- `utils.extractFileContent({ auth: true, source: <relative-or-absolute-url> })` to reuse the current integration's auth
 
 This utility is for downloadable files only. Native structured resources like Google Docs, Sheets, and Slides should continue to use their native APIs or export endpoints.
 

@@ -3,12 +3,12 @@ import type { IntegrationData } from '../types.js'
 import { applyFileProcessingCapabilityToIntegrations, type FileProcessingCapability } from '../integrations/fileProcessing.js'
 import { loadIntegrationToolList } from '../integrations/dataLoader.js'
 
-function makeDriveIntegration(): IntegrationData {
+function makeWorkspaceIntegration(): IntegrationData {
   return {
-    id: 'drive-node-1',
-    referenceId: 'drive_ref',
-    type: 'google-drive',
-    label: 'Drive Test',
+    id: 'workspace-node-1',
+    referenceId: 'workspace_ref',
+    type: 'google-workspace',
+    label: 'Workspace Test',
     disabledTools: [],
   }
 }
@@ -27,8 +27,8 @@ function capability(enabled: boolean): FileProcessingCapability {
 }
 
 describe('file processing capability gating', () => {
-  it('hides google-drive read_file_content from runtime and advertised tool lists when disabled', () => {
-    const integrations = applyFileProcessingCapabilityToIntegrations([makeDriveIntegration()], capability(false))
+  it('hides google-workspace read_file_content from runtime and advertised tool lists when disabled', () => {
+    const integrations = applyFileProcessingCapabilityToIntegrations([makeWorkspaceIntegration()], capability(false))
     const integration = integrations[0]!
     const advertisedTools = loadIntegrationToolList(integration.type, {
       credentialVariant: integration.credentialVariant ?? undefined,
@@ -41,8 +41,8 @@ describe('file processing capability gating', () => {
     expect(advertisedTools.some(tool => tool.name === 'read_file_content')).toBe(false)
   })
 
-  it('does not inject google-drive file-processing disables when capability is enabled', () => {
-    const integrations = applyFileProcessingCapabilityToIntegrations([makeDriveIntegration()], capability(true))
+  it('does not inject google-workspace file-processing disables when capability is enabled', () => {
+    const integrations = applyFileProcessingCapabilityToIntegrations([makeWorkspaceIntegration()], capability(true))
     const integration = integrations[0]!
 
     expect(integration.disabledTools).not.toContain('read_file_content')

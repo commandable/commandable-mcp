@@ -56,13 +56,12 @@ function getTools(type: string, credentialVariant?: string): ToolSet {
 }
 
 function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
-  const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(node, path, init) }
   const getIntegration = createGetIntegration([node], proxy)
   const wrapper = `async (input) => {\n  const integration = getIntegration('${String(node?.id || 'node')}');\n  const __inner = ${tool.handlerCode};\n  return await __inner(input);\n}`
   const utils = buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, {
-    extractFileContent: createExtractFileContent(getIntegration),
+    extractFileContent: createExtractFileContent(getIntegration, node?.id),
   })
-  const safeHandler = createSafeHandlerFromString(wrapper, () => integration, utils)
+  const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
   return async (input: any) => {
     const res = await safeHandler(input)
     if (!res.success)

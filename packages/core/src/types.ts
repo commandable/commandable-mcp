@@ -8,9 +8,7 @@ export type IntegrationType =
   | 'notion'
   | 'trello'
   | 'google-calendar'
-  | 'google-sheet'
-  | 'google-docs'
-  | 'google-slides'
+  | 'google-workspace'
   | (string & {})
 
 export interface IntegrationData {
@@ -73,6 +71,8 @@ export interface IntegrationCredentialVariant {
   baseUrl?: string | null
   /** Template for constructing the base URL from credential fields, e.g. "https://{{domain}}.atlassian.net". */
   baseUrlTemplate?: string | null
+  /** Explicit absolute origins/wildcards the integration may call with injected credentials. */
+  allowedOrigins?: string[] | null
   healthCheck?: { path: string, method?: string } | { notViable: true } | null
   hintMarkdown?: string | null
   /** Named server-side hook for credential transforms that require async work (e.g. JWT signing).

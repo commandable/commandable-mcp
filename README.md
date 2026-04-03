@@ -129,11 +129,8 @@ Commandable also ships with a strong set of prebuilt integrations that work out 
 | [Confluence](packages/integration-data/integrations/confluence/)           | 11    | all tools                                                         | Confluence tests      |
 | [GitHub](packages/integration-data/integrations/github/)                   | 47    | `code`, `issues`, `pull_requests`, `ci`, `releases`, `repo_admin` | GitHub tests          |
 | [Google Calendar](packages/integration-data/integrations/google-calendar/) | 17    | `events`, `sharing`                                               | Google Calendar tests |
-| [Google Docs](packages/integration-data/integrations/google-docs/)         | 13    | all tools                                                         | Google Docs tests     |
-| [Google Drive](packages/integration-data/integrations/google-drive/)       | 9     | all tools                                                         | Google Drive tests    |
+| [Google Workspace](packages/integration-data/integrations/google-workspace/) | 46  | `drive`, `docs`, `sheets`, `slides`                               | Google Workspace tests |
 | [Gmail](packages/integration-data/integrations/google-gmail/)              | 25    | `email`, `organize`                                               | Gmail tests           |
-| [Google Sheets](packages/integration-data/integrations/google-sheet/)      | 10    | all tools                                                         | Google Sheets tests   |
-| [Google Slides](packages/integration-data/integrations/google-slides/)     | 11    | all tools                                                         | Google Slides tests   |
 | [HubSpot](packages/integration-data/integrations/hubspot/)                 | 31    | all tools                                                         | HubSpot tests         |
 | [Jira](packages/integration-data/integrations/jira/)                       | 23    | `issues`, `boards`                                                | Jira tests            |
 | [Notion](packages/integration-data/integrations/notion/)                   | 19    | `pages`, `databases`                                              | Notion tests          |

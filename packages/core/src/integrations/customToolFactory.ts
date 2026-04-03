@@ -28,7 +28,7 @@ export function buildExecutableToolFromDefinition(params: {
 
   const getIntegration = createGetIntegration(integrationsRef || { current: [integration] }, proxy)
   const resolvedUtils = injectUtils ?? buildSandboxUtils(Array.isArray(tool.utils) ? tool.utils : undefined, {
-    extractFileContent: createExtractFileContent(getIntegration),
+    extractFileContent: createExtractFileContent(getIntegration, integration.id),
   })
   const scope: ToolScope = tool.scope || 'write'
 

@@ -855,7 +855,7 @@ export async function handleMetaToolCall(params: {
 
     const getIntegration = createGetIntegration(ctx.integrationsRef, ctx.proxy)
     const wrapper = `async (input) => {\n  const integration = getIntegration('${integration.id}');\n  const __inner = ${handlerCode};\n  return await __inner(input);\n}`
-    const utils = buildSandboxUtils([], { extractFileContent: createExtractFileContent(getIntegration) })
+    const utils = buildSandboxUtils([], { extractFileContent: createExtractFileContent(getIntegration, integration.id) })
     const safe = createSafeHandlerFromString(wrapper, getIntegration, utils)
     const res = await safe(testInput)
     return { handled: true, listChanged: false, result: res }

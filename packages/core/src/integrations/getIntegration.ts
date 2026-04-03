@@ -10,9 +10,7 @@ export function createGetIntegration(
 ) {
   return (refOrId: string) => {
     const list = Array.isArray(integrations) ? integrations : integrations?.current
-    const exactMatch = list?.find(i => i.id === refOrId || (i as any).referenceId === refOrId)
-    const typeMatches = list?.filter(i => i.type === refOrId) || []
-    const integration = exactMatch || (typeMatches.length === 1 ? typeMatches[0] : undefined)
+    const integration = list?.find(i => i.id === refOrId || (i as any).referenceId === refOrId)
     if (!integration)
       throw new Error('Invalid or unauthorized integration reference/id')
 
@@ -34,6 +32,9 @@ export function createGetIntegration(
       proxy.call(integration, path, { ...init, method })
 
     return {
+      referenceId: integration.referenceId,
+      type: integration.type,
+      label: integration.label,
       fetch: (path: string, init?: RequestInit) => proxy.call(integration, path, init),
       get: verbNoBody('GET'),
       post: verbWithBody('POST'),

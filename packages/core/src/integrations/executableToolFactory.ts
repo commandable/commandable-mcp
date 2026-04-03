@@ -50,7 +50,6 @@ export function buildToolsByIntegration(
 ): Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> {
   const { requireWriteConfirmation = false, integrationsRef, toolDefinitions, utils: injectUtils } = opts
   const getIntegration = createGetIntegration(integrationsRef || { current: integrations }, proxy)
-  const extractFileContent = createExtractFileContent(getIntegration)
   const toolsByIntegration: Record<string, { read: ExecutableTool[], write: ExecutableTool[], admin: ExecutableTool[] }> = {}
 
   for (const integ of integrations) {
@@ -87,6 +86,7 @@ export function buildToolsByIntegration(
       const schemaObj = sanitizeJsonSchema(rawSchema)
       const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
+      const extractFileContent = createExtractFileContent(getIntegration, integ.id)
 
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
       const utils = injectUtils ?? buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, { extractFileContent })
@@ -106,6 +106,7 @@ export function buildToolsByIntegration(
       const schemaObj = sanitizeJsonSchema(t.inputSchema)
       const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
+      const extractFileContent = createExtractFileContent(getIntegration, integ.id)
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
       const utils = injectUtils ?? buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, { extractFileContent })
       const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)

@@ -12,9 +12,9 @@ const mockedLoadIntegrationTools = vi.mocked(dataLoader.loadIntegrationTools)
 function makeIntegration(overrides: Partial<IntegrationData> = {}): IntegrationData {
   return {
     id: 'integration-1',
-    referenceId: 'google_drive_primary',
-    type: 'google-drive',
-    label: 'Google Drive',
+    referenceId: 'google_workspace_primary',
+    type: 'google-workspace',
+    label: 'Google Workspace',
     enabled: true,
     connectionId: 'connection-1',
     ...overrides,
@@ -58,7 +58,7 @@ describe('buildToolsByIntegration override precedence', () => {
       { toolDefinitions: [makeToolDefinition()] },
     )
 
-    const tools = built.google_drive_primary?.read || []
+    const tools = built.google_workspace_primary?.read || []
     expect(tools).toHaveLength(1)
     expect(tools[0]?.description).toContain('Override reader')
 
@@ -80,7 +80,7 @@ describe('buildToolsByIntegration override precedence', () => {
       },
     )
 
-    const tools = built.google_drive_primary?.read || []
+    const tools = built.google_workspace_primary?.read || []
     expect(tools).toHaveLength(1)
     expect(tools[0]?.description).toContain('Later override')
 

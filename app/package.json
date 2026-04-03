@@ -1,7 +1,7 @@
 {
   "name": "@commandable/mcp",
   "type": "module",
-  "version": "0.4.0",
+  "version": "0.9.0",
   "packageManager": "yarn@4.12.0",
   "description": "Commandable app/server package for local management UI, HTTP endpoints, and human-facing CLI flows.",
   "license": "AGPL-3.0-only",

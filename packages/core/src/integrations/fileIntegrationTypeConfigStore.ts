@@ -12,6 +12,7 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
 
   const manifest = loadIntegrationManifest(typeSlug)
   const manifestBaseUrl = manifest?.baseUrl ?? null
+  const manifestAllowedOrigins = manifest?.allowedOrigins ?? null
 
   const variants: Record<string, IntegrationCredentialVariant> = {}
   for (const [key, variant] of Object.entries(variantsFile.variants) as [string, typeof variantsFile.variants[string]][]) {
@@ -26,6 +27,7 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
       auth: { kind: 'template', injection: variant.injection || {} },
       baseUrl: manifestBaseUrl,
       baseUrlTemplate: typeof (variant as any).baseUrlTemplate === 'string' ? (variant as any).baseUrlTemplate : null,
+      allowedOrigins: manifestAllowedOrigins,
       healthCheck: variant.healthCheck ?? null,
       hintMarkdown: loadIntegrationHint(typeSlug, key),
       preprocess,

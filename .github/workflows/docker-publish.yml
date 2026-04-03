@@ -49,7 +49,7 @@ jobs:
           GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
           GOOGLE_IMPERSONATE_SUBJECT: ${{ vars.GOOGLE_IMPERSONATE_SUBJECT }}
           COMMANDABLE_ENCRYPTION_SECRET: docker-smoke-secret
-        run: node scripts/docker-smoke-google-drive.mjs --image commandable-mcp:smoke
+        run: node scripts/docker-smoke-google-workspace.mjs --image commandable-mcp:smoke
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

@@ -193,7 +193,7 @@ Put integration tests under:
 
 At minimum:
 
-- Add a `usage_parity.test.ts` (there are examples in `github/`, `notion/`, `google-sheet/`, etc.).
+- Add a `usage_parity.test.ts` (there are examples in `github/`, `notion/`, `google-workspace/`, etc.).
 
 Then run:
 

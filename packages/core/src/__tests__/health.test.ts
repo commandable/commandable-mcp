@@ -85,14 +85,14 @@ describe('checkIntegrationHealth', () => {
   })
 
   it('returns connected (skipped) for providers without a health endpoint', async () => {
-    // google-sheet explicitly marks health checks as not viable, so health is skipped
+    // google-workspace explicitly marks health checks as not viable, so health is skipped
     const integration: IntegrationData = {
-      id: 'gsheet-test',
-      referenceId: 'gsheet-test',
-      type: 'google-sheet',
-      label: 'Google Sheets',
+      id: 'gworkspace-test',
+      referenceId: 'gworkspace-test',
+      type: 'google-workspace',
+      label: 'Google Workspace',
       connectionMethod: 'credentials',
-      credentialId: 'gsheet-test-creds',
+      credentialId: 'gworkspace-test-creds',
       spaceId: 'local',
     }
     const proxy = new IntegrationProxy({ credentialStore })
