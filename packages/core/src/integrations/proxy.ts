@@ -297,9 +297,6 @@ export class IntegrationProxy {
               : [])
 
         const defaultScopes: Record<string, string[]> = {
-          'google-sheet': ['https://www.googleapis.com/auth/spreadsheets'],
-          'google-docs': ['https://www.googleapis.com/auth/documents', 'https://www.googleapis.com/auth/drive'],
-          'google-slides': ['https://www.googleapis.com/auth/presentations', 'https://www.googleapis.com/auth/drive'],
           'google-workspace': [
             'https://www.googleapis.com/auth/drive',
             'https://www.googleapis.com/auth/documents',
@@ -307,7 +304,6 @@ export class IntegrationProxy {
             'https://www.googleapis.com/auth/presentations',
           ],
           'google-calendar': ['https://www.googleapis.com/auth/calendar'],
-          'google-drive': ['https://www.googleapis.com/auth/drive'],
           'google-gmail': ['https://mail.google.com/'],
         }
         const scopes = scopesFromCreds.length ? scopesFromCreds : (defaultScopes[provider] || [])

@@ -21,7 +21,7 @@ function loadEnvFile(filePath: string) {
  * 1. {monorepo root}/.env.test
  * 2. {this package}/.env.test
  * 3. {this package}/integrations/<each>/.env.test (directories only, sorted)
- * 4. {this package}/.env.test.google (shared Google vars for calendar/docs/drive/gmail/sheet/slides)
+ * 4. {this package}/.env.test.google (shared Google vars for calendar/gmail/workspace)
  */
 const explicit = process.env.INTEGRATION_TESTS_ENV_FILE
 if (explicit) {

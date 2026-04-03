@@ -29,7 +29,7 @@ export interface FileProcessingCapability {
 }
 
 const FILE_PROCESSING_DISABLED_TOOLS: Record<string, string[]> = {
-  'google-drive': ['read_file_content'],
+  'google-workspace': ['read_file_content'],
 }
 
 let capabilityPromise: Promise<FileProcessingCapability> | null = null

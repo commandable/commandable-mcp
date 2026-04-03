@@ -38,7 +38,7 @@ If an endpoint is already clean and self-contained, just proxy it.
 - `notion/`: clean proxying + optional `prompt.md`
 - `google-calendar/`: query param building + `read`/`write`/`admin` scopes
 - `trello/`: query-param credential injection + `displayCards`
-- `google-docs/`, `google-slides/`: higher-level write helpers over batchUpdate APIs
+- `google-workspace/`: combined Drive, Docs, Sheets, Slides (including higher-level write helpers over batchUpdate APIs)
 
 
 
@@ -48,7 +48,7 @@ IMPORTANT: Think through how an AI agent might use an integration and any tweaks
 
 ## Lessons from GSuite: what we changed and why
 
-We overhauled all six Google integrations (Gmail, Drive, Calendar, Docs, Sheets, Slides) after benchmarking against taylorwilsdon's [google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) and reviewing MCP agent-consumption best practices. The principles below should guide every new integration.
+We overhauled Google integrations (including the unified `google-workspace` bundle and Gmail, Calendar, etc.) after benchmarking against taylorwilsdon's [google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) and reviewing MCP agent-consumption best practices. The principles below should guide every new integration.
 
 ### 1. `read_*` tools should return agent-friendly content, not raw API JSON
 
@@ -239,7 +239,7 @@ Complex conversion logic (like Docs-to-Markdown) can fail on edge cases. Always 
 
 ### 11. Future: native API format exports
 
-Google Drive's `files.export` API now supports `text/markdown` as an export MIME type for Docs. We currently use custom Docs API -> Markdown conversion to keep the integration self-contained (no cross-API dependency on Drive scopes). A `todo.md` in `google-docs/` tracks this for future investigation when we add cross-provider fetch support.
+Google Drive's `files.export` API now supports `text/markdown` as an export MIME type for Docs. We currently use custom Docs API -> Markdown conversion to keep the integration self-contained (no cross-API dependency on Drive scopes). Track future cross-provider fetch support in the `google-workspace` integration if needed.
 
 
 

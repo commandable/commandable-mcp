@@ -8,9 +8,7 @@ export type IntegrationType =
   | 'notion'
   | 'trello'
   | 'google-calendar'
-  | 'google-sheet'
-  | 'google-docs'
-  | 'google-slides'
+  | 'google-workspace'
   | (string & {})
 
 export interface IntegrationData {

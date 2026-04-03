@@ -39,7 +39,7 @@ function printSmokeSuccessBanner() {
   const line = '══════════════════════════════════════════════════════════════════'
   console.log('')
   console.log(green(bold(line)))
-  console.log(green(bold('  PASSED — Docker Google Drive smoke test')))
+  console.log(green(bold('  PASSED — Docker Google Workspace smoke test')))
   console.log(green(bold(line)))
   console.log('')
 }
@@ -51,7 +51,7 @@ async function printSmokeFailureBanner(error, containerStarted, containerName) {
 
   console.error('')
   console.error(red(bold(line)))
-  console.error(red(bold('  FAILED — Docker Google Drive smoke test')))
+  console.error(red(bold('  FAILED — Docker Google Workspace smoke test')))
   console.error(red(bold(line)))
   console.error('')
   console.error(red(bold('Reason')), red(msg))
@@ -306,10 +306,10 @@ async function main() {
     mode: 'static',
     integrations: [
       {
-        id: 'google-drive:smoke',
-        referenceId: 'google-drive-smoke',
-        type: 'google-drive',
-        label: 'Google Drive Smoke',
+        id: 'google-workspace:smoke',
+        referenceId: 'google-workspace-smoke',
+        type: 'google-workspace',
+        label: 'Google Workspace Smoke',
         credentialVariant: credentialConfig.credentialVariant,
         maxScope: 'write',
         credentials: credentialConfig.credentials,
@@ -362,10 +362,10 @@ async function main() {
     const toolList = await waitFor(async () => {
       const res = await client.listTools()
       const names = (res.tools || []).map(tool => tool.name)
-      const createFolderTool = names.find(name => name.includes('google_drive__create_folder'))
-      const getMetaTool = names.find(name => name.includes('google_drive__get_file_meta'))
-      const readFileTool = names.find(name => name.includes('google_drive__read_file_content'))
-      const deleteFileTool = names.find(name => name.includes('google_drive__delete_file'))
+      const createFolderTool = names.find(name => name.includes('google_workspace__create_folder'))
+      const getMetaTool = names.find(name => name.includes('google_workspace__get_file_meta'))
+      const readFileTool = names.find(name => name.includes('google_workspace__read_file_content'))
+      const deleteFileTool = names.find(name => name.includes('google_workspace__delete_file'))
       if (!createFolderTool || !getMetaTool || !readFileTool || !deleteFileTool)
         throw new Error(`Drive smoke tools not available yet. Saw: ${names.join(', ')}`)
       return { createFolderTool, getMetaTool, readFileTool, deleteFileTool }
@@ -427,7 +427,7 @@ async function main() {
       try {
         if (uploadedId) {
           const list = await client.listTools()
-          const deleteTool = (list.tools || []).map(t => t.name).find(n => n.includes('google_drive__delete_file'))
+          const deleteTool = (list.tools || []).map(t => t.name).find(n => n.includes('google_workspace__delete_file'))
           if (deleteTool)
             await client.callTool({ name: deleteTool, arguments: { fileId: uploadedId } })
         }
@@ -436,7 +436,7 @@ async function main() {
       try {
         if (folderId) {
           const list = await client.listTools()
-          const deleteTool = (list.tools || []).map(t => t.name).find(n => n.includes('google_drive__delete_file'))
+          const deleteTool = (list.tools || []).map(t => t.name).find(n => n.includes('google_workspace__delete_file'))
           if (deleteTool)
             await client.callTool({ name: deleteTool, arguments: { fileId: folderId } })
         }
@@ -459,7 +459,7 @@ async function main() {
 main().catch((error) => {
   console.error('')
   console.error(red(bold('══════════════════════════════════════════════════════════════════')))
-  console.error(red(bold('  FAILED — Docker Google Drive smoke test (unexpected error)')))
+  console.error(red(bold('  FAILED — Docker Google Workspace smoke test (unexpected error)')))
   console.error(red(bold('══════════════════════════════════════════════════════════════════')))
   console.error('')
   console.error(red(error instanceof Error ? error.message : String(error)))

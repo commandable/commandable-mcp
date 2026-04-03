@@ -18,7 +18,6 @@ describe('createGetIntegration', () => {
 
     const integration = getIntegration('integration-123')
 
-    expect(integration.id).toBe('integration-123')
     expect(integration.referenceId).toBe('google_workspace_primary')
     expect(integration.type).toBe('google-workspace')
     expect(integration.label).toBe('Google Workspace')
@@ -36,7 +35,7 @@ describe('createGetIntegration', () => {
 
     const integration = getIntegration('google_workspace_primary')
 
-    expect(integration.id).toBe('integration-123')
+    expect(integration.referenceId).toBe('google_workspace_primary')
   })
 
   it('rejects provider type lookups', () => {

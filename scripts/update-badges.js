@@ -35,11 +35,8 @@ const integrations = [
   { name: 'hubspot',         label: 'HubSpot'        },
   { name: 'confluence',      label: 'Confluence'     },
   { name: 'google-calendar', label: 'Google Calendar'},
-  { name: 'google-docs',     label: 'Google Docs'   },
-  { name: 'google-drive',    label: 'Google Drive'  },
   { name: 'google-gmail',    label: 'Gmail'          },
-  { name: 'google-sheet',    label: 'Google Sheets' },
-  { name: 'google-slides',   label: 'Google Slides' },
+  { name: 'google-workspace', label: 'Google Workspace' },
 ]
 
 function readResults(name) {

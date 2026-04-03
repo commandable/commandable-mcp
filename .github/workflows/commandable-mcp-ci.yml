@@ -48,11 +48,8 @@ jobs:
           - hubspot
           - confluence
           - google-calendar
-          - google-docs
-          - google-drive
           - google-gmail
-          - google-sheet
-          - google-slides
+          - google-workspace
 
     steps:
       - uses: actions/checkout@v4
@@ -124,15 +121,9 @@ jobs:
           GMAIL_TEST_MESSAGE_ID: ${{ vars.GMAIL_TEST_MESSAGE_ID }}
           GMAIL_TEST_THREAD_ID: ${{ vars.GMAIL_TEST_THREAD_ID }}
           GMAIL_TEST_SEND_TO: ${{ vars.GMAIL_TEST_SEND_TO }}
-          # ── Google Sheets ─────────────────────────────────────────────────────
+          # ── Google Workspace (live tests + managed OAuth smoke) ───────────────
           GOOGLE_SHEETS_TEST_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_TEST_SPREADSHEET_ID }}
           GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
-          # ── Google Docs ───────────────────────────────────────────────────────
-          GOOGLE_DOCS_TEST_DOCUMENT_ID: ${{ secrets.GOOGLE_DOCS_TEST_DOCUMENT_ID }}
-          GOOGLE_DOCS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_DOCS_TEST_CONNECTION_ID }}
-          # ── Google Slides ─────────────────────────────────────────────────────
-          GOOGLE_SLIDES_TEST_PRESENTATION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_PRESENTATION_ID }}
-          GOOGLE_SLIDES_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SLIDES_TEST_CONNECTION_ID }}
           # ── Managed OAuth ─────────────────────────────────────────────────────
           COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
           COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}
