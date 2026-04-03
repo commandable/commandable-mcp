@@ -5674,7 +5674,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         }
       ]
     },
-    "prompt": "## IDs and URLs\n\nGoogle Workspace resources use product-specific URLs:\n\n- Drive files: `https://drive.google.com/file/d/{fileId}/view`\n- Drive folders: `https://drive.google.com/drive/folders/{folderId}`\n- Docs: `https://docs.google.com/document/d/{documentId}/edit`\n- Sheets: `https://docs.google.com/spreadsheets/d/{spreadsheetId}/edit`\n- Slides: `https://docs.google.com/presentation/d/{presentationId}/edit`\n\nUse Drive search/list tools to discover files when the Drive toolset is enabled.\n\n## When to use Drive vs native product tools\n\n- Use Drive tools to search, list, move, share, create metadata-only files, and read arbitrary uploaded files.\n- Use Docs tools when you need structured document editing or rich document reads.\n- Use Sheets tools when you need sheet metadata, ranges, values, or structural spreadsheet updates.\n- Use Slides tools when you need deck-level reads, thumbnails, or structured slide edits.\n- Use `search_docs`, `search_sheets`, and `search_slides` when you want product-specific discovery without manually writing Drive MIME filters.\n\n`read_file_content` is a good default for reading arbitrary files, but native Docs/Sheets/Slides tools are better when you need structure-preserving operations.\n\n## Batch update tools\n\nThis merged integration has three product-specific batch update tools:\n\n- `docs_batch_update`\n- `sheets_batch_update`\n- `slides_batch_update`\n\nUse the one that matches the product you are editing.\n",
+    "prompt": null,
     "variants": {
       "variants": {
         "service_account": {
