@@ -67,6 +67,17 @@ jobs:
       - name: Verify generated integration registry is up to date
         run: yarn check:generated
 
+      - uses: actions/setup-python@v5
+        if: matrix.integration == 'google-workspace'
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: packages/core/src/file-extractor/requirements.txt
+
+      - name: Install MarkItDown (Drive read_file_content live tests)
+        if: matrix.integration == 'google-workspace'
+        run: pip3 install -r packages/core/src/file-extractor/requirements.txt
+
       - name: Run ${{ matrix.integration }} tests
         env:
           VITEST_INTEGRATION: ${{ matrix.integration }}
