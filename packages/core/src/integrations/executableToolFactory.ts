@@ -42,6 +42,18 @@ function filterBuiltInToolsForOverrides<T extends { name: string }>(
   return builtInTools.filter(tool => !overridingNames.has(tool.name))
 }
 
+function buildHandlerWrapper(
+  integrationId: string,
+  handlerCode: string,
+  integrationConfig: Record<string, unknown> | null | undefined,
+  injectFromConfig?: Record<string, string>,
+): string {
+  const serializedConfig = JSON.stringify(integrationConfig ?? {})
+  const serializedMapping = JSON.stringify(injectFromConfig ?? {})
+
+  return `async (input) => {\n  const integration = getIntegration('${integrationId}');\n  const __inner = ${handlerCode};\n  const __config = ${serializedConfig};\n  const __mapping = ${serializedMapping};\n  const __baseInput = (input && typeof input === 'object' && !Array.isArray(input)) ? input : {};\n  const __injected = {};\n  for (const [targetKey, configKey] of Object.entries(__mapping)) {\n    const value = __config?.[configKey];\n    if (value === undefined || value === null)\n      throw new Error(\`Missing integration config value '\${configKey}' required for tool input '\${targetKey}'.\`);\n    __injected[targetKey] = value;\n  }\n  return await __inner({ ...__baseInput, ...__injected });\n}`
+}
+
 export function buildToolsByIntegration(
   spaceId: string,
   integrations: IntegrationData[],
@@ -88,7 +100,7 @@ export function buildToolsByIntegration(
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
       const extractFileContent = createExtractFileContent(getIntegration, integ.id)
 
-      const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`
+      const wrapper = buildHandlerWrapper(integ.id, t.handlerCode, integ.config, t.injectFromConfig)
       const utils = injectUtils ?? buildSandboxUtils(Array.isArray(t.utils) ? t.utils : undefined, { extractFileContent })
       const safeHandler = createSafeHandlerFromString(wrapper, getIntegration, utils)
       return {

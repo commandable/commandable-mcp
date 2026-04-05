@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
@@ -24,20 +24,47 @@ async function readOptionalText(path, { trim = false } = {}) {
   return trimmed.length ? trimmed : null
 }
 
-async function main() {
-  const dirEntries = await readdir(integrationsDir, { withFileTypes: true })
-  const integrationTypes = dirEntries
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name)
-    .sort((a, b) => a.localeCompare(b))
+async function collectManifestDirs(rootDir) {
+  const out = []
 
+  async function walk(dir) {
+    if (existsSync(join(dir, 'manifest.json')))
+      out.push(dir)
+
+    const entries = await readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      if (!entry.isDirectory())
+        continue
+      await walk(join(dir, entry.name))
+    }
+  }
+
+  const rootEntries = await readdir(rootDir, { withFileTypes: true })
+  for (const entry of rootEntries) {
+    if (!entry.isDirectory())
+      continue
+    await walk(join(rootDir, entry.name))
+  }
+
+  return out.sort((a, b) => relative(rootDir, a).localeCompare(relative(rootDir, b)))
+}
+
+function deriveIntegrationType(rootDir, dir) {
+  const rel = relative(rootDir, dir)
+  const segments = rel.split(/[\\/]+/).filter(Boolean)
+  const variantIndex = segments.indexOf('variants')
+  if (variantIndex >= 0 && segments[variantIndex + 1])
+    return segments[variantIndex + 1]
+  return segments[0]
+}
+
+async function main() {
   const registry = {}
 
-  for (const type of integrationTypes) {
-    const dir = join(integrationsDir, type)
+  const manifestDirs = await collectManifestDirs(integrationsDir)
+  for (const dir of manifestDirs) {
+    const type = deriveIntegrationType(integrationsDir, dir)
     const manifestPath = join(dir, 'manifest.json')
-    if (!existsSync(manifestPath))
-      continue
 
     const manifest = readJson(await readFile(manifestPath, 'utf8'))
     const prompt = await readOptionalText(join(dir, 'prompt.md'))
@@ -72,8 +99,12 @@ async function main() {
         scope: tool.scope,
         credentialVariants: tool.credentialVariants,
         toolset: tool.toolset,
+        injectFromConfig: tool.injectFromConfig,
       }
     }))
+
+    if (registry[type])
+      throw new Error(`Duplicate integration type '${type}' from '${relative(integrationsDir, dir)}'`)
 
     registry[type] = {
       manifest,

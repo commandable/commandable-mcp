@@ -52,6 +52,7 @@ export interface ToolRef {
   scope?: 'read' | 'write' | 'admin'
   credentialVariants?: string[]
   toolset?: string
+  injectFromConfig?: Record<string, string>
 }
 
 export interface ToolsetMeta {
@@ -74,6 +75,11 @@ export interface ToolData {
   inputSchema: JSONSchema7 | Record<string, unknown>
   handlerCode: string
   utils?: string[]
+  injectFromConfig?: Record<string, string>
+}
+
+export interface ConnectionConfigMeta {
+  schema: JSONSchema7 | Record<string, unknown>
 }
 
 export interface Manifest {
@@ -83,12 +89,18 @@ export interface Manifest {
   allowedOrigins?: string[]
   utils?: string[]
   toolsets?: Record<string, ToolsetMeta>
+  parent?: string
+  variantLabel?: string
+  connectionConfig?: ConnectionConfigMeta
   tools: ToolRef[]
 }
 
 export interface IntegrationCatalogItem {
   type: string
   name: string
+  parent?: string | null
+  variantLabel?: string | null
+  connectionConfigSchema?: JSONSchema7 | Record<string, unknown> | null
 }
 
 export interface GeneratedToolEntry extends ToolData {

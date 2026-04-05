@@ -6,6 +6,9 @@ import type {
 
 export interface CatalogEntry {
   type: string
+  name?: string
+  parent?: string | null
+  variantLabel?: string | null
 }
 
 export interface ToolsetEntry {

@@ -1,0 +1,203 @@
+{
+  "name": "Trello",
+  "parent": "trello",
+  "variantLabel": "Single board",
+  "version": "0.1.0",
+  "baseUrl": "https://api.trello.com/1",
+  "connectionConfig": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "boardId": { "type": "string" },
+        "boardName": { "type": "string" }
+      },
+      "required": ["boardId"],
+      "additionalProperties": false
+    }
+  },
+  "tools": [
+    {
+      "name": "get_board",
+      "description": "Fetch the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_lists",
+      "description": "List lists on the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board_lists.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_cards",
+      "description": "List cards on the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board_cards.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_members",
+      "description": "List members on the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board_members.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_labels",
+      "description": "List labels on the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board_labels.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_custom_fields",
+      "description": "List custom fields on the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board_custom_fields.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_memberships",
+      "description": "List memberships for the connected board.",
+      "inputSchema": "../../schemas/empty.json",
+      "handler": "../../handlers/get_board_memberships.js",
+      "injectFromConfig": { "boardId": "boardId" },
+      "scope": "read"
+    },
+    {
+      "name": "get_list",
+      "description": "Fetch a list by id.",
+      "inputSchema": "../../schemas/id_list.json",
+      "handler": "../../handlers/get_list.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_list_cards",
+      "description": "List cards in a list.",
+      "inputSchema": "../../schemas/id_list.json",
+      "handler": "../../handlers/get_list_cards.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card",
+      "description": "Fetch a card by id.",
+      "inputSchema": "../../schemas/id_card.json",
+      "handler": "../../handlers/get_card.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_members",
+      "description": "List members assigned to a card.",
+      "inputSchema": "../../schemas/id_card.json",
+      "handler": "../../handlers/get_card_members.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_attachments",
+      "description": "List attachments on a card.",
+      "inputSchema": "../../schemas/id_card.json",
+      "handler": "../../handlers/get_card_attachments.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_actions",
+      "description": "List actions (activity) on a card.",
+      "inputSchema": "../../schemas/id_card.json",
+      "handler": "../../handlers/get_card_actions.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_checklists",
+      "description": "List checklists on a card.",
+      "inputSchema": "../../schemas/id_card.json",
+      "handler": "../../handlers/get_card_checklists.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_card_custom_field_items",
+      "description": "Get custom field items on a card.",
+      "inputSchema": "../../schemas/id_card.json",
+      "handler": "../../handlers/get_card_custom_field_items.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_card",
+      "description": "Create a new card in a list.",
+      "inputSchema": "../../schemas/create_card.json",
+      "handler": "../../handlers/create_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "update_card",
+      "description": "Update a card's fields (name, desc, due, list, etc).",
+      "inputSchema": "../../schemas/update_card.json",
+      "handler": "../../handlers/update_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "delete_card",
+      "description": "Delete a card.",
+      "inputSchema": "../../schemas/delete_card.json",
+      "handler": "../../handlers/delete_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "move_card_to_list",
+      "description": "Move a card to another list.",
+      "inputSchema": "../../schemas/move_card_to_list.json",
+      "handler": "../../handlers/move_card_to_list.js",
+      "scope": "write"
+    },
+    {
+      "name": "add_member_to_card",
+      "description": "Add a member to a card.",
+      "inputSchema": "../../schemas/add_member_to_card.json",
+      "handler": "../../handlers/add_member_to_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "remove_member_from_card",
+      "description": "Remove a member from a card.",
+      "inputSchema": "../../schemas/remove_member_from_card.json",
+      "handler": "../../handlers/remove_member_from_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "add_checklist_to_card",
+      "description": "Create a checklist on a card.",
+      "inputSchema": "../../schemas/add_checklist_to_card.json",
+      "handler": "../../handlers/add_checklist_to_card.js",
+      "scope": "write"
+    },
+    {
+      "name": "create_list",
+      "description": "Create a new list on the connected board.",
+      "inputSchema": "schemas/create_list.json",
+      "handler": "../../handlers/create_list.js",
+      "injectFromConfig": { "idBoard": "boardId" },
+      "scope": "write"
+    },
+    {
+      "name": "update_list",
+      "description": "Update a list (name, pos, closed).",
+      "inputSchema": "../../schemas/update_list.json",
+      "handler": "../../handlers/update_list.js",
+      "scope": "write"
+    },
+    {
+      "name": "archive_list",
+      "description": "Archive a list (set closed=true).",
+      "inputSchema": "../../schemas/archive_list.json",
+      "handler": "../../handlers/archive_list.js",
+      "scope": "write"
+    }
+  ]
+}

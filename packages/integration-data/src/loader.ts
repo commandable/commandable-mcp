@@ -27,8 +27,14 @@ function getIntegration(type: string): GeneratedIntegrationEntry | null {
 function cloneManifest(manifest: Manifest): Manifest {
   return {
     ...manifest,
+    connectionConfig: manifest.connectionConfig
+      ? JSON.parse(JSON.stringify(manifest.connectionConfig))
+      : undefined,
     toolsets: manifest.toolsets ? { ...manifest.toolsets } : undefined,
-    tools: manifest.tools.map(tool => ({ ...tool })),
+    tools: manifest.tools.map(tool => ({
+      ...tool,
+      injectFromConfig: tool.injectFromConfig ? { ...tool.injectFromConfig } : undefined,
+    })),
   }
 }
 
@@ -135,6 +141,7 @@ export function loadIntegrationTools(
       inputSchema: tool.inputSchema,
       handlerCode: tool.handlerCode,
       utils: tool.utils,
+      injectFromConfig: tool.injectFromConfig ? { ...tool.injectFromConfig } : undefined,
     }
 
     if (scope === 'write') write.push(nextTool)
@@ -236,5 +243,8 @@ export function listIntegrationCatalog(): IntegrationCatalogItem[] {
   return listIntegrationTypes().map(type => ({
     type,
     name: GENERATED_INTEGRATIONS[type]!.manifest.name || type,
+    parent: GENERATED_INTEGRATIONS[type]!.manifest.parent ?? null,
+    variantLabel: GENERATED_INTEGRATIONS[type]!.manifest.variantLabel ?? null,
+    connectionConfigSchema: GENERATED_INTEGRATIONS[type]!.manifest.connectionConfig?.schema ?? null,
   }))
 }

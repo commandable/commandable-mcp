@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
     type: body?.type,
     referenceId: body?.referenceId || body?.type,
     label: body?.label || body?.type,
+    config: body?.config ?? undefined,
     enabled: typeof body?.enabled === 'boolean' ? body.enabled : true,
     connectionMethod: body?.connectionMethod || undefined,
     connectionId: body?.connectionId || undefined,
