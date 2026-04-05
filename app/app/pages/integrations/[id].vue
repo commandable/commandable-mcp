@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { IntegrationData } from '@commandable/mcp-core'
-import type { IntegrationToolsTreeExpose } from '../../types/integration'
+import type { CatalogEntry, IntegrationToolsTreeExpose } from '../../types/integration'
+import IntegrationVariantConfigDialog from '../../components/IntegrationVariantConfigDialog.vue'
 
 const route = useRoute()
 const integrationId = route.params.id as string
 
 const { data: integrations, pending, error, refresh } = await useFetch<IntegrationData[]>('/api/integrations')
+const { data: catalog } = await useFetch<CatalogEntry[]>('/api/catalog')
 
 const integration = computed(() => integrations.value?.find(i => i.id === integrationId) ?? null)
 
@@ -16,6 +18,37 @@ const formDisabledTools = ref<string[]>([])
 const toolsTreeRef = ref<IntegrationToolsTreeExpose | null>(null)
 const removeModalOpen = ref(false)
 const saving = ref(false)
+const variantConfigDialogOpen = ref(false)
+const savingVariantConfig = ref(false)
+
+function humanizeType(type: string) {
+  return type
+    .replace(/-/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word[0] ? `${word[0].toUpperCase()}${word.slice(1)}` : word)
+    .join(' ')
+}
+
+const baseCatalogEntry = computed(() =>
+  (catalog.value || []).find(entry =>
+    entry.type === integration.value?.type
+    || entry.variants?.some(variant => variant.type === integration.value?.type),
+  ) ?? null,
+)
+
+const baseType = computed(() => baseCatalogEntry.value?.type ?? integration.value?.type ?? null)
+
+const familyVariants = computed(() =>
+  baseCatalogEntry.value?.variants?.filter(variant => (variant.variantConfig?.length ?? 0) > 0) ?? [],
+)
+
+const canConfigureVariantScope = computed(() =>
+  familyVariants.value.length > 0
+  && Boolean(integration.value)
+  && Boolean(integration.value?.credentialId || integration.value?.connectionId),
+)
+const baseIntegrationName = computed(() => baseCatalogEntry.value?.name || (baseType.value ? humanizeType(baseType.value) : 'Integration'))
 
 function initForm() {
   if (!integration.value)
@@ -100,8 +133,44 @@ async function removeIntegration() {
   navigateTo('/integrations')
 }
 
-function onCredentialChange() {
-  refresh()
+async function openVariantScopeDialog() {
+  if (!canConfigureVariantScope.value)
+    return
+  variantConfigDialogOpen.value = true
+}
+
+async function onCredentialChange() {
+  await refresh()
+  if (canConfigureVariantScope.value)
+    variantConfigDialogOpen.value = true
+}
+
+async function saveVariantScope(payload: { type: string, config: Record<string, unknown> | null, labelSuffix: string | null }) {
+  if (!integration.value || !baseType.value)
+    return
+
+  savingVariantConfig.value = true
+  try {
+    const nextLabel = payload.type === baseType.value
+      ? baseIntegrationName.value
+      : (payload.labelSuffix ? `${baseIntegrationName.value}: ${payload.labelSuffix}` : integration.value.label)
+
+    await $fetch('/api/integrations', {
+      method: 'POST',
+      body: {
+        ...integration.value,
+        type: payload.type,
+        label: nextLabel,
+        config: payload.config,
+      },
+    })
+
+    variantConfigDialogOpen.value = false
+    await refresh()
+  }
+  finally {
+    savingVariantConfig.value = false
+  }
 }
 </script>
 
@@ -172,6 +241,16 @@ function onCredentialChange() {
           <h2 class="text-lg font-medium">
             Connection
           </h2>
+          <UButton
+            v-if="canConfigureVariantScope"
+            size="xs"
+            variant="soft"
+            color="neutral"
+            icon="i-lucide-filter"
+            @click="openVariantScopeDialog"
+          >
+            Reduce Scope
+          </UButton>
         </div>
         <div class="border border-[var(--ui-border)] rounded-lg px-4 py-3">
           <IntegrationCredentials
@@ -279,6 +358,18 @@ function onCredentialChange() {
           </div>
         </template>
       </UModal>
+
+      <IntegrationVariantConfigDialog
+        v-if="integration && baseType"
+        v-model:open="variantConfigDialogOpen"
+        :integration-id="integration.id"
+        :current-type="integration.type"
+        :base-type="baseType"
+        :base-name="baseIntegrationName"
+        :variants="familyVariants"
+        :saving="savingVariantConfig"
+        @confirm="saveVariantScope"
+      />
     </template>
   </UContainer>
 </template>

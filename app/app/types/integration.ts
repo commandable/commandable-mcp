@@ -7,8 +7,25 @@ import type {
 export interface CatalogEntry {
   type: string
   name?: string
-  parent?: string | null
-  variantLabel?: string | null
+  variants?: CatalogVariantEntry[] | null
+}
+
+export interface CatalogVariantEntry {
+  type: string
+  label: string
+  variantConfig?: VariantConfigEntry[] | null
+}
+
+export interface VariantConfigEntry {
+  key: string
+  label: string
+  selectionMode: 'single' | 'multi'
+  hasListHandler: boolean
+}
+
+export interface VariantOption {
+  id: string
+  name: string
 }
 
 export interface ToolsetEntry {

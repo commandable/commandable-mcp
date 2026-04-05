@@ -1,7 +1,13 @@
 {
-  "name": "trello",
+  "name": "Trello",
   "version": "0.1.0",
   "baseUrl": "https://api.trello.com/1",
+  "variants": [
+    {
+      "type": "trello-board",
+      "manifest": "variants/trello-board/manifest.json"
+    }
+  ],
   "tools": [
     {
       "name": "get_member",

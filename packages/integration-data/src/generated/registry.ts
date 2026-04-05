@@ -442,7 +442,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const path = `/${input.baseId}/${input.tableId}`\n  const params = new URLSearchParams()\n  params.set('records[]', input.recordId)\n  const res = await integration.fetch(`${path}?${params.toString()}`, { method: 'DELETE' })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "confluence": {
     "manifest": {
@@ -1013,7 +1014,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         ],
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "github": {
     "manifest": {
@@ -3329,7 +3331,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "releases"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "google-calendar": {
     "manifest": {
@@ -4070,7 +4073,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "admin",
         "toolset": "sharing"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "google-gmail": {
     "manifest": {
@@ -5275,7 +5279,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "admin",
         "toolset": "organize"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "google-workspace": {
     "manifest": {
@@ -7342,7 +7347,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "slides"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "hubspot": {
     "manifest": {
@@ -8939,7 +8945,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const props = { ...(input.properties || {}) }\n\n  if (input.subject !== undefined) props.hs_task_subject = input.subject\n  if (input.body !== undefined) props.hs_task_body = input.body\n  if (input.status !== undefined) props.hs_task_status = input.status\n  if (input.priority !== undefined) props.hs_task_priority = input.priority\n  if (input.dueTimestamp !== undefined) props.hs_timestamp = String(input.dueTimestamp)\n  if (input.hubspot_owner_id !== undefined) props.hubspot_owner_id = String(input.hubspot_owner_id)\n\n  const res = await integration.fetch(`/crm/v3/objects/tasks/${encodeURIComponent(input.id)}`, {\n    method: 'PATCH',\n    body: { properties: props },\n  })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "jira": {
     "manifest": {
@@ -10060,7 +10067,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "boards"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "notion": {
     "manifest": {
@@ -10885,11 +10893,12 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "databases"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "trello": {
     "manifest": {
-      "name": "trello",
+      "name": "Trello",
       "version": "0.1.0",
       "baseUrl": "https://api.trello.com/1",
       "tools": [
@@ -11895,102 +11904,93 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ value: 'true' })\n  const res = await integration.fetch(`/lists/${encodeURIComponent(input.listId)}/closed?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "trello-board": {
     "manifest": {
       "name": "Trello",
-      "parent": "trello",
-      "variantLabel": "Single board",
       "version": "0.1.0",
       "baseUrl": "https://api.trello.com/1",
-      "connectionConfig": {
-        "schema": {
-          "type": "object",
-          "properties": {
-            "boardId": {
-              "type": "string"
-            },
-            "boardName": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "boardId"
-          ],
-          "additionalProperties": false
+      "variantLabel": "Single board",
+      "variantConfig": [
+        {
+          "key": "board",
+          "label": "Board",
+          "selectionMode": "single",
+          "listHandler": "async (config) => {\n  const fields = ['id', 'name', 'closed', 'starred'].join(',')\n  const res = await integration.fetch(`/members/me/boards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  if (!Array.isArray(raw))\n    return []\n\n  return raw\n    .map(board => ({\n      id: String(board.id ?? ''),\n      name: String(board.name ?? ''),\n      closed: !!board.closed,\n      starred: !!board.starred,\n    }))\n    .filter(board => board.id && board.name)\n    .sort((a, b) => {\n      if (a.closed !== b.closed)\n        return a.closed ? 1 : -1\n      if (a.starred !== b.starred)\n        return a.starred ? -1 : 1\n      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })\n    })\n    .map(({ id, name }) => ({ id, name }))\n}"
         }
-      },
+      ],
       "tools": [
         {
           "name": "get_board",
           "description": "Fetch the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_lists",
           "description": "List lists on the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board_lists.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_cards",
           "description": "List cards on the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board_cards.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_members",
           "description": "List members on the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board_members.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_labels",
           "description": "List labels on the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board_labels.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_custom_fields",
           "description": "List custom fields on the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board_custom_fields.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_memberships",
           "description": "List memberships for the connected board.",
-          "inputSchema": "../../schemas/empty.json",
+          "inputSchema": "../../schemas/id_board.json",
           "handler": "../../handlers/get_board_memberships.js",
+          "scope": "read",
           "injectFromConfig": {
             "boardId": "boardId"
-          },
-          "scope": "read"
+          }
         },
         {
           "name": "get_list",
@@ -12100,12 +12100,12 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         {
           "name": "create_list",
           "description": "Create a new list on the connected board.",
-          "inputSchema": "schemas/create_list.json",
+          "inputSchema": "../../schemas/create_list.json",
           "handler": "../../handlers/create_list.js",
+          "scope": "write",
           "injectFromConfig": {
             "idBoard": "boardId"
-          },
-          "scope": "write"
+          }
         },
         {
           "name": "update_list",
@@ -12169,7 +12169,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "Fetch the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}`)\n  return await res.json()\n}",
@@ -12183,7 +12190,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "List lists on the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const fields = ['id', 'name', 'idBoard', 'closed', 'pos', 'softLimit'].join(',')\n  const res = await integration.fetch(`/boards/${input.boardId}/lists?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const lists = Array.isArray(raw)\n    ? raw.map(list => ({\n      id: list.id,\n      name: list.name,\n      idBoard: list.idBoard || null,\n      closed: !!list.closed,\n      position: list.pos ?? null,\n      softLimit: typeof list.softLimit === 'number' ? list.softLimit : null,\n    }))\n    : []\n  return {\n    boardId: input.boardId,\n    count: lists.length,\n    note: 'Use list id with get_list for full list details.',\n    lists,\n  }\n}",
@@ -12197,7 +12211,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "List cards on the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'idBoard',\n    'idList',\n    'shortLink',\n    'shortUrl',\n    'url',\n    'closed',\n    'due',\n    'dateLastActivity',\n    'labels',\n    'pos',\n  ].join(',')\n  const res = await integration.fetch(`/boards/${input.boardId}/cards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const cards = Array.isArray(raw)\n    ? raw.map(card => ({\n      id: card.id,\n      name: card.name,\n      idBoard: card.idBoard || null,\n      idList: card.idList || null,\n      url: card.url || card.shortUrl || (card.shortLink ? `https://trello.com/c/${card.shortLink}` : null),\n      shortLink: card.shortLink || null,\n      closed: !!card.closed,\n      due: card.due || null,\n      lastActivity: card.dateLastActivity || null,\n      position: card.pos ?? null,\n      labels: Array.isArray(card.labels)\n        ? card.labels.map(label => ({ id: label.id, name: label.name || null, color: label.color || null }))\n        : [],\n      descriptionPreview: typeof card.desc === 'string' && card.desc.trim()\n        ? (card.desc.trim().length <= 200 ? card.desc.trim() : `${card.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    boardId: input.boardId,\n    count: cards.length,\n    note: 'Use card id with get_card for full card details.',\n    cards,\n  }\n}",
@@ -12211,7 +12232,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "List members on the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/members`)\n  return await res.json()\n}",
@@ -12225,7 +12253,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "List labels on the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/labels`)\n  return await res.json()\n}",
@@ -12239,7 +12274,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "List custom fields on the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/customFields`)\n  return await res.json()\n}",
@@ -12253,7 +12295,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "description": "List memberships for the connected board.",
         "inputSchema": {
           "type": "object",
-          "properties": {},
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
           "additionalProperties": false
         },
         "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/memberships`)\n  return await res.json()\n}",
@@ -12626,10 +12675,14 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "required": [
+            "idBoard",
             "name"
           ],
           "additionalProperties": false,
           "properties": {
+            "idBoard": {
+              "type": "string"
+            },
             "name": {
               "type": "string"
             },
@@ -12705,6 +12758,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ value: 'true' })\n  const res = await integration.fetch(`/lists/${encodeURIComponent(input.listId)}/closed?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": "trello"
   }
 }

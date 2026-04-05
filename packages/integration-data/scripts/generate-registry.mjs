@@ -24,47 +24,67 @@ async function readOptionalText(path, { trim = false } = {}) {
   return trimmed.length ? trimmed : null
 }
 
-async function collectManifestDirs(rootDir) {
-  const out = []
+async function loadTools(dir, tools, sharedUtils) {
+  return await Promise.all((tools || []).map(async (tool) => {
+    const inputSchema = readJson(await readFile(join(dir, tool.inputSchema), 'utf8'))
+    const handlerCode = (await readFile(join(dir, tool.handler), 'utf8')).trim()
 
-  async function walk(dir) {
-    if (existsSync(join(dir, 'manifest.json')))
-      out.push(dir)
-
-    const entries = await readdir(dir, { withFileTypes: true })
-    for (const entry of entries) {
-      if (!entry.isDirectory())
-        continue
-      await walk(join(dir, entry.name))
+    return {
+      name: tool.name,
+      description: tool.description,
+      inputSchema,
+      handlerCode,
+      utils: Array.isArray(sharedUtils) ? sharedUtils : undefined,
+      scope: tool.scope,
+      credentialVariants: tool.credentialVariants,
+      toolset: tool.toolset,
+      injectFromConfig: tool.injectFromConfig,
     }
-  }
-
-  const rootEntries = await readdir(rootDir, { withFileTypes: true })
-  for (const entry of rootEntries) {
-    if (!entry.isDirectory())
-      continue
-    await walk(join(rootDir, entry.name))
-  }
-
-  return out.sort((a, b) => relative(rootDir, a).localeCompare(relative(rootDir, b)))
+  }))
 }
 
-function deriveIntegrationType(rootDir, dir) {
-  const rel = relative(rootDir, dir)
-  const segments = rel.split(/[\\/]+/).filter(Boolean)
-  const variantIndex = segments.indexOf('variants')
-  if (variantIndex >= 0 && segments[variantIndex + 1])
-    return segments[variantIndex + 1]
-  return segments[0]
+function resolveVariantTool(tool, parentToolsByName, variantDir, parentDir) {
+  const inherited = parentToolsByName.get(tool.from || tool.name)
+  const inheritedInputSchema = inherited?.inputSchema
+    ? relative(variantDir, join(parentDir, inherited.inputSchema))
+    : undefined
+  const inheritedHandler = inherited?.handler
+    ? relative(variantDir, join(parentDir, inherited.handler))
+    : undefined
+
+  const resolved = {
+    name: tool.name,
+    description: tool.description ?? inherited?.description,
+    inputSchema: tool.inputSchema ?? inheritedInputSchema,
+    handler: tool.handler ?? inheritedHandler,
+    scope: tool.scope ?? inherited?.scope,
+    credentialVariants: tool.credentialVariants ?? inherited?.credentialVariants,
+    toolset: tool.toolset ?? inherited?.toolset,
+    injectFromConfig: inherited?.injectFromConfig || tool.injectFromConfig
+      ? { ...(inherited?.injectFromConfig || {}), ...(tool.injectFromConfig || {}) }
+      : undefined,
+  }
+
+  if (!resolved.description || !resolved.inputSchema || !resolved.handler) {
+    throw new Error(`Variant tool '${tool.name}' in '${tool.from || tool.name}' is missing required resolved fields.`)
+  }
+
+  return resolved
 }
 
 async function main() {
   const registry = {}
 
-  const manifestDirs = await collectManifestDirs(integrationsDir)
-  for (const dir of manifestDirs) {
-    const type = deriveIntegrationType(integrationsDir, dir)
+  const integrationDirs = (await readdir(integrationsDir, { withFileTypes: true }))
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .sort((a, b) => a.localeCompare(b))
+
+  for (const type of integrationDirs) {
+    const dir = join(integrationsDir, type)
     const manifestPath = join(dir, 'manifest.json')
+    if (!existsSync(manifestPath))
+      continue
 
     const manifest = readJson(await readFile(manifestPath, 'utf8'))
     const prompt = await readOptionalText(join(dir, 'prompt.md'))
@@ -86,33 +106,62 @@ async function main() {
         hintsByVariant[match[1]] = variantHint
     }
 
-    const tools = await Promise.all((manifest.tools || []).map(async (tool) => {
-      const inputSchema = readJson(await readFile(join(dir, tool.inputSchema), 'utf8'))
-      const handlerCode = (await readFile(join(dir, tool.handler), 'utf8')).trim()
-
-      return {
-        name: tool.name,
-        description: tool.description,
-        inputSchema,
-        handlerCode,
-        utils: Array.isArray(manifest.utils) ? manifest.utils : undefined,
-        scope: tool.scope,
-        credentialVariants: tool.credentialVariants,
-        toolset: tool.toolset,
-        injectFromConfig: tool.injectFromConfig,
-      }
-    }))
-
-    if (registry[type])
-      throw new Error(`Duplicate integration type '${type}' from '${relative(integrationsDir, dir)}'`)
+    const tools = await loadTools(dir, manifest.tools, manifest.utils)
+    const parentToolsByName = new Map((manifest.tools || []).map(tool => [tool.name, tool]))
 
     registry[type] = {
-      manifest,
+      manifest: {
+        name: manifest.name,
+        version: manifest.version,
+        baseUrl: manifest.baseUrl,
+        allowedOrigins: manifest.allowedOrigins,
+        utils: manifest.utils,
+        toolsets: manifest.toolsets,
+          tools: manifest.tools || [],
+      },
       prompt,
       variants,
       hint,
       hintsByVariant,
       tools,
+      variantOwnerType: null,
+    }
+
+    for (const variantRef of manifest.variants || []) {
+      const variantPath = join(dir, variantRef.manifest)
+      const variantDir = dirname(variantPath)
+      const variantManifest = readJson(await readFile(variantPath, 'utf8'))
+      const variantType = variantManifest.type || variantRef.type
+      if (!variantType)
+        throw new Error(`Variant in '${type}' is missing a type.`)
+      if (variantManifest.type && variantRef.type && variantManifest.type !== variantRef.type)
+        throw new Error(`Variant type mismatch in '${type}': '${variantManifest.type}' !== '${variantRef.type}'.`)
+      if (registry[variantType])
+        throw new Error(`Duplicate integration type '${variantType}'.`)
+
+      const resolvedVariantTools = (variantManifest.tools || []).map(tool =>
+        resolveVariantTool(tool, parentToolsByName, variantDir, dir),
+      )
+
+      registry[variantType] = {
+        manifest: {
+          name: manifest.name,
+          version: manifest.version,
+          baseUrl: manifest.baseUrl,
+          allowedOrigins: manifest.allowedOrigins,
+          utils: variantManifest.utils ?? manifest.utils,
+          toolsets: variantManifest.toolsets ?? manifest.toolsets,
+          variantLabel: variantManifest.variantLabel,
+          variantConfig: variantManifest.variantConfig,
+          tools: resolvedVariantTools,
+        },
+        prompt,
+        variants,
+        hint,
+        hintsByVariant,
+        tools: await loadTools(variantDir, resolvedVariantTools, variantManifest.utils ?? manifest.utils),
+        variantOwnerType: type,
+      }
     }
   }
 

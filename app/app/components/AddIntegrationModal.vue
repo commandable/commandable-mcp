@@ -15,7 +15,6 @@ const isOpen = computed({
 const { data: catalog } = await useFetch<CatalogEntry[]>('/api/catalog')
 const catalogTypes = computed(() =>
   (catalog.value || [])
-    .filter(entry => !entry.parent)
     .map(entry => ({ label: entry.name || entry.type, value: entry.type })),
 )
 

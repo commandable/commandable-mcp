@@ -1,13 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { loadIntegrationManifest, loadIntegrationTools } from '../../../../../src/loader.ts'
+import { loadIntegrationCredentialConfig, loadIntegrationManifest, loadIntegrationTools } from '../../../../../src/loader.ts'
 
 describe('trello-board manifest', () => {
-  it('declares trello as its parent variant family', () => {
+  it('inherits trello provider metadata and exposes board variant config', () => {
     const manifest = loadIntegrationManifest('trello-board')
     expect(manifest?.name).toBe('Trello')
-    expect(manifest?.parent).toBe('trello')
     expect(manifest?.variantLabel).toBe('Single board')
-    expect(manifest?.connectionConfig?.schema).toBeTruthy()
+    expect(manifest?.variantConfig).toEqual([
+      expect.objectContaining({
+        key: 'board',
+        label: 'Board',
+        selectionMode: 'single',
+        listHandler: expect.any(String),
+      }),
+    ])
+  })
+
+  it('inherits trello credentials from the parent integration', () => {
+    const credentials = loadIntegrationCredentialConfig('trello-board')
+    expect(credentials?.variantKey).toBe('api_key_token')
+    expect(credentials?.label).toBe('API Key + Token')
+    expect(credentials?.injection.query).toMatchObject({
+      key: '{{apiKey}}',
+      token: '{{apiToken}}',
+    })
   })
 
   it('uses empty input schemas and config injection for board-bound tools', () => {
@@ -22,6 +38,27 @@ describe('trello-board manifest', () => {
     expect(getCards?.inputSchema).toEqual({ type: 'object', properties: {}, additionalProperties: false })
     expect(getLists?.injectFromConfig).toEqual({ boardId: 'boardId' })
     expect(getCards?.injectFromConfig).toEqual({ boardId: 'boardId' })
+  })
+
+  it('removes injected board ids from inherited write schemas', () => {
+    const tools = loadIntegrationTools('trello-board')
+    const writeTools = tools?.write ?? []
+    const createList = writeTools.find(tool => tool.name === 'create_list')
+
+    expect(createList?.inputSchema).toMatchObject({
+      type: 'object',
+      required: ['name'],
+    })
+    expect(createList?.inputSchema).not.toMatchObject({
+      required: expect.arrayContaining(['idBoard']),
+    })
+    expect(createList?.inputSchema).toMatchObject({
+      properties: {
+        name: { type: 'string' },
+      },
+    })
+    expect((createList?.inputSchema as any)?.properties?.idBoard).toBeUndefined()
+    expect(createList?.injectFromConfig).toEqual({ idBoard: 'boardId' })
   })
 
   it('keeps list/card detail tools available with their original schemas', () => {
