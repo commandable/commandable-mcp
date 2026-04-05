@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["driveId", "itemId"],
+  "properties": {
+    "driveId": {
+      "type": "string",
+      "description": "Document library drive ID."
+    },
+    "itemId": {
+      "type": "string",
+      "description": "Drive item ID for the file."
+    },
+    "mimeType": {
+      "type": "string",
+      "description": "Optional MIME type from get_drive_item or search_files."
+    }
+  },
+  "additionalProperties": false
+}

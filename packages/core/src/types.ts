@@ -9,6 +9,7 @@ export type IntegrationType =
   | 'trello'
   | 'google-calendar'
   | 'google-workspace'
+  | 'sharepoint'
   | (string & {})
 
 export interface IntegrationData {

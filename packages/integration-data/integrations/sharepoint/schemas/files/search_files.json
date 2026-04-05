@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["query"],
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Search query string. Microsoft Graph KQL syntax is supported."
+    },
+    "siteId": {
+      "type": "string",
+      "description": "Optional site ID to keep only hits from a specific SharePoint site."
+    },
+    "driveId": {
+      "type": "string",
+      "description": "Optional drive ID to keep only hits from a specific document library."
+    },
+    "from": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Offset into the Graph search results."
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Maximum number of hits to request from Graph."
+    }
+  },
+  "additionalProperties": false
+}

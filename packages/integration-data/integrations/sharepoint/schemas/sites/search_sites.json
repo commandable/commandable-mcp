@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["query"],
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Keyword search for SharePoint sites, such as a team name or department."
+    }
+  },
+  "additionalProperties": false
+}

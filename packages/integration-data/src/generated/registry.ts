@@ -10896,6 +10896,479 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
     ],
     "variantOwnerType": null
   },
+  "sharepoint": {
+    "manifest": {
+      "name": "sharepoint",
+      "version": "0.1.0",
+      "baseUrl": "https://graph.microsoft.com/v1.0",
+      "toolsets": {
+        "sites": {
+          "label": "Sites",
+          "description": "Find SharePoint sites and resolve site IDs from known URLs or paths"
+        },
+        "files": {
+          "label": "Files",
+          "description": "Browse document libraries, inspect files and folders, read file content, and manage folders and files"
+        }
+      },
+      "tools": [
+        {
+          "name": "search_sites",
+          "description": "Search SharePoint sites by keyword across the tenant. Returns compact site summaries with IDs and web URLs. Use this when you know the site name or topic but not the site ID. If you already know the hostname and path, use get_site_by_path instead.",
+          "inputSchema": "schemas/sites/search_sites.json",
+          "handler": "handlers/sites/search_sites.js",
+          "scope": "read",
+          "toolset": "sites"
+        },
+        {
+          "name": "get_site_by_path",
+          "description": "Resolve a SharePoint site from its hostname and server-relative path, such as hostname='contoso.sharepoint.com' and relativePath='/sites/Marketing'. Use this when you know the SharePoint URL structure and need the stable site ID for later calls.",
+          "inputSchema": "schemas/sites/get_site_by_path.json",
+          "handler": "handlers/sites/get_site_by_path.js",
+          "scope": "read",
+          "toolset": "sites"
+        },
+        {
+          "name": "get_site",
+          "description": "Get metadata for a SharePoint site by site ID. Returns the site name, description, web URL, and timestamps. Use search_sites or get_site_by_path first if you do not already know the site ID.",
+          "inputSchema": "schemas/sites/get_site.json",
+          "handler": "handlers/sites/get_site.js",
+          "scope": "read",
+          "toolset": "sites"
+        },
+        {
+          "name": "list_site_drives",
+          "description": "List document libraries (drives) for a SharePoint site. Returns compact drive summaries including IDs, names, web URLs, and drive type. Use this after resolving a site to discover the right document library before browsing folders or reading files.",
+          "inputSchema": "schemas/files/list_site_drives.json",
+          "handler": "handlers/files/list_site_drives.js",
+          "scope": "read",
+          "toolset": "files"
+        },
+        {
+          "name": "list_drive_children",
+          "description": "List the files and folders inside a SharePoint document library folder. By default this lists the root of the drive. Provide itemId to browse a specific folder. Returns compact entries with file-or-folder flags, MIME type when available, and parent references. Use get_drive_item when you need one specific item.",
+          "inputSchema": "schemas/files/list_drive_children.json",
+          "handler": "handlers/files/list_drive_children.js",
+          "scope": "read",
+          "toolset": "files"
+        },
+        {
+          "name": "get_drive_item",
+          "description": "Get metadata for a single SharePoint file or folder by drive ID and item ID. Returns a compact item summary including IDs, name, type flags, web URL, size, timestamps, and parent reference. Use read_file_content to read the actual file contents.",
+          "inputSchema": "schemas/files/get_drive_item.json",
+          "handler": "handlers/files/get_drive_item.js",
+          "scope": "read",
+          "toolset": "files"
+        },
+        {
+          "name": "search_files",
+          "description": "Search SharePoint and OneDrive content through Microsoft Graph search and return flattened file hits. Provide a query string; Graph KQL syntax is supported. Optional siteId and driveId filters narrow the flattened results after search. Use this for broad file discovery when folder-by-folder browsing is too narrow.",
+          "inputSchema": "schemas/files/search_files.json",
+          "handler": "handlers/files/search_files.js",
+          "scope": "read",
+          "toolset": "files"
+        },
+        {
+          "name": "read_file_content",
+          "description": "Read a SharePoint file into agent-friendly text using the shared file extraction pipeline. This is the standard way to consume document contents such as PDF, DOCX, XLSX, PPTX, and text-like files stored in SharePoint document libraries. Provide driveId and itemId. Folders are rejected; use list_drive_children to browse them.",
+          "inputSchema": "schemas/files/read_file_content.json",
+          "handler": "handlers/files/read_file_content.js",
+          "scope": "read",
+          "toolset": "files"
+        },
+        {
+          "name": "create_folder",
+          "description": "Create a new folder in a SharePoint document library. By default the folder is created in the drive root. Provide parentItemId to create it inside an existing folder. Returns the created folder metadata including its item ID for later browsing or moves.",
+          "inputSchema": "schemas/files/create_folder.json",
+          "handler": "handlers/files/create_folder.js",
+          "scope": "write",
+          "toolset": "files"
+        },
+        {
+          "name": "move_drive_item",
+          "description": "Move a SharePoint file or folder to a different parent folder in the same drive. Provide destinationParentId and optionally a newName to rename during the move. Use get_drive_item or list_drive_children first to discover the current item and destination IDs.",
+          "inputSchema": "schemas/files/move_drive_item.json",
+          "handler": "handlers/files/move_drive_item.js",
+          "scope": "write",
+          "toolset": "files"
+        },
+        {
+          "name": "delete_drive_item",
+          "description": "Delete a SharePoint file or folder by drive ID and item ID. This is a destructive operation. Use get_drive_item or list_drive_children first to confirm you have the correct item before deleting it.",
+          "inputSchema": "schemas/files/delete_drive_item.json",
+          "handler": "handlers/files/delete_drive_item.js",
+          "scope": "write",
+          "toolset": "files"
+        }
+      ]
+    },
+    "prompt": "Use this integration for SharePoint document libraries and files.\n\nRecommended workflow:\n\n1. If you know the SharePoint hostname and path, start with `get_site_by_path`.\n2. Otherwise use `search_sites` to discover the correct site.\n3. Use `list_site_drives` to find the relevant document library for that site.\n4. Use `list_drive_children` for deterministic folder browsing or `search_files` for broader file discovery.\n5. Use `get_drive_item` when you need compact metadata for a specific file or folder.\n6. Use `read_file_content` to consume the actual contents of a file in agent-friendly text.\n\nNotes:\n\n- `search_files` uses Microsoft Graph search. The `query` field accepts normal keywords and Graph KQL syntax.\n- `siteId` and `driveId` filters on `search_files` are applied to the flattened search results after Graph returns them.\n- `read_file_content` is for files only. Folders do not have readable file content.\n- This v1 integration is intentionally focused on SharePoint sites, document libraries, folders, and files. It does not include classic SharePoint list/list-item tools or file upload.\n",
+    "variants": {
+      "variants": {
+        "bearer_token": {
+          "label": "Microsoft Graph Bearer Token",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string",
+                "title": "Bearer Token",
+                "description": "Microsoft Graph delegated access token for SharePoint and files access."
+              }
+            },
+            "required": [
+              "token"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          },
+          "healthCheck": {
+            "path": "/me"
+          }
+        }
+      },
+      "default": "bearer_token"
+    },
+    "hint": "1. Create or use a Microsoft Entra app registration that can call Microsoft Graph on behalf of a user.\n2. Grant delegated Microsoft Graph permissions for `Files.Read.All` and `Sites.Read.All`.\n3. Because this integration also supports folder creation, moves, and deletes, also grant delegated `Files.ReadWrite.All` and `Sites.ReadWrite.All`.\n4. Sign in as a user who can access the SharePoint sites and document libraries you want the integration to use.\n5. Obtain a short-lived delegated Microsoft Graph access token for that user and paste it into the `token` field.\n6. If calls fail with `401` or `403`, confirm the token is still valid, the delegated permissions were consented, and the signed-in user can access the target SharePoint site.",
+    "hintsByVariant": {},
+    "tools": [
+      {
+        "name": "search_sites",
+        "description": "Search SharePoint sites by keyword across the tenant. Returns compact site summaries with IDs and web URLs. Use this when you know the site name or topic but not the site ID. If you already know the hostname and path, use get_site_by_path instead.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "query"
+          ],
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Keyword search for SharePoint sites, such as a team name or department."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('search', input.query)\n  const res = await integration.fetch(`/sites?${params.toString()}`)\n  const data = await res.json()\n  const sites = Array.isArray(data?.value)\n    ? data.value.map(site => ({\n        id: site.id,\n        name: site.displayName || site.name || null,\n        displayName: site.displayName || site.name || null,\n        description: site.description || '',\n        webUrl: site.webUrl || null,\n        createdDateTime: site.createdDateTime || null,\n        lastModifiedDateTime: site.lastModifiedDateTime || null,\n      }))\n    : []\n  return { query: input.query, sites }\n}",
+        "scope": "read",
+        "toolset": "sites"
+      },
+      {
+        "name": "get_site_by_path",
+        "description": "Resolve a SharePoint site from its hostname and server-relative path, such as hostname='contoso.sharepoint.com' and relativePath='/sites/Marketing'. Use this when you know the SharePoint URL structure and need the stable site ID for later calls.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "hostname",
+            "relativePath"
+          ],
+          "properties": {
+            "hostname": {
+              "type": "string",
+              "description": "SharePoint hostname, such as contoso.sharepoint.com."
+            },
+            "relativePath": {
+              "type": "string",
+              "description": "Server-relative site path, such as /sites/Marketing."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const hostname = String(input.hostname || '').trim()\n  const rawPath = String(input.relativePath || '').trim()\n  const normalizedPath = `/${rawPath.replace(/^\\/+/, '')}`\n  const encodedPath = normalizedPath\n    .split('/')\n    .map((segment, index) => index === 0 ? '' : encodeURIComponent(segment))\n    .join('/')\n  const res = await integration.fetch(`/sites/${hostname}:${encodedPath}`)\n  const site = await res.json()\n  return {\n    id: site.id,\n    name: site.displayName || site.name || null,\n    displayName: site.displayName || site.name || null,\n    description: site.description || '',\n    webUrl: site.webUrl || null,\n    createdDateTime: site.createdDateTime || null,\n    lastModifiedDateTime: site.lastModifiedDateTime || null,\n  }\n}",
+        "scope": "read",
+        "toolset": "sites"
+      },
+      {
+        "name": "get_site",
+        "description": "Get metadata for a SharePoint site by site ID. Returns the site name, description, web URL, and timestamps. Use search_sites or get_site_by_path first if you do not already know the site ID.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "siteId"
+          ],
+          "properties": {
+            "siteId": {
+              "type": "string",
+              "description": "Microsoft Graph SharePoint site ID."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/sites/${encodeURIComponent(input.siteId)}`)\n  const site = await res.json()\n  return {\n    id: site.id,\n    name: site.displayName || site.name || null,\n    displayName: site.displayName || site.name || null,\n    description: site.description || '',\n    webUrl: site.webUrl || null,\n    createdDateTime: site.createdDateTime || null,\n    lastModifiedDateTime: site.lastModifiedDateTime || null,\n  }\n}",
+        "scope": "read",
+        "toolset": "sites"
+      },
+      {
+        "name": "list_site_drives",
+        "description": "List document libraries (drives) for a SharePoint site. Returns compact drive summaries including IDs, names, web URLs, and drive type. Use this after resolving a site to discover the right document library before browsing folders or reading files.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "siteId"
+          ],
+          "properties": {
+            "siteId": {
+              "type": "string",
+              "description": "Microsoft Graph SharePoint site ID."
+            },
+            "top": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum number of drives to return."
+            },
+            "includeSystem": {
+              "type": "boolean",
+              "description": "Set true to include hidden/system drives."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('$select', input.includeSystem\n    ? 'id,name,webUrl,driveType,createdDateTime,lastModifiedDateTime,system'\n    : 'id,name,webUrl,driveType,createdDateTime,lastModifiedDateTime')\n  if (input.top)\n    params.set('$top', String(input.top))\n\n  const res = await integration.fetch(`/sites/${encodeURIComponent(input.siteId)}/drives?${params.toString()}`)\n  const data = await res.json()\n  const drives = Array.isArray(data?.value)\n    ? data.value.map(drive => ({\n        id: drive.id,\n        name: drive.name || null,\n        webUrl: drive.webUrl || null,\n        driveType: drive.driveType || null,\n        createdDateTime: drive.createdDateTime || null,\n        lastModifiedDateTime: drive.lastModifiedDateTime || null,\n        isSystem: Boolean(drive.system),\n      }))\n    : []\n\n  return {\n    siteId: input.siteId,\n    drives,\n    nextLink: data?.['@odata.nextLink'] || null,\n  }\n}",
+        "scope": "read",
+        "toolset": "files"
+      },
+      {
+        "name": "list_drive_children",
+        "description": "List the files and folders inside a SharePoint document library folder. By default this lists the root of the drive. Provide itemId to browse a specific folder. Returns compact entries with file-or-folder flags, MIME type when available, and parent references. Use get_drive_item when you need one specific item.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Optional folder item ID. Omit to list the drive root."
+            },
+            "top": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum number of children to return."
+            },
+            "orderBy": {
+              "type": "string",
+              "description": "Optional Microsoft Graph orderBy expression, such as name or lastModifiedDateTime desc."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const flattenItem = item => ({\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    eTag: item.eTag || null,\n    cTag: item.cTag || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  })\n\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,eTag,cTag,parentReference,file,folder,package',\n  )\n  if (input.top)\n    params.set('$top', String(input.top))\n  if (input.orderBy)\n    params.set('$orderby', input.orderBy)\n\n  const basePath = input.itemId\n    ? `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/children`\n    : `/drives/${encodeURIComponent(input.driveId)}/root/children`\n\n  const res = await integration.fetch(`${basePath}?${params.toString()}`)\n  const data = await res.json()\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId || null,\n    children: Array.isArray(data?.value) ? data.value.map(flattenItem) : [],\n    nextLink: data?.['@odata.nextLink'] || null,\n  }\n}",
+        "scope": "read",
+        "toolset": "files"
+      },
+      {
+        "name": "get_drive_item",
+        "description": "Get metadata for a single SharePoint file or folder by drive ID and item ID. Returns a compact item summary including IDs, name, type flags, web URL, size, timestamps, and parent reference. Use read_file_content to read the actual file contents.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file or folder."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const flattenItem = item => ({\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    eTag: item.eTag || null,\n    cTag: item.cTag || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  })\n\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,eTag,cTag,parentReference,file,folder,package',\n  )\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)\n  return flattenItem(await res.json())\n}",
+        "scope": "read",
+        "toolset": "files"
+      },
+      {
+        "name": "search_files",
+        "description": "Search SharePoint and OneDrive content through Microsoft Graph search and return flattened file hits. Provide a query string; Graph KQL syntax is supported. Optional siteId and driveId filters narrow the flattened results after search. Use this for broad file discovery when folder-by-folder browsing is too narrow.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "query"
+          ],
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search query string. Microsoft Graph KQL syntax is supported."
+            },
+            "siteId": {
+              "type": "string",
+              "description": "Optional site ID to keep only hits from a specific SharePoint site."
+            },
+            "driveId": {
+              "type": "string",
+              "description": "Optional drive ID to keep only hits from a specific document library."
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset into the Graph search results."
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Maximum number of hits to request from Graph."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const flattenHit = (hit) => {\n    const resource = hit?.resource || {}\n    const parentReference = resource.parentReference || {}\n    return {\n      id: resource.id || hit?.hitId || null,\n      name: resource.name || null,\n      webUrl: resource.webUrl || null,\n      summary: hit?.summary || '',\n      rank: hit?.rank ?? null,\n      createdDateTime: resource.createdDateTime || null,\n      lastModifiedDateTime: resource.lastModifiedDateTime || null,\n      mimeType: resource.file?.mimeType || null,\n      size: resource.size ?? null,\n      isFolder: Boolean(resource.folder || resource.package),\n      isFile: Boolean(resource.file),\n      driveId: parentReference.driveId || null,\n      siteId: parentReference.siteId || null,\n      parentReference,\n    }\n  }\n\n  const request = {\n    entityTypes: ['driveItem'],\n    query: {\n      queryString: input.query,\n    },\n    from: typeof input.from === 'number' ? input.from : 0,\n    size: typeof input.size === 'number' ? input.size : 25,\n  }\n\n  const res = await integration.fetch('/search/query', {\n    method: 'POST',\n    body: {\n      requests: [request],\n    },\n  })\n  const data = await res.json()\n  const container = data?.value?.[0]?.hitsContainers?.[0]\n  const allHits = Array.isArray(container?.hits) ? container.hits.map(flattenHit) : []\n  const hits = allHits.filter((hit) => {\n    if (input.siteId && hit.siteId !== input.siteId)\n      return false\n    if (input.driveId && hit.driveId !== input.driveId)\n      return false\n    return true\n  })\n\n  return {\n    query: input.query,\n    hits,\n    total: container?.total ?? hits.length,\n    moreResultsAvailable: Boolean(container?.moreResultsAvailable),\n  }\n}",
+        "scope": "read",
+        "toolset": "files"
+      },
+      {
+        "name": "read_file_content",
+        "description": "Read a SharePoint file into agent-friendly text using the shared file extraction pipeline. This is the standard way to consume document contents such as PDF, DOCX, XLSX, PPTX, and text-like files stored in SharePoint document libraries. Provide driveId and itemId. Folders are rejected; use list_drive_children to browse them.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file."
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "Optional MIME type from get_drive_item or search_files."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,parentReference,file,folder,package,@microsoft.graph.downloadUrl',\n  )\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)\n  const item = await res.json()\n  const mimeType = input.mimeType || item?.file?.mimeType || null\n\n  if (item?.folder || item?.package) {\n    return {\n      driveId: input.driveId,\n      itemId: input.itemId,\n      name: item?.name || null,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const downloadUrl = item?.['@microsoft.graph.downloadUrl'] || null\n  if (!downloadUrl) {\n    return {\n      driveId: input.driveId,\n      itemId: input.itemId,\n      name: item?.name || null,\n      mimeType,\n      content: null,\n      message: 'Could not resolve a downloadable URL for this SharePoint file.',\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: false,\n    source: downloadUrl,\n  })\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId,\n    name: item?.name || null,\n    webUrl: item?.webUrl || null,\n    mimeType,\n    ...extracted,\n  }\n}",
+        "scope": "read",
+        "toolset": "files"
+      },
+      {
+        "name": "create_folder",
+        "description": "Create a new folder in a SharePoint document library. By default the folder is created in the drive root. Provide parentItemId to create it inside an existing folder. Returns the created folder metadata including its item ID for later browsing or moves.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "name"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "name": {
+              "type": "string",
+              "description": "Folder name to create."
+            },
+            "parentItemId": {
+              "type": "string",
+              "description": "Optional parent folder item ID. Omit to create in the drive root."
+            },
+            "conflictBehavior": {
+              "type": "string",
+              "enum": [
+                "rename",
+                "replace",
+                "fail"
+              ],
+              "description": "How Graph should handle name conflicts. Defaults to rename."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const path = input.parentItemId\n    ? `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.parentItemId)}/children`\n    : `/drives/${encodeURIComponent(input.driveId)}/root/children`\n\n  const res = await integration.fetch(path, {\n    method: 'POST',\n    body: {\n      name: input.name,\n      folder: {},\n      '@microsoft.graph.conflictBehavior': input.conflictBehavior || 'rename',\n    },\n  })\n  const item = await res.json()\n  return {\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  }\n}",
+        "scope": "write",
+        "toolset": "files"
+      },
+      {
+        "name": "move_drive_item",
+        "description": "Move a SharePoint file or folder to a different parent folder in the same drive. Provide destinationParentId and optionally a newName to rename during the move. Use get_drive_item or list_drive_children first to discover the current item and destination IDs.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId",
+            "destinationParentId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file or folder to move."
+            },
+            "destinationParentId": {
+              "type": "string",
+              "description": "Destination folder item ID."
+            },
+            "newName": {
+              "type": "string",
+              "description": "Optional new item name to apply during the move."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const body = {\n    parentReference: {\n      id: input.destinationParentId,\n    },\n  }\n  if (input.newName)\n    body.name = input.newName\n\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}`, {\n    method: 'PATCH',\n    body,\n  })\n  const item = await res.json()\n  return {\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  }\n}",
+        "scope": "write",
+        "toolset": "files"
+      },
+      {
+        "name": "delete_drive_item",
+        "description": "Delete a SharePoint file or folder by drive ID and item ID. This is a destructive operation. Use get_drive_item or list_drive_children first to confirm you have the correct item before deleting it.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file or folder to delete."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}`, {\n    method: 'DELETE',\n  })\n  if (res.status === 204)\n    return { success: true, status: 204 }\n  try {\n    return await res.json()\n  }\n  catch {\n    return { success: res.ok, status: res.status }\n  }\n}",
+        "scope": "write",
+        "toolset": "files"
+      }
+    ],
+    "variantOwnerType": null
+  },
   "trello": {
     "manifest": {
       "name": "Trello",

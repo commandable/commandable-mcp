@@ -1,0 +1,47 @@
+async (input) => {
+  const params = new URLSearchParams()
+  params.set(
+    '$select',
+    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,parentReference,file,folder,package,@microsoft.graph.downloadUrl',
+  )
+  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)
+  const item = await res.json()
+  const mimeType = input.mimeType || item?.file?.mimeType || null
+
+  if (item?.folder || item?.package) {
+    return {
+      driveId: input.driveId,
+      itemId: input.itemId,
+      name: item?.name || null,
+      mimeType,
+      content: null,
+      message: 'Folders do not have readable file content.',
+    }
+  }
+
+  const downloadUrl = item?.['@microsoft.graph.downloadUrl'] || null
+  if (!downloadUrl) {
+    return {
+      driveId: input.driveId,
+      itemId: input.itemId,
+      name: item?.name || null,
+      mimeType,
+      content: null,
+      message: 'Could not resolve a downloadable URL for this SharePoint file.',
+    }
+  }
+
+  const extracted = await utils.extractFileContent({
+    auth: false,
+    source: downloadUrl,
+  })
+
+  return {
+    driveId: input.driveId,
+    itemId: input.itemId,
+    name: item?.name || null,
+    webUrl: item?.webUrl || null,
+    mimeType,
+    ...extracted,
+  }
+}

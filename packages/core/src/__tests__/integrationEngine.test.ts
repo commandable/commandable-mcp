@@ -15,6 +15,14 @@ describe('integration engine ports', () => {
     expect(loaded!.read[0]!.handlerCode.length).toBeGreaterThan(0)
   })
 
+  it('loads sharepoint integration tools from integration-data', () => {
+    process.env.COMMANDABLE_INTEGRATION_DATA_DIR = integrationDataDir
+    const loaded = loadIntegrationTools('sharepoint')
+    expect(loaded).not.toBeNull()
+    expect(loaded!.read.some(tool => tool.name === 'read_file_content')).toBe(true)
+    expect(loaded!.write.some(tool => tool.name === 'create_folder')).toBe(true)
+  })
+
   it('runs a sandboxed handler and captures logs', async () => {
     const handler = createSafeHandlerFromString(
       `async (input) => { console.log("hi", input.x); return input.x + 1 }`,

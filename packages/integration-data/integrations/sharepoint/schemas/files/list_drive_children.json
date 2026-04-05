@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["driveId"],
+  "properties": {
+    "driveId": {
+      "type": "string",
+      "description": "Document library drive ID."
+    },
+    "itemId": {
+      "type": "string",
+      "description": "Optional folder item ID. Omit to list the drive root."
+    },
+    "top": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "description": "Maximum number of children to return."
+    },
+    "orderBy": {
+      "type": "string",
+      "description": "Optional Microsoft Graph orderBy expression, such as name or lastModifiedDateTime desc."
+    }
+  },
+  "additionalProperties": false
+}

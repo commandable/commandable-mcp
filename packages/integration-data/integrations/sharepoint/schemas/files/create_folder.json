@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["driveId", "name"],
+  "properties": {
+    "driveId": {
+      "type": "string",
+      "description": "Document library drive ID."
+    },
+    "name": {
+      "type": "string",
+      "description": "Folder name to create."
+    },
+    "parentItemId": {
+      "type": "string",
+      "description": "Optional parent folder item ID. Omit to create in the drive root."
+    },
+    "conflictBehavior": {
+      "type": "string",
+      "enum": ["rename", "replace", "fail"],
+      "description": "How Graph should handle name conflicts. Defaults to rename."
+    }
+  },
+  "additionalProperties": false
+}
