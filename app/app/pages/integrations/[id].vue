@@ -3,6 +3,9 @@ import type { IntegrationData } from '@commandable/mcp-core'
 import type { CatalogEntry, IntegrationToolsTreeExpose } from '../../types/integration'
 import IntegrationVariantConfigDialog from '../../components/IntegrationVariantConfigDialog.vue'
 
+const HYPHEN_REGEX = /-/g
+const WHITESPACE_SPLIT_REGEX = /\s+/
+
 const route = useRoute()
 const integrationId = route.params.id as string
 
@@ -25,8 +28,8 @@ const connectionStatusLoading = ref(false)
 
 function humanizeType(type: string) {
   return type
-    .replace(/-/g, ' ')
-    .split(/\s+/)
+    .replace(HYPHEN_REGEX, ' ')
+    .split(WHITESPACE_SPLIT_REGEX)
     .filter(Boolean)
     .map(word => word[0] ? `${word[0].toUpperCase()}${word.slice(1)}` : word)
     .join(' ')
