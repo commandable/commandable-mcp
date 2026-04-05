@@ -47,7 +47,7 @@ const familyVariants = computed(() =>
 
 const showsVariantScopeAction = computed(() =>
   familyVariants.value.length > 0
-  && Boolean(integration.value)
+  && Boolean(integration.value),
 )
 
 const isConnected = computed(() => connectionHealthStatus.value === 'connected')

@@ -1,5 +1,5 @@
-import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
 import { getIntegrationById, listIntegrationCatalog } from '@commandable/mcp-core'
+import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
 import { getDb } from '../../../utils/db'
 import { runVariantConfigListHandler } from '../../../utils/runVariantConfigListHandler'
 

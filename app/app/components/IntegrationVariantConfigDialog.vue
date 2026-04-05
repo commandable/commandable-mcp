@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  confirm: [payload: { type: string, config: Record<string, unknown> | null, labelSuffix: string | null }]
+  'confirm': [payload: { type: string, config: Record<string, unknown> | null, labelSuffix: string | null }]
 }>()
 
 const isOpen = computed({
