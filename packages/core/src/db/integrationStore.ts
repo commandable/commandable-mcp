@@ -21,6 +21,12 @@ function parseJson(raw: any): any {
   return raw
 }
 
+function serializeConfig(client: DbClient, config: IntegrationData['config']): string | Record<string, unknown> | null {
+  if (config == null)
+    return null
+  return client.dialect === 'sqlite' ? JSON.stringify(config) : config
+}
+
 function rowToIntegrationData(r: any): IntegrationData {
   const healthCheckedAt = r.healthCheckedAt
     ? (r.healthCheckedAt instanceof Date ? r.healthCheckedAt : new Date(r.healthCheckedAt))
@@ -32,6 +38,7 @@ function rowToIntegrationData(r: any): IntegrationData {
     type: r.type,
     referenceId: r.referenceId,
     label: r.label,
+    config: parseJson(r.config) ?? undefined,
     enabled: r.enabled === 0 ? false : true,
     connectionMethod: r.connectionMethod ?? undefined,
     connectionId: r.connectionId ?? undefined,
@@ -72,6 +79,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
   const table = t(client)
   const now = new Date()
   const enabled = integration.enabled === false ? 0 : 1
+  const config = serializeConfig(client, integration.config)
 
   await db(client)
     .insert(table)
@@ -81,6 +89,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
       type: integration.type,
       referenceId: integration.referenceId,
       label: integration.label,
+      config,
       enabled,
       connectionMethod: integration.connectionMethod ?? null,
       connectionId: integration.connectionId ?? null,
@@ -98,6 +107,7 @@ export async function upsertIntegration(client: DbClient, integration: Integrati
         type: integration.type,
         referenceId: integration.referenceId,
         label: integration.label,
+        config,
         enabled,
         connectionMethod: integration.connectionMethod ?? null,
         connectionId: integration.connectionId ?? null,

@@ -1,13 +1,26 @@
-import { existsSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 import { execFile as execFileCb } from 'node:child_process'
-import { resolve } from 'node:path'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { promisify } from 'node:util'
-import { fileURLToPath } from 'node:url'
 import type { IntegrationData } from '../types.js'
+import { EXTRACT_FILE_PY, EXTRACT_FILE_PY_HASH } from './generated-extractor.js'
 
 const execFile = promisify(execFileCb)
-const INSTALL_COMMAND = 'pip3 install -r packages/core/src/file-extractor/requirements.txt'
+const INSTALL_COMMAND = 'pip3 install markitdown[all]'
 const DOCKER_HINT = 'Run Commandable with Docker to use the preinstalled extraction runtime.'
+
+let cachedScriptPath: string | null = null
+
+function ensureExtractorScript(): string {
+  if (cachedScriptPath)
+    return cachedScriptPath
+  const path = join(tmpdir(), `commandable-extractor-${EXTRACT_FILE_PY_HASH.slice(0, 16)}.py`)
+  if (!existsSync(path))
+    writeFileSync(path, EXTRACT_FILE_PY, 'utf8')
+  cachedScriptPath = path
+  return path
+}
 
 export type FileProcessingMode = 'auto' | 'on' | 'off'
 export type FileProcessingReason =
@@ -38,21 +51,8 @@ export function pythonExecutable(): string {
   return process.env.COMMANDABLE_PYTHON || 'python3'
 }
 
-function extractorScriptCandidates(): string[] {
-  const cwd = process.cwd()
-  return [
-    fileURLToPath(new URL('../file-extractor/extract_file.py', import.meta.url)),
-    resolve(cwd, 'packages/core/src/file-extractor/extract_file.py'),
-    resolve(cwd, 'packages/core/dist/file-extractor/extract_file.py'),
-    resolve(cwd, 'node_modules/@commandable/mcp-core/dist/file-extractor/extract_file.py'),
-    resolve(cwd, 'app/.output/server/node_modules/@commandable/mcp-core/dist/file-extractor/extract_file.py'),
-  ]
-}
-
 export function extractorScriptPath(): string {
-  const candidates = extractorScriptCandidates()
-  return candidates.find(path => existsSync(path))
-    || candidates[0]!
+  return ensureExtractorScript()
 }
 
 export function getFileProcessingMode(): FileProcessingMode {
@@ -98,13 +98,7 @@ async function probeFileProcessing(): Promise<FileProcessingCapability> {
     )
   }
 
-  const scriptPath = extractorScriptPath()
-  if (!existsSync(scriptPath)) {
-    return buildDisabledCapability(
-      'extractor_script_missing',
-      `File processing is unavailable because the extractor script was not found at ${scriptPath}.`,
-    )
-  }
+  const scriptPath = ensureExtractorScript()
 
   try {
     await execFile(pythonExecutable(), ['-c', 'import markitdown'])

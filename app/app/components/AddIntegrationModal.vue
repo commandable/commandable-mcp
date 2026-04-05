@@ -13,7 +13,10 @@ const isOpen = computed({
 })
 
 const { data: catalog } = await useFetch<CatalogEntry[]>('/api/catalog')
-const catalogTypes = computed(() => (catalog.value || []).map(i => ({ label: i.type, value: i.type })))
+const catalogTypes = computed(() =>
+  (catalog.value || [])
+    .map(entry => ({ label: entry.name || entry.type, value: entry.type })),
+)
 
 const selectedType = ref<string | undefined>(undefined)
 const selectedTypeMaxScope = ref<'read' | null>(null)

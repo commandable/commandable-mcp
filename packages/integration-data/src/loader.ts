@@ -27,8 +27,14 @@ function getIntegration(type: string): GeneratedIntegrationEntry | null {
 function cloneManifest(manifest: Manifest): Manifest {
   return {
     ...manifest,
+    variantConfig: manifest.variantConfig
+      ? JSON.parse(JSON.stringify(manifest.variantConfig))
+      : undefined,
     toolsets: manifest.toolsets ? { ...manifest.toolsets } : undefined,
-    tools: manifest.tools.map(tool => ({ ...tool })),
+    tools: manifest.tools.map(tool => ({
+      ...tool,
+      injectFromConfig: tool.injectFromConfig ? { ...tool.injectFromConfig } : undefined,
+    })),
   }
 }
 
@@ -76,6 +82,32 @@ function cloneCredentialVariantsFile(type: string, variants: CredentialVariantsF
       Object.entries(validated.variants).map(([key, value]) => [key, cloneCredentialVariant(value)]),
     ),
   }
+}
+
+function stripInjectedFieldsFromSchema(
+  inputSchema: ToolData['inputSchema'],
+  injectFromConfig?: Record<string, string>,
+): ToolData['inputSchema'] {
+  const injectedKeys = Object.keys(injectFromConfig ?? {})
+  if (!injectedKeys.length || !inputSchema || typeof inputSchema !== 'object' || Array.isArray(inputSchema))
+    return inputSchema
+
+  const schema = JSON.parse(JSON.stringify(inputSchema)) as Record<string, unknown>
+  const properties = schema.properties
+  if (properties && typeof properties === 'object' && !Array.isArray(properties)) {
+    for (const key of injectedKeys)
+      delete (properties as Record<string, unknown>)[key]
+  }
+
+  if (Array.isArray(schema.required)) {
+    const required = schema.required.filter(key => !injectedKeys.includes(String(key)))
+    if (required.length)
+      schema.required = required
+    else
+      delete schema.required
+  }
+
+  return schema
 }
 
 export function loadIntegrationManifest(type: string): Manifest | null {
@@ -132,9 +164,10 @@ export function loadIntegrationTools(
       name: tool.name,
       displayName: tool.displayName,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: stripInjectedFieldsFromSchema(tool.inputSchema, tool.injectFromConfig),
       handlerCode: tool.handlerCode,
       utils: tool.utils,
+      injectFromConfig: tool.injectFromConfig ? { ...tool.injectFromConfig } : undefined,
     }
 
     if (scope === 'write') write.push(nextTool)
@@ -194,7 +227,8 @@ export function loadIntegrationCredentialConfig(
   type: string,
   variantKey?: string | null,
 ): IntegrationCredentialConfig | null {
-  const file = loadIntegrationVariants(type)
+  const ownerType = getIntegration(type)?.variantOwnerType ?? type
+  const file = loadIntegrationVariants(ownerType)
   if (!file)
     return null
 
@@ -218,7 +252,8 @@ export function loadIntegrationCredentialConfig(
 }
 
 export function loadIntegrationHint(type: string, variantKey?: string | null): string | null {
-  const entry = getIntegration(type)
+  const ownerType = getIntegration(type)?.variantOwnerType ?? type
+  const entry = getIntegration(ownerType)
   if (!entry)
     return null
 
@@ -233,8 +268,22 @@ export function listIntegrationTypes(): string[] {
 }
 
 export function listIntegrationCatalog(): IntegrationCatalogItem[] {
-  return listIntegrationTypes().map(type => ({
-    type,
-    name: GENERATED_INTEGRATIONS[type]!.manifest.name || type,
-  }))
+  return listIntegrationTypes()
+    .filter(type => !GENERATED_INTEGRATIONS[type]!.variantOwnerType)
+    .map(type => ({
+      type,
+      name: GENERATED_INTEGRATIONS[type]!.manifest.name || type,
+      variants: listIntegrationTypes()
+        .filter(candidate => GENERATED_INTEGRATIONS[candidate]!.variantOwnerType === type)
+        .map(candidate => ({
+          type: candidate,
+          label: GENERATED_INTEGRATIONS[candidate]!.manifest.variantLabel || candidate,
+          variantConfig: GENERATED_INTEGRATIONS[candidate]!.manifest.variantConfig?.map(item => ({
+            key: item.key,
+            label: item.label,
+            selectionMode: item.selectionMode,
+            hasListHandler: Boolean(item.listHandler),
+          })) ?? null,
+        })),
+    }))
 }

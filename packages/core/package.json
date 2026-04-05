@@ -1,6 +1,6 @@
 {
   "name": "@commandable/mcp-core",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Shared runtime, DB, integration, and MCP logic for Commandable packages.",
   "license": "AGPL-3.0-only",
   "repository": {
@@ -53,11 +53,15 @@
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive:true, force:true })\"",
-    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-readme.mjs && node scripts/copy-migrations.mjs && node scripts/copy-file-extractor.mjs",
-    "dev": "tsc -p tsconfig.json --watch",
-    "db:generate": "drizzle-kit generate",
+    "generate:embedded-migrations": "node scripts/generate-embedded-migrations.mjs",
+    "generate:embedded-assets": "node scripts/generate-embedded-assets.mjs",
+    "generate:embedded-extractor": "node scripts/generate-embedded-extractor.mjs",
+    "generate:all": "npm run generate:embedded-migrations && npm run generate:embedded-assets && npm run generate:embedded-extractor",
+    "build": "npm run clean && npm run generate:all && tsc -p tsconfig.json",
+    "dev": "npm run generate:all && tsc -p tsconfig.json --watch",
+    "db:generate": "drizzle-kit generate && npm run generate:embedded-migrations",
     "prepack": "npm run build",
-    "test": "vitest run"
+    "test": "npm run generate:all && vitest run"
   },
   "files": [
     "dist"

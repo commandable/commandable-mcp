@@ -1,0 +1,77 @@
+{
+  "type": "trello-board",
+  "variantLabel": "Single board",
+  "variantConfig": [
+    {
+      "key": "board",
+      "label": "Board",
+      "selectionMode": "single",
+      "listHandler": "async (config) => {\n  const fields = ['id', 'name', 'closed', 'starred'].join(',')\n  const res = await integration.fetch(`/members/me/boards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  if (!Array.isArray(raw))\n    return []\n\n  return raw\n    .map(board => ({\n      id: String(board.id ?? ''),\n      name: String(board.name ?? ''),\n      closed: !!board.closed,\n      starred: !!board.starred,\n    }))\n    .filter(board => board.id && board.name)\n    .sort((a, b) => {\n      if (a.closed !== b.closed)\n        return a.closed ? 1 : -1\n      if (a.starred !== b.starred)\n        return a.starred ? -1 : 1\n      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })\n    })\n    .map(({ id, name }) => ({ id, name }))\n}"
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_board",
+      "description": "Fetch the connected board.",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    {
+      "name": "get_lists",
+      "description": "List lists on the connected board.",
+      "from": "get_board_lists",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    {
+      "name": "get_cards",
+      "description": "List cards on the connected board.",
+      "from": "get_board_cards",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    {
+      "name": "get_members",
+      "description": "List members on the connected board.",
+      "from": "get_board_members",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    {
+      "name": "get_labels",
+      "description": "List labels on the connected board.",
+      "from": "get_board_labels",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    {
+      "name": "get_custom_fields",
+      "description": "List custom fields on the connected board.",
+      "from": "get_board_custom_fields",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    {
+      "name": "get_memberships",
+      "description": "List memberships for the connected board.",
+      "from": "get_board_memberships",
+      "injectFromConfig": { "boardId": "boardId" }
+    },
+    { "name": "get_list" },
+    { "name": "get_list_cards" },
+    { "name": "get_card" },
+    { "name": "get_card_members" },
+    { "name": "get_card_attachments" },
+    { "name": "get_card_actions" },
+    { "name": "get_card_checklists" },
+    { "name": "get_card_custom_field_items" },
+    { "name": "create_card" },
+    { "name": "update_card" },
+    { "name": "delete_card" },
+    { "name": "move_card_to_list" },
+    { "name": "add_member_to_card" },
+    { "name": "remove_member_from_card" },
+    { "name": "add_checklist_to_card" },
+    {
+      "name": "create_list",
+      "description": "Create a new list on the connected board.",
+      "injectFromConfig": { "idBoard": "boardId" }
+    },
+    { "name": "update_list" },
+    { "name": "archive_list" }
+  ]
+}

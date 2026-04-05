@@ -1,5 +1,5 @@
-import { defineNitroPlugin } from 'nitropack/runtime'
 import { warmFileProcessingCapability } from '@commandable/mcp-core'
+import { defineNitroPlugin } from 'nitropack/runtime'
 
 export default defineNitroPlugin(async () => {
   try {

@@ -17,6 +17,7 @@ export interface IntegrationData {
   referenceId: string
   type: IntegrationType
   label: string
+  config?: Record<string, unknown> | null
   enabled?: boolean
   enabledToolsets?: string[] | null
   /** Maximum scope tier allowed for this integration. null means no cap (all scopes). */

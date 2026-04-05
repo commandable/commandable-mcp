@@ -171,4 +171,29 @@ describe('updateIntegrationHealth', () => {
     const found = results.find(r => r.id === 'test-id-3')
     expect(found?.healthStatus).toBe('disconnected')
   })
+
+  it('stores integration config objects in sqlite', async () => {
+    const { upsertIntegration, listIntegrations } = await import('../db/integrationStore.js')
+
+    const integration: IntegrationData = {
+      id: 'test-id-4',
+      referenceId: 'test-ref-4',
+      type: 'trello-board',
+      label: 'Scoped Trello',
+      spaceId: 'local',
+      config: {
+        boardId: 'board-123',
+        boardName: 'Roadmap',
+      },
+    }
+
+    await upsertIntegration(db, integration)
+
+    const results = await listIntegrations(db, 'local')
+    const found = results.find(r => r.id === 'test-id-4')
+    expect(found?.config).toEqual({
+      boardId: 'board-123',
+      boardName: 'Roadmap',
+    })
+  })
 })

@@ -44,6 +44,18 @@ export interface IntegrationCredentialConfig {
     }
 }
 
+export interface ManifestToolRef {
+  name: string
+  from?: string
+  description?: string
+  inputSchema?: string
+  handler?: string
+  scope?: 'read' | 'write' | 'admin'
+  credentialVariants?: string[]
+  toolset?: string
+  injectFromConfig?: Record<string, string>
+}
+
 export interface ToolRef {
   name: string
   description: string
@@ -52,6 +64,7 @@ export interface ToolRef {
   scope?: 'read' | 'write' | 'admin'
   credentialVariants?: string[]
   toolset?: string
+  injectFromConfig?: Record<string, string>
 }
 
 export interface ToolsetMeta {
@@ -74,6 +87,39 @@ export interface ToolData {
   inputSchema: JSONSchema7 | Record<string, unknown>
   handlerCode: string
   utils?: string[]
+  injectFromConfig?: Record<string, string>
+}
+
+export type VariantConfigSelectionMode = 'single' | 'multi'
+
+export interface VariantConfigItem {
+  key: string
+  label: string
+  selectionMode: VariantConfigSelectionMode
+  listHandler?: string
+}
+
+export interface IntegrationVariantRef {
+  type: string
+  manifest: string
+}
+
+export interface IntegrationManifestFile {
+  name: string
+  version?: string
+  baseUrl?: string
+  allowedOrigins?: string[]
+  utils?: string[]
+  toolsets?: Record<string, ToolsetMeta>
+  variants?: IntegrationVariantRef[]
+  tools: ManifestToolRef[]
+}
+
+export interface VariantManifestFile {
+  type: string
+  variantLabel: string
+  variantConfig?: VariantConfigItem[]
+  tools: ManifestToolRef[]
 }
 
 export interface Manifest {
@@ -83,12 +129,28 @@ export interface Manifest {
   allowedOrigins?: string[]
   utils?: string[]
   toolsets?: Record<string, ToolsetMeta>
+  variantLabel?: string
+  variantConfig?: VariantConfigItem[]
   tools: ToolRef[]
+}
+
+export interface IntegrationCatalogVariantConfigItem {
+  key: string
+  label: string
+  selectionMode: VariantConfigSelectionMode
+  hasListHandler: boolean
+}
+
+export interface IntegrationCatalogVariantItem {
+  type: string
+  label: string
+  variantConfig?: IntegrationCatalogVariantConfigItem[] | null
 }
 
 export interface IntegrationCatalogItem {
   type: string
   name: string
+  variants?: IntegrationCatalogVariantItem[] | null
 }
 
 export interface GeneratedToolEntry extends ToolData {
@@ -104,4 +166,5 @@ export interface GeneratedIntegrationEntry {
   hint: string | null
   hintsByVariant: Record<string, string>
   tools: GeneratedToolEntry[]
+  variantOwnerType?: string | null
 }

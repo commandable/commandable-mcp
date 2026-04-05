@@ -442,7 +442,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const path = `/${input.baseId}/${input.tableId}`\n  const params = new URLSearchParams()\n  params.set('records[]', input.recordId)\n  const res = await integration.fetch(`${path}?${params.toString()}`, { method: 'DELETE' })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "confluence": {
     "manifest": {
@@ -1013,7 +1014,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         ],
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "github": {
     "manifest": {
@@ -3329,7 +3331,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "releases"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "google-calendar": {
     "manifest": {
@@ -4070,7 +4073,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "admin",
         "toolset": "sharing"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "google-gmail": {
     "manifest": {
@@ -5275,7 +5279,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "admin",
         "toolset": "organize"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "google-workspace": {
     "manifest": {
@@ -7342,7 +7347,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "slides"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "hubspot": {
     "manifest": {
@@ -8939,7 +8945,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const props = { ...(input.properties || {}) }\n\n  if (input.subject !== undefined) props.hs_task_subject = input.subject\n  if (input.body !== undefined) props.hs_task_body = input.body\n  if (input.status !== undefined) props.hs_task_status = input.status\n  if (input.priority !== undefined) props.hs_task_priority = input.priority\n  if (input.dueTimestamp !== undefined) props.hs_timestamp = String(input.dueTimestamp)\n  if (input.hubspot_owner_id !== undefined) props.hubspot_owner_id = String(input.hubspot_owner_id)\n\n  const res = await integration.fetch(`/crm/v3/objects/tasks/${encodeURIComponent(input.id)}`, {\n    method: 'PATCH',\n    body: { properties: props },\n  })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "jira": {
     "manifest": {
@@ -10060,7 +10067,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "boards"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "notion": {
     "manifest": {
@@ -10885,11 +10893,12 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "scope": "write",
         "toolset": "databases"
       }
-    ]
+    ],
+    "variantOwnerType": null
   },
   "trello": {
     "manifest": {
-      "name": "trello",
+      "name": "Trello",
       "version": "0.1.0",
       "baseUrl": "https://api.trello.com/1",
       "tools": [
@@ -11895,6 +11904,861 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ value: 'true' })\n  const res = await integration.fetch(`/lists/${encodeURIComponent(input.listId)}/closed?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
         "scope": "write"
       }
-    ]
+    ],
+    "variantOwnerType": null
+  },
+  "trello-board": {
+    "manifest": {
+      "name": "Trello",
+      "version": "0.1.0",
+      "baseUrl": "https://api.trello.com/1",
+      "variantLabel": "Single board",
+      "variantConfig": [
+        {
+          "key": "board",
+          "label": "Board",
+          "selectionMode": "single",
+          "listHandler": "async (config) => {\n  const fields = ['id', 'name', 'closed', 'starred'].join(',')\n  const res = await integration.fetch(`/members/me/boards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  if (!Array.isArray(raw))\n    return []\n\n  return raw\n    .map(board => ({\n      id: String(board.id ?? ''),\n      name: String(board.name ?? ''),\n      closed: !!board.closed,\n      starred: !!board.starred,\n    }))\n    .filter(board => board.id && board.name)\n    .sort((a, b) => {\n      if (a.closed !== b.closed)\n        return a.closed ? 1 : -1\n      if (a.starred !== b.starred)\n        return a.starred ? -1 : 1\n      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })\n    })\n    .map(({ id, name }) => ({ id, name }))\n}"
+        }
+      ],
+      "tools": [
+        {
+          "name": "get_board",
+          "description": "Fetch the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_lists",
+          "description": "List lists on the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board_lists.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_cards",
+          "description": "List cards on the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board_cards.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_members",
+          "description": "List members on the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board_members.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_labels",
+          "description": "List labels on the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board_labels.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_custom_fields",
+          "description": "List custom fields on the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board_custom_fields.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_memberships",
+          "description": "List memberships for the connected board.",
+          "inputSchema": "../../schemas/id_board.json",
+          "handler": "../../handlers/get_board_memberships.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "boardId": "boardId"
+          }
+        },
+        {
+          "name": "get_list",
+          "description": "Fetch a list by id.",
+          "inputSchema": "../../schemas/id_list.json",
+          "handler": "../../handlers/get_list.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_list_cards",
+          "description": "List cards in a list.",
+          "inputSchema": "../../schemas/id_list.json",
+          "handler": "../../handlers/get_list_cards.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_card",
+          "description": "Fetch a card by id.",
+          "inputSchema": "../../schemas/id_card.json",
+          "handler": "../../handlers/get_card.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_card_members",
+          "description": "List members assigned to a card.",
+          "inputSchema": "../../schemas/id_card.json",
+          "handler": "../../handlers/get_card_members.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_card_attachments",
+          "description": "List attachments on a card.",
+          "inputSchema": "../../schemas/id_card.json",
+          "handler": "../../handlers/get_card_attachments.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_card_actions",
+          "description": "List actions (activity) on a card.",
+          "inputSchema": "../../schemas/id_card.json",
+          "handler": "../../handlers/get_card_actions.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_card_checklists",
+          "description": "List checklists on a card.",
+          "inputSchema": "../../schemas/id_card.json",
+          "handler": "../../handlers/get_card_checklists.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_card_custom_field_items",
+          "description": "Get custom field items on a card.",
+          "inputSchema": "../../schemas/id_card.json",
+          "handler": "../../handlers/get_card_custom_field_items.js",
+          "scope": "read"
+        },
+        {
+          "name": "create_card",
+          "description": "Create a new card in a list.",
+          "inputSchema": "../../schemas/create_card.json",
+          "handler": "../../handlers/create_card.js",
+          "scope": "write"
+        },
+        {
+          "name": "update_card",
+          "description": "Update a card's fields (name, desc, due, list, etc).",
+          "inputSchema": "../../schemas/update_card.json",
+          "handler": "../../handlers/update_card.js",
+          "scope": "write"
+        },
+        {
+          "name": "delete_card",
+          "description": "Delete a card.",
+          "inputSchema": "../../schemas/delete_card.json",
+          "handler": "../../handlers/delete_card.js",
+          "scope": "write"
+        },
+        {
+          "name": "move_card_to_list",
+          "description": "Move a card to another list.",
+          "inputSchema": "../../schemas/move_card_to_list.json",
+          "handler": "../../handlers/move_card_to_list.js",
+          "scope": "write"
+        },
+        {
+          "name": "add_member_to_card",
+          "description": "Add a member to a card.",
+          "inputSchema": "../../schemas/add_member_to_card.json",
+          "handler": "../../handlers/add_member_to_card.js",
+          "scope": "write"
+        },
+        {
+          "name": "remove_member_from_card",
+          "description": "Remove a member from a card.",
+          "inputSchema": "../../schemas/remove_member_from_card.json",
+          "handler": "../../handlers/remove_member_from_card.js",
+          "scope": "write"
+        },
+        {
+          "name": "add_checklist_to_card",
+          "description": "Create a checklist on a card.",
+          "inputSchema": "../../schemas/add_checklist_to_card.json",
+          "handler": "../../handlers/add_checklist_to_card.js",
+          "scope": "write"
+        },
+        {
+          "name": "create_list",
+          "description": "Create a new list on the connected board.",
+          "inputSchema": "../../schemas/create_list.json",
+          "handler": "../../handlers/create_list.js",
+          "scope": "write",
+          "injectFromConfig": {
+            "idBoard": "boardId"
+          }
+        },
+        {
+          "name": "update_list",
+          "description": "Update a list (name, pos, closed).",
+          "inputSchema": "../../schemas/update_list.json",
+          "handler": "../../handlers/update_list.js",
+          "scope": "write"
+        },
+        {
+          "name": "archive_list",
+          "description": "Archive a list (set closed=true).",
+          "inputSchema": "../../schemas/archive_list.json",
+          "handler": "../../handlers/archive_list.js",
+          "scope": "write"
+        }
+      ]
+    },
+    "prompt": null,
+    "variants": {
+      "variants": {
+        "api_key_token": {
+          "label": "API Key + Token",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "apiKey": {
+                "type": "string",
+                "title": "API Key",
+                "description": "Your Trello API key from https://trello.com/power-ups/admin"
+              },
+              "apiToken": {
+                "type": "string",
+                "title": "API Token",
+                "description": "Your Trello API token (\"token\" param). Generate one via Trello's authorize flow."
+              }
+            },
+            "required": [
+              "apiKey",
+              "apiToken"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "query": {
+              "key": "{{apiKey}}",
+              "token": "{{apiToken}}"
+            }
+          },
+          "healthCheck": {
+            "path": "/members/me"
+          }
+        }
+      },
+      "default": "api_key_token"
+    },
+    "hint": "1. Go to `https://trello.com/power-ups/admin`\n2. Create a new app\n3. Navigate to **API Key** and copy your API key\n4. Click **Generate a Token** and copy the token value",
+    "hintsByVariant": {},
+    "tools": [
+      {
+        "name": "get_board",
+        "description": "Fetch the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}`)\n  return await res.json()\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_lists",
+        "description": "List lists on the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const fields = ['id', 'name', 'idBoard', 'closed', 'pos', 'softLimit'].join(',')\n  const res = await integration.fetch(`/boards/${input.boardId}/lists?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const lists = Array.isArray(raw)\n    ? raw.map(list => ({\n      id: list.id,\n      name: list.name,\n      idBoard: list.idBoard || null,\n      closed: !!list.closed,\n      position: list.pos ?? null,\n      softLimit: typeof list.softLimit === 'number' ? list.softLimit : null,\n    }))\n    : []\n  return {\n    boardId: input.boardId,\n    count: lists.length,\n    note: 'Use list id with get_list for full list details.',\n    lists,\n  }\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_cards",
+        "description": "List cards on the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'idBoard',\n    'idList',\n    'shortLink',\n    'shortUrl',\n    'url',\n    'closed',\n    'due',\n    'dateLastActivity',\n    'labels',\n    'pos',\n  ].join(',')\n  const res = await integration.fetch(`/boards/${input.boardId}/cards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const cards = Array.isArray(raw)\n    ? raw.map(card => ({\n      id: card.id,\n      name: card.name,\n      idBoard: card.idBoard || null,\n      idList: card.idList || null,\n      url: card.url || card.shortUrl || (card.shortLink ? `https://trello.com/c/${card.shortLink}` : null),\n      shortLink: card.shortLink || null,\n      closed: !!card.closed,\n      due: card.due || null,\n      lastActivity: card.dateLastActivity || null,\n      position: card.pos ?? null,\n      labels: Array.isArray(card.labels)\n        ? card.labels.map(label => ({ id: label.id, name: label.name || null, color: label.color || null }))\n        : [],\n      descriptionPreview: typeof card.desc === 'string' && card.desc.trim()\n        ? (card.desc.trim().length <= 200 ? card.desc.trim() : `${card.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    boardId: input.boardId,\n    count: cards.length,\n    note: 'Use card id with get_card for full card details.',\n    cards,\n  }\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_members",
+        "description": "List members on the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/members`)\n  return await res.json()\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_labels",
+        "description": "List labels on the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/labels`)\n  return await res.json()\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_custom_fields",
+        "description": "List custom fields on the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/customFields`)\n  return await res.json()\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_memberships",
+        "description": "List memberships for the connected board.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "boardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "boardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/boards/${input.boardId}/memberships`)\n  return await res.json()\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "boardId": "boardId"
+        }
+      },
+      {
+        "name": "get_list",
+        "description": "Fetch a list by id.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "listId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "listId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/lists/${input.listId}`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_list_cards",
+        "description": "List cards in a list.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "listId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "listId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const fields = [\n    'id',\n    'name',\n    'desc',\n    'idBoard',\n    'idList',\n    'shortLink',\n    'shortUrl',\n    'url',\n    'closed',\n    'due',\n    'dateLastActivity',\n    'labels',\n    'pos',\n  ].join(',')\n  const res = await integration.fetch(`/lists/${input.listId}/cards?fields=${encodeURIComponent(fields)}`)\n  const raw = await res.json()\n  const cards = Array.isArray(raw)\n    ? raw.map(card => ({\n      id: card.id,\n      name: card.name,\n      idBoard: card.idBoard || null,\n      idList: card.idList || null,\n      url: card.url || card.shortUrl || (card.shortLink ? `https://trello.com/c/${card.shortLink}` : null),\n      shortLink: card.shortLink || null,\n      closed: !!card.closed,\n      due: card.due || null,\n      lastActivity: card.dateLastActivity || null,\n      position: card.pos ?? null,\n      labels: Array.isArray(card.labels)\n        ? card.labels.map(label => ({ id: label.id, name: label.name || null, color: label.color || null }))\n        : [],\n      descriptionPreview: typeof card.desc === 'string' && card.desc.trim()\n        ? (card.desc.trim().length <= 200 ? card.desc.trim() : `${card.desc.trim().slice(0, 199)}...`)\n        : null,\n    }))\n    : []\n  return {\n    listId: input.listId,\n    count: cards.length,\n    note: 'Use card id with get_card for full card details.',\n    cards,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_card",
+        "description": "Fetch a card by id.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${input.cardId}`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_card_members",
+        "description": "List members assigned to a card.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${input.cardId}/members`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_card_attachments",
+        "description": "List attachments on a card.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${input.cardId}/attachments`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_card_actions",
+        "description": "List actions (activity) on a card.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${input.cardId}/actions`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_card_checklists",
+        "description": "List checklists on a card.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${input.cardId}/checklists`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_card_custom_field_items",
+        "description": "Get custom field items on a card.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${input.cardId}/customFieldItems`)\n  return await res.json()\n}",
+        "scope": "read"
+      },
+      {
+        "name": "create_card",
+        "description": "Create a new card in a list.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "idList",
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "idList": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "desc": {
+              "type": "string"
+            },
+            "due": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "ISO 8601 due date"
+            },
+            "pos": {
+              "type": [
+                "string",
+                "number"
+              ],
+              "description": "Position (top,bottom or float)"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('idList', input.idList)\n  params.set('name', input.name)\n  if (input.desc !== undefined)\n    params.set('desc', input.desc)\n  if (input.due !== undefined && input.due !== null)\n    params.set('due', input.due)\n  if (input.pos !== undefined && input.pos !== null)\n    params.set('pos', String(input.pos))\n  const res = await integration.fetch(`/cards?${params.toString()}`, { method: 'POST' })\n  return await res.json()\n}",
+        "scope": "write"
+      },
+      {
+        "name": "update_card",
+        "description": "Update a card's fields (name, desc, due, list, etc).",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cardId": {
+              "type": "string"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "desc": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "due": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "dueComplete": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "closed": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "idList": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pos": {
+              "type": [
+                "string",
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.name !== undefined && input.name !== null)\n    params.set('name', input.name)\n  if (input.desc !== undefined && input.desc !== null)\n    params.set('desc', input.desc)\n  if (input.due !== undefined)\n    params.set('due', input.due === null ? '' : input.due)\n  if (input.dueComplete !== undefined && input.dueComplete !== null)\n    params.set('dueComplete', String(input.dueComplete))\n  if (input.closed !== undefined && input.closed !== null)\n    params.set('closed', String(input.closed))\n  if (input.idList !== undefined && input.idList !== null)\n    params.set('idList', input.idList)\n  if (input.pos !== undefined && input.pos !== null)\n    params.set('pos', String(input.pos))\n  const res = await integration.fetch(`/cards/${encodeURIComponent(input.cardId)}?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
+        "scope": "write"
+      },
+      {
+        "name": "delete_card",
+        "description": "Delete a card.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "cardId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cardId": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${encodeURIComponent(input.cardId)}`, { method: 'DELETE' })\n  try {\n    return await res.json()\n  }\n  catch {\n    return ''\n  }\n}",
+        "scope": "write"
+      },
+      {
+        "name": "move_card_to_list",
+        "description": "Move a card to another list.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "cardId",
+            "listId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cardId": {
+              "type": "string"
+            },
+            "listId": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ value: input.listId })\n  const res = await integration.fetch(`/cards/${encodeURIComponent(input.cardId)}/idList?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
+        "scope": "write"
+      },
+      {
+        "name": "add_member_to_card",
+        "description": "Add a member to a card.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "cardId",
+            "memberId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cardId": {
+              "type": "string"
+            },
+            "memberId": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ value: input.memberId })\n  const res = await integration.fetch(`/cards/${encodeURIComponent(input.cardId)}/idMembers?${params.toString()}`, { method: 'POST' })\n  return await res.json()\n}",
+        "scope": "write"
+      },
+      {
+        "name": "remove_member_from_card",
+        "description": "Remove a member from a card.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "cardId",
+            "memberId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cardId": {
+              "type": "string"
+            },
+            "memberId": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/cards/${encodeURIComponent(input.cardId)}/idMembers/${encodeURIComponent(input.memberId)}`, { method: 'DELETE' })\n  try {\n    return await res.json()\n  }\n  catch {\n    return ''\n  }\n}",
+        "scope": "write"
+      },
+      {
+        "name": "add_checklist_to_card",
+        "description": "Create a checklist on a card.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "cardId",
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "cardId": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ idCard: input.cardId, name: input.name })\n  const res = await integration.fetch(`/checklists?${params.toString()}`, { method: 'POST' })\n  return await res.json()\n}",
+        "scope": "write"
+      },
+      {
+        "name": "create_list",
+        "description": "Create a new list on the connected board.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "idBoard",
+            "name"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "idBoard": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "pos": {
+              "type": [
+                "string",
+                "number"
+              ],
+              "description": "Position (top,bottom or float)"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ idBoard: input.idBoard, name: input.name })\n  if (input.pos !== undefined && input.pos !== null)\n    params.set('pos', String(input.pos))\n  const res = await integration.fetch(`/lists?${params.toString()}`, { method: 'POST' })\n  return await res.json()\n}",
+        "scope": "write",
+        "injectFromConfig": {
+          "idBoard": "boardId"
+        }
+      },
+      {
+        "name": "update_list",
+        "description": "Update a list (name, pos, closed).",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "listId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "listId": {
+              "type": "string"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "closed": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "pos": {
+              "type": [
+                "string",
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.name !== undefined && input.name !== null)\n    params.set('name', input.name)\n  if (input.closed !== undefined && input.closed !== null)\n    params.set('closed', String(input.closed))\n  if (input.pos !== undefined && input.pos !== null)\n    params.set('pos', String(input.pos))\n  const res = await integration.fetch(`/lists/${encodeURIComponent(input.listId)}?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
+        "scope": "write"
+      },
+      {
+        "name": "archive_list",
+        "description": "Archive a list (set closed=true).",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "listId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "listId": {
+              "type": "string"
+            }
+          }
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams({ value: 'true' })\n  const res = await integration.fetch(`/lists/${encodeURIComponent(input.listId)}/closed?${params.toString()}`, { method: 'PUT' })\n  return await res.json()\n}",
+        "scope": "write"
+      }
+    ],
+    "variantOwnerType": "trello"
   }
 }

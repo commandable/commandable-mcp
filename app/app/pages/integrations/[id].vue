@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import type { IntegrationData } from '@commandable/mcp-core'
-import type { IntegrationToolsTreeExpose } from '../../types/integration'
+import type { CatalogEntry, IntegrationToolsTreeExpose } from '../../types/integration'
+import IntegrationVariantConfigDialog from '../../components/IntegrationVariantConfigDialog.vue'
+
+const HYPHEN_REGEX = /-/g
+const WHITESPACE_SPLIT_REGEX = /\s+/
 
 const route = useRoute()
 const integrationId = route.params.id as string
 
 const { data: integrations, pending, error, refresh } = await useFetch<IntegrationData[]>('/api/integrations')
+const { data: catalog } = await useFetch<CatalogEntry[]>('/api/catalog')
 
 const integration = computed(() => integrations.value?.find(i => i.id === integrationId) ?? null)
 
@@ -16,6 +21,73 @@ const formDisabledTools = ref<string[]>([])
 const toolsTreeRef = ref<IntegrationToolsTreeExpose | null>(null)
 const removeModalOpen = ref(false)
 const saving = ref(false)
+const variantConfigDialogOpen = ref(false)
+const savingVariantConfig = ref(false)
+const connectionHealthStatus = ref<string | null>(null)
+const connectionStatusLoading = ref(false)
+
+function humanizeType(type: string) {
+  return type
+    .replace(HYPHEN_REGEX, ' ')
+    .split(WHITESPACE_SPLIT_REGEX)
+    .filter(Boolean)
+    .map(word => word[0] ? `${word[0].toUpperCase()}${word.slice(1)}` : word)
+    .join(' ')
+}
+
+const baseCatalogEntry = computed(() =>
+  (catalog.value || []).find(entry =>
+    entry.type === integration.value?.type
+    || entry.variants?.some(variant => variant.type === integration.value?.type),
+  ) ?? null,
+)
+
+const baseType = computed(() => baseCatalogEntry.value?.type ?? integration.value?.type ?? null)
+
+const familyVariants = computed(() =>
+  baseCatalogEntry.value?.variants?.filter(variant => (variant.variantConfig?.length ?? 0) > 0) ?? [],
+)
+
+const showsVariantScopeAction = computed(() =>
+  familyVariants.value.length > 0
+  && Boolean(integration.value),
+)
+
+const isConnected = computed(() => connectionHealthStatus.value === 'connected')
+
+const canConfigureVariantScope = computed(() =>
+  showsVariantScopeAction.value
+  && isConnected.value,
+)
+const baseIntegrationName = computed(() => baseCatalogEntry.value?.name || (baseType.value ? humanizeType(baseType.value) : 'Integration'))
+
+const variantScopeBlockedMessage = computed(() => {
+  if (!showsVariantScopeAction.value || canConfigureVariantScope.value)
+    return null
+  if (connectionStatusLoading.value)
+    return 'Checking connection before enabling reduced scope...'
+  if (connectionHealthStatus.value === 'invalid_credentials')
+    return 'Reconnect this integration before choosing a reduced scope.'
+  return 'Connect this integration before choosing a reduced scope.'
+})
+
+async function refreshConnectionStatus() {
+  if (!integration.value || !showsVariantScopeAction.value) {
+    connectionHealthStatus.value = null
+    return
+  }
+  connectionStatusLoading.value = true
+  try {
+    const status = await $fetch<{ health_status: string | null }>(`/api/integrations/${integration.value.id}/credentials-status`)
+    connectionHealthStatus.value = status?.health_status ?? 'disconnected'
+  }
+  catch {
+    connectionHealthStatus.value = 'disconnected'
+  }
+  finally {
+    connectionStatusLoading.value = false
+  }
+}
 
 function initForm() {
   if (!integration.value)
@@ -34,6 +106,9 @@ function initForm() {
 }
 
 watch(integration, () => initForm(), { immediate: true })
+watch(() => integration.value?.id, () => {
+  void refreshConnectionStatus()
+}, { immediate: true })
 
 // Re-initialize form when the tree finishes loading its toolsets
 watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
@@ -100,8 +175,45 @@ async function removeIntegration() {
   navigateTo('/integrations')
 }
 
-function onCredentialChange() {
-  refresh()
+async function openVariantScopeDialog() {
+  if (!canConfigureVariantScope.value)
+    return
+  variantConfigDialogOpen.value = true
+}
+
+async function onCredentialChange() {
+  await refresh()
+  await refreshConnectionStatus()
+  if (canConfigureVariantScope.value)
+    variantConfigDialogOpen.value = true
+}
+
+async function saveVariantScope(payload: { type: string, config: Record<string, unknown> | null, labelSuffix: string | null }) {
+  if (!integration.value || !baseType.value)
+    return
+
+  savingVariantConfig.value = true
+  try {
+    const nextLabel = payload.type === baseType.value
+      ? baseIntegrationName.value
+      : (payload.labelSuffix ? `${baseIntegrationName.value}: ${payload.labelSuffix}` : integration.value.label)
+
+    await $fetch('/api/integrations', {
+      method: 'POST',
+      body: {
+        ...integration.value,
+        type: payload.type,
+        label: nextLabel,
+        config: payload.config,
+      },
+    })
+
+    variantConfigDialogOpen.value = false
+    await refresh()
+  }
+  finally {
+    savingVariantConfig.value = false
+  }
 }
 </script>
 
@@ -172,6 +284,18 @@ function onCredentialChange() {
           <h2 class="text-lg font-medium">
             Connection
           </h2>
+          <UButton
+            v-if="showsVariantScopeAction"
+            size="xs"
+            variant="soft"
+            color="neutral"
+            icon="i-lucide-filter"
+            :disabled="!canConfigureVariantScope || connectionStatusLoading"
+            :loading="connectionStatusLoading"
+            @click="openVariantScopeDialog"
+          >
+            Reduce Scope
+          </UButton>
         </div>
         <div class="border border-[var(--ui-border)] rounded-lg px-4 py-3">
           <IntegrationCredentials
@@ -182,6 +306,12 @@ function onCredentialChange() {
             @disconnected="onCredentialChange"
           />
         </div>
+        <p
+          v-if="variantScopeBlockedMessage"
+          class="mt-2 text-xs text-muted"
+        >
+          {{ variantScopeBlockedMessage }}
+        </p>
       </section>
 
       <!-- Access Level -->
@@ -279,6 +409,18 @@ function onCredentialChange() {
           </div>
         </template>
       </UModal>
+
+      <IntegrationVariantConfigDialog
+        v-if="integration && baseType"
+        v-model:open="variantConfigDialogOpen"
+        :integration-id="integration.id"
+        :current-type="integration.type"
+        :base-type="baseType"
+        :base-name="baseIntegrationName"
+        :variants="familyVariants"
+        :saving="savingVariantConfig"
+        @confirm="saveVariantScope"
+      />
     </template>
   </UContainer>
 </template>
