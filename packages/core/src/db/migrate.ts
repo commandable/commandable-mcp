@@ -1,28 +1,22 @@
-import { existsSync } from 'node:fs'
-import { resolve, join } from 'node:path'
-import { migrate as migrateSqlite } from 'drizzle-orm/better-sqlite3/migrator'
-import { migrate as migratePg } from 'drizzle-orm/node-postgres/migrator'
-import type { DbClient } from './client.js'
+import type { MigrationConfig } from 'drizzle-orm/migrator'
+import type { AnyDrizzle, DbClient } from './client.js'
+import { pgMigrations, sqliteMigrations } from './generated-migrations.js'
 
-function resolveMigrationsFolder(dialect: 'sqlite' | 'pg'): string {
-  const cwd = process.cwd()
-  const candidates = [
-    new URL(`./${dialect}`, new URL('./migrations/', import.meta.url)).pathname,
-    resolve(cwd, 'packages/core/src/db/migrations', dialect),
-    resolve(cwd, 'packages/core/dist/db/migrations', dialect),
-    resolve(cwd, 'node_modules/@commandable/mcp-core/dist/db/migrations', dialect),
-    resolve(cwd, 'app/.output/server/node_modules/@commandable/mcp-core/dist/db/migrations', dialect),
-  ]
+const migrationConfig: MigrationConfig = { migrationsFolder: '' }
 
-  return candidates.find(path => existsSync(join(path, 'meta', '_journal.json')))
-    || candidates[0]!
+type MigratableDb = AnyDrizzle & {
+  dialect: { migrate: (migrations: unknown, session: unknown, config: string | MigrationConfig) => Promise<void> | void }
+  session: unknown
+}
+
+function asMigratableDb(db: AnyDrizzle): MigratableDb {
+  return db as MigratableDb
 }
 
 export async function ensureSchema(client: DbClient): Promise<void> {
-  const dialect = client.dialect === 'sqlite' ? 'sqlite' : 'pg'
-  const migrationsFolder = resolveMigrationsFolder(dialect)
+  const db = asMigratableDb(client.db)
   if (client.dialect === 'sqlite')
-    migrateSqlite(client.db, { migrationsFolder })
+    db.dialect.migrate(sqliteMigrations, db.session, migrationConfig)
   else
-    await migratePg(client.db, { migrationsFolder })
+    await db.dialect.migrate(pgMigrations, db.session, migrationConfig)
 }

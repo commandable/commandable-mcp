@@ -174,7 +174,7 @@ describe('extractFileContent utility', () => {
       /COMMANDABLE_FILE_PROCESSING=off/,
     )
     await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
-      /pip3 install -r packages\/core\/src\/file-extractor\/requirements.txt/,
+      /pip3 install markitdown/,
     )
     expect(fetchSpy).not.toHaveBeenCalled()
   })
@@ -222,7 +222,7 @@ describe('extractFileContent utility', () => {
       /MarkItDown/,
     )
     await expect(util({ auth: false, source: 'https://files.example.com/demo.pdf' })).rejects.toThrow(
-      /pip3 install -r packages\/core\/src\/file-extractor\/requirements.txt/,
+      /pip3 install markitdown/,
     )
     expect(fetchSpy).not.toHaveBeenCalled()
   })
