@@ -8,6 +8,13 @@
       "when": 1741000000000,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775408012944,
+      "tag": "0001_early_rattler",
+      "breakpoints": true
     }
   ]
 }
