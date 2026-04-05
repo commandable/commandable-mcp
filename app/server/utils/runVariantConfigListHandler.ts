@@ -58,8 +58,13 @@ export async function runVariantConfigListHandler(params: RunVariantConfigListHa
   const runner = createSafeHandlerFromString(wrappedHandler, getIntegration)
   const result = await runner(params.config ?? {})
 
-  if (!result.success)
-    throw createError({ statusCode: 500, statusMessage: 'Failed to load variant config options', data: result.logs })
+  if (!result.success) {
+    const innerStatusCode = typeof result.result?.statusCode === 'number' ? result.result.statusCode : 500
+    const innerMessage = typeof result.result?.message === 'string' && result.result.message.trim()
+      ? result.result.message.trim()
+      : 'Failed to load variant config options'
+    throw createError({ statusCode: innerStatusCode, statusMessage: innerMessage, data: result.logs })
+  }
   if (!Array.isArray(result.result))
     throw createError({ statusCode: 502, statusMessage: 'Variant config list handler must return an array' })
 

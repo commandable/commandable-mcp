@@ -20,6 +20,8 @@ const removeModalOpen = ref(false)
 const saving = ref(false)
 const variantConfigDialogOpen = ref(false)
 const savingVariantConfig = ref(false)
+const connectionHealthStatus = ref<string | null>(null)
+const connectionStatusLoading = ref(false)
 
 function humanizeType(type: string) {
   return type
@@ -43,12 +45,46 @@ const familyVariants = computed(() =>
   baseCatalogEntry.value?.variants?.filter(variant => (variant.variantConfig?.length ?? 0) > 0) ?? [],
 )
 
-const canConfigureVariantScope = computed(() =>
+const showsVariantScopeAction = computed(() =>
   familyVariants.value.length > 0
   && Boolean(integration.value)
-  && Boolean(integration.value?.credentialId || integration.value?.connectionId),
+)
+
+const isConnected = computed(() => connectionHealthStatus.value === 'connected')
+
+const canConfigureVariantScope = computed(() =>
+  showsVariantScopeAction.value
+  && isConnected.value,
 )
 const baseIntegrationName = computed(() => baseCatalogEntry.value?.name || (baseType.value ? humanizeType(baseType.value) : 'Integration'))
+
+const variantScopeBlockedMessage = computed(() => {
+  if (!showsVariantScopeAction.value || canConfigureVariantScope.value)
+    return null
+  if (connectionStatusLoading.value)
+    return 'Checking connection before enabling reduced scope...'
+  if (connectionHealthStatus.value === 'invalid_credentials')
+    return 'Reconnect this integration before choosing a reduced scope.'
+  return 'Connect this integration before choosing a reduced scope.'
+})
+
+async function refreshConnectionStatus() {
+  if (!integration.value || !showsVariantScopeAction.value) {
+    connectionHealthStatus.value = null
+    return
+  }
+  connectionStatusLoading.value = true
+  try {
+    const status = await $fetch<{ health_status: string | null }>(`/api/integrations/${integration.value.id}/credentials-status`)
+    connectionHealthStatus.value = status?.health_status ?? 'disconnected'
+  }
+  catch {
+    connectionHealthStatus.value = 'disconnected'
+  }
+  finally {
+    connectionStatusLoading.value = false
+  }
+}
 
 function initForm() {
   if (!integration.value)
@@ -67,6 +103,9 @@ function initForm() {
 }
 
 watch(integration, () => initForm(), { immediate: true })
+watch(() => integration.value?.id, () => {
+  void refreshConnectionStatus()
+}, { immediate: true })
 
 // Re-initialize form when the tree finishes loading its toolsets
 watch(() => toolsTreeRef.value?.toolsets, (toolsets) => {
@@ -141,6 +180,7 @@ async function openVariantScopeDialog() {
 
 async function onCredentialChange() {
   await refresh()
+  await refreshConnectionStatus()
   if (canConfigureVariantScope.value)
     variantConfigDialogOpen.value = true
 }
@@ -242,11 +282,13 @@ async function saveVariantScope(payload: { type: string, config: Record<string, 
             Connection
           </h2>
           <UButton
-            v-if="canConfigureVariantScope"
+            v-if="showsVariantScopeAction"
             size="xs"
             variant="soft"
             color="neutral"
             icon="i-lucide-filter"
+            :disabled="!canConfigureVariantScope || connectionStatusLoading"
+            :loading="connectionStatusLoading"
             @click="openVariantScopeDialog"
           >
             Reduce Scope
@@ -261,6 +303,12 @@ async function saveVariantScope(payload: { type: string, config: Record<string, 
             @disconnected="onCredentialChange"
           />
         </div>
+        <p
+          v-if="variantScopeBlockedMessage"
+          class="mt-2 text-xs text-muted"
+        >
+          {{ variantScopeBlockedMessage }}
+        </p>
       </section>
 
       <!-- Access Level -->
