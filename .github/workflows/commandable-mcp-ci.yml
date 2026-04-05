@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -26,6 +28,12 @@ jobs:
 
       - name: Verify generated integration registry is up to date
         run: yarn check:generated
+
+      - name: Verify DB schema changes include migrations
+        env:
+          MIGRATION_CHECK_BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          MIGRATION_CHECK_HEAD_SHA: ${{ github.sha }}
+        run: yarn check:migrations
 
       - name: Run core unit tests
         run: yarn workspace @commandable/mcp test -- src/__tests__

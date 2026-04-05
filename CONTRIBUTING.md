@@ -120,6 +120,15 @@ Run all workspace tests:
 ```bash
 yarn test:all
 ```
+
+When you change `packages/core/src/db/schema.ts`, generate and commit the matching migration files under `packages/core/src/db/migrations/` in the same PR. CI now enforces this with:
+
+```bash
+yarn check:migrations
+```
+
+That guard fails if the schema file changed without any migration file updates.
+
 ## Tests
 
 Run all workspace tests:
