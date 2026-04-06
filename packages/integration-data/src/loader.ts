@@ -45,6 +45,14 @@ function cloneCredentialVariant(variant: CredentialVariantConfig): CredentialVar
       headers: variant.injection?.headers ? { ...variant.injection.headers } : undefined,
       query: variant.injection?.query ? { ...variant.injection.query } : undefined,
     },
+    preprocess: typeof variant.preprocess === 'object' && variant.preprocess !== null
+      ? {
+          ...variant.preprocess,
+          allowedOrigins: Array.isArray(variant.preprocess.allowedOrigins)
+            ? [...variant.preprocess.allowedOrigins]
+            : undefined,
+        }
+      : variant.preprocess,
     healthCheck: 'path' in variant.healthCheck
       ? { ...variant.healthCheck }
       : { notViable: true },

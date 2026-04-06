@@ -1,6 +1,17 @@
 import { loadIntegrationHint, loadIntegrationManifest, loadIntegrationVariants } from '@commandable/integration-data'
 import type { IntegrationCredentialVariant, IntegrationTypeConfig } from '../types.js'
 
+function isHandlerPreprocess(preprocess: unknown): preprocess is {
+  type: 'handler'
+  handlerCode: string
+  allowedOrigins?: string[]
+} {
+  return typeof preprocess === 'object'
+    && preprocess !== null
+    && (preprocess as any).type === 'handler'
+    && typeof (preprocess as any).handlerCode === 'string'
+}
+
 /**
  * Read a built-in integration type config from the file-backed integration-data package.
  * Returns null when the integration type has no credentials.json definition.
@@ -17,8 +28,9 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
   const variants: Record<string, IntegrationCredentialVariant> = {}
   for (const [key, variant] of Object.entries(variantsFile.variants) as [string, typeof variantsFile.variants[string]][]) {
     const preprocess = variant.preprocess ?? null
-    if (preprocess !== null && preprocess !== 'google_service_account') {
-      throw new Error(`Unsupported preprocess '${preprocess}' for built-in integration '${typeSlug}/${key}'. Only 'google_service_account' is allowed.`)
+    const isSupportedHandler = isHandlerPreprocess(preprocess)
+    if (preprocess !== null && preprocess !== 'google_service_account' && !isSupportedHandler) {
+      throw new Error(`Unsupported preprocess for built-in integration '${typeSlug}/${key}'.`)
     }
 
     variants[key] = {
@@ -30,7 +42,13 @@ export function getBuiltInIntegrationTypeConfig(typeSlug: string): IntegrationTy
       allowedOrigins: manifestAllowedOrigins,
       healthCheck: variant.healthCheck ?? null,
       hintMarkdown: loadIntegrationHint(typeSlug, key),
-      preprocess,
+      preprocess: isSupportedHandler
+        ? {
+            type: 'handler',
+            handlerCode: preprocess.handlerCode,
+            allowedOrigins: Array.isArray(preprocess.allowedOrigins) ? [...preprocess.allowedOrigins] : null,
+          }
+        : preprocess,
     }
   }
 

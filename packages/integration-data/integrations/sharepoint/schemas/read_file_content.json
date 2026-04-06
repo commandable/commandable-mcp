@@ -13,7 +13,7 @@
     },
     "mimeType": {
       "type": "string",
-      "description": "Optional MIME type from get_drive_item or search_files."
+      "description": "Optional MIME type from get_drive_item_meta or search_files."
     }
   },
   "additionalProperties": false

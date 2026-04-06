@@ -1,8 +1,10 @@
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { HttpError } from '../errors/httpError.js'
 import type { IntegrationCredentialVariant, IntegrationData, IntegrationTypeConfig } from '../types.js'
 import { getBuiltInIntegrationTypeConfig } from './fileIntegrationTypeConfigStore.js'
 import { getGoogleAccessToken } from './googleServiceAccount.js'
+import { createSafeHandlerFromString } from './sandbox.js'
 
 export interface CredentialStore {
   getCredentials: (spaceId: string, credentialId: string) => Promise<Record<string, string> | null>
@@ -52,6 +54,38 @@ function buildCredentialUrl(integrationId: string): string {
   const portRaw = process.env.COMMANDABLE_UI_PORT
   const port = portRaw && /^\d+$/.test(portRaw) ? Number(portRaw) : 23432
   return `http://127.0.0.1:${port}/integrations/${encodeURIComponent(integrationId)}`
+}
+
+/** Decode JWT payload for debug only (no verification). Never log the raw token. */
+function decodeJwtPayloadForDebug(token: string): {
+  aud?: unknown
+  tid?: unknown
+  appid?: unknown
+  roles?: unknown
+  scp?: unknown
+  idtyp?: unknown
+} | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2 || !parts[1])
+      return null
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4))
+    b64 = b64 + pad
+    const json = Buffer.from(b64, 'base64').toString('utf8')
+    const payload = JSON.parse(json) as Record<string, unknown>
+    return {
+      aud: payload.aud,
+      tid: payload.tid,
+      appid: payload.appid,
+      roles: payload.roles,
+      scp: payload.scp,
+      idtyp: payload.idtyp,
+    }
+  }
+  catch {
+    return null
+  }
 }
 
 function isAbsoluteHttpUrl(value: string): boolean {
@@ -140,6 +174,191 @@ function resolveRelativeBaseUrl(provider: string, baseUrl: string, rawPath: stri
 
   return baseUrl
 }
+
+function joinWithoutDuplicateSegments(baseUrl: string, rawPath: string): string {
+  let pathOnly = rawPath || ''
+  let queryPart = ''
+  const qIndex = pathOnly.indexOf('?')
+  if (qIndex >= 0) {
+    queryPart = pathOnly.slice(qIndex + 1)
+    pathOnly = pathOnly.slice(0, qIndex)
+  }
+
+  try {
+    const base = new URL(baseUrl)
+    const baseSegs = base.pathname.split('/').filter(Boolean)
+    const pathSegs = (pathOnly || '/').split('/').filter(Boolean)
+
+    let overlap = 0
+    const maxK = Math.min(baseSegs.length, pathSegs.length)
+    for (let k = maxK; k >= 1; k--) {
+      let ok = true
+      for (let i = 0; i < k; i++) {
+        if (baseSegs[baseSegs.length - k + i] !== pathSegs[i]) { ok = false; break }
+      }
+      if (ok) { overlap = k; break }
+    }
+
+    const normalizedPath = `/${[...baseSegs, ...pathSegs.slice(overlap)].join('/')}`
+    const baseOrigin = base.origin
+    const urlNoQuery = `${baseOrigin}${normalizedPath}`
+    return queryPart ? `${urlNoQuery}?${queryPart}` : urlNoQuery
+  }
+  catch {
+    const cleanedBase = baseUrl.replace(/\/+$/, '')
+    const cleanedPath = (`/${(pathOnly || '').replace(/^\/+/, '')}`)
+    const baseParts = cleanedBase.split('/').filter(Boolean)
+    const pathParts = cleanedPath.split('/').filter(Boolean)
+    let overlap = 0
+    const maxK = Math.min(baseParts.length, pathParts.length)
+    for (let k = maxK; k >= 1; k--) {
+      let ok = true
+      for (let i = 0; i < k; i++) {
+        if (baseParts[baseParts.length - k + i] !== pathParts[i]) { ok = false; break }
+      }
+      if (ok) { overlap = k; break }
+    }
+    const joined = `/${[...baseParts, ...pathParts.slice(overlap)].join('/')}`
+    return queryPart ? `${joined}?${queryPart}` : joined
+  }
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object')
+    return JSON.stringify(value)
+  if (Array.isArray(value))
+    return `[${value.map(stableStringify).join(',')}]`
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, innerValue]) => `${JSON.stringify(key)}:${stableStringify(innerValue)}`)
+  return `{${entries.join(',')}}`
+}
+
+type CachedPreprocessResult = {
+  data: Record<string, unknown>
+  expiresAtMs: number
+}
+
+type HandlerCredentialPreprocess = {
+  type: 'handler'
+  handlerCode: string
+  allowedOrigins?: string[] | null
+}
+
+const preprocessResultCache = new Map<string, CachedPreprocessResult>()
+
+function isHandlerCredentialPreprocess(preprocess: unknown): preprocess is HandlerCredentialPreprocess {
+  return typeof preprocess === 'object'
+    && preprocess !== null
+    && (preprocess as any).type === 'handler'
+    && typeof (preprocess as any).handlerCode === 'string'
+}
+
+function getPreprocessCacheKey(provider: string, variantKey: string, creds: Record<string, unknown>): string {
+  return createHash('sha256')
+    .update(`${provider}:${variantKey}:${stableStringify(creds)}`)
+    .digest('hex')
+}
+
+function getExpiresAtMs(result: Record<string, unknown>, now: number): number {
+  const rawExpiresIn = result.expiresIn ?? result.expires_in
+  const expiresIn = typeof rawExpiresIn === 'number'
+    ? rawExpiresIn
+    : (typeof rawExpiresIn === 'string' && rawExpiresIn.trim() ? Number(rawExpiresIn) : NaN)
+  if (Number.isFinite(expiresIn) && expiresIn > 0)
+    return now + (expiresIn * 1000)
+  return now + (55 * 60_000)
+}
+
+function normalizeRequestInit(init: RequestInit = {}): RequestInit {
+  const preparedInit: RequestInit = { ...init }
+  if (preparedInit.body !== undefined
+    && typeof preparedInit.body !== 'string'
+    && !(preparedInit.body instanceof URLSearchParams)
+    && !(preparedInit.body instanceof FormData)
+    && !(preparedInit.body instanceof Blob)
+    && !(preparedInit.body instanceof ArrayBuffer)) {
+    preparedInit.body = JSON.stringify(preparedInit.body)
+    preparedInit.headers = {
+      'Content-Type': 'application/json',
+      ...preparedInit.headers,
+    }
+  }
+  else if (preparedInit.body instanceof URLSearchParams) {
+    preparedInit.body = preparedInit.body.toString()
+    preparedInit.headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...preparedInit.headers,
+    }
+  }
+  return preparedInit
+}
+
+async function runSandboxCredentialPreprocess(params: {
+  provider: string
+  variantKey: string
+  preprocess: HandlerCredentialPreprocess
+  creds: Record<string, unknown>
+  baseUrl: string
+  allowedOrigins: string[]
+}): Promise<void> {
+  const { provider, variantKey, preprocess, creds, baseUrl, allowedOrigins } = params
+  const cacheKey = getPreprocessCacheKey(provider, variantKey, creds)
+  const existing = preprocessResultCache.get(cacheKey)
+  const now = Date.now()
+  if (existing && existing.expiresAtMs - now > 60_000) {
+    Object.assign(creds, existing.data)
+    return
+  }
+
+  const tokenFetch = async (path: string, init: RequestInit = {}) => {
+    let finalUrl: string
+    if (isAbsoluteHttpUrl(path)) {
+      assertAbsoluteUrlIsAllowed(path, baseUrl, allowedOrigins)
+      finalUrl = path
+    }
+    else {
+      finalUrl = joinWithoutDuplicateSegments(baseUrl, path)
+    }
+
+    const preparedInit = normalizeRequestInit(init)
+    return await fetch(finalUrl, {
+      ...preparedInit,
+      method: preparedInit.method || 'GET',
+    })
+  }
+
+  const wrapper = `async (input) => {\n  const __inner = ${preprocess.handlerCode};\n  return await __inner(input, utils)\n}`
+  const safeHandler = createSafeHandlerFromString(wrapper, () => ({}), { tokenFetch })
+  const res = await safeHandler(creds)
+  if (!res.success)
+    throw new HttpError(400, `Credential preprocess failed for '${provider}': ${String((res.result as any)?.message || res.result || 'Unknown error')}`)
+
+  const result = res.result
+  if (!result || typeof result !== 'object' || Array.isArray(result))
+    throw new HttpError(400, `Credential preprocess for '${provider}' must return an object.`)
+  if (typeof (result as any).token !== 'string' || !(result as any).token.trim())
+    throw new HttpError(400, `Credential preprocess for '${provider}' must return a non-empty 'token' string.`)
+
+  Object.assign(creds, result)
+  preprocessResultCache.set(cacheKey, {
+    data: { ...(result as Record<string, unknown>) },
+    expiresAtMs: getExpiresAtMs(result as Record<string, unknown>, now),
+  })
+
+  // #region agent log
+  if (provider === 'sharepoint') {
+    const t = (result as Record<string, unknown>)?.token
+    const tokenStr = typeof t === 'string' ? t : ''
+    const claims = tokenStr ? decodeJwtPayloadForDebug(tokenStr) : null
+    const roles = claims?.roles
+    const rolesList = Array.isArray(roles) ? roles.map(r => String(r).slice(0, 80)) : []
+    fetch('http://127.0.0.1:7886/ingest/d4127044-8bb5-4b15-95f1-be96d51d67ea', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '797117' }, body: JSON.stringify({ sessionId: '797117', location: 'proxy.ts:runSandboxCredentialPreprocess', message: 'sharepoint preprocess ok', data: { variantKey, tokenLen: typeof t === 'string' ? t.length : 0, expiresIn: (result as Record<string, unknown>)?.expiresIn ?? (result as Record<string, unknown>)?.expires_in, tokenAud: claims?.aud, tokenTid: claims?.tid, tokenAppId: claims?.appid, tokenIdtyp: claims?.idtyp, rolesCount: rolesList.length, rolesSample: rolesList.slice(0, 12), hasScp: typeof claims?.scp === 'string' && String(claims.scp).length > 0, jwtDecodeOk: !!claims }, timestamp: Date.now(), hypothesisId: 'H6' }) }).catch(() => {})
+  }
+  // #endregion
+}
+
 export class IntegrationProxy {
   constructor(private readonly opts: IntegrationProxyOptions = {}) {}
 
@@ -148,54 +367,6 @@ export class IntegrationProxy {
 
     if (!provider || !path)
       throw new HttpError(400, 'provider and path are required.')
-
-    const joinWithoutDuplicateSegments = (baseUrl: string, rawPath: string): string => {
-      let pathOnly = rawPath || ''
-      let queryPart = ''
-      const qIndex = pathOnly.indexOf('?')
-      if (qIndex >= 0) {
-        queryPart = pathOnly.slice(qIndex + 1)
-        pathOnly = pathOnly.slice(0, qIndex)
-      }
-
-      try {
-        const base = new URL(baseUrl)
-        const baseSegs = base.pathname.split('/').filter(Boolean)
-        const pathSegs = (pathOnly || '/').split('/').filter(Boolean)
-
-        let overlap = 0
-        const maxK = Math.min(baseSegs.length, pathSegs.length)
-        for (let k = maxK; k >= 1; k--) {
-          let ok = true
-          for (let i = 0; i < k; i++) {
-            if (baseSegs[baseSegs.length - k + i] !== pathSegs[i]) { ok = false; break }
-          }
-          if (ok) { overlap = k; break }
-        }
-
-        const normalizedPath = `/${[...baseSegs, ...pathSegs.slice(overlap)].join('/')}`
-        const baseOrigin = base.origin
-        const urlNoQuery = `${baseOrigin}${normalizedPath}`
-        return queryPart ? `${urlNoQuery}?${queryPart}` : urlNoQuery
-      }
-      catch {
-        const cleanedBase = baseUrl.replace(/\/+$/, '')
-        const cleanedPath = (`/${(pathOnly || '').replace(/^\/+/, '')}`)
-        const baseParts = cleanedBase.split('/').filter(Boolean)
-        const pathParts = cleanedPath.split('/').filter(Boolean)
-        let overlap = 0
-        const maxK = Math.min(baseParts.length, pathParts.length)
-        for (let k = maxK; k >= 1; k--) {
-          let ok = true
-          for (let i = 0; i < k; i++) {
-            if (baseParts[baseParts.length - k + i] !== pathParts[i]) { ok = false; break }
-          }
-          if (ok) { overlap = k; break }
-        }
-        const joined = `/${[...baseParts, ...pathParts.slice(overlap)].join('/')}`
-        return queryPart ? `${joined}?${queryPart}` : joined
-      }
-    }
 
     const usesCredentials = integration.connectionMethod === 'credentials'
     if (usesCredentials) {
@@ -313,6 +484,19 @@ export class IntegrationProxy {
         const token = await getGoogleAccessToken({ serviceAccountJson, scopes, subject })
         ;(creds as any).token = token
       }
+      else if (isHandlerCredentialPreprocess(typeConfig.preprocess)) {
+        await runSandboxCredentialPreprocess({
+          provider,
+          variantKey,
+          preprocess: typeConfig.preprocess,
+          creds: creds as Record<string, unknown>,
+          baseUrl,
+          allowedOrigins: [
+            ...typeConfig.allowedOrigins,
+            ...(typeConfig.preprocess.allowedOrigins ?? []),
+          ],
+        })
+      }
 
       const resolvedHeaders: Record<string, string> = {}
       const resolvedQuery = new URLSearchParams()
@@ -352,14 +536,7 @@ export class IntegrationProxy {
       if (queryString)
         finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + queryString
 
-      const preparedInit: RequestInit = { ...init }
-      if (preparedInit.body !== undefined && typeof preparedInit.body !== 'string') {
-        preparedInit.body = JSON.stringify(preparedInit.body)
-        preparedInit.headers = {
-          'Content-Type': 'application/json',
-          ...preparedInit.headers,
-        }
-      }
+      const preparedInit = normalizeRequestInit(init)
 
       const redact = (s: string): string => {
         let out = s
@@ -369,6 +546,14 @@ export class IntegrationProxy {
         }
         return out
       }
+
+      // #region agent log
+      if (provider === 'sharepoint') {
+        const auth = resolvedHeaders.Authorization
+        const bodyString = typeof preparedInit.body === 'string' ? preparedInit.body : ''
+        fetch('http://127.0.0.1:7886/ingest/d4127044-8bb5-4b15-95f1-be96d51d67ea', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '797117' }, body: JSON.stringify({ sessionId: '797117', location: 'proxy.ts:before-fetch', message: 'sharepoint outgoing', data: { method: preparedInit.method || 'GET', pathPreview: String(path).slice(0, 200), finalUrlHost: (() => { try { return new URL(finalUrl).host } catch { return 'invalid-url' } })(), hasAuthHeader: !!auth, authPrefix: auth ? String(auth).slice(0, 8) : '', tokenFieldLen: typeof (creds as any).token === 'string' ? (creds as any).token.length : 0, bodyPreview: bodyString.slice(0, 300), bodyHasRegion: bodyString.includes('"region"'), isSearchQuery: String(path).includes('/search/query'), isRegionLookup: String(path).includes('siteCollection/root ne null') }, timestamp: Date.now(), hypothesisId: String(path).includes('/search/query') || String(path).includes('siteCollection/root ne null') ? 'H9' : 'H1' }) }).catch(() => {})
+      }
+      // #endregion
 
       const response = await fetch(finalUrl, {
         ...preparedInit,
@@ -385,6 +570,18 @@ export class IntegrationProxy {
           bodyText = contentType.includes('json') ? JSON.stringify(await response.json()) : await response.text()
         }
         catch {}
+        // #region agent log
+        if (provider === 'sharepoint') {
+          const auth = resolvedHeaders.Authorization
+          let graphErrorCode = ''
+          try {
+            const parsed = JSON.parse(bodyText)
+            graphErrorCode = String(parsed?.error?.code || parsed?.error || '')
+          }
+          catch {}
+          fetch('http://127.0.0.1:7886/ingest/d4127044-8bb5-4b15-95f1-be96d51d67ea', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '797117' }, body: JSON.stringify({ sessionId: '797117', location: 'proxy.ts:graph-error', message: 'sharepoint graph non-ok', data: { status: response.status, pathPreview: String(path).slice(0, 160), finalUrlHost: (() => { try { return new URL(finalUrl).host } catch { return 'invalid-url' } })(), hasAuthHeader: !!auth, authPrefix: auth ? String(auth).slice(0, 8) : '', graphErrorCode: graphErrorCode.slice(0, 80), bodyPreview: bodyText.slice(0, 220) }, timestamp: Date.now(), hypothesisId: 'H2' }) }).catch(() => {})
+        }
+        // #endregion
         const hint = getErrorHint(response.status, provider, bodyText)
         const hintSuffix = hint ? ` ${hint}` : ''
         const credentialUrl = buildCredentialUrl(integration.id)

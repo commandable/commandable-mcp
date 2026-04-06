@@ -1,5 +1,13 @@
 import type { JSONSchema7 } from 'json-schema'
 
+export interface CredentialPreprocessHandlerConfig {
+  type: 'handler'
+  handlerCode: string
+  allowedOrigins?: string[]
+}
+
+export type CredentialPreprocessConfig = string | CredentialPreprocessHandlerConfig
+
 export interface CredentialVariantConfig {
   label: string
   schema: JSONSchema7
@@ -8,7 +16,7 @@ export interface CredentialVariantConfig {
     headers?: Record<string, string>
     query?: Record<string, string>
   }
-  preprocess?: string
+  preprocess?: CredentialPreprocessConfig
   healthCheck:
     | {
       path: string
@@ -33,7 +41,7 @@ export interface IntegrationCredentialConfig {
     headers?: Record<string, string>
     query?: Record<string, string>
   }
-  preprocess?: string
+  preprocess?: CredentialPreprocessConfig
   healthCheck:
     | {
       path: string

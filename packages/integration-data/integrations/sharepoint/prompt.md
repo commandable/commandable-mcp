@@ -6,7 +6,7 @@ Recommended workflow:
 2. Otherwise use `search_sites` to discover the correct site.
 3. Use `list_site_drives` to find the relevant document library for that site.
 4. Use `list_drive_children` for deterministic folder browsing or `search_files` for broader file discovery.
-5. Use `get_drive_item` when you need compact metadata for a specific file or folder.
+5. Use `get_drive_item_meta` when you need compact metadata for a specific file or folder.
 6. Use `read_file_content` to consume the actual contents of a file in agent-friendly text.
 
 Notes:

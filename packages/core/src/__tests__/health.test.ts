@@ -100,6 +100,29 @@ describe('checkIntegrationHealth', () => {
     expect(result.status).toBe('connected')
     expect(result.skipped).toBe(true)
   })
+
+  it('returns connected (skipped) for sharepoint app credentials without a health endpoint', async () => {
+    await credentialStore.saveCredentials('local', 'sharepoint-test-creds', {
+      tenantId: 'tenant-123',
+      clientId: 'client-123',
+      clientSecret: 'secret-123',
+    })
+
+    const integration: IntegrationData = {
+      id: 'sharepoint-test',
+      referenceId: 'sharepoint-test',
+      type: 'sharepoint',
+      label: 'SharePoint',
+      connectionMethod: 'credentials',
+      credentialId: 'sharepoint-test-creds',
+      credentialVariant: 'app_credentials',
+      spaceId: 'local',
+    }
+    const proxy = new IntegrationProxy({ credentialStore })
+    const result = await checkIntegrationHealth({ integration, proxy })
+    expect(result.status).toBe('connected')
+    expect(result.skipped).toBe(true)
+  })
 })
 
 describe('updateIntegrationHealth', () => {

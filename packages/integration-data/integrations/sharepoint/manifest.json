@@ -2,104 +2,83 @@
   "name": "sharepoint",
   "version": "0.1.0",
   "baseUrl": "https://graph.microsoft.com/v1.0",
-  "toolsets": {
-    "sites": {
-      "label": "Sites",
-      "description": "Find SharePoint sites and resolve site IDs from known URLs or paths"
-    },
-    "files": {
-      "label": "Files",
-      "description": "Browse document libraries, inspect files and folders, read file content, and manage folders and files"
-    }
-  },
   "tools": [
     {
       "name": "search_sites",
       "description": "Search SharePoint sites by keyword across the tenant. Returns compact site summaries with IDs and web URLs. Use this when you know the site name or topic but not the site ID. If you already know the hostname and path, use get_site_by_path instead.",
-      "inputSchema": "schemas/sites/search_sites.json",
-      "handler": "handlers/sites/search_sites.js",
-      "scope": "read",
-      "toolset": "sites"
+      "inputSchema": "schemas/search_sites.json",
+      "handler": "handlers/search_sites.js",
+      "scope": "read"
     },
     {
       "name": "get_site_by_path",
-      "description": "Resolve a SharePoint site from its hostname and server-relative path, such as hostname='contoso.sharepoint.com' and relativePath='/sites/Marketing'. Use this when you know the SharePoint URL structure and need the stable site ID for later calls.",
-      "inputSchema": "schemas/sites/get_site_by_path.json",
-      "handler": "handlers/sites/get_site_by_path.js",
-      "scope": "read",
-      "toolset": "sites"
+      "description": "Resolve a SharePoint site from its hostname and server-relative path, such as hostname='contoso.sharepoint.com' and relativePath='//Marketing'. Use this when you know the SharePoint URL structure and need the stable site ID for later calls.",
+      "inputSchema": "schemas/get_site_by_path.json",
+      "handler": "handlers/get_site_by_path.js",
+      "scope": "read"
     },
     {
       "name": "get_site",
       "description": "Get metadata for a SharePoint site by site ID. Returns the site name, description, web URL, and timestamps. Use search_sites or get_site_by_path first if you do not already know the site ID.",
-      "inputSchema": "schemas/sites/get_site.json",
-      "handler": "handlers/sites/get_site.js",
-      "scope": "read",
-      "toolset": "sites"
+      "inputSchema": "schemas/get_site.json",
+      "handler": "handlers/get_site.js",
+      "scope": "read"
     },
     {
       "name": "list_site_drives",
       "description": "List document libraries (drives) for a SharePoint site. Returns compact drive summaries including IDs, names, web URLs, and drive type. Use this after resolving a site to discover the right document library before browsing folders or reading files.",
-      "inputSchema": "schemas/files/list_site_drives.json",
-      "handler": "handlers/files/list_site_drives.js",
-      "scope": "read",
-      "toolset": "files"
+      "inputSchema": "schemas/list_site_drives.json",
+      "handler": "handlers/list_site_drives.js",
+      "scope": "read"
     },
     {
       "name": "list_drive_children",
-      "description": "List the files and folders inside a SharePoint document library folder. By default this lists the root of the drive. Provide itemId to browse a specific folder. Returns compact entries with file-or-folder flags, MIME type when available, and parent references. Use get_drive_item when you need one specific item.",
-      "inputSchema": "schemas/files/list_drive_children.json",
-      "handler": "handlers/files/list_drive_children.js",
-      "scope": "read",
-      "toolset": "files"
+      "description": "List the files and folders inside a SharePoint document library folder. By default this lists the root of the drive. Provide itemId to browse a specific folder. Returns compact entries with file-or-folder flags, MIME type when available, and parent references. Use get_drive_item_meta when you need one specific item.",
+      "inputSchema": "schemas/list_drive_children.json",
+      "handler": "handlers/list_drive_children.js",
+      "scope": "read"
     },
     {
-      "name": "get_drive_item",
+      "name": "get_drive_item_meta",
       "description": "Get metadata for a single SharePoint file or folder by drive ID and item ID. Returns a compact item summary including IDs, name, type flags, web URL, size, timestamps, and parent reference. Use read_file_content to read the actual file contents.",
-      "inputSchema": "schemas/files/get_drive_item.json",
-      "handler": "handlers/files/get_drive_item.js",
-      "scope": "read",
-      "toolset": "files"
+      "inputSchema": "schemas/get_drive_item.json",
+      "handler": "handlers/get_drive_item.js",
+      "scope": "read"
     },
     {
       "name": "search_files",
       "description": "Search SharePoint and OneDrive content through Microsoft Graph search and return flattened file hits. Provide a query string; Graph KQL syntax is supported. Optional siteId and driveId filters narrow the flattened results after search. Use this for broad file discovery when folder-by-folder browsing is too narrow.",
-      "inputSchema": "schemas/files/search_files.json",
-      "handler": "handlers/files/search_files.js",
-      "scope": "read",
-      "toolset": "files"
+      "inputSchema": "schemas/search_files.json",
+      "handler": "handlers/search_files.js",
+      "scope": "read"
     },
     {
       "name": "read_file_content",
       "description": "Read a SharePoint file into agent-friendly text using the shared file extraction pipeline. This is the standard way to consume document contents such as PDF, DOCX, XLSX, PPTX, and text-like files stored in SharePoint document libraries. Provide driveId and itemId. Folders are rejected; use list_drive_children to browse them.",
-      "inputSchema": "schemas/files/read_file_content.json",
-      "handler": "handlers/files/read_file_content.js",
-      "scope": "read",
-      "toolset": "files"
+      "inputSchema": "schemas/read_file_content.json",
+      "handler": "handlers/read_file_content.js",
+      "scope": "read"
     },
     {
       "name": "create_folder",
       "description": "Create a new folder in a SharePoint document library. By default the folder is created in the drive root. Provide parentItemId to create it inside an existing folder. Returns the created folder metadata including its item ID for later browsing or moves.",
-      "inputSchema": "schemas/files/create_folder.json",
-      "handler": "handlers/files/create_folder.js",
-      "scope": "write",
-      "toolset": "files"
+      "inputSchema": "schemas/create_folder.json",
+      "handler": "handlers/create_folder.js",
+      "scope": "write"
     },
     {
       "name": "move_drive_item",
-      "description": "Move a SharePoint file or folder to a different parent folder in the same drive. Provide destinationParentId and optionally a newName to rename during the move. Use get_drive_item or list_drive_children first to discover the current item and destination IDs.",
-      "inputSchema": "schemas/files/move_drive_item.json",
-      "handler": "handlers/files/move_drive_item.js",
-      "scope": "write",
-      "toolset": "files"
+      "description": "Move a SharePoint file or folder to a different parent folder in the same drive. Provide destinationParentId and optionally a newName to rename during the move. Use get_drive_item_meta or list_drive_children first to discover the current item and destination IDs.",
+      "inputSchema": "schemas/move_drive_item.json",
+      "handler": "handlers/move_drive_item.js",
+      "scope": "write"
     },
     {
       "name": "delete_drive_item",
-      "description": "Delete a SharePoint file or folder by drive ID and item ID. This is a destructive operation. Use get_drive_item or list_drive_children first to confirm you have the correct item before deleting it.",
-      "inputSchema": "schemas/files/delete_drive_item.json",
-      "handler": "handlers/files/delete_drive_item.js",
-      "scope": "write",
-      "toolset": "files"
+      "description": "Delete a SharePoint file or folder by drive ID and item ID. This is a destructive operation. Use get_drive_item_meta or list_drive_children first to confirm you have the correct item before deleting it.",
+      "inputSchema": "schemas/delete_drive_item.json",
+      "handler": "handlers/delete_drive_item.js",
+      "scope": "write"
     }
   ]
 }

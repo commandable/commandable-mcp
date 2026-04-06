@@ -24,6 +24,22 @@ async function readOptionalText(path, { trim = false } = {}) {
   return trimmed.length ? trimmed : null
 }
 
+async function resolvePreprocess(dir, preprocess) {
+  if (!preprocess || typeof preprocess !== 'object' || Array.isArray(preprocess))
+    return preprocess ?? undefined
+  if (preprocess.type !== 'handler')
+    throw new Error(`Unsupported credentials preprocess type '${String(preprocess.type)}'.`)
+  if (typeof preprocess.handler !== 'string' || !preprocess.handler.trim())
+    throw new Error('Handler preprocess config requires a non-empty handler path.')
+
+  const handlerCode = (await readFile(join(dir, preprocess.handler), 'utf8')).trim()
+  return {
+    type: 'handler',
+    handlerCode,
+    allowedOrigins: Array.isArray(preprocess.allowedOrigins) ? preprocess.allowedOrigins : undefined,
+  }
+}
+
 async function loadTools(dir, tools, sharedUtils) {
   return await Promise.all((tools || []).map(async (tool) => {
     const inputSchema = readJson(await readFile(join(dir, tool.inputSchema), 'utf8'))
@@ -92,6 +108,13 @@ async function main() {
     const variants = existsSync(variantsPath)
       ? readJson(await readFile(variantsPath, 'utf8'))
       : null
+    if (variants?.variants && typeof variants.variants === 'object') {
+      for (const variant of Object.values(variants.variants)) {
+        if (!variant || typeof variant !== 'object')
+          continue
+        variant.preprocess = await resolvePreprocess(dir, variant.preprocess)
+      }
+    }
     const hint = await readOptionalText(join(dir, 'credentials_hint.md'), { trim: true })
 
     const hintsByVariant = {}

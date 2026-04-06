@@ -20,6 +20,15 @@ async (input) => {
     }
   }
 
+  const regionResponse = await integration.fetch('/sites?$filter=siteCollection/root ne null&$select=siteCollection')
+  const regionData = await regionResponse.json()
+  const region = Array.isArray(regionData?.value)
+    ? regionData.value.find(site => typeof site?.siteCollection?.dataLocationCode === 'string')?.siteCollection?.dataLocationCode
+    : undefined
+
+  if (typeof region !== 'string' || region.length === 0)
+    throw new Error('Unable to determine the SharePoint search region for this tenant.')
+
   const request = {
     entityTypes: ['driveItem'],
     query: {
@@ -27,6 +36,7 @@ async (input) => {
     },
     from: typeof input.from === 'number' ? input.from : 0,
     size: typeof input.size === 'number' ? input.size : 25,
+    region,
   }
 
   const res = await integration.fetch('/search/query', {

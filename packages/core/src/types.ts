@@ -65,6 +65,14 @@ export type IntegrationAuth =
   | { kind: 'template', injection: { headers?: Record<string, string>, query?: Record<string, string> } }
   | { kind: 'basic', usernameField: string, passwordField: string }
 
+export type IntegrationCredentialPreprocess =
+  | 'google_service_account'
+  | {
+    type: 'handler'
+    handlerCode: string
+    allowedOrigins?: string[] | null
+  }
+
 export interface IntegrationCredentialVariant {
   label: string
   credentialSchema: JSONSchema7
@@ -77,10 +85,10 @@ export interface IntegrationCredentialVariant {
   allowedOrigins?: string[] | null
   healthCheck?: { path: string, method?: string } | { notViable: true } | null
   hintMarkdown?: string | null
-  /** Named server-side hook for credential transforms that require async work (e.g. JWT signing).
-   *  Currently only 'google_service_account' is supported. For simple transforms like Basic auth
-   *  encoding, use template expressions in the injection config instead (e.g. {{base64(email + ":" + apiToken)}}). */
-  preprocess?: 'google_service_account' | null
+  /** Credential transforms that require async work before request injection.
+   *  Use 'google_service_account' for the built-in JWT-signing flow, or a sandboxed
+   *  handler preprocess for declarative integration-data auth steps like OAuth token exchange. */
+  preprocess?: IntegrationCredentialPreprocess | null
 }
 
 export interface IntegrationTypeConfig {
