@@ -1,4 +1,31 @@
 async (input) => {
+  const extractFallbackRegion = (error) => {
+    const texts = [error?.data?.body, error?.message].filter(s => typeof s === 'string')
+    for (const text of texts) {
+      const match = text.match(/Only valid regions are ([A-Z,\s]+)/i)
+      const region = match?.[1]?.split(',').map(r => r.trim().toUpperCase()).filter(Boolean)[0]
+      if (region)
+        return region
+    }
+    return null
+  }
+
+  const runSearch = async (region) => {
+    const res = await integration.fetch('/search/query', {
+      method: 'POST',
+      body: {
+        requests: [{
+          entityTypes: ['driveItem'],
+          query: { queryString: input.query },
+          from: typeof input.from === 'number' ? input.from : 0,
+          size: typeof input.size === 'number' ? input.size : 25,
+          region,
+        }],
+      },
+    })
+    return res.json()
+  }
+
   const flattenHit = (hit) => {
     const resource = hit?.resource || {}
     const parentReference = resource.parentReference || {}
@@ -20,32 +47,17 @@ async (input) => {
     }
   }
 
-  const regionResponse = await integration.fetch('/sites?$filter=siteCollection/root ne null&$select=siteCollection')
-  const regionData = await regionResponse.json()
-  const region = Array.isArray(regionData?.value)
-    ? regionData.value.find(site => typeof site?.siteCollection?.dataLocationCode === 'string')?.siteCollection?.dataLocationCode
-    : undefined
-
-  if (typeof region !== 'string' || region.length === 0)
-    throw new Error('Unable to determine the SharePoint search region for this tenant.')
-
-  const request = {
-    entityTypes: ['driveItem'],
-    query: {
-      queryString: input.query,
-    },
-    from: typeof input.from === 'number' ? input.from : 0,
-    size: typeof input.size === 'number' ? input.size : 25,
-    region,
+  let data
+  try {
+    data = await runSearch('NAM')
+  }
+  catch (error) {
+    const fallback = extractFallbackRegion(error)
+    if (!fallback)
+      throw error
+    data = await runSearch(fallback)
   }
 
-  const res = await integration.fetch('/search/query', {
-    method: 'POST',
-    body: {
-      requests: [request],
-    },
-  })
-  const data = await res.json()
   const container = data?.value?.[0]?.hitsContainers?.[0]
   const allHits = Array.isArray(container?.hits) ? container.hits.map(flattenHit) : []
   const hits = allHits.filter((hit) => {
