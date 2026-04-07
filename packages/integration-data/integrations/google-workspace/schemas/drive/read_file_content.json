@@ -4,7 +4,13 @@
   "required": ["fileId"],
   "properties": {
     "fileId": { "type": "string", "description": "Drive file ID. Use search_files or list_files to find file IDs." },
-    "mimeType": { "type": "string", "description": "Optional Drive MIME type from get_file_meta or search_files." }
+    "mimeType": { "type": "string", "description": "Optional Drive MIME type from get_file_meta or search_files." },
+    "previewPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of pages to render as images and return alongside the text (PDF only). Omit or set to 0 to skip. Useful for visually checking signatures, logos, or layout."
+    }
   },
   "additionalProperties": false
 }

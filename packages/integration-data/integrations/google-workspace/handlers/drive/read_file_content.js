@@ -86,6 +86,7 @@ async (input) => {
   const extracted = await utils.extractFileContent({
     auth: true,
     source,
+    previewPages: input.previewPages || 0,
   })
 
   return {

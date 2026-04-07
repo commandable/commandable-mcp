@@ -7,7 +7,7 @@ import type { IntegrationData } from '../types.js'
 import { EXTRACT_FILE_PY, EXTRACT_FILE_PY_HASH } from './generated-extractor.js'
 
 const execFile = promisify(execFileCb)
-const INSTALL_COMMAND = 'pip3 install markitdown[all]'
+const INSTALL_COMMAND = 'pip3 install markitdown[all] pymupdf'
 const DOCKER_HINT = 'Run Commandable with Docker to use the preinstalled extraction runtime.'
 
 let cachedScriptPath: string | null = null

@@ -14,6 +14,12 @@
     "mimeType": {
       "type": "string",
       "description": "Optional MIME type from get_drive_item_meta or search_files."
+    },
+    "previewPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of pages to render as images and return alongside the text (PDF only). Omit or set to 0 to skip. Useful for visually checking signatures, logos, or layout."
     }
   },
   "additionalProperties": false
