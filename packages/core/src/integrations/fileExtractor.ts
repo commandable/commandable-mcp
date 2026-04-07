@@ -17,6 +17,7 @@ export interface ExtractFileContentArgs {
   auth: boolean
   source: string
   integration?: string
+  previewPages?: number
 }
 
 export interface ExtractedFileContent {
@@ -24,6 +25,7 @@ export interface ExtractedFileContent {
   content: string
   warnings?: string[]
   metadata?: Record<string, unknown>
+  pageImages?: string[]
 }
 
 function isAbsoluteHttpUrl(value: string): boolean {
@@ -162,10 +164,17 @@ export function createExtractFileContent(
       const bytes = Buffer.from(await response.arrayBuffer())
       await writeFile(filePath, bytes)
 
+      const pythonArgs = [extractorScriptPath(), '--input', filePath, '--output', outputPath]
+      const previewPages = typeof resolvedArgs.previewPages === 'number' && resolvedArgs.previewPages > 0
+        ? Math.floor(resolvedArgs.previewPages)
+        : 0
+      if (previewPages > 0)
+        pythonArgs.push('--preview-pages', String(previewPages))
+
       await execFile(
         pythonExecutable(),
-        [extractorScriptPath(), '--input', filePath, '--output', outputPath],
-        { cwd: tempDir, maxBuffer: 10 * 1024 * 1024 },
+        pythonArgs,
+        { cwd: tempDir, maxBuffer: 50 * 1024 * 1024 },
       )
 
       const raw = await readFile(outputPath, 'utf8')
@@ -175,6 +184,7 @@ export function createExtractFileContent(
         content: typeof parsed?.content === 'string' ? parsed.content : '',
         warnings: Array.isArray(parsed?.warnings) ? parsed.warnings.map((item: unknown) => String(item)) : undefined,
         metadata: parsed?.metadata && typeof parsed.metadata === 'object' ? parsed.metadata as Record<string, unknown> : undefined,
+        pageImages: Array.isArray(parsed?.pageImages) ? parsed.pageImages.filter((v: unknown) => typeof v === 'string') : undefined,
       }
     }
     catch (error: any) {

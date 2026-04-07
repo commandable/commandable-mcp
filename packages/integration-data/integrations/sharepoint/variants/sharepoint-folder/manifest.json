@@ -1,0 +1,68 @@
+{
+  "type": "sharepoint-folder",
+  "variantLabel": "Single folder",
+  "variantConfig": [
+    {
+      "key": "site",
+      "label": "Site",
+      "selectionMode": "single",
+      "listHandler": "async (config) => {\n  const res = await integration.fetch('/sites?search=*&$select=id,displayName,name&$top=50')\n  const data = await res.json()\n  if (!Array.isArray(data?.value)) return []\n  return data.value\n    .map(site => ({ id: site.id, name: site.displayName || site.name || site.id }))\n    .filter(s => s.id && s.name)\n}"
+    },
+    {
+      "key": "drive",
+      "label": "Document library",
+      "selectionMode": "single",
+      "listHandler": "async (config) => {\n  if (!config.siteId) return []\n  const res = await integration.fetch(`/sites/${encodeURIComponent(config.siteId)}/drives?$select=id,name,driveType,system`)\n  const data = await res.json()\n  if (!Array.isArray(data?.value)) return []\n  return data.value\n    .filter(d => !d.system)\n    .map(d => ({ id: d.id, name: d.name || d.id }))\n    .filter(d => d.id && d.name)\n}"
+    },
+    {
+      "key": "folder",
+      "label": "Folder",
+      "selectionMode": "single",
+      "listHandler": "async (config) => {\n  if (!config.driveId) return []\n  const res = await integration.fetch(`/drives/${encodeURIComponent(config.driveId)}/root/children?$select=id,name,folder&$top=100`)\n  const data = await res.json()\n  if (!Array.isArray(data?.value)) return []\n  return data.value\n    .filter(item => item.folder)\n    .map(item => ({ id: item.id, name: item.name || item.id }))\n    .filter(item => item.id && item.name)\n}"
+    }
+  ],
+  "tools": [
+    {
+      "name": "list_folder",
+      "from": "list_drive_children",
+      "description": "List files and folders inside the connected SharePoint folder.",
+      "injectFromConfig": { "driveId": "driveId", "itemId": "folderId" }
+    },
+    {
+      "name": "browse_folder",
+      "from": "list_drive_children",
+      "description": "List files and folders inside a sub-folder by item ID. Use list_folder first to discover sub-folder IDs.",
+      "injectFromConfig": { "driveId": "driveId" }
+    },
+    {
+      "name": "get_drive_item_meta",
+      "description": "Get metadata for a file or folder by item ID.",
+      "injectFromConfig": { "driveId": "driveId" }
+    },
+    {
+      "name": "search_files",
+      "description": "Search files within the connected document library. KQL syntax is supported.",
+      "injectFromConfig": { "siteId": "siteId", "driveId": "driveId" }
+    },
+    {
+      "name": "read_file_content",
+      "description": "Read a file's contents. Provide the file item ID. Use list_folder or search_files to discover file IDs.",
+      "injectFromConfig": { "driveId": "driveId" }
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a new sub-folder inside the connected folder. Omit parentItemId to create directly inside the connected folder.",
+      "injectFromConfig": { "driveId": "driveId", "parentItemId": "folderId" }
+    },
+    {
+      "name": "move_drive_item",
+      "description": "Move a file or folder to a different parent folder within the document library.",
+      "injectFromConfig": { "driveId": "driveId" }
+    },
+    {
+      "name": "delete_drive_item",
+      "description": "Delete a file or folder by item ID.",
+      "injectFromConfig": { "driveId": "driveId" }
+    }
+  ]
+}

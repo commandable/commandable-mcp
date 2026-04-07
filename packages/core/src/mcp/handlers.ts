@@ -25,6 +25,18 @@ function formatAsText(value: any): string {
   }
 }
 
+function extractPageImages(result: any): { cleaned: any, images: string[] } {
+  if (!result || typeof result !== 'object' || Array.isArray(result))
+    return { cleaned: result, images: [] }
+  const images = Array.isArray(result.pageImages)
+    ? result.pageImages.filter((v: unknown) => typeof v === 'string')
+    : []
+  if (!images.length)
+    return { cleaned: result, images: [] }
+  const { pageImages: _dropped, ...rest } = result
+  return { cleaned: rest, images }
+}
+
 export function registerToolHandlers(
   server: Server,
   tools: ToolIndex,
@@ -96,9 +108,11 @@ export function registerToolHandlers(
         }
       }
 
+      const { cleaned, images } = extractPageImages(res.result)
       return {
         content: [
-          { type: 'text', text: formatAsText(res.result) },
+          { type: 'text', text: formatAsText(cleaned) },
+          ...images.map(data => ({ type: 'image' as const, data, mimeType: 'image/jpeg' })),
           ...(res.logs?.length ? [{ type: 'text', text: `Logs:\n${res.logs.join('\n')}` }] : []),
         ],
       }

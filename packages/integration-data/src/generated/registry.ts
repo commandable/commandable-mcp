@@ -5879,11 +5879,17 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             "mimeType": {
               "type": "string",
               "description": "Optional Drive MIME type from get_file_meta or search_files."
+            },
+            "previewPages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Number of pages to render as images and return alongside the text (PDF only). Omit or set to 0 to skip. Useful for visually checking signatures, logos, or layout."
             }
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const googleNativeExports = {\n    'application/vnd.google-apps.document': 'text/markdown',\n    'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n    'application/vnd.google-apps.presentation': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',\n    'application/vnd.google-apps.drawing': 'image/svg+xml',\n    'application/vnd.google-apps.script': 'application/vnd.google-apps.script+json',\n  }\n  const isTextLikeMimeType = (value) => {\n    const mimeType = String(value || '').split(';', 1)[0].trim().toLowerCase()\n    return mimeType.startsWith('text/')\n      || mimeType.includes('json')\n      || mimeType.includes('csv')\n      || mimeType === 'application/xml'\n      || mimeType === 'text/xml'\n      || mimeType.endsWith('+xml')\n      || mimeType.includes('javascript')\n      || mimeType.includes('svg')\n  }\n  const resolveMimeType = async () => {\n    if (typeof input.mimeType === 'string' && input.mimeType.trim())\n      return input.mimeType.trim()\n\n    const metaRes = await integration.fetch(`/files/${fileId}?fields=id,name,mimeType`)\n    const meta = await metaRes.json()\n    return meta?.mimeType || ''\n  }\n  const readTextContent = async (source) => {\n    const res = await integration.fetch(source)\n    const contentMimeType = res.headers?.get?.('content-type') || ''\n    const content = await res.text()\n    return { contentMimeType, content }\n  }\n\n  const fileId = encodeURIComponent(input.fileId)\n  const mimeType = await resolveMimeType()\n\n  if (!mimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType: null,\n      content: null,\n      message: 'Could not determine the Drive file MIME type.',\n    }\n  }\n\n  if (mimeType === 'application/vnd.google-apps.folder') {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const isGoogleNative = mimeType.startsWith('application/vnd.google-apps.')\n  const exportMimeType = isGoogleNative\n    ? (typeof input.exportMimeType === 'string' && input.exportMimeType.trim())\n        ? input.exportMimeType.trim()\n        : googleNativeExports[mimeType] || null\n    : null\n\n  if (isGoogleNative && !exportMimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'This Google-native file type does not have a configured export path for read_file_content.',\n    }\n  }\n\n  const source = isGoogleNative\n    ? `/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`\n    : `/files/${fileId}?alt=media`\n\n  if (isTextLikeMimeType(exportMimeType || mimeType)) {\n    const textResult = await readTextContent(source)\n    return {\n      fileId: input.fileId,\n      mimeType,\n      contentMimeType: textResult.contentMimeType || exportMimeType || mimeType,\n      content: textResult.content,\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    source,\n  })\n\n  return {\n    fileId: input.fileId,\n    mimeType,\n    contentMimeType: exportMimeType || mimeType,\n    ...extracted,\n  }\n}",
+        "handlerCode": "async (input) => {\n  const googleNativeExports = {\n    'application/vnd.google-apps.document': 'text/markdown',\n    'application/vnd.google-apps.spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n    'application/vnd.google-apps.presentation': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',\n    'application/vnd.google-apps.drawing': 'image/svg+xml',\n    'application/vnd.google-apps.script': 'application/vnd.google-apps.script+json',\n  }\n  const isTextLikeMimeType = (value) => {\n    const mimeType = String(value || '').split(';', 1)[0].trim().toLowerCase()\n    return mimeType.startsWith('text/')\n      || mimeType.includes('json')\n      || mimeType.includes('csv')\n      || mimeType === 'application/xml'\n      || mimeType === 'text/xml'\n      || mimeType.endsWith('+xml')\n      || mimeType.includes('javascript')\n      || mimeType.includes('svg')\n  }\n  const resolveMimeType = async () => {\n    if (typeof input.mimeType === 'string' && input.mimeType.trim())\n      return input.mimeType.trim()\n\n    const metaRes = await integration.fetch(`/files/${fileId}?fields=id,name,mimeType`)\n    const meta = await metaRes.json()\n    return meta?.mimeType || ''\n  }\n  const readTextContent = async (source) => {\n    const res = await integration.fetch(source)\n    const contentMimeType = res.headers?.get?.('content-type') || ''\n    const content = await res.text()\n    return { contentMimeType, content }\n  }\n\n  const fileId = encodeURIComponent(input.fileId)\n  const mimeType = await resolveMimeType()\n\n  if (!mimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType: null,\n      content: null,\n      message: 'Could not determine the Drive file MIME type.',\n    }\n  }\n\n  if (mimeType === 'application/vnd.google-apps.folder') {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const isGoogleNative = mimeType.startsWith('application/vnd.google-apps.')\n  const exportMimeType = isGoogleNative\n    ? (typeof input.exportMimeType === 'string' && input.exportMimeType.trim())\n        ? input.exportMimeType.trim()\n        : googleNativeExports[mimeType] || null\n    : null\n\n  if (isGoogleNative && !exportMimeType) {\n    return {\n      fileId: input.fileId,\n      mimeType,\n      content: null,\n      message: 'This Google-native file type does not have a configured export path for read_file_content.',\n    }\n  }\n\n  const source = isGoogleNative\n    ? `/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`\n    : `/files/${fileId}?alt=media`\n\n  if (isTextLikeMimeType(exportMimeType || mimeType)) {\n    const textResult = await readTextContent(source)\n    return {\n      fileId: input.fileId,\n      mimeType,\n      contentMimeType: textResult.contentMimeType || exportMimeType || mimeType,\n      content: textResult.content,\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    source,\n    previewPages: input.previewPages || 0,\n  })\n\n  return {\n    fileId: input.fileId,\n    mimeType,\n    contentMimeType: exportMimeType || mimeType,\n    ...extracted,\n  }\n}",
         "scope": "read",
         "toolset": "drive"
       },
@@ -11250,11 +11256,17 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             "mimeType": {
               "type": "string",
               "description": "Optional MIME type from get_drive_item_meta or search_files."
+            },
+            "previewPages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Number of pages to render as images and return alongside the text (PDF only). Omit or set to 0 to skip. Useful for visually checking signatures, logos, or layout."
             }
           },
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,parentReference,file,folder,package',\n  )\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)\n  const item = await res.json()\n  const mimeType = input.mimeType || item?.file?.mimeType || null\n\n  if (item?.folder || item?.package) {\n    return {\n      driveId: input.driveId,\n      itemId: input.itemId,\n      name: item?.name || null,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    source: `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/content`,\n  })\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId,\n    name: item?.name || null,\n    webUrl: item?.webUrl || null,\n    mimeType,\n    ...extracted,\n  }\n}",
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,parentReference,file,folder,package',\n  )\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)\n  const item = await res.json()\n  const mimeType = input.mimeType || item?.file?.mimeType || null\n\n  if (item?.folder || item?.package) {\n    return {\n      driveId: input.driveId,\n      itemId: input.itemId,\n      name: item?.name || null,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    source: `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/content`,\n    previewPages: input.previewPages || 0,\n  })\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId,\n    name: item?.name || null,\n    webUrl: item?.webUrl || null,\n    mimeType,\n    ...extracted,\n  }\n}",
         "scope": "read"
       },
       {
@@ -11356,6 +11368,466 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       }
     ],
     "variantOwnerType": null
+  },
+  "sharepoint-folder": {
+    "manifest": {
+      "name": "sharepoint",
+      "version": "0.1.0",
+      "baseUrl": "https://graph.microsoft.com/v1.0",
+      "variantLabel": "Single folder",
+      "variantConfig": [
+        {
+          "key": "site",
+          "label": "Site",
+          "selectionMode": "single",
+          "listHandler": "async (config) => {\n  const res = await integration.fetch('/sites?search=*&$select=id,displayName,name&$top=50')\n  const data = await res.json()\n  if (!Array.isArray(data?.value)) return []\n  return data.value\n    .map(site => ({ id: site.id, name: site.displayName || site.name || site.id }))\n    .filter(s => s.id && s.name)\n}"
+        },
+        {
+          "key": "drive",
+          "label": "Document library",
+          "selectionMode": "single",
+          "listHandler": "async (config) => {\n  if (!config.siteId) return []\n  const res = await integration.fetch(`/sites/${encodeURIComponent(config.siteId)}/drives?$select=id,name,driveType,system`)\n  const data = await res.json()\n  if (!Array.isArray(data?.value)) return []\n  return data.value\n    .filter(d => !d.system)\n    .map(d => ({ id: d.id, name: d.name || d.id }))\n    .filter(d => d.id && d.name)\n}"
+        },
+        {
+          "key": "folder",
+          "label": "Folder",
+          "selectionMode": "single",
+          "listHandler": "async (config) => {\n  if (!config.driveId) return []\n  const res = await integration.fetch(`/drives/${encodeURIComponent(config.driveId)}/root/children?$select=id,name,folder&$top=100`)\n  const data = await res.json()\n  if (!Array.isArray(data?.value)) return []\n  return data.value\n    .filter(item => item.folder)\n    .map(item => ({ id: item.id, name: item.name || item.id }))\n    .filter(item => item.id && item.name)\n}"
+        }
+      ],
+      "tools": [
+        {
+          "name": "list_folder",
+          "description": "List files and folders inside the connected SharePoint folder.",
+          "inputSchema": "../../schemas/list_drive_children.json",
+          "handler": "../../handlers/list_drive_children.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "driveId": "driveId",
+            "itemId": "folderId"
+          }
+        },
+        {
+          "name": "browse_folder",
+          "description": "List files and folders inside a sub-folder by item ID. Use list_folder first to discover sub-folder IDs.",
+          "inputSchema": "../../schemas/list_drive_children.json",
+          "handler": "../../handlers/list_drive_children.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "driveId": "driveId"
+          }
+        },
+        {
+          "name": "get_drive_item_meta",
+          "description": "Get metadata for a file or folder by item ID.",
+          "inputSchema": "../../schemas/get_drive_item.json",
+          "handler": "../../handlers/get_drive_item.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "driveId": "driveId"
+          }
+        },
+        {
+          "name": "search_files",
+          "description": "Search files within the connected document library. KQL syntax is supported.",
+          "inputSchema": "../../schemas/search_files.json",
+          "handler": "../../handlers/search_files.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "siteId": "siteId",
+            "driveId": "driveId"
+          }
+        },
+        {
+          "name": "read_file_content",
+          "description": "Read a file's contents. Provide the file item ID. Use list_folder or search_files to discover file IDs.",
+          "inputSchema": "../../schemas/read_file_content.json",
+          "handler": "../../handlers/read_file_content.js",
+          "scope": "read",
+          "injectFromConfig": {
+            "driveId": "driveId"
+          }
+        },
+        {
+          "name": "create_folder",
+          "description": "Create a new sub-folder inside the connected folder. Omit parentItemId to create directly inside the connected folder.",
+          "inputSchema": "../../schemas/create_folder.json",
+          "handler": "../../handlers/create_folder.js",
+          "scope": "write",
+          "injectFromConfig": {
+            "driveId": "driveId",
+            "parentItemId": "folderId"
+          }
+        },
+        {
+          "name": "move_drive_item",
+          "description": "Move a file or folder to a different parent folder within the document library.",
+          "inputSchema": "../../schemas/move_drive_item.json",
+          "handler": "../../handlers/move_drive_item.js",
+          "scope": "write",
+          "injectFromConfig": {
+            "driveId": "driveId"
+          }
+        },
+        {
+          "name": "delete_drive_item",
+          "description": "Delete a file or folder by item ID.",
+          "inputSchema": "../../schemas/delete_drive_item.json",
+          "handler": "../../handlers/delete_drive_item.js",
+          "scope": "write",
+          "injectFromConfig": {
+            "driveId": "driveId"
+          }
+        }
+      ]
+    },
+    "prompt": "Use this integration for SharePoint document libraries and files.\n\nRecommended workflow:\n\n1. If you know the SharePoint hostname and path, start with `get_site_by_path`.\n2. Otherwise use `search_sites` to discover the correct site.\n3. Use `list_site_drives` to find the relevant document library for that site.\n4. Use `list_drive_children` for deterministic folder browsing or `search_files` for broader file discovery.\n5. Use `get_drive_item_meta` when you need compact metadata for a specific file or folder.\n6. Use `read_file_content` to consume the actual contents of a file in agent-friendly text.\n\nNotes:\n\n- `search_files` uses Microsoft Graph search. The `query` field accepts normal keywords and Graph KQL syntax.\n- `siteId` and `driveId` filters on `search_files` are applied to the flattened search results after Graph returns them.\n- `read_file_content` is for files only. Folders do not have readable file content.\n- This v1 integration is intentionally focused on SharePoint sites, document libraries, folders, and files. It does not include classic SharePoint list/list-item tools or file upload.\n",
+    "variants": {
+      "variants": {
+        "app_credentials": {
+          "label": "Microsoft Graph App Credentials",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "tenantId": {
+                "type": "string",
+                "title": "Tenant ID",
+                "description": "Microsoft Entra tenant ID (GUID) that owns the SharePoint tenant."
+              },
+              "clientId": {
+                "type": "string",
+                "title": "Client ID",
+                "description": "Application (client) ID of the Microsoft Entra app registration."
+              },
+              "clientSecret": {
+                "type": "string",
+                "title": "Client Secret",
+                "description": "Client secret value for the Microsoft Entra app registration.",
+                "format": "password"
+              }
+            },
+            "required": [
+              "tenantId",
+              "clientId",
+              "clientSecret"
+            ],
+            "additionalProperties": false
+          },
+          "preprocess": {
+            "type": "handler",
+            "handlerCode": "async (creds, utils) => {\n  const tenantId = String(creds?.tenantId || '').trim()\n  const clientId = String(creds?.clientId || '').trim()\n  const clientSecret = String(creds?.clientSecret || '').trim()\n\n  if (!tenantId)\n    throw new Error('Missing tenantId')\n  if (!clientId)\n    throw new Error('Missing clientId')\n  if (!clientSecret)\n    throw new Error('Missing clientSecret')\n\n  const response = await utils.tokenFetch(\n    `https://login.microsoftonline.com/${encodeURIComponent(tenantId)}/oauth2/v2.0/token`,\n    {\n      method: 'POST',\n      body: new URLSearchParams({\n        grant_type: 'client_credentials',\n        client_id: clientId,\n        client_secret: clientSecret,\n        scope: 'https://graph.microsoft.com/.default',\n      }),\n    },\n  )\n\n  const data = await response.json()\n  if (!response.ok) {\n    const message = typeof data?.error_description === 'string'\n      ? data.error_description\n      : (typeof data?.error === 'string' ? data.error : `Token request failed with status ${response.status}`)\n    throw new Error(message)\n  }\n\n  const token = typeof data?.access_token === 'string' ? data.access_token : ''\n  if (!token)\n    throw new Error('Microsoft token response did not include access_token')\n\n  return {\n    token,\n    expiresIn: data?.expires_in,\n  }\n}",
+            "allowedOrigins": [
+              "https://login.microsoftonline.com"
+            ]
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          },
+          "healthCheck": {
+            "notViable": true
+          }
+        }
+      },
+      "default": "app_credentials"
+    },
+    "hint": "1. Create or use a Microsoft Entra app registration for Microsoft Graph at https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade\n2. Create a client secret for that app and copy the **tenant ID**, **client ID**, and **client secret value**.\n3. In Microsoft Graph **Application permissions**, grant at least `Sites.Read.All` and `Files.Read.All`.\n4. If you intend to use write actions such as folder creation, moves, and deletes, also grant `Sites.ReadWrite.All` and `Files.ReadWrite.All`.\n5. Grant admin consent for those application permissions in the tenant.\n6. Paste the tenant ID, client ID, and client secret into this integration. The integration exchanges them for short-lived Microsoft Graph access tokens automatically.",
+    "hintsByVariant": {},
+    "tools": [
+      {
+        "name": "list_folder",
+        "description": "List files and folders inside the connected SharePoint folder.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Optional folder item ID. Omit to list the drive root."
+            },
+            "top": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum number of children to return."
+            },
+            "orderBy": {
+              "type": "string",
+              "description": "Optional Microsoft Graph orderBy expression, such as name or lastModifiedDateTime desc."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const flattenItem = item => ({\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    eTag: item.eTag || null,\n    cTag: item.cTag || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  })\n\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,eTag,cTag,parentReference,file,folder,package',\n  )\n  if (input.top)\n    params.set('$top', String(input.top))\n  if (input.orderBy)\n    params.set('$orderby', input.orderBy)\n\n  const basePath = input.itemId\n    ? `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/children`\n    : `/drives/${encodeURIComponent(input.driveId)}/root/children`\n\n  const res = await integration.fetch(`${basePath}?${params.toString()}`)\n  const data = await res.json()\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId || null,\n    children: Array.isArray(data?.value) ? data.value.map(flattenItem) : [],\n    nextLink: data?.['@odata.nextLink'] || null,\n  }\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "driveId": "driveId",
+          "itemId": "folderId"
+        }
+      },
+      {
+        "name": "browse_folder",
+        "description": "List files and folders inside a sub-folder by item ID. Use list_folder first to discover sub-folder IDs.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Optional folder item ID. Omit to list the drive root."
+            },
+            "top": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Maximum number of children to return."
+            },
+            "orderBy": {
+              "type": "string",
+              "description": "Optional Microsoft Graph orderBy expression, such as name or lastModifiedDateTime desc."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const flattenItem = item => ({\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    eTag: item.eTag || null,\n    cTag: item.cTag || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  })\n\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,eTag,cTag,parentReference,file,folder,package',\n  )\n  if (input.top)\n    params.set('$top', String(input.top))\n  if (input.orderBy)\n    params.set('$orderby', input.orderBy)\n\n  const basePath = input.itemId\n    ? `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/children`\n    : `/drives/${encodeURIComponent(input.driveId)}/root/children`\n\n  const res = await integration.fetch(`${basePath}?${params.toString()}`)\n  const data = await res.json()\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId || null,\n    children: Array.isArray(data?.value) ? data.value.map(flattenItem) : [],\n    nextLink: data?.['@odata.nextLink'] || null,\n  }\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "driveId": "driveId"
+        }
+      },
+      {
+        "name": "get_drive_item_meta",
+        "description": "Get metadata for a file or folder by item ID.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file or folder."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const flattenItem = item => ({\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    eTag: item.eTag || null,\n    cTag: item.cTag || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  })\n\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,eTag,cTag,parentReference,file,folder,package',\n  )\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)\n  return flattenItem(await res.json())\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "driveId": "driveId"
+        }
+      },
+      {
+        "name": "search_files",
+        "description": "Search files within the connected document library. KQL syntax is supported.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "query"
+          ],
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search query string. Microsoft Graph KQL syntax is supported."
+            },
+            "siteId": {
+              "type": "string",
+              "description": "Optional site ID to keep only hits from a specific SharePoint site."
+            },
+            "driveId": {
+              "type": "string",
+              "description": "Optional drive ID to keep only hits from a specific document library."
+            },
+            "from": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset into the Graph search results."
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Maximum number of hits to request from Graph."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const extractFallbackRegion = (error) => {\n    const texts = [error?.data?.body, error?.message].filter(s => typeof s === 'string')\n    for (const text of texts) {\n      const match = text.match(/Only valid regions are ([A-Z,\\s]+)/i)\n      const region = match?.[1]?.split(',').map(r => r.trim().toUpperCase()).filter(Boolean)[0]\n      if (region)\n        return region\n    }\n    return null\n  }\n\n  const runSearch = async (region) => {\n    const res = await integration.fetch('/search/query', {\n      method: 'POST',\n      body: {\n        requests: [{\n          entityTypes: ['driveItem'],\n          query: { queryString: input.query },\n          from: typeof input.from === 'number' ? input.from : 0,\n          size: typeof input.size === 'number' ? input.size : 25,\n          region,\n        }],\n      },\n    })\n    return res.json()\n  }\n\n  const flattenHit = (hit) => {\n    const resource = hit?.resource || {}\n    const parentReference = resource.parentReference || {}\n    return {\n      id: resource.id || hit?.hitId || null,\n      name: resource.name || null,\n      webUrl: resource.webUrl || null,\n      summary: hit?.summary || '',\n      rank: hit?.rank ?? null,\n      createdDateTime: resource.createdDateTime || null,\n      lastModifiedDateTime: resource.lastModifiedDateTime || null,\n      mimeType: resource.file?.mimeType || null,\n      size: resource.size ?? null,\n      isFolder: Boolean(resource.folder || resource.package),\n      isFile: Boolean(resource.file),\n      driveId: parentReference.driveId || null,\n      siteId: parentReference.siteId || null,\n      parentReference,\n    }\n  }\n\n  let data\n  try {\n    data = await runSearch('NAM')\n  }\n  catch (error) {\n    const fallback = extractFallbackRegion(error)\n    if (!fallback)\n      throw error\n    data = await runSearch(fallback)\n  }\n\n  const container = data?.value?.[0]?.hitsContainers?.[0]\n  const allHits = Array.isArray(container?.hits) ? container.hits.map(flattenHit) : []\n  const hits = allHits.filter((hit) => {\n    if (input.siteId && hit.siteId !== input.siteId)\n      return false\n    if (input.driveId && hit.driveId !== input.driveId)\n      return false\n    return true\n  })\n\n  return {\n    query: input.query,\n    hits,\n    total: container?.total ?? hits.length,\n    moreResultsAvailable: Boolean(container?.moreResultsAvailable),\n  }\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "siteId": "siteId",
+          "driveId": "driveId"
+        }
+      },
+      {
+        "name": "read_file_content",
+        "description": "Read a file's contents. Provide the file item ID. Use list_folder or search_files to discover file IDs.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file."
+            },
+            "mimeType": {
+              "type": "string",
+              "description": "Optional MIME type from get_drive_item_meta or search_files."
+            },
+            "previewPages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Number of pages to render as images and return alongside the text (PDF only). Omit or set to 0 to skip. Useful for visually checking signatures, logos, or layout."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set(\n    '$select',\n    'id,name,webUrl,size,createdDateTime,lastModifiedDateTime,parentReference,file,folder,package',\n  )\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}?${params.toString()}`)\n  const item = await res.json()\n  const mimeType = input.mimeType || item?.file?.mimeType || null\n\n  if (item?.folder || item?.package) {\n    return {\n      driveId: input.driveId,\n      itemId: input.itemId,\n      name: item?.name || null,\n      mimeType,\n      content: null,\n      message: 'Folders do not have readable file content.',\n    }\n  }\n\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    source: `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/content`,\n    previewPages: input.previewPages || 0,\n  })\n\n  return {\n    driveId: input.driveId,\n    itemId: input.itemId,\n    name: item?.name || null,\n    webUrl: item?.webUrl || null,\n    mimeType,\n    ...extracted,\n  }\n}",
+        "scope": "read",
+        "injectFromConfig": {
+          "driveId": "driveId"
+        }
+      },
+      {
+        "name": "create_folder",
+        "description": "Create a new sub-folder inside the connected folder. Omit parentItemId to create directly inside the connected folder.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "name"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "name": {
+              "type": "string",
+              "description": "Folder name to create."
+            },
+            "parentItemId": {
+              "type": "string",
+              "description": "Optional parent folder item ID. Omit to create in the drive root."
+            },
+            "conflictBehavior": {
+              "type": "string",
+              "enum": [
+                "rename",
+                "replace",
+                "fail"
+              ],
+              "description": "How Graph should handle name conflicts. Defaults to rename."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const path = input.parentItemId\n    ? `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.parentItemId)}/children`\n    : `/drives/${encodeURIComponent(input.driveId)}/root/children`\n\n  const res = await integration.fetch(path, {\n    method: 'POST',\n    body: {\n      name: input.name,\n      folder: {},\n      '@microsoft.graph.conflictBehavior': input.conflictBehavior || 'rename',\n    },\n  })\n  const item = await res.json()\n  return {\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  }\n}",
+        "scope": "write",
+        "injectFromConfig": {
+          "driveId": "driveId",
+          "parentItemId": "folderId"
+        }
+      },
+      {
+        "name": "move_drive_item",
+        "description": "Move a file or folder to a different parent folder within the document library.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId",
+            "destinationParentId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file or folder to move."
+            },
+            "destinationParentId": {
+              "type": "string",
+              "description": "Destination folder item ID."
+            },
+            "newName": {
+              "type": "string",
+              "description": "Optional new item name to apply during the move."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const body = {\n    parentReference: {\n      id: input.destinationParentId,\n    },\n  }\n  if (input.newName)\n    body.name = input.newName\n\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}`, {\n    method: 'PATCH',\n    body,\n  })\n  const item = await res.json()\n  return {\n    id: item.id,\n    name: item.name || null,\n    webUrl: item.webUrl || null,\n    size: item.size ?? null,\n    createdDateTime: item.createdDateTime || null,\n    lastModifiedDateTime: item.lastModifiedDateTime || null,\n    mimeType: item.file?.mimeType || null,\n    isFolder: Boolean(item.folder || item.package),\n    isFile: Boolean(item.file),\n    childCount: item.folder?.childCount ?? null,\n    parentReference: item.parentReference || null,\n  }\n}",
+        "scope": "write",
+        "injectFromConfig": {
+          "driveId": "driveId"
+        }
+      },
+      {
+        "name": "delete_drive_item",
+        "description": "Delete a file or folder by item ID.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "required": [
+            "driveId",
+            "itemId"
+          ],
+          "properties": {
+            "driveId": {
+              "type": "string",
+              "description": "Document library drive ID."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Drive item ID for the file or folder to delete."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.fetch(`/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}`, {\n    method: 'DELETE',\n  })\n  if (res.status === 204)\n    return { success: true, status: 204 }\n  try {\n    return await res.json()\n  }\n  catch {\n    return { success: res.ok, status: res.status }\n  }\n}",
+        "scope": "write",
+        "injectFromConfig": {
+          "driveId": "driveId"
+        }
+      }
+    ],
+    "variantOwnerType": "sharepoint"
   },
   "trello": {
     "manifest": {

@@ -22,6 +22,7 @@ async (input) => {
   const extracted = await utils.extractFileContent({
     auth: true,
     source: `/drives/${encodeURIComponent(input.driveId)}/items/${encodeURIComponent(input.itemId)}/content`,
+    previewPages: input.previewPages || 0,
   })
 
   return {

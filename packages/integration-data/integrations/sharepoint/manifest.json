@@ -2,6 +2,12 @@
   "name": "sharepoint",
   "version": "0.1.0",
   "baseUrl": "https://graph.microsoft.com/v1.0",
+  "variants": [
+    {
+      "type": "sharepoint-folder",
+      "manifest": "variants/sharepoint-folder/manifest.json"
+    }
+  ],
   "tools": [
     {
       "name": "search_sites",
