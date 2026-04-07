@@ -2,6 +2,8 @@
 import argparse
 import base64
 import csv
+import email
+import email.policy
 import html
 import json
 import mimetypes
@@ -16,6 +18,12 @@ try:
     _FITZ_AVAILABLE = True
 except ImportError:
     _FITZ_AVAILABLE = False
+
+try:
+    import extract_msg as _extract_msg
+    _EXTRACT_MSG_AVAILABLE = True
+except ImportError:
+    _EXTRACT_MSG_AVAILABLE = False
 
 
 def collapse_whitespace(value: str) -> str:
@@ -61,6 +69,12 @@ def sniff_kind(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix in DIRECT_TEXT_EXTENSIONS | MARKITDOWN_EXTENSIONS:
         return suffix.lstrip(".")
+    if suffix == ".msg":
+        return "msg"
+    if suffix == ".eml":
+        return "eml"
+    if suffix == ".zip":
+        return "zip"
 
     mime_guess, _ = mimetypes.guess_type(path.name)
     if mime_guess == "application/pdf":
@@ -80,6 +94,7 @@ def sniff_kind(path: Path) -> str:
                 return "xlsx"
             if "ppt/presentation.xml" in names:
                 return "pptx"
+        return "zip"
 
     return "unknown"
 
@@ -212,6 +227,278 @@ def read_csv_file(path: Path) -> dict:
         "warnings": warnings or None,
         "metadata": {"filename": path.name, "rowCount": len(body), "columnCount": header_width},
     }
+
+
+def _strip_html_to_text(raw_html: str) -> str:
+    """Strip HTML to plain text, removing style/script blocks first."""
+    text = re.sub(r"<style[^>]*>[\s\S]*?</style>", " ", raw_html, flags=re.IGNORECASE)
+    text = re.sub(r"<script[^>]*>[\s\S]*?</script>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</(p|div|li|tr|h[1-6])>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def read_msg(path: Path) -> dict:
+    import tempfile as _tempfile
+
+    if not _EXTRACT_MSG_AVAILABLE:
+        raise RuntimeError(
+            f"extract-msg is not installed; cannot read {path.name}. "
+            "Install with: pip install extract-msg"
+        )
+
+    try:
+        msg = _extract_msg.openMsg(str(path))
+    except Exception as exc:
+        raise RuntimeError(f"MSG extraction failed for {path.name}: {exc}") from exc
+
+    try:
+        subject = (msg.subject or "").strip() or None
+        sender = (msg.sender or "").strip() or None
+        to = (msg.to or "").strip() or None
+        cc = (msg.cc or "").strip() or None
+        date = str(msg.date).strip() if msg.date else None
+        body = (msg.body or "").strip()
+
+        # Fall back to HTML body stripped to plain text when no plain-text body.
+        if not body:
+            raw_html = getattr(msg, "htmlBody", None) or b""
+            if isinstance(raw_html, bytes):
+                raw_html = raw_html.decode("utf-8", errors="replace")
+            if raw_html:
+                body = _strip_html_to_text(raw_html)
+
+        blocks = []
+        if subject:
+            blocks.append(f"# {subject}")
+        header_lines = []
+        if sender:
+            header_lines.append(f"From: {sender}")
+        if to:
+            header_lines.append(f"To: {to}")
+        if cc:
+            header_lines.append(f"Cc: {cc}")
+        if date:
+            header_lines.append(f"Date: {date}")
+        if header_lines:
+            blocks.append("\n".join(header_lines))
+        if body:
+            blocks.append(body)
+
+        attachments = list(msg.attachments or [])
+        att_names = []
+        warnings = []
+
+        with _tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            for i, att in enumerate(attachments):
+                att_name = (
+                    getattr(att, "longFilename", None)
+                    or getattr(att, "shortFilename", None)
+                    or ""
+                ).strip() or "attachment"
+                att_names.append(att_name)
+                try:
+                    att_path = None
+
+                    # Primary: use save() — handles all attachment types including
+                    # OLE embedded objects where .data returns None.
+                    att_dir = tmp_path / f"att_{i}"
+                    att_dir.mkdir()
+                    try:
+                        att.save(customPath=str(att_dir))
+                        saved = list(att_dir.iterdir())
+                        if saved:
+                            att_path = saved[0]
+                    except Exception:
+                        pass
+
+                    # Fallback: direct .data bytes.
+                    if att_path is None:
+                        data = att.data
+                        if data is None:
+                            warnings.append(f"Attachment '{att_name}' has no data.")
+                            continue
+                        att_path = att_dir / att_name
+                        att_path.write_bytes(data)
+
+                    inner = extract(att_path)
+                    inner_content = (inner.get("content") or "").strip()
+                    if inner_content:
+                        blocks.append(f"## Attachment: {att_name}\n\n{inner_content}")
+                except Exception as exc:
+                    warnings.append(f"Could not extract attachment '{att_name}': {exc}")
+
+        content = join_blocks(blocks)
+        metadata: dict = {"filename": path.name, "attachmentCount": len(attachments)}
+        if subject:
+            metadata["subject"] = subject
+        if sender:
+            metadata["sender"] = sender
+        if to:
+            metadata["to"] = to
+        if cc:
+            metadata["cc"] = cc
+        if date:
+            metadata["date"] = date
+        if att_names:
+            metadata["attachmentNames"] = att_names
+
+        result: dict = {"kind": "msg", "content": content, "metadata": metadata}
+        if warnings:
+            result["warnings"] = warnings
+        return result
+
+    finally:
+        msg.close()
+
+
+def read_eml(path: Path) -> dict:
+    import tempfile as _tempfile
+
+    raw = path.read_bytes()
+    msg = email.message_from_bytes(raw, policy=email.policy.compat32)
+
+    subject = collapse_whitespace(msg.get("Subject", "") or "")
+    sender = collapse_whitespace(msg.get("From", "") or "")
+    to = collapse_whitespace(msg.get("To", "") or "")
+    cc = collapse_whitespace(msg.get("Cc", "") or "")
+    date = collapse_whitespace(msg.get("Date", "") or "")
+
+    # Walk parts: collect plain-text body and attachments.
+    body_parts = []
+    attachments = []  # list of (filename, bytes)
+
+    for part in msg.walk():
+        content_type = part.get_content_type()
+        disposition = (part.get("Content-Disposition") or "").lower()
+        filename = part.get_filename()
+
+        if filename:
+            try:
+                data = part.get_payload(decode=True)
+                if data:
+                    attachments.append((filename, data))
+            except Exception:
+                pass
+        elif content_type == "text/plain" and "attachment" not in disposition:
+            try:
+                charset = part.get_content_charset() or "utf-8"
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body_parts.append(payload.decode(charset, errors="replace"))
+            except Exception:
+                pass
+
+    body = "\n\n".join(p.strip() for p in body_parts if p.strip())
+
+    blocks = []
+    if subject:
+        blocks.append(f"# {subject}")
+    header_lines = []
+    if sender:
+        header_lines.append(f"From: {sender}")
+    if to:
+        header_lines.append(f"To: {to}")
+    if cc:
+        header_lines.append(f"Cc: {cc}")
+    if date:
+        header_lines.append(f"Date: {date}")
+    if header_lines:
+        blocks.append("\n".join(header_lines))
+    if body:
+        blocks.append(body)
+
+    att_names = []
+    warnings = []
+
+    with _tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        for att_name, data in attachments:
+            att_names.append(att_name)
+            try:
+                att_path = tmp_path / Path(att_name).name
+                att_path.write_bytes(data)
+                inner = extract(att_path)
+                inner_content = (inner.get("content") or "").strip()
+                if inner_content:
+                    blocks.append(f"## Attachment: {att_name}\n\n{inner_content}")
+            except Exception as exc:
+                warnings.append(f"Could not extract attachment '{att_name}': {exc}")
+
+    content = join_blocks(blocks)
+    metadata: dict = {"filename": path.name, "attachmentCount": len(attachments)}
+    if subject:
+        metadata["subject"] = subject
+    if sender:
+        metadata["sender"] = sender
+    if to:
+        metadata["to"] = to
+    if cc:
+        metadata["cc"] = cc
+    if date:
+        metadata["date"] = date
+    if att_names:
+        metadata["attachmentNames"] = att_names
+
+    result: dict = {"kind": "eml", "content": content, "metadata": metadata}
+    if warnings:
+        result["warnings"] = warnings
+    return result
+
+
+def read_zip(path: Path) -> dict:
+    import tempfile as _tempfile
+
+    try:
+        with zipfile.ZipFile(path, "r") as archive:
+            all_names = archive.namelist()
+    except Exception as exc:
+        raise RuntimeError(f"ZIP extraction failed for {path.name}: {exc}") from exc
+
+    # Skip directories and hidden/system files.
+    file_entries = [
+        n for n in all_names
+        if not n.endswith("/") and not Path(n).name.startswith(".")
+    ]
+
+    blocks = []
+    warnings = []
+
+    try:
+        with zipfile.ZipFile(path, "r") as archive:
+            with _tempfile.TemporaryDirectory() as tmp:
+                tmp_path = Path(tmp)
+                for entry in file_entries:
+                    entry_name = Path(entry).name
+                    if not entry_name:
+                        continue
+                    try:
+                        data = archive.read(entry)
+                        entry_path = tmp_path / entry_name
+                        entry_path.write_bytes(data)
+                        inner = extract(entry_path)
+                        inner_content = (inner.get("content") or "").strip()
+                        if inner_content:
+                            blocks.append(f"## {entry}\n\n{inner_content}")
+                    except Exception as exc:
+                        warnings.append(f"Could not extract '{entry}': {exc}")
+    except Exception as exc:
+        raise RuntimeError(f"ZIP extraction failed for {path.name}: {exc}") from exc
+
+    content = join_blocks(blocks)
+    metadata: dict = {
+        "filename": path.name,
+        "fileCount": len(file_entries),
+        "fileNames": file_entries,
+    }
+
+    result: dict = {"kind": "zip", "content": content, "metadata": metadata}
+    if warnings:
+        result["warnings"] = warnings
+    return result
 
 
 def read_with_markitdown(path: Path, kind: str) -> dict:
@@ -360,6 +647,12 @@ def extract(path: Path, preview_pages: int = 0) -> dict:
         return read_csv_file(path)
     if kind == "pdf":
         return read_pdf(path, preview_pages)
+    if kind == "msg":
+        return read_msg(path)
+    if kind == "eml":
+        return read_eml(path)
+    if kind == "zip":
+        return read_zip(path)
     if path.suffix.lower() in MARKITDOWN_EXTENSIONS or kind in {"doc", "docx", "xls", "xlsx", "ppt", "pptx"}:
         return read_with_markitdown(path, kind)
 

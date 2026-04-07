@@ -1,2 +1,3 @@
 markitdown[all]
 pymupdf
+extract-msg

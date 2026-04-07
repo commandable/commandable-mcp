@@ -12,6 +12,9 @@ const LIVE_BINARY_FIXTURES = [
   { fileName: 'sample.xlsx', expectedKind: 'xlsx' },
   { fileName: 'sample.pptx', expectedKind: 'pptx' },
   { fileName: 'sample.pdf', expectedKind: 'pdf' },
+  { fileName: 'sample.msg', expectedKind: 'msg' },
+  { fileName: 'sample.eml', expectedKind: 'eml' },
+  { fileName: 'sample.zip', expectedKind: 'zip' },
 ] as const
 
 const env = process.env as Record<string, string | undefined>
