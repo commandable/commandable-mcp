@@ -58,6 +58,7 @@ jobs:
           - google-calendar
           - google-gmail
           - google-workspace
+          - sharepoint
 
     steps:
       - uses: actions/checkout@v4
@@ -76,14 +77,14 @@ jobs:
         run: yarn check:generated
 
       - uses: actions/setup-python@v5
-        if: matrix.integration == 'google-workspace'
+        if: matrix.integration == 'google-workspace' || matrix.integration == 'sharepoint'
         with:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: packages/core/src/file-extractor/requirements.txt
 
-      - name: Install MarkItDown (Drive read_file_content live tests)
-        if: matrix.integration == 'google-workspace'
+      - name: Install MarkItDown (read_file_content / extractFileContent live tests)
+        if: matrix.integration == 'google-workspace' || matrix.integration == 'sharepoint'
         run: pip3 install -r packages/core/src/file-extractor/requirements.txt
 
       - name: Run ${{ matrix.integration }} tests
@@ -143,6 +144,13 @@ jobs:
           # ── Google Workspace (live tests + managed OAuth smoke) ───────────────
           GOOGLE_SHEETS_TEST_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_TEST_SPREADSHEET_ID }}
           GOOGLE_SHEETS_TEST_CONNECTION_ID: ${{ secrets.GOOGLE_SHEETS_TEST_CONNECTION_ID }}
+          # ── SharePoint / Microsoft Graph (app credentials live tests) ────────
+          SHAREPOINT_TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          SHAREPOINT_CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+          SHAREPOINT_CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+          SHAREPOINT_TEST_HOSTNAME: ${{ vars.SHAREPOINT_TEST_HOSTNAME }}
+          SHAREPOINT_TEST_SITE_PATH: ${{ vars.SHAREPOINT_TEST_SITE_PATH }}
+          SHAREPOINT_TEST_SEARCH_TOKEN: ${{ vars.SHAREPOINT_TEST_SEARCH_TOKEN }}
           # ── Managed OAuth ─────────────────────────────────────────────────────
           COMMANDABLE_MANAGED_OAUTH_BASE_URL: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_BASE_URL }}
           COMMANDABLE_MANAGED_OAUTH_SECRET_KEY: ${{ secrets.COMMANDABLE_MANAGED_OAUTH_SECRET_KEY }}

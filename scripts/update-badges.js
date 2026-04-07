@@ -37,6 +37,7 @@ const integrations = [
   { name: 'google-calendar', label: 'Google Calendar'},
   { name: 'google-gmail',    label: 'Gmail'          },
   { name: 'google-workspace', label: 'Google Workspace' },
+  { name: 'sharepoint',       label: 'SharePoint'       },
 ]
 
 function readResults(name) {

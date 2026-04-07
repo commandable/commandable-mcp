@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["hostname", "relativePath"],
+  "properties": {
+    "hostname": {
+      "type": "string",
+      "description": "SharePoint hostname, such as contoso.sharepoint.com."
+    },
+    "relativePath": {
+      "type": "string",
+      "description": "Server-relative site path, such as /sites/Marketing."
+    }
+  },
+  "additionalProperties": false
+}

@@ -13,6 +13,16 @@ function makeWorkspaceIntegration(): IntegrationData {
   }
 }
 
+function makeSharePointIntegration(): IntegrationData {
+  return {
+    id: 'sharepoint-node-1',
+    referenceId: 'sharepoint_ref',
+    type: 'sharepoint',
+    label: 'SharePoint Test',
+    disabledTools: [],
+  }
+}
+
 function capability(enabled: boolean): FileProcessingCapability {
   return {
     enabled,
@@ -41,8 +51,29 @@ describe('file processing capability gating', () => {
     expect(advertisedTools.some(tool => tool.name === 'read_file_content')).toBe(false)
   })
 
+  it('hides sharepoint read_file_content from runtime and advertised tool lists when disabled', () => {
+    const integrations = applyFileProcessingCapabilityToIntegrations([makeSharePointIntegration()], capability(false))
+    const integration = integrations[0]!
+    const advertisedTools = loadIntegrationToolList(integration.type, {
+      credentialVariant: integration.credentialVariant ?? undefined,
+      toolsets: integration.enabledToolsets ?? undefined,
+      maxScope: integration.maxScope ?? undefined,
+      disabledTools: integration.disabledTools ?? undefined,
+    })
+
+    expect(integration.disabledTools).toContain('read_file_content')
+    expect(advertisedTools.some(tool => tool.name === 'read_file_content')).toBe(false)
+  })
+
   it('does not inject google-workspace file-processing disables when capability is enabled', () => {
     const integrations = applyFileProcessingCapabilityToIntegrations([makeWorkspaceIntegration()], capability(true))
+    const integration = integrations[0]!
+
+    expect(integration.disabledTools).not.toContain('read_file_content')
+  })
+
+  it('does not inject sharepoint file-processing disables when capability is enabled', () => {
+    const integrations = applyFileProcessingCapabilityToIntegrations([makeSharePointIntegration()], capability(true))
     const integration = integrations[0]!
 
     expect(integration.disabledTools).not.toContain('read_file_content')

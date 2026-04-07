@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["siteId"],
+  "properties": {
+    "siteId": {
+      "type": "string",
+      "description": "Microsoft Graph SharePoint site ID."
+    },
+    "top": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "description": "Maximum number of drives to return."
+    },
+    "includeSystem": {
+      "type": "boolean",
+      "description": "Set true to include hidden/system drives."
+    }
+  },
+  "additionalProperties": false
+}

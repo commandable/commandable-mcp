@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["driveId", "itemId", "destinationParentId"],
+  "properties": {
+    "driveId": {
+      "type": "string",
+      "description": "Document library drive ID."
+    },
+    "itemId": {
+      "type": "string",
+      "description": "Drive item ID for the file or folder to move."
+    },
+    "destinationParentId": {
+      "type": "string",
+      "description": "Destination folder item ID."
+    },
+    "newName": {
+      "type": "string",
+      "description": "Optional new item name to apply during the move."
+    }
+  },
+  "additionalProperties": false
+}

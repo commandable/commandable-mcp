@@ -1,6 +1,6 @@
 {
   "name": "@commandable/mcp-connect",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Thin stdio connector package for Commandable MCP clients.",
   "license": "AGPL-3.0-only",
   "repository": {

@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["siteId"],
+  "properties": {
+    "siteId": {
+      "type": "string",
+      "description": "Microsoft Graph SharePoint site ID."
+    }
+  },
+  "additionalProperties": false
+}

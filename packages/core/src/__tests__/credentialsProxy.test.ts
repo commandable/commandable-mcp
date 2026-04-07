@@ -133,5 +133,58 @@ describe('IntegrationProxy credentials injection', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled()
   })
+
+  it('runs manifest-declared preprocess handlers and caches the returned token', async () => {
+    const credentialStore = {
+      getCredentials: vi.fn(async () => ({
+        tenantId: 'tenant-123',
+        clientId: 'client-123',
+        clientSecret: 'secret-123',
+      })),
+    }
+
+    const proxy = new IntegrationProxy({ credentialStore })
+
+    const fetchSpy = vi.fn(async (url: any, init?: RequestInit) => {
+      if (String(url).includes('login.microsoftonline.com')) {
+        expect(String(init?.body || '')).toContain('grant_type=client_credentials')
+        return new Response(JSON.stringify({
+          access_token: 'minted-token-123',
+          expires_in: 3600,
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+
+      const headers = (init?.headers || {}) as Record<string, string>
+      expect(headers.Authorization).toBe('Bearer minted-token-123')
+      return new Response(JSON.stringify({ value: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    })
+    globalThis.fetch = fetchSpy as any
+
+    const integration = {
+      spaceId: 'local',
+      id: 'sharepoint',
+      referenceId: 'sharepoint',
+      type: 'sharepoint',
+      label: 'SharePoint',
+      connectionMethod: 'credentials',
+      credentialId: 'sharepoint-creds',
+      credentialVariant: 'app_credentials',
+    } as const
+
+    await proxy.call(integration, '/sites?search=test')
+    await proxy.call(integration, '/sites?search=test-2')
+
+    expect(credentialStore.getCredentials).toHaveBeenCalledTimes(2)
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(String(fetchSpy.mock.calls[0]![0])).toContain('/oauth2/v2.0/token')
+    expect(String(fetchSpy.mock.calls[1]![0])).toContain('graph.microsoft.com')
+    expect(String(fetchSpy.mock.calls[2]![0])).toContain('graph.microsoft.com')
+  })
 })
 
