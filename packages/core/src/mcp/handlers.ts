@@ -1,6 +1,7 @@
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import type { ExecutableTool } from '../types.js'
+import { getHoistedArtifacts } from '../toolResults.js'
+import type { ExecutableTool, ToolRunResult } from '../types.js'
 import { getMetaToolDefinitions, getReadmeToolDefinition, handleMetaToolCall, handleStaticReadmeCall } from './metaTools.js'
 import type { DynamicModeContext, McpServerMode } from './server.js'
 
@@ -25,16 +26,33 @@ function formatAsText(value: any): string {
   }
 }
 
-function extractPageImages(result: any): { cleaned: any, images: string[] } {
-  if (!result || typeof result !== 'object' || Array.isArray(result))
-    return { cleaned: result, images: [] }
-  const images = Array.isArray(result.pageImages)
-    ? result.pageImages.filter((v: unknown) => typeof v === 'string')
-    : []
-  if (!images.length)
-    return { cleaned: result, images: [] }
-  const { pageImages: _dropped, ...rest } = result
-  return { cleaned: rest, images }
+function renderArtifact(artifact: ReturnType<typeof getHoistedArtifacts>[number]): Array<{ type: 'text', text: string } | { type: 'image', data: string, mimeType: string }> {
+  if (artifact.type === 'image' && artifact.data) {
+    return [{
+      type: 'image',
+      data: artifact.data,
+      mimeType: artifact.mimeType,
+    }]
+  }
+
+  if (artifact.type === 'image' && artifact.url) {
+    return [{
+      type: 'text',
+      text: `Image artifact URL (${artifact.mimeType}): ${artifact.url}`,
+    }]
+  }
+
+  return []
+}
+
+function buildToolSuccessContent(res: ToolRunResult): Array<{ type: 'text', text: string } | { type: 'image', data: string, mimeType: string }> {
+  const artifacts = getHoistedArtifacts(res)
+
+  return [
+    { type: 'text', text: formatAsText(res.result) },
+    ...artifacts.flatMap(renderArtifact),
+    ...(res.logs?.length ? [{ type: 'text' as const, text: `Logs:\n${res.logs.join('\n')}` }] : []),
+  ]
 }
 
 export function registerToolHandlers(
@@ -108,13 +126,8 @@ export function registerToolHandlers(
         }
       }
 
-      const { cleaned, images } = extractPageImages(res.result)
       return {
-        content: [
-          { type: 'text', text: formatAsText(cleaned) },
-          ...images.map(data => ({ type: 'image' as const, data, mimeType: 'image/jpeg' })),
-          ...(res.logs?.length ? [{ type: 'text', text: `Logs:\n${res.logs.join('\n')}` }] : []),
-        ],
+        content: buildToolSuccessContent(res),
       }
     }
 
@@ -141,10 +154,7 @@ export function registerToolHandlers(
     }
 
     return {
-      content: [
-        { type: 'text', text: formatAsText(res.result) },
-        ...(res.logs?.length ? [{ type: 'text', text: `Logs:\n${res.logs.join('\n')}` }] : []),
-      ],
+      content: buildToolSuccessContent(res),
     }
   })
 }

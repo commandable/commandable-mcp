@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createSafeHandlerFromString } from '../integrations/sandbox.js'
 import { loadIntegrationTools } from '../integrations/dataLoader.js'
 import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
+import { getHoistedArtifacts } from '../toolResults.js'
 
 const integrationDataDir = fileURLToPath(new URL('../../../integration-data/integrations', import.meta.url))
 
@@ -32,6 +33,38 @@ describe('integration engine ports', () => {
     expect(res.success).toBe(true)
     expect(res.result).toBe(2)
     expect(res.logs.join('\\n')).toContain('hi')
+  })
+
+  it('hoists extractFileContent page images outside the handler result', async () => {
+    const utils = buildSandboxUtils([], {
+      extractFileContent: async () => ({
+        kind: 'pdf',
+        content: 'hello',
+        pageImages: ['aGVsbG8='],
+      }),
+    })
+    const handler = createSafeHandlerFromString(
+      `async () => {
+        return await utils.extractFileContent({
+          auth: false,
+          source: 'https://example.com/test.pdf',
+          previewPages: 1,
+        })
+      }`,
+      () => ({}),
+      utils,
+    )
+    const res = await handler({})
+    expect(res.success).toBe(true)
+    expect(res.result).toEqual({
+      kind: 'pdf',
+      content: 'hello',
+    })
+    expect(getHoistedArtifacts(res)).toEqual([{
+      type: 'image',
+      mimeType: 'image/jpeg',
+      data: 'aGVsbG8=',
+    }])
   })
 
   it('injects sandbox utils (explicit bundles)', async () => {

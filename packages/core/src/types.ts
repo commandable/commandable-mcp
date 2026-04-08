@@ -33,6 +33,12 @@ export interface IntegrationData {
   healthCheckedAt?: Date | null
 }
 
+export interface ToolRunResult {
+  success: boolean
+  result: any
+  logs: string[]
+}
+
 export interface ExecutableTool {
   name: string
   displayName: string
@@ -40,7 +46,7 @@ export interface ExecutableTool {
   inputSchema: JSONSchema7
   integrations?: IntegrationData[]
   requireConfirmation?: boolean
-  run: (args: any) => Promise<{ success: boolean, result: any, logs: string[] }>
+  run: (args: any) => Promise<ToolRunResult>
 }
 
 export type ToolScope = 'read' | 'write' | 'admin'

@@ -1,6 +1,16 @@
 import { URL, URLSearchParams } from 'node:url'
 import vm from 'node:vm'
 import * as zodLib from 'zod'
+import { attachHoistedArtifacts, hoistExtractFileContentArtifacts } from '../toolResults.js'
+import type { ToolRunResult } from '../types.js'
+
+const EXECUTION_RESULT = Symbol('executionResult')
+const EXECUTION_HOISTED_ARTIFACTS = Symbol('executionHoistedArtifacts')
+
+type ExecutionEnvelope = {
+  [EXECUTION_RESULT]: any
+  [EXECUTION_HOISTED_ARTIFACTS]: Array<{ type: 'image', mimeType: string, data?: string, url?: string, title?: string }>
+}
 
 function makeSyntheticFromObject(pkg: any, context: vm.Context): vm.Module {
   const exportNames = Array.from(new Set(['default', ...Object.keys(pkg)]))
@@ -103,7 +113,7 @@ export function createSafeHandlerFromString(
   handlerString: string,
   getIntegration: Function,
   utils?: Record<string, unknown>,
-): (args: any) => Promise<{ success: boolean, result: any, logs: string[] }> {
+): (args: any) => Promise<ToolRunResult> {
   const realConsole = console
   const isolatedConsole: any = {
     log: (...args: any[]) => realConsole.log(...args),
@@ -176,7 +186,15 @@ export function createSafeHandlerFromString(
   const code = `module.exports = async function(input) { return (${handlerString})(input) }`
   const script = new vm.Script(code)
   script.runInContext(context)
-  return withLogging((context.module as any).exports, isolatedConsole)
+  return withLogging(async (args: any) => {
+    const hoistedArtifacts: ExecutionEnvelope[typeof EXECUTION_HOISTED_ARTIFACTS] = []
+    ;(context as any).utils = createRuntimeUtils(utils, hoistedArtifacts)
+    const result = await (context.module as any).exports(args)
+    return {
+      [EXECUTION_RESULT]: result,
+      [EXECUTION_HOISTED_ARTIFACTS]: hoistedArtifacts,
+    } satisfies ExecutionEnvelope
+  }, isolatedConsole)
 }
 
 function withLogging(handler: (args: any) => Promise<any>, vmConsole: any) {
@@ -215,8 +233,14 @@ function withLogging(handler: (args: any) => Promise<any>, vmConsole: any) {
         originalLog.apply(vmConsole, args2)
       }
 
-      const result = await handler(args)
-      return { success: true, result, logs }
+      const execution = await handler(args)
+      const { result, hoistedArtifacts } = unwrapExecutionEnvelope(execution)
+      const toolRunResult: ToolRunResult = {
+        success: true,
+        result,
+        logs,
+      }
+      return hoistedArtifacts.length ? attachHoistedArtifacts(toolRunResult, hoistedArtifacts) : toolRunResult
     }
     catch (err: any) {
       logs.push(err?.stack || String(err))
@@ -235,6 +259,41 @@ function withLogging(handler: (args: any) => Promise<any>, vmConsole: any) {
     finally {
       vmConsole.log = originalLog
     }
+  }
+}
+
+function createRuntimeUtils(
+  baseUtils: Record<string, unknown> | undefined,
+  hoistedArtifacts: ExecutionEnvelope[typeof EXECUTION_HOISTED_ARTIFACTS],
+): Record<string, unknown> {
+  const runtimeUtils = { ...(baseUtils || {}) }
+  const extractFileContent = runtimeUtils.extractFileContent
+  if (typeof extractFileContent === 'function') {
+    runtimeUtils.extractFileContent = async (...args: any[]) => {
+      const extracted = await extractFileContent(...args)
+      const { cleanedResult, artifacts } = hoistExtractFileContentArtifacts(extracted)
+      hoistedArtifacts.push(...artifacts)
+      return cleanedResult
+    }
+  }
+  return runtimeUtils
+}
+
+function unwrapExecutionEnvelope(value: any): {
+  result: any
+  hoistedArtifacts: ExecutionEnvelope[typeof EXECUTION_HOISTED_ARTIFACTS]
+} {
+  if (!value || typeof value !== 'object' || !(EXECUTION_RESULT in value)) {
+    return {
+      result: value,
+      hoistedArtifacts: [],
+    }
+  }
+
+  const envelope = value as ExecutionEnvelope
+  return {
+    result: envelope[EXECUTION_RESULT],
+    hoistedArtifacts: Array.isArray(envelope[EXECUTION_HOISTED_ARTIFACTS]) ? envelope[EXECUTION_HOISTED_ARTIFACTS] : [],
   }
 }
 
