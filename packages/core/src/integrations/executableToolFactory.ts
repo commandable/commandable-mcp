@@ -96,7 +96,7 @@ export function buildToolsByIntegration(
     const buildActions = (arr: any[], scope: Scope): ExecutableTool[] => arr.map((t) => {
       const rawSchema = typeof t.inputSchema === 'string' ? JSON.parse(t.inputSchema) : t.inputSchema
       const schemaObj = sanitizeJsonSchema(rawSchema)
-      const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
+      const toolName = makeIntegrationToolName(integ.referenceId, t.name)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
       const extractFileContent = createExtractFileContent(getIntegration, integ.id)
 
@@ -116,7 +116,7 @@ export function buildToolsByIntegration(
 
     const buildActionsFromToolDefinitions = (defs: ToolDefinition[], scope: ToolScope): ExecutableTool[] => defs.map((t) => {
       const schemaObj = sanitizeJsonSchema(t.inputSchema)
-      const toolName = makeIntegrationToolName(integ.type, t.name, integ.id)
+      const toolName = makeIntegrationToolName(integ.referenceId, t.name)
       const description = `[${integ.label} | ${integ.type}] ${t.description}`
       const extractFileContent = createExtractFileContent(getIntegration, integ.id)
       const wrapper = `async (input) => {\n  const integration = getIntegration('${integ.id}');\n  const __inner = ${t.handlerCode};\n  return await __inner(input);\n}`

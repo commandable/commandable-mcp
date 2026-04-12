@@ -42,8 +42,8 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
     expect(res.length).toBeGreaterThan(0)
     expect(res[0]!.label.toLowerCase()).toContain('pull')
     expect(res[0]!.toolNames.length).toBeGreaterThan(0)
-    // ability ids include the integration instance suffix
-    expect(res[0]!.id).toContain('__n')
+    // ability ids are keyed by integration referenceId
+    expect(res[0]!.id).toContain('github')
   })
 
   it('SessionAbilityState unions tools across enabled toolsets', () => {
@@ -97,7 +97,7 @@ describe('create mode (toolsets + dynamic tools/list)', () => {
       META_TOOL_NAMES.searchTools,
     ].sort())
 
-    const prToolName = makeIntegrationToolName('github', 'list_pull_requests', integration.id)
+    const prToolName = makeIntegrationToolName(integration.referenceId, 'list_pull_requests')
     await expect(client.callTool({ name: prToolName, arguments: {} } as any)).rejects.toBeTruthy()
 
     const searchRes = await client.callTool({

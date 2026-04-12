@@ -55,13 +55,13 @@ export function sanitizeJsonSchema(schema: any): any {
   return out
 }
 
-export function makeIntegrationToolName(type: string, name: string, nodeId: string): string {
-  const short = (nodeId || '').replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
-  let base = `${type}__${name}`.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-  const suffix = `__n${short}`
-  const maxBase = 64 - suffix.length
-  if (base.length > maxBase)
-    base = base.slice(0, maxBase)
-  return `${base}${suffix}`
+function sanitizeToolNamePart(value: string): string {
+  return (value || '').toLowerCase().replace(/[^a-z0-9_]/g, '_')
+}
+
+export function makeIntegrationToolName(referenceId: string, name: string): string {
+  const integrationKey = sanitizeToolNamePart(referenceId)
+  const toolKey = sanitizeToolNamePart(name)
+  return `${integrationKey}__${toolKey}`
 }
 

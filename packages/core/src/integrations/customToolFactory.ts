@@ -32,7 +32,7 @@ export function buildExecutableToolFromDefinition(params: {
   })
   const scope: ToolScope = tool.scope || 'write'
 
-  const toolName = makeIntegrationToolName(integration.type, tool.name, integration.id)
+  const toolName = makeIntegrationToolName(integration.referenceId, tool.name)
   const description = `[${integration.label} | ${integration.type}] ${tool.description || tool.displayName || tool.name}`
   const inputSchema = sanitizeJsonSchema(tool.inputSchema || { type: 'object', additionalProperties: true })
 

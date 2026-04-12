@@ -1021,7 +1021,7 @@ export async function handleMetaToolCall(params: {
       throw new Error(`Unknown integration_id: ${integrationId}`)
 
     const materializedToolNames = [...ctx.toolIndexRef?.byName.keys() || []]
-      .filter(toolName => toolName.endsWith(`__n${integration.id.replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()}`))
+      .filter(toolName => toolName.startsWith(`${integration.referenceId.replace(/[^a-z0-9_]/gi, '_').toLowerCase()}__`))
     for (const toolName of materializedToolNames) {
       ctx.toolIndexRef?.byName.delete(toolName)
       sessionState.removeToolFromAllSessions(toolName)
