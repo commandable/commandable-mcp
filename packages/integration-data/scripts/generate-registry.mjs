@@ -24,6 +24,14 @@ async function readOptionalText(path, { trim = false } = {}) {
   return trimmed.length ? trimmed : null
 }
 
+/** Prefer usage_guide.md; fall back to legacy prompt.md for backward compatibility. */
+async function loadUsageGuide(dir) {
+  const fromUsageGuide = await readOptionalText(join(dir, 'usage_guide.md'))
+  if (fromUsageGuide)
+    return fromUsageGuide
+  return await readOptionalText(join(dir, 'prompt.md'))
+}
+
 async function resolvePreprocess(dir, preprocess) {
   if (!preprocess || typeof preprocess !== 'object' || Array.isArray(preprocess))
     return preprocess ?? undefined
@@ -103,7 +111,7 @@ async function main() {
       continue
 
     const manifest = readJson(await readFile(manifestPath, 'utf8'))
-    const prompt = await readOptionalText(join(dir, 'prompt.md'))
+    const usageGuide = await loadUsageGuide(dir)
     const variantsPath = join(dir, 'credentials.json')
     const variants = existsSync(variantsPath)
       ? readJson(await readFile(variantsPath, 'utf8'))
@@ -142,7 +150,7 @@ async function main() {
         toolsets: manifest.toolsets,
           tools: manifest.tools || [],
       },
-      prompt,
+      usageGuide,
       variants,
       hint,
       hintsByVariant,
@@ -178,7 +186,7 @@ async function main() {
           variantConfig: variantManifest.variantConfig,
           tools: resolvedVariantTools,
         },
-        prompt,
+        usageGuide,
         variants,
         hint,
         hintsByVariant,

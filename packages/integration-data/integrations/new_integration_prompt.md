@@ -11,7 +11,7 @@ Create `commandable-mcp/packages/integration-data/integrations/<name>/` containi
 - `handlers/*.js`: async arrow functions `async (input) => { ... }` using `integration.fetch(path, init?)` for all HTTP calls. Pass `body` as a plain object (proxy will JSON-stringify). Return parsed JSON.
 - `credentials.json`: `{ schema, injection }` where `schema` is JSON Schema for secrets and `injection` is `headers` and/or `query` templates using `{{placeholder}}`
 - `credentials_hint.md`: **numbered steps** (1., 2., 3., …) telling a user exactly how to obtain/provide credentials
-- `prompt.md` (optional): extra LLM guidance only if the API has non-obvious usage patterns
+- `usage_guide.md` (optional): agent usage guide only if the API has non-obvious usage patterns (legacy `prompt.md` is still accepted)
 
 Also register the provider in `src/integrations/providerRegistry.ts` with its base URL and auth factory.
 
@@ -35,7 +35,7 @@ If an endpoint is already clean and self-contained, just proxy it.
 ## Reference examples (follow exactly)
 
 - `github/`: simple proxies + complex orchestration (`create_commit.js`)
-- `notion/`: clean proxying + optional `prompt.md`
+- `notion/`: clean proxying + optional `usage_guide.md`
 - `google-calendar/`: query param building + `read`/`write`/`admin` scopes
 - `trello/`: query-param credential injection + `displayCards`
 - `google-workspace/`: combined Drive, Docs, Sheets, Slides (including higher-level write helpers over batchUpdate APIs)
@@ -156,9 +156,9 @@ Every tool description should include: what it does, when to use it (vs alternat
 - `send_email`: "...For replies, provide replyToMessageId and threadId to keep the reply in the same conversation thread."
 - `patch_event`: "...Use this as the standard event update method."
 
-### 7. `prompt.md` files should document non-obvious API patterns
+### 7. `usage_guide.md` files should document non-obvious API patterns
 
-Each integration's `prompt.md` should cover workflow guidance agents need but can't infer from tool descriptions alone:
+Each integration's `usage_guide.md` (or legacy `prompt.md`) should cover workflow guidance agents need but can't infer from tool descriptions alone:
 
 - Gmail: search query syntax (`is:unread`, `from:`, `has:attachment`), threading pattern, system label IDs
 - Calendar: RFC3339 format, `singleEvents=true` + `orderBy=startTime`, all-day vs timed events

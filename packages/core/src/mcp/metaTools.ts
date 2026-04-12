@@ -9,7 +9,7 @@ import { listIntegrationCatalog } from '../integrations/catalog.js'
 import { applyFileProcessingCapabilityToIntegration, applyFileProcessingCapabilityToIntegrations, getFileProcessingCapability } from '../integrations/fileProcessing.js'
 import { getBuiltInIntegrationTypeConfig } from '../integrations/fileIntegrationTypeConfigStore.js'
 import { createGetIntegration } from '../integrations/getIntegration.js'
-import { loadIntegrationManifest, loadIntegrationPrompt } from '../integrations/dataLoader.js'
+import { loadIntegrationManifest, loadIntegrationUsageGuide } from '../integrations/dataLoader.js'
 import { buildSandboxUtils } from '../integrations/sandboxUtils.js'
 import { createExtractFileContent } from '../integrations/fileExtractor.js'
 import type { DbClient } from '../db/client.js'
@@ -377,7 +377,7 @@ export async function handleMetaToolCall(params: {
         }).join('\n')
         return `${base}\n\n${lines ? `${lines}\n` : 'No integrations configured yet.\n'}`
       }
-      try { return loadIntegrationPrompt(ability.integrationtype) } catch { return null }
+      try { return loadIntegrationUsageGuide(ability.integrationtype) } catch { return null }
     })()
     return {
       handled: true,

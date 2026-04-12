@@ -164,20 +164,24 @@ Some tests under `packages/integration-data/integrations/*/__tests__` are **live
 
 Most integrations are implemented as **integration-data** (schemas + sandboxed JS handlers), plus a provider entry in the registry.
 
+For a complete reference on how integration folders are structured, how handlers work, how credentials are configured, how variants work, and design principles for tool quality, read:
+
+**[`packages/integration-data/AGENTS.md`](packages/integration-data/AGENTS.md)**
+
 ### 1) Add integration-data
 
 Create a new folder:
 
 `packages/integration-data/integrations/<integration-type>/`
 
-Required files (see `integration-data/new_integration_prompt.md` for the exact contract):
+Required files (see `integration-data/new_integration_prompt.md` for full details and `AGENTS.md` for the structural reference):
 
 - `manifest.json`
 - `schemas/*.json`
 - `handlers/*.js`
 - `credentials.json`
 - `credentials_hint.md` (numbered steps for humans)
-- `prompt.md` (optional)
+- `usage_guide.md` (optional; legacy `prompt.md` is still accepted by the registry generator)
 
 Design guidance:
 
