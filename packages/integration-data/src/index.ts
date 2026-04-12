@@ -10,7 +10,7 @@ export type {
 
 export {
   loadIntegrationManifest,
-  loadIntegrationPrompt,
+  loadIntegrationUsageGuide,
   loadIntegrationToolList,
   loadIntegrationToolsets,
   loadIntegrationCredentialConfig,

@@ -169,7 +169,7 @@ export interface GeneratedToolEntry extends ToolData {
 
 export interface GeneratedIntegrationEntry {
   manifest: Manifest
-  prompt: string | null
+  usageGuide: string | null
   variants: CredentialVariantsFile | null
   hint: string | null
   hintsByVariant: Record<string, string>

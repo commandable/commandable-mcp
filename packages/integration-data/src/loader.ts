@@ -123,8 +123,9 @@ export function loadIntegrationManifest(type: string): Manifest | null {
   return entry ? cloneManifest(entry.manifest) : null
 }
 
-export function loadIntegrationPrompt(type: string): string | null {
-  return getIntegration(type)?.prompt ?? null
+/** Text from `usage_guide.md` at build time (legacy `prompt.md` still supported by the registry generator). */
+export function loadIntegrationUsageGuide(type: string): string | null {
+  return getIntegration(type)?.usageGuide ?? null
 }
 
 export function loadIntegrationToolsets(type: string): Record<string, ToolsetMeta> | null {
