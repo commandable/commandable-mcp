@@ -27,9 +27,6 @@ type IntegrationManifest = {
 
 const SCOPE_RANK: Record<Scope, number> = { read: 0, write: 1, admin: 2 }
 
-function shortNodeId(nodeId: string): string {
-  return (nodeId || '').replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase()
-}
 
 function humanize(s: string): string {
   return (s || '')
@@ -77,10 +74,10 @@ const BUILDER_TOOL_NAMES = [
 ] as const
 
 function makeAbilityId(integ: IntegrationData, toolsetKey?: string): AbilityId {
-  const suffix = `__n${shortNodeId(integ.id)}`
+  const base = sanitizeAbilityKey(integ.referenceId)
   if (!toolsetKey)
-    return `${sanitizeAbilityKey(integ.type)}${suffix}`
-  return `${sanitizeAbilityKey(integ.type)}__${sanitizeAbilityKey(toolsetKey)}${suffix}`
+    return base
+  return `${base}__${sanitizeAbilityKey(toolsetKey)}`
 }
 
 function scoreQuery(query: string, haystack: string): number {
@@ -216,8 +213,10 @@ export class AbilityCatalog {
   }
 
   removeIntegrationAbilities(integration: IntegrationData): number {
-    const suffix = `__n${shortNodeId(integration.id)}`
-    const removed = this.abilities.filter(a => a.id.endsWith(suffix)).map(a => a.id)
+    const prefix = sanitizeAbilityKey(integration.referenceId)
+    const removed = this.abilities
+      .filter(a => a.id === prefix || a.id.startsWith(`${prefix}__`))
+      .map(a => a.id)
     if (!removed.length)
       return 0
     for (const id of removed)
@@ -303,7 +302,7 @@ export class AbilityCatalog {
           if (blocked?.has(ref.name))
             continue
 
-          const toolName = makeIntegrationToolName(integ.type, ref.name, integ.id)
+          const toolName = makeIntegrationToolName(integ.referenceId, ref.name)
           // Only include tools that actually exist in the executable index.
           // (This should be true if filters match, but keeps us robust.)
           if (!this.toolIndex.has(toolName))
@@ -318,12 +317,9 @@ export class AbilityCatalog {
         }
       }
 
-      const suffix = `__n${shortNodeId(integ.id)}`
-      const typePrefix = `${sanitizeAbilityKey(integ.type)}__`
+      const referencePrefix = `${sanitizeAbilityKey(integ.referenceId)}__`
       const allForIntegration = [...this.toolIndex.keys()].filter((n) => {
-        if (!n.endsWith(suffix))
-          return false
-        if (!n.startsWith(typePrefix))
+        if (!n.startsWith(referencePrefix))
           return false
         return true
       })
