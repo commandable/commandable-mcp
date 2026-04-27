@@ -8,12 +8,13 @@
     },
     "contactId": {
       "type": "string",
-      "description": "Optional Xero contact ID."
+      "description": "Xero contact ID."
     },
     "date": {
       "type": "string",
       "description": "Report date in YYYY-MM-DD format."
     }
   },
+  "required": ["contactId"],
   "additionalProperties": false
 }

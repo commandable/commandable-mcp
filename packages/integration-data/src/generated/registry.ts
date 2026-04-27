@@ -12845,7 +12845,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       "name": "Trello",
       "version": "0.1.0",
       "baseUrl": "https://api.trello.com/1",
-      "variantLabel": "Single board",
+      "variantLabel": "Single Board",
       "variantConfig": [
         {
           "key": "board",
@@ -13994,7 +13994,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         },
         {
           "name": "get_aged_payables_by_contact",
-          "description": "Get the Aged Payables by Contact report. Provide contactId when focusing on one supplier.",
+          "description": "Get the Aged Payables by Contact report for a supplier contact. Provide contactId from list_contacts.",
           "inputSchema": "schemas/report_aged_by_contact.json",
           "handler": "handlers/get_aged_payables_by_contact.js",
           "scope": "read",
@@ -14002,7 +14002,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
         },
         {
           "name": "get_aged_receivables_by_contact",
-          "description": "Get the Aged Receivables by Contact report. Provide contactId when focusing on one customer.",
+          "description": "Get the Aged Receivables by Contact report for a customer contact. Provide contactId from list_contacts.",
           "inputSchema": "schemas/report_aged_by_contact.json",
           "handler": "handlers/get_aged_receivables_by_contact.js",
           "scope": "read",
@@ -14036,11 +14036,6 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
                 "title": "Client Secret",
                 "description": "Xero app client secret for the Custom Connection.",
                 "format": "password"
-              },
-              "scopes": {
-                "type": "string",
-                "title": "Scopes",
-                "description": "Space-separated Xero scopes to request. Leave blank to use Commandable's Accounting API defaults."
               }
             },
             "required": [
@@ -14051,14 +14046,15 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "preprocess": {
             "type": "handler",
-            "handlerCode": "async (creds, utils) => {\n  const clientId = String(creds?.clientId || '').trim()\n  const clientSecret = String(creds?.clientSecret || '').trim()\n  const defaultScopes = [\n    'accounting.settings.read',\n    'accounting.contacts',\n    'accounting.invoices',\n    'accounting.payments',\n    'accounting.banktransactions',\n    'accounting.manualjournals',\n    'accounting.attachments.read',\n    'accounting.reports.aged.read',\n    'accounting.reports.balancesheet.read',\n    'accounting.reports.banksummary.read',\n    'accounting.reports.budgetsummary.read',\n    'accounting.reports.profitandloss.read',\n    'accounting.reports.trialbalance.read',\n  ].join(' ')\n  const scopes = String(creds?.scopes || defaultScopes).trim()\n\n  if (!clientId)\n    throw new Error('Missing clientId')\n  if (!clientSecret)\n    throw new Error('Missing clientSecret')\n\n  const response = await utils.tokenFetch('https://identity.xero.com/connect/token', {\n    method: 'POST',\n    body: new URLSearchParams({\n      grant_type: 'client_credentials',\n      client_id: clientId,\n      client_secret: clientSecret,\n      scope: scopes,\n    }),\n  })\n\n  const data = await response.json()\n  if (!response.ok) {\n    const message = typeof data?.error_description === 'string'\n      ? data.error_description\n      : (typeof data?.error === 'string' ? data.error : `Token request failed with status ${response.status}`)\n    throw new Error(message)\n  }\n\n  const token = typeof data?.access_token === 'string' ? data.access_token : ''\n  if (!token)\n    throw new Error('Xero token response did not include access_token')\n\n  return {\n    token,\n    expiresIn: data?.expires_in,\n  }\n}",
+            "handlerCode": "async (creds, utils) => {\n  const clientId = String(creds?.clientId || '').trim()\n  const clientSecret = String(creds?.clientSecret || '').trim()\n\n  if (!clientId)\n    throw new Error('Missing clientId')\n  if (!clientSecret)\n    throw new Error('Missing clientSecret')\n\n  const response = await utils.tokenFetch('https://identity.xero.com/connect/token', {\n    method: 'POST',\n    body: new URLSearchParams({\n      grant_type: 'client_credentials',\n      client_id: clientId,\n      client_secret: clientSecret,\n    }),\n  })\n\n  const data = await response.json()\n  if (!response.ok) {\n    const message = typeof data?.error_description === 'string'\n      ? data.error_description\n      : (typeof data?.error === 'string' ? data.error : `Token request failed with status ${response.status}`)\n    throw new Error(message)\n  }\n\n  const token = typeof data?.access_token === 'string' ? data.access_token : ''\n  if (!token)\n    throw new Error('Xero token response did not include access_token')\n\n  return {\n    token,\n    expiresIn: data?.expires_in,\n  }\n}",
             "allowedOrigins": [
               "https://identity.xero.com"
             ]
           },
           "injection": {
             "headers": {
-              "Authorization": "Bearer {{token}}"
+              "Authorization": "Bearer {{token}}",
+              "Accept": "application/json"
             }
           },
           "healthCheck": {
@@ -14068,7 +14064,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       },
       "default": "custom_connection"
     },
-    "hint": "1. Go to https://developer.xero.com/ and sign in with your free Xero developer account.\n2. Open My Apps, create an app, and choose a Custom Connection when testing against the Xero demo company.\n3. Authorise the Custom Connection for the demo company. Demo-company Custom Connections can be used for development testing without charge.\n4. Copy the Client ID and Client Secret into Commandable.\n5. Leave Scopes blank to use Commandable's default Accounting API scopes, or provide a space-separated scope list if your Xero app has a narrower scope set.\n6. For future public OAuth apps, use `offline_access`, store refresh tokens securely, and select a tenant from the `/connections` response before calling tenant-scoped Accounting API tools.",
+    "hint": "1. Go to https://developer.xero.com/ and sign in with your free Xero developer account.\n2. Open My Apps, create an app, and choose a Custom Connection when testing against the Xero demo company.\n3. Authorise the Custom Connection for the demo company. Demo-company Custom Connections can be used for development testing without charge.\n4. Copy the Client ID and Client Secret into Commandable.\n5. Ensure the app is authorised for the Accounting API scopes used by this integration.\n6. For future public OAuth apps, use `offline_access`, store refresh tokens securely, and select a tenant from the `/connections` response before calling tenant-scoped Accounting API tools.",
     "hintsByVariant": {},
     "tools": [
       {
@@ -15241,7 +15237,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       },
       {
         "name": "get_aged_payables_by_contact",
-        "description": "Get the Aged Payables by Contact report. Provide contactId when focusing on one supplier.",
+        "description": "Get the Aged Payables by Contact report for a supplier contact. Provide contactId from list_contacts.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -15252,22 +15248,25 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             },
             "contactId": {
               "type": "string",
-              "description": "Optional Xero contact ID."
+              "description": "Xero contact ID."
             },
             "date": {
               "type": "string",
               "description": "Report date in YYYY-MM-DD format."
             }
           },
+          "required": [
+            "contactId"
+          ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.contactId) params.set('contactID', input.contactId)\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/AgedPayablesByContact${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.contactId) params.set('contactId', input.contactId)\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/AgedPayablesByContact${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
         "scope": "read",
         "toolset": "reports"
       },
       {
         "name": "get_aged_receivables_by_contact",
-        "description": "Get the Aged Receivables by Contact report. Provide contactId when focusing on one customer.",
+        "description": "Get the Aged Receivables by Contact report for a customer contact. Provide contactId from list_contacts.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -15278,16 +15277,19 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             },
             "contactId": {
               "type": "string",
-              "description": "Optional Xero contact ID."
+              "description": "Xero contact ID."
             },
             "date": {
               "type": "string",
               "description": "Report date in YYYY-MM-DD format."
             }
           },
+          "required": [
+            "contactId"
+          ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.contactId) params.set('contactID', input.contactId)\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/AgedReceivablesByContact${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.contactId) params.set('contactId', input.contactId)\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/AgedReceivablesByContact${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
         "scope": "read",
         "toolset": "reports"
       },

@@ -11,7 +11,6 @@ function createXeroToolbox() {
   const credentialStore = createCredentialStore(async () => ({
     clientId: env.XERO_CLIENT_ID!,
     clientSecret: env.XERO_CLIENT_SECRET!,
-    scopes: env.XERO_SCOPES,
   }))
   const proxy = createProxy(credentialStore)
   return createToolbox(
@@ -91,15 +90,16 @@ suiteOrSkip('xero handlers (live)', () => {
     await xero.read('get_balance_sheet')({})
     await xero.read('get_trial_balance')({})
     await xero.read('get_bank_summary')({})
-    await xero.read('get_aged_payables_by_contact')({})
-    await xero.read('get_aged_receivables_by_contact')({})
+    const contacts = await xero.read('list_contacts')({ page: 1 })
+    const contactId = contacts?.contacts?.[0]?.contactId
+    if (contactId) {
+      await xero.read('get_aged_payables_by_contact')({ contactId })
+      await xero.read('get_aged_receivables_by_contact')({ contactId })
+    }
     await xero.read('get_budget_summary')({})
   }, 90000)
 
-  it('runs opt-in write smoke tests against the demo company', async () => {
-    if (env.XERO_ENABLE_WRITE_TESTS !== 'true')
-      return
-
+  it('runs safe write smoke tests against the demo company', async () => {
     const xero = createXeroToolbox()
     const runId = Date.now()
 
@@ -114,35 +114,29 @@ suiteOrSkip('xero handlers (live)', () => {
       contact: { ContactStatus: 'ARCHIVED' },
     })
     expect(updatedContact?.contact?.ContactID).toBe(contact.contact.ContactID)
-
-    // The remaining write tools require organisation-specific valid accounts,
-    // contacts, and line item configuration. They are referenced here for usage
-    // parity and are exercised in manual E2E runs once fixtures are known.
-    if (env.XERO_ENABLE_HIGH_RISK_WRITE_TESTS === 'true') {
-      const item = await xero.write('create_item')({
-        code: `CMD-${runId}`,
-        name: `Commandable Item ${runId}`,
-      })
-      expect(item?.item?.ItemID).toBeTruthy()
-      await xero.write('update_item')({
-        itemId: item.item.ItemID,
-        item: { Name: `Commandable Item ${runId} Updated` },
-      })
-      await xero.write('create_invoice')({ invoice: {} })
-      await xero.write('update_invoice')({ invoiceId: 'fixture-invoice-id', invoice: {} })
-      await xero.write('create_credit_note')({ creditNote: {} })
-      await xero.write('create_quote')({ quote: {} })
-      await xero.write('create_purchase_order')({ purchaseOrder: {} })
-      await xero.write('create_payment')({ payment: {} })
-      await xero.write('create_bank_transaction')({ bankTransaction: {} })
-      await xero.write('create_manual_journal')({ manualJournal: {} })
-    }
   }, 90000)
 
-  it('references attachment extraction for usage parity', async () => {
-    if (env.XERO_ENABLE_ATTACHMENT_EXTRACTION_TEST !== 'true')
-      return
+  it.skip('references fixture-dependent write tools for usage parity', async () => {
+    const xero = createXeroToolbox()
+    const item = await xero.write('create_item')({
+      code: 'CMD-FIXTURE',
+      name: 'Commandable Fixture Item',
+    })
+    await xero.write('update_item')({
+      itemId: item.item.ItemID,
+      item: { Name: 'Commandable Fixture Item Updated' },
+    })
+    await xero.write('create_invoice')({ invoice: {} })
+    await xero.write('update_invoice')({ invoiceId: 'fixture-invoice-id', invoice: {} })
+    await xero.write('create_credit_note')({ creditNote: {} })
+    await xero.write('create_quote')({ quote: {} })
+    await xero.write('create_purchase_order')({ purchaseOrder: {} })
+    await xero.write('create_payment')({ payment: {} })
+    await xero.write('create_bank_transaction')({ bankTransaction: {} })
+    await xero.write('create_manual_journal')({ manualJournal: {} })
+  })
 
+  it.skip('references attachment extraction for usage parity', async () => {
     const xero = createXeroToolbox()
     await xero.read('read_attachment_content')({
       resourceType: 'Invoices',

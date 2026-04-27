@@ -297,7 +297,7 @@
     },
     {
       "name": "get_aged_payables_by_contact",
-      "description": "Get the Aged Payables by Contact report. Provide contactId when focusing on one supplier.",
+      "description": "Get the Aged Payables by Contact report for a supplier contact. Provide contactId from list_contacts.",
       "inputSchema": "schemas/report_aged_by_contact.json",
       "handler": "handlers/get_aged_payables_by_contact.js",
       "scope": "read",
@@ -305,7 +305,7 @@
     },
     {
       "name": "get_aged_receivables_by_contact",
-      "description": "Get the Aged Receivables by Contact report. Provide contactId when focusing on one customer.",
+      "description": "Get the Aged Receivables by Contact report for a customer contact. Provide contactId from list_contacts.",
       "inputSchema": "schemas/report_aged_by_contact.json",
       "handler": "handlers/get_aged_receivables_by_contact.js",
       "scope": "read",
