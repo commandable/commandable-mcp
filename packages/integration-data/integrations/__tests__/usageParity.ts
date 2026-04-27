@@ -12,7 +12,12 @@ function escapeRegExp(str: string): string {
  * excluding tools that are restricted to specific credential variants (those are
  * covered by their own variant-specific test suites).
  */
-export function getMissingToolUsages(opts: { integrationName: string, importMetaUrl: string, credentialVariant?: string }): string[] {
+export function getMissingToolUsages(opts: {
+  integrationName: string
+  importMetaUrl: string
+  credentialVariant?: string
+  skippedTools?: Record<string, string>
+}): string[] {
   const manifest = loadIntegrationManifest(opts.integrationName)
   if (!manifest)
     throw new Error(`Missing integration manifest for '${opts.integrationName}'`)
@@ -28,6 +33,16 @@ export function getMissingToolUsages(opts: { integrationName: string, importMeta
   })
 
   const toolNames = relevantTools.map(t => t.name)
+  const skippedTools = opts.skippedTools || {}
+  const skipsWithoutReasons = Object.entries(skippedTools)
+    .filter(([, reason]) => !String(reason || '').trim())
+    .map(([name]) => name)
+  if (skipsWithoutReasons.length)
+    throw new Error(`Static usage parity skips must include reasons: ${skipsWithoutReasons.join(', ')}`)
+
+  const unknownSkips = Object.keys(skippedTools).filter(name => !toolNames.includes(name))
+  if (unknownSkips.length)
+    throw new Error(`Static usage parity skips unknown tools: ${unknownSkips.join(', ')}`)
 
   const testsDir = fileURLToPath(new URL('.', opts.importMetaUrl))
   if (!existsSync(testsDir))
@@ -46,7 +61,7 @@ export function getMissingToolUsages(opts: { integrationName: string, importMeta
       'm',
     )
     const found = fileContents.some(src => nameRe.test(src))
-    if (!found)
+    if (!found && !skippedTools[name])
       missing.push(name)
   }
 

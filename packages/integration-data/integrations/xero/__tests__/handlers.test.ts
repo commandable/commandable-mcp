@@ -1,11 +1,18 @@
-import { describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { afterAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { xeroLiveCoverageSkips } from './liveCoverageSkips.js'
 
 const env = process.env as Record<string, string | undefined>
 
 const suiteOrSkip = hasEnv('XERO_CLIENT_ID', 'XERO_CLIENT_SECRET')
   ? describe
   : describe.skip
+
+const liveCoverage = createLiveToolCoverage({
+  integrationName: 'xero',
+  credentialVariant: 'custom_connection',
+  skippedTools: xeroLiveCoverageSkips,
+})
 
 function createXeroToolbox() {
   const credentialStore = createCredentialStore(async () => ({
@@ -22,10 +29,28 @@ function createXeroToolbox() {
       credentialVariant: 'custom_connection',
     }),
     'custom_connection',
+    { coverage: liveCoverage },
   )
 }
 
+function pickAccount(accounts: any[], predicate: (account: any) => boolean, label: string) {
+  const account = accounts.find(account => account.status === 'ACTIVE' && predicate(account))
+  if (!account)
+    throw new Error(`Could not find active Xero account fixture for ${label}`)
+  return account
+}
+
+function pickTaxType(taxRates: any[], account: any, predicate: (rate: any) => boolean) {
+  const byAccount = account?.taxType && taxRates.find(rate => rate.status === 'ACTIVE' && rate.taxType === account.taxType)
+  const byPredicate = taxRates.find(rate => rate.status === 'ACTIVE' && predicate(rate))
+  return byAccount?.taxType || byPredicate?.taxType || 'NONE'
+}
+
 suiteOrSkip('xero handlers (live)', () => {
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   it('reads organisation settings and accounting metadata', async () => {
     const xero = createXeroToolbox()
 
@@ -50,8 +75,6 @@ suiteOrSkip('xero handlers (live)', () => {
 
   it('reads core accounting resources', async () => {
     const xero = createXeroToolbox()
-
-    await xero.read('list_connections')({}).catch(() => null)
 
     const contacts = await xero.read('list_contacts')({ page: 1 })
     expect(Array.isArray(contacts?.contacts)).toBe(true)
@@ -102,95 +125,119 @@ suiteOrSkip('xero handlers (live)', () => {
     await xero.read('get_budget_summary')({})
   }, 90000)
 
-  it('runs safe write smoke tests against the demo company', async () => {
+  it('runs live smoke tests for safe write tools against the demo company', async () => {
     const xero = createXeroToolbox()
     const runId = Date.now()
+    const accounts = await xero.read('list_accounts')({})
+    const taxRates = await xero.read('list_tax_rates')({})
+    const revenueAccount = pickAccount(accounts.accounts, account => account.type === 'REVENUE' || account.class === 'REVENUE', 'revenue line items')
+    const expenseAccount = pickAccount(accounts.accounts, account => account.type === 'EXPENSE' || account.class === 'EXPENSE', 'expense line items')
+    const revenueTaxType = pickTaxType(taxRates.taxRates, revenueAccount, rate => rate.canApplyToRevenue)
+    const expenseTaxType = pickTaxType(taxRates.taxRates, expenseAccount, rate => rate.canApplyToExpenses)
 
     const contact = await xero.write('create_contact')({
       name: `Commandable Xero Test ${runId}`,
       emailAddress: `commandable-xero-${runId}@example.com`,
     })
     expect(contact?.contact?.contactId).toBeTruthy()
+    expect(contact?.contact?.xeroUrl === null || typeof contact?.contact?.xeroUrl === 'string').toBe(true)
+
+    const fetchedContact = await xero.read('get_contact')({ id: contact.contact.contactId })
+    expect(fetchedContact?.contact?.contactId).toBe(contact.contact.contactId)
 
     const updatedContact = await xero.write('update_contact')({
       contactId: contact.contact.contactId,
-      extraFields: { ContactStatus: 'ARCHIVED' },
+      firstName: 'Commandable',
+      lastName: `Smoke ${runId}`,
     })
     expect(updatedContact?.contact?.contactId).toBe(contact.contact.contactId)
-  }, 90000)
 
-  it.skip('references fixture-dependent write tools for usage parity', async () => {
-    const xero = createXeroToolbox()
     const item = await xero.write('create_item')({
-      code: 'CMD-FIXTURE',
-      name: 'Commandable Fixture Item',
+      code: `CMD-${runId}`,
+      name: `Commandable Fixture Item ${runId}`,
+      description: 'Created by Commandable Xero live smoke tests',
     })
-    await xero.write('update_item')({
+    expect(item?.item?.itemId).toBeTruthy()
+
+    const fetchedItem = await xero.read('get_item')({ id: item.item.itemId })
+    expect(fetchedItem?.item?.itemId).toBe(item.item.itemId)
+
+    const updatedItem = await xero.write('update_item')({
       itemId: item.item.itemId,
-      extraFields: { Name: 'Commandable Fixture Item Updated' },
+      code: item.item.code,
+      name: item.item.name,
+      description: 'Updated by Commandable Xero live smoke tests',
     })
-    await xero.write('create_tracking_category')({
-      name: 'Commandable Fixture Tracking',
+    expect(updatedItem?.item?.itemId).toBe(item.item.itemId)
+
+    const tracking = await xero.read('list_tracking_categories')({})
+    const trackingCategory = tracking?.trackingCategories?.find((category: any) => category.status === 'ACTIVE')
+    expect(trackingCategory?.trackingCategoryId).toBeTruthy()
+
+    const trackingOptions = await xero.write('create_tracking_options')({
+      trackingCategoryId: trackingCategory.trackingCategoryId,
+      optionNames: [`Smoke ${runId}`],
     })
-    await xero.write('create_tracking_options')({
-      trackingCategoryId: 'fixture-tracking-category-id',
-      optionNames: ['One', 'Two'],
+    expect(trackingOptions?.createdCount).toBe(1)
+    const trackingOptionId = trackingOptions?.trackingOptions?.[0]?.trackingOptionId
+    expect(trackingOptionId).toBeTruthy()
+
+    const updatedTrackingOption = await xero.write('update_tracking_options')({
+      trackingCategoryId: trackingCategory.trackingCategoryId,
+      trackingOptionId,
+      name: `Smoke Updated ${runId}`,
     })
-    await xero.write('update_tracking_category')({
-      trackingCategoryId: 'fixture-tracking-category-id',
-      status: 'ARCHIVED',
+    expect(updatedTrackingOption?.trackingOption?.trackingOptionId).toBe(trackingOptionId)
+
+    const invoice = await xero.write('create_invoice')({
+      contactId: contact.contact.contactId,
+      reference: `Commandable smoke ${runId}`,
+      lineItems: [{ description: 'Service smoke test', quantity: 1, unitAmount: 10, accountCode: revenueAccount.code, taxType: revenueTaxType }],
     })
-    await xero.write('update_tracking_options')({
-      trackingCategoryId: 'fixture-tracking-category-id',
-      trackingOptionId: 'fixture-tracking-option-id',
-      status: 'ARCHIVED',
+    expect(invoice?.invoice?.invoiceId).toBeTruthy()
+    expect(invoice?.invoice?.xeroUrl === null || typeof invoice?.invoice?.xeroUrl === 'string').toBe(true)
+
+    const fetchedInvoice = await xero.read('get_invoice')({ id: invoice.invoice.invoiceId })
+    expect(fetchedInvoice?.invoice?.invoiceId).toBe(invoice.invoice.invoiceId)
+    expect(Array.isArray(fetchedInvoice?.invoice?.lineItems)).toBe(true)
+
+    const updatedInvoice = await xero.write('update_invoice')({
+      invoiceId: invoice.invoice.invoiceId,
+      reference: `Commandable smoke updated ${runId}`,
     })
-    await xero.write('create_invoice')({
-      contactId: 'fixture-contact-id',
-      lineItems: [{ description: 'Service', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    expect(updatedInvoice?.invoice?.invoiceId).toBe(invoice.invoice.invoiceId)
+
+    const attachments = await xero.read('list_attachments')({ resourceType: 'Invoices', resourceId: invoice.invoice.invoiceId })
+    expect(Array.isArray(attachments?.attachments)).toBe(true)
+
+    const creditNote = await xero.write('create_credit_note')({
+      contactId: contact.contact.contactId,
+      reference: `Commandable credit smoke ${runId}`,
+      lineItems: [{ description: 'Credit smoke test', quantity: 1, unitAmount: 5, accountCode: revenueAccount.code, taxType: revenueTaxType }],
     })
-    await xero.write('update_invoice')({
-      invoiceId: 'fixture-invoice-id',
-      status: 'SUBMITTED',
+    expect(creditNote?.creditNote?.creditNoteId).toBeTruthy()
+
+    const quote = await xero.write('create_quote')({
+      contactId: contact.contact.contactId,
+      reference: `Commandable quote smoke ${runId}`,
+      lineItems: [{ description: 'Quote smoke test', quantity: 1, unitAmount: 15, accountCode: revenueAccount.code, taxType: revenueTaxType }],
     })
-    await xero.write('create_credit_note')({
-      contactId: 'fixture-contact-id',
-      lineItems: [{ description: 'Credit', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    expect(quote?.quote?.quoteId).toBeTruthy()
+
+    const purchaseOrder = await xero.write('create_purchase_order')({
+      contactId: contact.contact.contactId,
+      reference: `Commandable purchase smoke ${runId}`,
+      lineItems: [{ description: 'Purchase smoke test', quantity: 1, unitAmount: 20, accountCode: expenseAccount.code, taxType: expenseTaxType }],
     })
-    await xero.write('create_quote')({
-      contactId: 'fixture-contact-id',
-      lineItems: [{ description: 'Quote', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
-    })
-    await xero.write('create_purchase_order')({
-      contactId: 'fixture-contact-id',
-      lineItems: [{ description: 'Purchase', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
-    })
-    await xero.write('create_payment')({
-      invoiceId: 'fixture-invoice-id',
-      accountId: 'fixture-account-id',
-      amount: 10,
-    })
-    await xero.write('create_bank_transaction')({
-      type: 'SPEND',
-      bankAccountId: 'fixture-bank-account-id',
-      contactId: 'fixture-contact-id',
-      lineItems: [{ description: 'Spend', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
-    })
-    await xero.write('create_manual_journal')({
-      narration: 'Fixture journal',
+    expect(purchaseOrder?.purchaseOrder?.purchaseOrderId).toBeTruthy()
+
+    const manualJournal = await xero.write('create_manual_journal')({
+      narration: `Commandable journal smoke ${runId}`,
       journalLines: [
-        { accountCode: '200', lineAmount: 10 },
-        { accountCode: '400', lineAmount: -10 },
+        { accountCode: expenseAccount.code, lineAmount: 1, description: 'Debit smoke line' },
+        { accountCode: revenueAccount.code, lineAmount: -1, description: 'Credit smoke line' },
       ],
     })
-  })
-
-  it.skip('references attachment extraction for usage parity', async () => {
-    const xero = createXeroToolbox()
-    await xero.read('read_attachment_content')({
-      resourceType: 'Invoices',
-      resourceId: env.XERO_TEST_ATTACHMENT_INVOICE_ID,
-      fileName: env.XERO_TEST_ATTACHMENT_FILE_NAME,
-    })
-  })
+    expect(manualJournal?.manualJournal?.manualJournalId).toBeTruthy()
+  }, 90000)
 })

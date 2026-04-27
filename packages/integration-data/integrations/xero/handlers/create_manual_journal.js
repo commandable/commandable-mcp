@@ -17,11 +17,16 @@ async (input) => {
     journalLineCount: Array.isArray(journal?.JournalLines) ? journal.JournalLines.length : undefined,
     xeroUrl: journal?.ManualJournalID ? `https://go.xero.com/Journal/View.aspx?invoiceID=${encodeURIComponent(journal.ManualJournalID)}` : null,
   })
+  const lineAmountTypeMap = {
+    EXCLUSIVE: 'Exclusive',
+    INCLUSIVE: 'Inclusive',
+    NO_TAX: 'NoTax',
+  }
   const manualJournal = {
     Narration: input.narration,
     JournalLines: input.journalLines.map(mapJournalLine),
     Date: input.date || today,
-    LineAmountTypes: input.lineAmountTypes || 'NO_TAX',
+    LineAmountTypes: lineAmountTypeMap[input.lineAmountTypes || 'NO_TAX'] || input.lineAmountTypes,
     Status: input.status || 'DRAFT',
     ...(input.url ? { Url: input.url } : {}),
     ...(input.showOnCashBasisReports !== undefined ? { ShowOnCashBasisReports: input.showOnCashBasisReports } : {}),
