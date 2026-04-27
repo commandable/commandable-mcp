@@ -41,6 +41,24 @@ async (input) => {
     return ''
   }
 
+  const collectAttachments = (part, out = []) => {
+    if (!part) return out
+    if (part.body?.attachmentId) {
+      out.push({
+        attachmentId: part.body.attachmentId,
+        filename: part.filename || '',
+        mimeType: part.mimeType || '',
+        size: part.body?.size || 0,
+        partId: part.partId || '',
+      })
+    }
+    if (Array.isArray(part.parts)) {
+      for (const child of part.parts)
+        collectAttachments(child, out)
+    }
+    return out
+  }
+
   return {
     id: msg.id,
     threadId: msg.threadId,
@@ -52,5 +70,6 @@ async (input) => {
     date: getHeader('Date'),
     snippet: msg.snippet || '',
     body: extractBody(msg.payload),
+    attachments: collectAttachments(msg.payload),
   }
 }

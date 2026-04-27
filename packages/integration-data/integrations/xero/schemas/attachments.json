@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "resourceType": {
+      "type": "string",
+      "enum": ["Accounts", "BankTransactions", "BankTransfers", "Contacts", "CreditNotes", "Invoices", "ManualJournals", "PurchaseOrders", "Receipts", "RepeatingInvoices"],
+      "description": "Xero attachment parent endpoint."
+    },
+    "resourceId": {
+      "type": "string",
+      "description": "ID of the parent Xero resource."
+    }
+  },
+  "required": ["resourceType", "resourceId"],
+  "additionalProperties": false
+}

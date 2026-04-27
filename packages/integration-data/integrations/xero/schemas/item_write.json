@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "itemId": {
+      "type": "string",
+      "description": "Required for update_item."
+    },
+    "code": {
+      "type": "string",
+      "description": "Item code."
+    },
+    "name": {
+      "type": "string",
+      "description": "Item name."
+    },
+    "description": {
+      "type": "string",
+      "description": "Sales description."
+    },
+    "extraFields": {
+      "type": "object",
+      "description": "Additional Xero Item fields. Values here override common fields.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

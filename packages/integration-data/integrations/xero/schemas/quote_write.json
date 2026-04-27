@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "lineItem": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unitAmount": { "type": "number" },
+        "accountCode": {
+          "type": "string",
+          "description": "Account code from list_accounts."
+        },
+        "taxType": {
+          "type": "string",
+          "description": "Tax type from list_tax_rates."
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "Optional item code from list_items."
+        }
+      },
+      "required": ["description", "quantity", "unitAmount", "accountCode", "taxType"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "contactId": {
+      "type": "string",
+      "description": "Contact ID from list_contacts."
+    },
+    "lineItems": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/lineItem" },
+      "minItems": 1
+    },
+    "reference": {
+      "type": "string"
+    },
+    "quoteNumber": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "description": "Quote date in YYYY-MM-DD format."
+    },
+    "expiryDate": {
+      "type": "string",
+      "description": "Expiry date in YYYY-MM-DD format."
+    },
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "terms": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "SENT", "ACCEPTED", "DECLINED"],
+      "description": "Prefer DRAFT unless the user explicitly asks otherwise."
+    },
+    "extraFields": {
+      "type": "object",
+      "description": "Advanced Xero Quote fields to merge into the generated object.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["contactId", "lineItems"],
+  "additionalProperties": false
+}

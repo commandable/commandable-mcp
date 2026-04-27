@@ -21,8 +21,13 @@ Combine operators with spaces (implicit AND): `from:alice is:unread has:attachme
 
 **Reading emails:**
 1. Use `list_messages` with a `q` query to find relevant message IDs
-2. Use `read_email` on each ID to get decoded subject, from, to, date, and body text
+2. Use `read_email` on each ID to get decoded subject, from, to, date, body text, and attachment metadata
 3. For raw access or advanced format options, use `get_message` with `format='full'`
+
+**Reading attachments:**
+1. Use `list_messages` with `has:attachment` or `filename:report.pdf` to find messages with attachments
+2. Use `read_email` to inspect the `attachments` array and find the attachment ID, filename, MIME type, and size
+3. Use `read_attachment_content` with the message ID and either `attachmentId` or `filename` to extract readable file content
 
 **Searching for threads:**
 1. Use `list_threads` with `q` to find conversation threads

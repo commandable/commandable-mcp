@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "where": {
+      "type": "string",
+      "description": "Xero where filter expression, e.g. Status==\"ACTIVE\"."
+    },
+    "order": {
+      "type": "string",
+      "description": "Xero order expression, e.g. Code ASC."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "lineItem": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unitAmount": { "type": "number" },
+        "accountCode": {
+          "type": "string",
+          "description": "Account code from list_accounts."
+        },
+        "taxType": {
+          "type": "string",
+          "description": "Tax type from list_tax_rates."
+        },
+        "itemCode": {
+          "type": "string",
+          "description": "Optional item code from list_items."
+        }
+      },
+      "required": ["description", "quantity", "unitAmount", "accountCode", "taxType"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "contactId": {
+      "type": "string",
+      "description": "Supplier contact ID from list_contacts."
+    },
+    "lineItems": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/lineItem" },
+      "minItems": 1
+    },
+    "date": {
+      "type": "string",
+      "description": "Purchase order date in YYYY-MM-DD format."
+    },
+    "deliveryDate": {
+      "type": "string",
+      "description": "Delivery date in YYYY-MM-DD format."
+    },
+    "reference": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "SUBMITTED", "AUTHORISED", "BILLED"],
+      "description": "Prefer DRAFT unless the user explicitly asks otherwise."
+    },
+    "extraFields": {
+      "type": "object",
+      "description": "Advanced Xero PurchaseOrder fields to merge into the generated object.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["contactId", "lineItems"],
+  "additionalProperties": false
+}

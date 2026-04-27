@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["messageId"],
+  "anyOf": [
+    { "required": ["attachmentId"] },
+    { "required": ["filename"] }
+  ],
+  "properties": {
+    "userId": {
+      "type": "string",
+      "description": "User email or 'me'. Defaults to 'me'."
+    },
+    "messageId": {
+      "type": "string",
+      "description": "Gmail message ID. Obtain from list_messages or read_email."
+    },
+    "attachmentId": {
+      "type": "string",
+      "description": "Gmail attachment ID from read_email's attachments array. Preferred when available."
+    },
+    "filename": {
+      "type": "string",
+      "description": "Attachment filename from read_email's attachments array. Used to resolve the attachment when attachmentId is not provided."
+    },
+    "mimeType": {
+      "type": "string",
+      "description": "Optional MIME type override. Defaults to the MIME type from the matching message part."
+    },
+    "previewPages": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of pages to render as images and return alongside the text (PDF only). Omit or set to 0 to skip. Useful for visually checking signatures, logos, or layout."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "journalLine": {
+      "type": "object",
+      "properties": {
+        "lineAmount": {
+          "type": "number",
+          "description": "Debit lines are positive; credit lines are negative."
+        },
+        "accountCode": {
+          "type": "string",
+          "description": "Account code from list_accounts."
+        },
+        "description": {
+          "type": "string"
+        },
+        "taxType": {
+          "type": "string",
+          "description": "Optional tax type from list_tax_rates."
+        }
+      },
+      "required": ["lineAmount", "accountCode"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "narration": {
+      "type": "string",
+      "description": "Description of the journal."
+    },
+    "journalLines": {
+      "type": "array",
+      "description": "At least two balanced journal lines. Debits must equal credits.",
+      "items": { "$ref": "#/definitions/journalLine" },
+      "minItems": 2
+    },
+    "date": {
+      "type": "string",
+      "description": "Journal date in YYYY-MM-DD format."
+    },
+    "lineAmountTypes": {
+      "type": "string",
+      "enum": ["EXCLUSIVE", "INCLUSIVE", "NO_TAX"],
+      "description": "Defaults to NO_TAX."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "POSTED"],
+      "description": "Prefer DRAFT unless the user explicitly asks to post."
+    },
+    "url": {
+      "type": "string",
+      "description": "Optional URL to a source document."
+    },
+    "showOnCashBasisReports": {
+      "type": "boolean"
+    },
+    "extraFields": {
+      "type": "object",
+      "description": "Advanced Xero ManualJournal fields to merge into the generated object.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["narration", "journalLines"],
+  "additionalProperties": false
+}

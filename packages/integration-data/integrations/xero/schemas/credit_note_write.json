@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "lineItem": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unitAmount": { "type": "number" },
+        "accountCode": {
+          "type": "string",
+          "description": "Account code from list_accounts."
+        },
+        "taxType": {
+          "type": "string",
+          "description": "Tax type from list_tax_rates."
+        }
+      },
+      "required": ["description", "quantity", "unitAmount", "accountCode", "taxType"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "contactId": {
+      "type": "string",
+      "description": "Contact ID from list_contacts."
+    },
+    "lineItems": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/lineItem" },
+      "minItems": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": ["ACCRECCREDIT", "ACCPAYCREDIT"],
+      "description": "ACCRECCREDIT for customer credit notes, ACCPAYCREDIT for supplier credit notes."
+    },
+    "reference": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "description": "Credit note date in YYYY-MM-DD format."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "SUBMITTED", "AUTHORISED"],
+      "description": "Prefer DRAFT unless the user explicitly asks otherwise."
+    },
+    "extraFields": {
+      "type": "object",
+      "description": "Advanced Xero CreditNote fields to merge into the generated object.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["contactId", "lineItems"],
+  "additionalProperties": false
+}

@@ -1,5 +1,5 @@
 import { IntegrationProxy } from '../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../core/src/integrations/dataLoader.js'
+import { loadIntegrationManifest, loadIntegrationTools } from '../../src/loader.js'
 import { createSafeHandlerFromString } from '../../../core/src/integrations/sandbox.js'
 import { buildSandboxUtils } from '../../../core/src/integrations/sandboxUtils.js'
 import { createGetIntegration } from '../../../core/src/integrations/getIntegration.js'
@@ -15,6 +15,68 @@ type ToolSet = {
   read: ToolDef[]
   write: ToolDef[]
   admin: ToolDef[]
+}
+
+type LiveToolCoverage = {
+  record: (scope: keyof ToolSet, name: string) => void
+}
+
+export function createLiveToolCoverage(opts: {
+  integrationName: string
+  credentialVariant?: string
+  skippedTools?: Record<string, string>
+}) {
+  const invoked = new Set<string>()
+  const skippedTools = opts.skippedTools || {}
+
+  return {
+    record: (_scope: keyof ToolSet, name: string) => {
+      invoked.add(name)
+    },
+    assertComplete: () => {
+      const manifest = loadIntegrationManifest(opts.integrationName)
+      if (!manifest)
+        throw new Error(`Missing integration manifest for '${opts.integrationName}'`)
+
+      const relevantTools = (manifest.tools as any[]).filter((tool) => {
+        if (!tool.credentialVariants || !Array.isArray(tool.credentialVariants) || tool.credentialVariants.length === 0)
+          return true
+        return opts.credentialVariant ? tool.credentialVariants.includes(opts.credentialVariant) : false
+      })
+      const manifestToolNames = relevantTools.map(tool => String(tool.name))
+      const manifestToolSet = new Set(manifestToolNames)
+
+      const skipsWithoutReasons = Object.entries(skippedTools)
+        .filter(([, reason]) => !String(reason || '').trim())
+        .map(([name]) => name)
+      if (skipsWithoutReasons.length) {
+        throw new Error(
+          `Live tool coverage skips must include reasons: ${skipsWithoutReasons.join(', ')}`,
+        )
+      }
+
+      const unknownSkips = Object.keys(skippedTools).filter(name => !manifestToolSet.has(name))
+      if (unknownSkips.length)
+        throw new Error(`Live tool coverage skips unknown tools: ${unknownSkips.join(', ')}`)
+
+      const missing = manifestToolNames.filter(name => !invoked.has(name) && !skippedTools[name])
+      if (missing.length) {
+        throw new Error(
+          [
+            `Missing live tool coverage for ${opts.integrationName}: ${missing.join(', ')}`,
+            'Execute each tool in a live test, or add an explicit skippedTools reason.',
+          ].join('\n'),
+        )
+      }
+
+      return {
+        invoked: [...invoked].sort(),
+        skipped: Object.entries(skippedTools)
+          .map(([name, reason]) => ({ name, reason }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      }
+    },
+  }
 }
 
 export function hasEnv(...keys: string[]) {
@@ -70,10 +132,18 @@ function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   }
 }
 
-export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string) {
+export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string, opts?: { coverage?: LiveToolCoverage }) {
   const tools = getTools(type, credentialVariant)
 
   const findTool = (scope: keyof ToolSet, name: string) => tools[scope].find(t => t.name === name)
+  const compileCoveredTool = (scope: keyof ToolSet, name: string, tool: ToolDef) => {
+    const run = compileTool(proxy, node, tool)
+    return async (input: any) => {
+      const result = await run(input)
+      opts?.coverage?.record(scope, name)
+      return result
+    }
+  }
 
   return {
     /** Returns true if the tool exists in this variant's toolset. */
@@ -83,19 +153,19 @@ export function createToolbox(type: string, proxy: IntegrationProxy, node: any, 
       const tool = findTool('read', name)
       if (!tool)
         throw new Error(`Missing read tool '${name}' for '${type}' (variant: ${credentialVariant ?? 'default'})`)
-      return compileTool(proxy, node, tool)
+      return compileCoveredTool('read', name, tool)
     },
     write: (name: string) => {
       const tool = findTool('write', name)
       if (!tool)
         throw new Error(`Missing write tool '${name}' for '${type}' (variant: ${credentialVariant ?? 'default'})`)
-      return compileTool(proxy, node, tool)
+      return compileCoveredTool('write', name, tool)
     },
     admin: (name: string) => {
       const tool = findTool('admin', name) || findTool('write', name) || findTool('read', name)
       if (!tool)
         throw new Error(`Missing admin tool '${name}' for '${type}' (variant: ${credentialVariant ?? 'default'})`)
-      return compileTool(proxy, node, tool)
+      return compileCoveredTool('admin', name, tool)
     },
   }
 }

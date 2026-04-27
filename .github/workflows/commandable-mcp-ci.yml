@@ -77,14 +77,12 @@ jobs:
         run: yarn check:generated
 
       - uses: actions/setup-python@v5
-        if: matrix.integration == 'google-workspace' || matrix.integration == 'sharepoint'
         with:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: packages/core/src/file-extractor/requirements.txt
 
       - name: Install MarkItDown (read_file_content / extractFileContent live tests)
-        if: matrix.integration == 'google-workspace' || matrix.integration == 'sharepoint'
         run: pip3 install -r packages/core/src/file-extractor/requirements.txt
 
       - name: Run ${{ matrix.integration }} tests

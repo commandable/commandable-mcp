@@ -233,6 +233,12 @@ const extracted = await utils.extractFileContent({
   auth: true,
   source: `/drives/${driveId}/items/${itemId}/content`,
 })
+
+// Inline bytes, e.g. APIs that return base64 file content
+const extracted = await utils.extractFileContent({
+  auth: false,
+  source: `data:${mimeType || 'application/octet-stream'};base64,${base64}`,
+})
 ```
 
 Returns `{ kind, content, warnings?, metadata? }`.
@@ -397,14 +403,67 @@ Copied from `new_integration_prompt.md` and `integrations/README.md` for complet
 
 ---
 
+## Integration testing
+
+Every integration should have tests that protect both manifest coverage and real handler behaviour.
+
+### Static usage parity
+
+Add `integrations/<type>/__tests__/usage_parity.test.ts` using `getMissingToolUsages()`. This is the minimum guardrail: every manifest tool must be referenced by a test file, or explicitly skipped with a reason.
+
+Static parity is **not** enough by itself. It only proves a test mentions the tool name; it does not prove the handler works, that credentials are wired correctly, or that the API accepts the request shape.
+
+### Live tool coverage
+
+For credentialed integrations with live tests, prefer `createLiveToolCoverage()` from `integrations/__tests__/liveHarness.ts`. Pass the coverage object into `createToolbox(..., { coverage })`, then call `liveCoverage.assertComplete()` in `afterAll()`.
+
+This makes the live suite fail when a manifest tool is not actually invoked through the toolbox:
+
+```ts
+const liveCoverage = createLiveToolCoverage({
+  integrationName: 'xero',
+  credentialVariant: 'custom_connection',
+  skippedTools: {
+    dangerous_tool: 'Unsafe to run against live tenant data.',
+  },
+})
+
+afterAll(() => {
+  liveCoverage.assertComplete()
+})
+```
+
+Use skips sparingly. Every skipped tool must have a specific reason, and unknown skip names should fail the suite. A skip is appropriate for genuinely unsafe, tenant-wide, irreversible, or externally dependent behaviour. It is not appropriate just because a tool needs setup.
+
+### Round-trip tests
+
+Good live integration tests should own their fixtures:
+
+- Create the resource the test needs.
+- Read it back using the public tool under test.
+- Update or transform it when relevant.
+- Delete or archive it during cleanup.
+- Assert the user-facing result shape, not only that the request did not throw.
+
+Avoid static IDs for normal coverage. Static IDs make tests depend on hidden mailbox, workspace, tenant, or account state and tend to go stale. Prefer self-contained round trips even when that means creating a disposable email, document, issue, card, invoice, or file.
+
+For APIs with eventual consistency, use short bounded retry helpers around the specific read-after-write step. Do not use unbounded waits or mailbox/workspace searches when the API returns a created resource ID that can be read directly.
+
+For destructive tools, cleanup calls should not be the only coverage. A `delete_*` tool should normally have an explicit test that creates a disposable resource, deletes it, and verifies it is gone or no longer readable. Cleanup can still use `safeCleanup()`, but swallowed cleanup errors do not count as meaningful tool assertions.
+
+For file extraction tools, use shared fixtures from `integrations/__tests__/fixtures/file-extraction/`. Each fixture should contain the exact text `Commandable Integration Test`, and live tests should assert that extracted content includes that marker.
+
+---
+
 ## Adding a new integration — checklist
 
 1. Create `integrations/<type>/` with required files
 2. Run `yarn workspace @commandable/integration-data run generate:registry`
 3. Verify the registry builds cleanly and the new type appears in `src/generated/registry.ts`
 4. Add `integrations/<type>/__tests__/` with at minimum a `usage_parity.test.ts`
-5. Run `yarn workspace @commandable/integration-data test`
-6. Commit both the source files and the regenerated registry
+5. Add live round-trip tests for credentialed tools where credentials and safe fixtures are available; use `createLiveToolCoverage()` to catch untested manifest tools
+6. Run `yarn workspace @commandable/integration-data test`
+7. Commit both the source files and the regenerated registry
 
 ---
 

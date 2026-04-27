@@ -70,6 +70,38 @@ describe('extractFileContent utility', () => {
     expect(result.content).toBe('Extracted body text')
   })
 
+  it('extracts a base64 data URL without calling fetch', async () => {
+    const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    const util = createExtractFileContent(() => {
+      throw new Error('getIntegration should not be called for data URLs')
+    })
+
+    const source = `data:application/pdf;base64,${Buffer.from('pdf bytes').toString('base64')}`
+    const result = await util({ auth: false, source })
+
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(result.kind).toBe('pdf')
+    expect(result.content).toBe('Extracted body text')
+  })
+
+  it('rejects invalid base64 data URLs with a clear message', async () => {
+    const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    const util = createExtractFileContent(() => {
+      throw new Error('getIntegration should not be called for data URLs')
+    })
+
+    await expect(util({ auth: false, source: 'data:application/pdf;base64,@@@@' })).rejects.toThrow(
+      /invalid base64 data URL payload/,
+    )
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
   it('uses integration auth for a relative source when auth is true', async () => {
     const { createExtractFileContent } = await import('../integrations/fileExtractor.js')
     const integrationFetch = vi.fn(async () => new Response('binary', {
