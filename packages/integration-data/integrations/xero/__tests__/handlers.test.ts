@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
 import { xeroLiveCoverageSkips } from './liveCoverageSkips.js'
@@ -7,6 +10,7 @@ const env = process.env as Record<string, string | undefined>
 const suiteOrSkip = hasEnv('XERO_CLIENT_ID', 'XERO_CLIENT_SECRET')
   ? describe
   : describe.skip
+const fixturesDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../__tests__/fixtures/file-extraction')
 
 const liveCoverage = createLiveToolCoverage({
   integrationName: 'xero',
@@ -15,22 +19,46 @@ const liveCoverage = createLiveToolCoverage({
 })
 
 function createXeroToolbox() {
+  const { node, proxy } = createXeroHarnessParts()
+  return createToolbox(
+    'xero',
+    proxy,
+    node,
+    'custom_connection',
+    { coverage: liveCoverage },
+  )
+}
+
+function createXeroHarnessParts() {
   const credentialStore = createCredentialStore(async () => ({
     clientId: env.XERO_CLIENT_ID!,
     clientSecret: env.XERO_CLIENT_SECRET!,
   }))
   const proxy = createProxy(credentialStore)
-  return createToolbox(
-    'xero',
-    proxy,
-    createIntegrationNode('xero', {
-      label: 'Xero',
-      credentialId: 'xero-creds',
-      credentialVariant: 'custom_connection',
-    }),
-    'custom_connection',
-    { coverage: liveCoverage },
+  const node = createIntegrationNode('xero', {
+    label: 'Xero',
+    credentialId: 'xero-creds',
+    credentialVariant: 'custom_connection',
+  })
+  return { node, proxy }
+}
+
+async function uploadInvoiceAttachment(invoiceId: string, fileName: string) {
+  const { node, proxy } = createXeroHarnessParts()
+  const bytes = readFileSync(resolve(fixturesDir, 'sample.pdf'))
+  const body = new Uint8Array(bytes).buffer
+  const response = await proxy.call(
+    node,
+    `/api.xro/2.0/Invoices/${encodeURIComponent(invoiceId)}/Attachments/${encodeURIComponent(fileName)}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/pdf',
+      },
+      body,
+    },
   )
+  return await response.json()
 }
 
 function pickAccount(accounts: any[], predicate: (account: any) => boolean, label: string) {
@@ -207,8 +235,22 @@ suiteOrSkip('xero handlers (live)', () => {
     })
     expect(updatedInvoice?.invoice?.invoiceId).toBe(invoice.invoice.invoiceId)
 
+    const attachmentFileName = `commandable-xero-smoke-${runId}.pdf`
+    const uploadedAttachment = await uploadInvoiceAttachment(invoice.invoice.invoiceId, attachmentFileName)
+    expect(uploadedAttachment?.Attachments?.[0]?.FileName).toBe(attachmentFileName)
+
     const attachments = await xero.read('list_attachments')({ resourceType: 'Invoices', resourceId: invoice.invoice.invoiceId })
     expect(Array.isArray(attachments?.attachments)).toBe(true)
+    expect(attachments.attachments.some((attachment: any) => attachment.fileName === attachmentFileName)).toBe(true)
+
+    const attachmentContent = await xero.read('read_attachment_content')({
+      resourceType: 'Invoices',
+      resourceId: invoice.invoice.invoiceId,
+      fileName: attachmentFileName,
+    })
+    expect(attachmentContent?.fileName).toBe(attachmentFileName)
+    expect(typeof attachmentContent?.content).toBe('string')
+    expect(attachmentContent.content.length).toBeGreaterThan(0)
 
     const creditNote = await xero.write('create_credit_note')({
       contactId: contact.contact.contactId,

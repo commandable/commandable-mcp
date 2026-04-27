@@ -4,5 +4,4 @@ export const xeroLiveCoverageSkips: Record<string, string> = {
   update_tracking_category: 'Updating an existing tracking category would rename or archive shared demo organisation configuration; category option writes are live-covered instead.',
   create_payment: 'Creates a real payment against an authorised invoice; needs a dedicated reversible fixture before it can be safely run in every live smoke pass.',
   create_bank_transaction: 'Creates a real bank transaction in the demo organisation and currently requires a dedicated bank/account fixture to avoid Xero validation failures.',
-  read_attachment_content: 'Requires a Xero attachment fixture because this integration does not currently include an upload-attachment tool to create one safely during the test.',
 }
