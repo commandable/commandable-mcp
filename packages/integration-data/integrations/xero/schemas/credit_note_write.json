@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "creditNote": {
+      "type": "object",
+      "description": "Xero CreditNote object. Include Type, Contact, LineItems, and Status as needed.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["creditNote"],
+  "additionalProperties": false
+}

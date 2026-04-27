@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "invoiceId": {
+      "type": "string",
+      "description": "Required for update_invoice."
+    },
+    "invoice": {
+      "type": "object",
+      "description": "Xero Invoice object. Include Type, Contact, LineItems, dates, and Status as needed.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["invoice"],
+  "additionalProperties": false
+}

@@ -1,0 +1,323 @@
+{
+  "name": "xero",
+  "version": "0.1.0",
+  "baseUrl": "https://api.xero.com",
+  "toolsets": {
+    "accounting": {
+      "label": "Accounting",
+      "description": "Work with Xero contacts, items, invoices, payments, bank transactions, journals, and attachments"
+    },
+    "reports": {
+      "label": "Reports",
+      "description": "Read Xero financial reports such as profit and loss, balance sheet, trial balance, and aged reports"
+    }
+  },
+  "tools": [
+    {
+      "name": "list_connections",
+      "description": "List Xero tenant connections available to the current token. Use this for public OAuth integrations to discover tenantId values; Custom Connections are single-organisation and usually do not require tenantId.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/list_connections.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_organisation",
+      "description": "Get the connected Xero organisation profile and settings. For public OAuth, provide tenantId from list_connections; for Custom Connections omit tenantId.",
+      "inputSchema": "schemas/tenant_optional.json",
+      "handler": "handlers/get_organisation.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_accounts",
+      "description": "List chart of accounts with account IDs, codes, names, types, status, and tax type. Use this before creating payments, bank transactions, or journals.",
+      "inputSchema": "schemas/list_accounts.json",
+      "handler": "handlers/list_accounts.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_tax_rates",
+      "description": "List tax rates available in the connected organisation. Use this to discover valid tax type values for invoice, item, and bank transaction lines.",
+      "inputSchema": "schemas/tenant_optional.json",
+      "handler": "handlers/list_tax_rates.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_tracking_categories",
+      "description": "List tracking categories and active options. Use this before adding tracking to invoice, journal, or bank transaction lines.",
+      "inputSchema": "schemas/tenant_optional.json",
+      "handler": "handlers/list_tracking_categories.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_currencies",
+      "description": "List currencies configured in the connected Xero organisation.",
+      "inputSchema": "schemas/tenant_optional.json",
+      "handler": "handlers/list_currencies.js",
+      "scope": "read"
+    },
+    {
+      "name": "list_contacts",
+      "description": "List contacts with compact identity and balance fields. Filter with where/order/page when needed; use get_contact for full details before updating.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_contacts.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "get_contact",
+      "description": "Get a Xero contact by contactId. Use this before update_contact to avoid overwriting important fields.",
+      "inputSchema": "schemas/id_record.json",
+      "handler": "handlers/get_contact.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_contact",
+      "description": "Create a contact. Provide name/email/common fields or a contact object for advanced Xero fields; the handler wraps it in Xero's Contacts envelope.",
+      "inputSchema": "schemas/contact_write.json",
+      "handler": "handlers/create_contact.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "update_contact",
+      "description": "Update a contact by contactId. Provide only fields to change; use get_contact first when preserving existing values matters.",
+      "inputSchema": "schemas/contact_write.json",
+      "handler": "handlers/update_contact.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_items",
+      "description": "List inventory/service items with IDs, codes, names, status, and sale/purchase details. Use get_item for full details.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_items.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "get_item",
+      "description": "Get a Xero item by itemId.",
+      "inputSchema": "schemas/id_record.json",
+      "handler": "handlers/get_item.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_item",
+      "description": "Create an item. Provide common fields or an item object for advanced Xero fields.",
+      "inputSchema": "schemas/item_write.json",
+      "handler": "handlers/create_item.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "update_item",
+      "description": "Update an item by itemId. Provide only fields to change.",
+      "inputSchema": "schemas/item_write.json",
+      "handler": "handlers/update_item.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_invoices",
+      "description": "List invoices with compact totals, status, contact, dates, and invoice number. Filter by where/status/page; use get_invoice for line items.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_invoices.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "get_invoice",
+      "description": "Get an invoice by invoiceId, including line items and payment summary.",
+      "inputSchema": "schemas/id_record.json",
+      "handler": "handlers/get_invoice.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_invoice",
+      "description": "Create an invoice, usually as DRAFT first. Provide an invoice object with Type, Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Invoices envelope.",
+      "inputSchema": "schemas/invoice_write.json",
+      "handler": "handlers/create_invoice.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "update_invoice",
+      "description": "Update an invoice by invoiceId. Use this for draft changes or allowed status transitions; prefer get_invoice first.",
+      "inputSchema": "schemas/invoice_write.json",
+      "handler": "handlers/update_invoice.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_credit_notes",
+      "description": "List credit notes with compact status, contact, date, total, and remaining credit fields.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_credit_notes.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_credit_note",
+      "description": "Create a credit note. Provide a creditNote object with Type, Contact, LineItems, and optional Status; the handler wraps it in Xero's CreditNotes envelope.",
+      "inputSchema": "schemas/credit_note_write.json",
+      "handler": "handlers/create_credit_note.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_quotes",
+      "description": "List quotes with compact quote number, status, contact, dates, and totals.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_quotes.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_quote",
+      "description": "Create a quote. Provide a quote object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Quotes envelope.",
+      "inputSchema": "schemas/quote_write.json",
+      "handler": "handlers/create_quote.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_purchase_orders",
+      "description": "List purchase orders with compact purchase order number, status, contact, delivery date, and totals.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_purchase_orders.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_purchase_order",
+      "description": "Create a purchase order. Provide a purchaseOrder object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's PurchaseOrders envelope.",
+      "inputSchema": "schemas/purchase_order_write.json",
+      "handler": "handlers/create_purchase_order.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_payments",
+      "description": "List payments with compact payment ID, date, amount, status, account, and invoice references.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_payments.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_payment",
+      "description": "Create a payment against an invoice, credit note, prepayment, or overpayment. Use list_accounts and get_invoice first to discover valid IDs and amounts.",
+      "inputSchema": "schemas/payment_write.json",
+      "handler": "handlers/create_payment.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_bank_transactions",
+      "description": "List bank transactions with compact type, status, contact, date, total, and bank account details.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_bank_transactions.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_bank_transaction",
+      "description": "Create a spend or receive bank transaction. Use list_accounts for valid bank/account codes and tax rates before calling this.",
+      "inputSchema": "schemas/bank_transaction_write.json",
+      "handler": "handlers/create_bank_transaction.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_manual_journals",
+      "description": "List manual journals with compact status, narration, date, journal ID, and line count.",
+      "inputSchema": "schemas/list_records.json",
+      "handler": "handlers/list_manual_journals.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_manual_journal",
+      "description": "Create a manual journal. Use this carefully; discover account codes with list_accounts and prefer DRAFT when supported by the organisation workflow.",
+      "inputSchema": "schemas/manual_journal_write.json",
+      "handler": "handlers/create_manual_journal.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "list_attachments",
+      "description": "List attachments for a supported Xero resource such as Invoices, Contacts, BankTransactions, CreditNotes, PurchaseOrders, or ManualJournals.",
+      "inputSchema": "schemas/attachments.json",
+      "handler": "handlers/list_attachments.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "read_attachment_content",
+      "description": "Extract readable text from an attachment on a supported Xero resource. Uses the shared file extractor for PDFs, Office files, CSV, text, HTML, and similar formats.",
+      "inputSchema": "schemas/read_attachment_content.json",
+      "handler": "handlers/read_attachment_content.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "get_profit_and_loss",
+      "description": "Get the Profit and Loss report for a date range or period. Returns Xero's report rows plus helper metadata for the query used.",
+      "inputSchema": "schemas/report_profit_and_loss.json",
+      "handler": "handlers/get_profit_and_loss.js",
+      "scope": "read",
+      "toolset": "reports"
+    },
+    {
+      "name": "get_balance_sheet",
+      "description": "Get the Balance Sheet report for a date or period. Use this for financial position summaries.",
+      "inputSchema": "schemas/report_balance_sheet.json",
+      "handler": "handlers/get_balance_sheet.js",
+      "scope": "read",
+      "toolset": "reports"
+    },
+    {
+      "name": "get_trial_balance",
+      "description": "Get the Trial Balance report at a point in time.",
+      "inputSchema": "schemas/report_date.json",
+      "handler": "handlers/get_trial_balance.js",
+      "scope": "read",
+      "toolset": "reports"
+    },
+    {
+      "name": "get_bank_summary",
+      "description": "Get the Bank Summary report for a date range.",
+      "inputSchema": "schemas/report_date_range.json",
+      "handler": "handlers/get_bank_summary.js",
+      "scope": "read",
+      "toolset": "reports"
+    },
+    {
+      "name": "get_aged_payables_by_contact",
+      "description": "Get the Aged Payables by Contact report. Provide contactId when focusing on one supplier.",
+      "inputSchema": "schemas/report_aged_by_contact.json",
+      "handler": "handlers/get_aged_payables_by_contact.js",
+      "scope": "read",
+      "toolset": "reports"
+    },
+    {
+      "name": "get_aged_receivables_by_contact",
+      "description": "Get the Aged Receivables by Contact report. Provide contactId when focusing on one customer.",
+      "inputSchema": "schemas/report_aged_by_contact.json",
+      "handler": "handlers/get_aged_receivables_by_contact.js",
+      "scope": "read",
+      "toolset": "reports"
+    },
+    {
+      "name": "get_budget_summary",
+      "description": "Get the Budget Summary report for a date range and period count.",
+      "inputSchema": "schemas/report_budget_summary.json",
+      "handler": "handlers/get_budget_summary.js",
+      "scope": "read",
+      "toolset": "reports"
+    }
+  ]
+}

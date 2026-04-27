@@ -13693,5 +13693,1641 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       }
     ],
     "variantOwnerType": "trello"
+  },
+  "xero": {
+    "manifest": {
+      "name": "xero",
+      "version": "0.1.0",
+      "baseUrl": "https://api.xero.com",
+      "toolsets": {
+        "accounting": {
+          "label": "Accounting",
+          "description": "Work with Xero contacts, items, invoices, payments, bank transactions, journals, and attachments"
+        },
+        "reports": {
+          "label": "Reports",
+          "description": "Read Xero financial reports such as profit and loss, balance sheet, trial balance, and aged reports"
+        }
+      },
+      "tools": [
+        {
+          "name": "list_connections",
+          "description": "List Xero tenant connections available to the current token. Use this for public OAuth integrations to discover tenantId values; Custom Connections are single-organisation and usually do not require tenantId.",
+          "inputSchema": "schemas/empty.json",
+          "handler": "handlers/list_connections.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_organisation",
+          "description": "Get the connected Xero organisation profile and settings. For public OAuth, provide tenantId from list_connections; for Custom Connections omit tenantId.",
+          "inputSchema": "schemas/tenant_optional.json",
+          "handler": "handlers/get_organisation.js",
+          "scope": "read"
+        },
+        {
+          "name": "list_accounts",
+          "description": "List chart of accounts with account IDs, codes, names, types, status, and tax type. Use this before creating payments, bank transactions, or journals.",
+          "inputSchema": "schemas/list_accounts.json",
+          "handler": "handlers/list_accounts.js",
+          "scope": "read"
+        },
+        {
+          "name": "list_tax_rates",
+          "description": "List tax rates available in the connected organisation. Use this to discover valid tax type values for invoice, item, and bank transaction lines.",
+          "inputSchema": "schemas/tenant_optional.json",
+          "handler": "handlers/list_tax_rates.js",
+          "scope": "read"
+        },
+        {
+          "name": "list_tracking_categories",
+          "description": "List tracking categories and active options. Use this before adding tracking to invoice, journal, or bank transaction lines.",
+          "inputSchema": "schemas/tenant_optional.json",
+          "handler": "handlers/list_tracking_categories.js",
+          "scope": "read"
+        },
+        {
+          "name": "list_currencies",
+          "description": "List currencies configured in the connected Xero organisation.",
+          "inputSchema": "schemas/tenant_optional.json",
+          "handler": "handlers/list_currencies.js",
+          "scope": "read"
+        },
+        {
+          "name": "list_contacts",
+          "description": "List contacts with compact identity and balance fields. Filter with where/order/page when needed; use get_contact for full details before updating.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_contacts.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "get_contact",
+          "description": "Get a Xero contact by contactId. Use this before update_contact to avoid overwriting important fields.",
+          "inputSchema": "schemas/id_record.json",
+          "handler": "handlers/get_contact.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_contact",
+          "description": "Create a contact. Provide name/email/common fields or a contact object for advanced Xero fields; the handler wraps it in Xero's Contacts envelope.",
+          "inputSchema": "schemas/contact_write.json",
+          "handler": "handlers/create_contact.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "update_contact",
+          "description": "Update a contact by contactId. Provide only fields to change; use get_contact first when preserving existing values matters.",
+          "inputSchema": "schemas/contact_write.json",
+          "handler": "handlers/update_contact.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_items",
+          "description": "List inventory/service items with IDs, codes, names, status, and sale/purchase details. Use get_item for full details.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_items.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "get_item",
+          "description": "Get a Xero item by itemId.",
+          "inputSchema": "schemas/id_record.json",
+          "handler": "handlers/get_item.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_item",
+          "description": "Create an item. Provide common fields or an item object for advanced Xero fields.",
+          "inputSchema": "schemas/item_write.json",
+          "handler": "handlers/create_item.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "update_item",
+          "description": "Update an item by itemId. Provide only fields to change.",
+          "inputSchema": "schemas/item_write.json",
+          "handler": "handlers/update_item.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_invoices",
+          "description": "List invoices with compact totals, status, contact, dates, and invoice number. Filter by where/status/page; use get_invoice for line items.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_invoices.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "get_invoice",
+          "description": "Get an invoice by invoiceId, including line items and payment summary.",
+          "inputSchema": "schemas/id_record.json",
+          "handler": "handlers/get_invoice.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_invoice",
+          "description": "Create an invoice, usually as DRAFT first. Provide an invoice object with Type, Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Invoices envelope.",
+          "inputSchema": "schemas/invoice_write.json",
+          "handler": "handlers/create_invoice.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "update_invoice",
+          "description": "Update an invoice by invoiceId. Use this for draft changes or allowed status transitions; prefer get_invoice first.",
+          "inputSchema": "schemas/invoice_write.json",
+          "handler": "handlers/update_invoice.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_credit_notes",
+          "description": "List credit notes with compact status, contact, date, total, and remaining credit fields.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_credit_notes.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_credit_note",
+          "description": "Create a credit note. Provide a creditNote object with Type, Contact, LineItems, and optional Status; the handler wraps it in Xero's CreditNotes envelope.",
+          "inputSchema": "schemas/credit_note_write.json",
+          "handler": "handlers/create_credit_note.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_quotes",
+          "description": "List quotes with compact quote number, status, contact, dates, and totals.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_quotes.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_quote",
+          "description": "Create a quote. Provide a quote object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Quotes envelope.",
+          "inputSchema": "schemas/quote_write.json",
+          "handler": "handlers/create_quote.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_purchase_orders",
+          "description": "List purchase orders with compact purchase order number, status, contact, delivery date, and totals.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_purchase_orders.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_purchase_order",
+          "description": "Create a purchase order. Provide a purchaseOrder object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's PurchaseOrders envelope.",
+          "inputSchema": "schemas/purchase_order_write.json",
+          "handler": "handlers/create_purchase_order.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_payments",
+          "description": "List payments with compact payment ID, date, amount, status, account, and invoice references.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_payments.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_payment",
+          "description": "Create a payment against an invoice, credit note, prepayment, or overpayment. Use list_accounts and get_invoice first to discover valid IDs and amounts.",
+          "inputSchema": "schemas/payment_write.json",
+          "handler": "handlers/create_payment.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_bank_transactions",
+          "description": "List bank transactions with compact type, status, contact, date, total, and bank account details.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_bank_transactions.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_bank_transaction",
+          "description": "Create a spend or receive bank transaction. Use list_accounts for valid bank/account codes and tax rates before calling this.",
+          "inputSchema": "schemas/bank_transaction_write.json",
+          "handler": "handlers/create_bank_transaction.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_manual_journals",
+          "description": "List manual journals with compact status, narration, date, journal ID, and line count.",
+          "inputSchema": "schemas/list_records.json",
+          "handler": "handlers/list_manual_journals.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "create_manual_journal",
+          "description": "Create a manual journal. Use this carefully; discover account codes with list_accounts and prefer DRAFT when supported by the organisation workflow.",
+          "inputSchema": "schemas/manual_journal_write.json",
+          "handler": "handlers/create_manual_journal.js",
+          "scope": "write",
+          "toolset": "accounting"
+        },
+        {
+          "name": "list_attachments",
+          "description": "List attachments for a supported Xero resource such as Invoices, Contacts, BankTransactions, CreditNotes, PurchaseOrders, or ManualJournals.",
+          "inputSchema": "schemas/attachments.json",
+          "handler": "handlers/list_attachments.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "read_attachment_content",
+          "description": "Extract readable text from an attachment on a supported Xero resource. Uses the shared file extractor for PDFs, Office files, CSV, text, HTML, and similar formats.",
+          "inputSchema": "schemas/read_attachment_content.json",
+          "handler": "handlers/read_attachment_content.js",
+          "scope": "read",
+          "toolset": "accounting"
+        },
+        {
+          "name": "get_profit_and_loss",
+          "description": "Get the Profit and Loss report for a date range or period. Returns Xero's report rows plus helper metadata for the query used.",
+          "inputSchema": "schemas/report_profit_and_loss.json",
+          "handler": "handlers/get_profit_and_loss.js",
+          "scope": "read",
+          "toolset": "reports"
+        },
+        {
+          "name": "get_balance_sheet",
+          "description": "Get the Balance Sheet report for a date or period. Use this for financial position summaries.",
+          "inputSchema": "schemas/report_balance_sheet.json",
+          "handler": "handlers/get_balance_sheet.js",
+          "scope": "read",
+          "toolset": "reports"
+        },
+        {
+          "name": "get_trial_balance",
+          "description": "Get the Trial Balance report at a point in time.",
+          "inputSchema": "schemas/report_date.json",
+          "handler": "handlers/get_trial_balance.js",
+          "scope": "read",
+          "toolset": "reports"
+        },
+        {
+          "name": "get_bank_summary",
+          "description": "Get the Bank Summary report for a date range.",
+          "inputSchema": "schemas/report_date_range.json",
+          "handler": "handlers/get_bank_summary.js",
+          "scope": "read",
+          "toolset": "reports"
+        },
+        {
+          "name": "get_aged_payables_by_contact",
+          "description": "Get the Aged Payables by Contact report. Provide contactId when focusing on one supplier.",
+          "inputSchema": "schemas/report_aged_by_contact.json",
+          "handler": "handlers/get_aged_payables_by_contact.js",
+          "scope": "read",
+          "toolset": "reports"
+        },
+        {
+          "name": "get_aged_receivables_by_contact",
+          "description": "Get the Aged Receivables by Contact report. Provide contactId when focusing on one customer.",
+          "inputSchema": "schemas/report_aged_by_contact.json",
+          "handler": "handlers/get_aged_receivables_by_contact.js",
+          "scope": "read",
+          "toolset": "reports"
+        },
+        {
+          "name": "get_budget_summary",
+          "description": "Get the Budget Summary report for a date range and period count.",
+          "inputSchema": "schemas/report_budget_summary.json",
+          "handler": "handlers/get_budget_summary.js",
+          "scope": "read",
+          "toolset": "reports"
+        }
+      ]
+    },
+    "usageGuide": "## Authentication and tenants\n\nCustom Connections are single-organisation connections. Omit `tenantId` for those tools unless Xero explicitly gives you one. Public OAuth integrations can connect to multiple organisations; call `list_connections`, choose the intended tenant, then pass that `tenantId` to Accounting API tools.\n\n## Recommended workflows\n\n- Discovery before writes: call `get_organisation`, `list_accounts`, `list_tax_rates`, and `list_tracking_categories` before creating invoices, payments, bank transactions, or journals.\n- Contacts and items: use `list_contacts`/`get_contact` and `list_items`/`get_item` to find IDs before referencing them from invoices or payments.\n- Invoices: create draft invoices first where possible, then use `get_invoice` to inspect Xero's calculated totals and validation state before updating status.\n- Payments: call `get_invoice` and `list_accounts` first so the payment amount and account reference are valid.\n- Reports: report tools require the matching granular report scope. If Xero returns insufficient scope, reconnect the Xero app with the report scope listed in the tool description or credential hint.\n\n## Query filters\n\nXero list endpoints accept API-specific `where` and `order` expressions. Keep filters narrow and prefer `page` pagination over unbounded reads. Date fields should use ISO dates (`YYYY-MM-DD`) unless the Xero endpoint documents another format.\n\n## Payroll\n\nPayroll APIs are regional and not enabled for every organisation. Verify the demo company region and payroll scopes in the Xero developer portal before adding payroll tools to a live workflow. This integration currently ships Accounting API tools first.\n",
+    "variants": {
+      "variants": {
+        "custom_connection": {
+          "label": "Custom Connection",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "clientId": {
+                "type": "string",
+                "title": "Client ID",
+                "description": "Xero app client ID for a Custom Connection."
+              },
+              "clientSecret": {
+                "type": "string",
+                "title": "Client Secret",
+                "description": "Xero app client secret for the Custom Connection.",
+                "format": "password"
+              },
+              "scopes": {
+                "type": "string",
+                "title": "Scopes",
+                "description": "Space-separated Xero scopes to request. Leave blank to use Commandable's Accounting API defaults."
+              }
+            },
+            "required": [
+              "clientId",
+              "clientSecret"
+            ],
+            "additionalProperties": false
+          },
+          "preprocess": {
+            "type": "handler",
+            "handlerCode": "async (creds, utils) => {\n  const clientId = String(creds?.clientId || '').trim()\n  const clientSecret = String(creds?.clientSecret || '').trim()\n  const defaultScopes = [\n    'accounting.settings.read',\n    'accounting.contacts',\n    'accounting.invoices',\n    'accounting.payments',\n    'accounting.banktransactions',\n    'accounting.manualjournals',\n    'accounting.attachments.read',\n    'accounting.reports.aged.read',\n    'accounting.reports.balancesheet.read',\n    'accounting.reports.banksummary.read',\n    'accounting.reports.budgetsummary.read',\n    'accounting.reports.profitandloss.read',\n    'accounting.reports.trialbalance.read',\n  ].join(' ')\n  const scopes = String(creds?.scopes || defaultScopes).trim()\n\n  if (!clientId)\n    throw new Error('Missing clientId')\n  if (!clientSecret)\n    throw new Error('Missing clientSecret')\n\n  const response = await utils.tokenFetch('https://identity.xero.com/connect/token', {\n    method: 'POST',\n    body: new URLSearchParams({\n      grant_type: 'client_credentials',\n      client_id: clientId,\n      client_secret: clientSecret,\n      scope: scopes,\n    }),\n  })\n\n  const data = await response.json()\n  if (!response.ok) {\n    const message = typeof data?.error_description === 'string'\n      ? data.error_description\n      : (typeof data?.error === 'string' ? data.error : `Token request failed with status ${response.status}`)\n    throw new Error(message)\n  }\n\n  const token = typeof data?.access_token === 'string' ? data.access_token : ''\n  if (!token)\n    throw new Error('Xero token response did not include access_token')\n\n  return {\n    token,\n    expiresIn: data?.expires_in,\n  }\n}",
+            "allowedOrigins": [
+              "https://identity.xero.com"
+            ]
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            }
+          },
+          "healthCheck": {
+            "notViable": true
+          }
+        }
+      },
+      "default": "custom_connection"
+    },
+    "hint": "1. Go to https://developer.xero.com/ and sign in with your free Xero developer account.\n2. Open My Apps, create an app, and choose a Custom Connection when testing against the Xero demo company.\n3. Authorise the Custom Connection for the demo company. Demo-company Custom Connections can be used for development testing without charge.\n4. Copy the Client ID and Client Secret into Commandable.\n5. Leave Scopes blank to use Commandable's default Accounting API scopes, or provide a space-separated scope list if your Xero app has a narrower scope set.\n6. For future public OAuth apps, use `offline_access`, store refresh tokens securely, and select a tenant from the `/connections` response before calling tenant-scoped Accounting API tools.",
+    "hintsByVariant": {},
+    "tools": [
+      {
+        "name": "list_connections",
+        "description": "List Xero tenant connections available to the current token. Use this for public OAuth integrations to discover tenantId values; Custom Connections are single-organisation and usually do not require tenantId.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "handlerCode": "async () => {\n  const res = await integration.get('/connections')\n  const data = await res.json()\n  const connections = Array.isArray(data) ? data : []\n\n  return {\n    connections: connections.map(connection => ({\n      id: connection.id,\n      tenantId: connection.tenantId,\n      tenantName: connection.tenantName,\n      tenantType: connection.tenantType,\n      createdDateUtc: connection.createdDateUtc,\n      updatedDateUtc: connection.updatedDateUtc,\n    })),\n    note: 'For public OAuth, pass tenantId to tenant-scoped tools. Custom Connections are single-organisation and may not need this tool.',\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_organisation",
+        "description": "Get the connected Xero organisation profile and settings. For public OAuth, provide tenantId from list_connections; for Custom Connections omit tenantId.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get('/api.xro/2.0/Organisation', { headers })\n  const data = await res.json()\n  const organisations = Array.isArray(data?.Organisations) ? data.Organisations : []\n\n  return {\n    organisations: organisations.map(org => ({\n      organisationId: org.OrganisationID,\n      name: org.Name,\n      legalName: org.LegalName,\n      paysTax: org.PaysTax,\n      version: org.Version,\n      organisationType: org.OrganisationType,\n      baseCurrency: org.BaseCurrency,\n      countryCode: org.CountryCode,\n      shortCode: org.ShortCode,\n      timezone: org.Timezone,\n      financialYearEndDay: org.FinancialYearEndDay,\n      financialYearEndMonth: org.FinancialYearEndMonth,\n      salesTaxBasis: org.SalesTaxBasis,\n      salesTaxPeriod: org.SalesTaxPeriod,\n      defaultSalesTax: org.DefaultSalesTax,\n      defaultPurchasesTax: org.DefaultPurchasesTax,\n    })),\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "list_accounts",
+        "description": "List chart of accounts with account IDs, codes, names, types, status, and tax type. Use this before creating payments, bank transactions, or journals.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"ACTIVE\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. Code ASC."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  const path = `/api.xro/2.0/Accounts${params.toString() ? `?${params}` : ''}`\n  const res = await integration.get(path, { headers })\n  const data = await res.json()\n  const accounts = Array.isArray(data?.Accounts) ? data.Accounts : []\n\n  return {\n    accounts: accounts.map(account => ({\n      accountId: account.AccountID,\n      code: account.Code,\n      name: account.Name,\n      type: account.Type,\n      class: account.Class,\n      status: account.Status,\n      taxType: account.TaxType,\n      enablePaymentsToAccount: account.EnablePaymentsToAccount,\n      bankAccountNumber: account.BankAccountNumber,\n      currencyCode: account.CurrencyCode,\n    })),\n    count: accounts.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "list_tax_rates",
+        "description": "List tax rates available in the connected organisation. Use this to discover valid tax type values for invoice, item, and bank transaction lines.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get('/api.xro/2.0/TaxRates', { headers })\n  const data = await res.json()\n  const taxRates = Array.isArray(data?.TaxRates) ? data.TaxRates : []\n\n  return {\n    taxRates: taxRates.map(rate => ({\n      name: rate.Name,\n      taxType: rate.TaxType,\n      status: rate.Status,\n      displayTaxRate: rate.DisplayTaxRate,\n      effectiveRate: rate.EffectiveRate,\n      canApplyToAssets: rate.CanApplyToAssets,\n      canApplyToEquity: rate.CanApplyToEquity,\n      canApplyToExpenses: rate.CanApplyToExpenses,\n      canApplyToLiabilities: rate.CanApplyToLiabilities,\n      canApplyToRevenue: rate.CanApplyToRevenue,\n    })),\n    count: taxRates.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "list_tracking_categories",
+        "description": "List tracking categories and active options. Use this before adding tracking to invoice, journal, or bank transaction lines.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get('/api.xro/2.0/TrackingCategories', { headers })\n  const data = await res.json()\n  const categories = Array.isArray(data?.TrackingCategories) ? data.TrackingCategories : []\n\n  return {\n    trackingCategories: categories.map(category => ({\n      trackingCategoryId: category.TrackingCategoryID,\n      name: category.Name,\n      status: category.Status,\n      options: Array.isArray(category.Options)\n        ? category.Options.map(option => ({\n            trackingOptionId: option.TrackingOptionID,\n            name: option.Name,\n            status: option.Status,\n          }))\n        : [],\n    })),\n    count: categories.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "list_currencies",
+        "description": "List currencies configured in the connected Xero organisation.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get('/api.xro/2.0/Currencies', { headers })\n  const data = await res.json()\n  const currencies = Array.isArray(data?.Currencies) ? data.Currencies : []\n\n  return {\n    currencies: currencies.map(currency => ({\n      code: currency.Code,\n      description: currency.Description,\n    })),\n    count: currencies.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "list_contacts",
+        "description": "List contacts with compact identity and balance fields. Filter with where/order/page when needed; use get_contact for full details before updating.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  if (input.includeArchived !== undefined) params.set('includeArchived', String(input.includeArchived))\n  const res = await integration.get(`/api.xro/2.0/Contacts${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const contacts = Array.isArray(data?.Contacts) ? data.Contacts : []\n\n  return {\n    contacts: contacts.map(contact => ({\n      contactId: contact.ContactID,\n      name: contact.Name,\n      emailAddress: contact.EmailAddress,\n      contactStatus: contact.ContactStatus,\n      isSupplier: contact.IsSupplier,\n      isCustomer: contact.IsCustomer,\n      balances: contact.Balances,\n      updatedDateUtc: contact.UpdatedDateUTC,\n    })),\n    count: contacts.length,\n    page: input.page || 1,\n    next: contacts.length ? 'Call list_contacts with the next page number to continue.' : null,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "get_contact",
+        "description": "Get a Xero contact by contactId. Use this before update_contact to avoid overwriting important fields.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "id": {
+              "type": "string",
+              "description": "Xero resource ID."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get(`/api.xro/2.0/Contacts/${encodeURIComponent(input.id)}`, { headers })\n  const data = await res.json()\n  const contacts = Array.isArray(data?.Contacts) ? data.Contacts : []\n\n  return {\n    contact: contacts[0] || null,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_contact",
+        "description": "Create a contact. Provide name/email/common fields or a contact object for advanced Xero fields; the handler wraps it in Xero's Contacts envelope.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "contactId": {
+              "type": "string",
+              "description": "Required for update_contact."
+            },
+            "name": {
+              "type": "string",
+              "description": "Contact name."
+            },
+            "emailAddress": {
+              "type": "string",
+              "description": "Primary email address."
+            },
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            },
+            "contact": {
+              "type": "object",
+              "description": "Additional Xero Contact fields. Values here override common fields.",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const contact = {\n    ...(input.name ? { Name: input.name } : {}),\n    ...(input.emailAddress ? { EmailAddress: input.emailAddress } : {}),\n    ...(input.firstName ? { FirstName: input.firstName } : {}),\n    ...(input.lastName ? { LastName: input.lastName } : {}),\n    ...(input.contact || {}),\n  }\n  const res = await integration.post('/api.xro/2.0/Contacts', { Contacts: [contact] }, { headers })\n  const data = await res.json()\n  return {\n    contact: Array.isArray(data?.Contacts) ? data.Contacts[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "update_contact",
+        "description": "Update a contact by contactId. Provide only fields to change; use get_contact first when preserving existing values matters.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "contactId": {
+              "type": "string",
+              "description": "Required for update_contact."
+            },
+            "name": {
+              "type": "string",
+              "description": "Contact name."
+            },
+            "emailAddress": {
+              "type": "string",
+              "description": "Primary email address."
+            },
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            },
+            "contact": {
+              "type": "object",
+              "description": "Additional Xero Contact fields. Values here override common fields.",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (!input.contactId)\n    throw new Error('contactId is required for update_contact')\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const contact = {\n    ContactID: input.contactId,\n    ...(input.name ? { Name: input.name } : {}),\n    ...(input.emailAddress ? { EmailAddress: input.emailAddress } : {}),\n    ...(input.firstName ? { FirstName: input.firstName } : {}),\n    ...(input.lastName ? { LastName: input.lastName } : {}),\n    ...(input.contact || {}),\n  }\n  const res = await integration.post(`/api.xro/2.0/Contacts/${encodeURIComponent(input.contactId)}`, { Contacts: [contact] }, { headers })\n  const data = await res.json()\n  return {\n    contact: Array.isArray(data?.Contacts) ? data.Contacts[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_items",
+        "description": "List inventory/service items with IDs, codes, names, status, and sale/purchase details. Use get_item for full details.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/Items${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const items = Array.isArray(data?.Items) ? data.Items : []\n\n  return {\n    items: items.map(item => ({\n      itemId: item.ItemID,\n      code: item.Code,\n      name: item.Name,\n      description: item.Description,\n      isTrackedAsInventory: item.IsTrackedAsInventory,\n      isSold: item.IsSold,\n      isPurchased: item.IsPurchased,\n      salesDetails: item.SalesDetails,\n      purchaseDetails: item.PurchaseDetails,\n      updatedDateUtc: item.UpdatedDateUTC,\n    })),\n    count: items.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "get_item",
+        "description": "Get a Xero item by itemId.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "id": {
+              "type": "string",
+              "description": "Xero resource ID."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get(`/api.xro/2.0/Items/${encodeURIComponent(input.id)}`, { headers })\n  const data = await res.json()\n  return {\n    item: Array.isArray(data?.Items) ? data.Items[0] : null,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_item",
+        "description": "Create an item. Provide common fields or an item object for advanced Xero fields.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Required for update_item."
+            },
+            "code": {
+              "type": "string",
+              "description": "Item code."
+            },
+            "name": {
+              "type": "string",
+              "description": "Item name."
+            },
+            "description": {
+              "type": "string",
+              "description": "Sales description."
+            },
+            "item": {
+              "type": "object",
+              "description": "Additional Xero Item fields. Values here override common fields.",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const item = {\n    ...(input.code ? { Code: input.code } : {}),\n    ...(input.name ? { Name: input.name } : {}),\n    ...(input.description ? { Description: input.description } : {}),\n    ...(input.item || {}),\n  }\n  const res = await integration.post('/api.xro/2.0/Items', { Items: [item] }, { headers })\n  const data = await res.json()\n  return {\n    item: Array.isArray(data?.Items) ? data.Items[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "update_item",
+        "description": "Update an item by itemId. Provide only fields to change.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "itemId": {
+              "type": "string",
+              "description": "Required for update_item."
+            },
+            "code": {
+              "type": "string",
+              "description": "Item code."
+            },
+            "name": {
+              "type": "string",
+              "description": "Item name."
+            },
+            "description": {
+              "type": "string",
+              "description": "Sales description."
+            },
+            "item": {
+              "type": "object",
+              "description": "Additional Xero Item fields. Values here override common fields.",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (!input.itemId)\n    throw new Error('itemId is required for update_item')\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const item = {\n    ItemID: input.itemId,\n    ...(input.code ? { Code: input.code } : {}),\n    ...(input.name ? { Name: input.name } : {}),\n    ...(input.description ? { Description: input.description } : {}),\n    ...(input.item || {}),\n  }\n  const res = await integration.post(`/api.xro/2.0/Items/${encodeURIComponent(input.itemId)}`, { Items: [item] }, { headers })\n  const data = await res.json()\n  return {\n    item: Array.isArray(data?.Items) ? data.Items[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_invoices",
+        "description": "List invoices with compact totals, status, contact, dates, and invoice number. Filter by where/status/page; use get_invoice for line items.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.status) params.set('Statuses', input.status)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/Invoices${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const invoices = Array.isArray(data?.Invoices) ? data.Invoices : []\n\n  return {\n    invoices: invoices.map(invoice => ({\n      invoiceId: invoice.InvoiceID,\n      invoiceNumber: invoice.InvoiceNumber,\n      type: invoice.Type,\n      status: invoice.Status,\n      contact: invoice.Contact ? { contactId: invoice.Contact.ContactID, name: invoice.Contact.Name } : null,\n      date: invoice.DateString || invoice.Date,\n      dueDate: invoice.DueDateString || invoice.DueDate,\n      currencyCode: invoice.CurrencyCode,\n      total: invoice.Total,\n      amountDue: invoice.AmountDue,\n      amountPaid: invoice.AmountPaid,\n      updatedDateUtc: invoice.UpdatedDateUTC,\n    })),\n    count: invoices.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "get_invoice",
+        "description": "Get an invoice by invoiceId, including line items and payment summary.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "id": {
+              "type": "string",
+              "description": "Xero resource ID."
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.get(`/api.xro/2.0/Invoices/${encodeURIComponent(input.id)}`, { headers })\n  const data = await res.json()\n  return {\n    invoice: Array.isArray(data?.Invoices) ? data.Invoices[0] : null,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_invoice",
+        "description": "Create an invoice, usually as DRAFT first. Provide an invoice object with Type, Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Invoices envelope.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "invoiceId": {
+              "type": "string",
+              "description": "Required for update_invoice."
+            },
+            "invoice": {
+              "type": "object",
+              "description": "Xero Invoice object. Include Type, Contact, LineItems, dates, and Status as needed.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "invoice"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/Invoices', { Invoices: [input.invoice] }, { headers })\n  const data = await res.json()\n  return {\n    invoice: Array.isArray(data?.Invoices) ? data.Invoices[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "update_invoice",
+        "description": "Update an invoice by invoiceId. Use this for draft changes or allowed status transitions; prefer get_invoice first.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "invoiceId": {
+              "type": "string",
+              "description": "Required for update_invoice."
+            },
+            "invoice": {
+              "type": "object",
+              "description": "Xero Invoice object. Include Type, Contact, LineItems, dates, and Status as needed.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "invoice"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (!input.invoiceId)\n    throw new Error('invoiceId is required for update_invoice')\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const invoice = { InvoiceID: input.invoiceId, ...(input.invoice || {}) }\n  const res = await integration.post(`/api.xro/2.0/Invoices/${encodeURIComponent(input.invoiceId)}`, { Invoices: [invoice] }, { headers })\n  const data = await res.json()\n  return {\n    invoice: Array.isArray(data?.Invoices) ? data.Invoices[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_credit_notes",
+        "description": "List credit notes with compact status, contact, date, total, and remaining credit fields.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/CreditNotes${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const creditNotes = Array.isArray(data?.CreditNotes) ? data.CreditNotes : []\n  return {\n    creditNotes: creditNotes.map(note => ({\n      creditNoteId: note.CreditNoteID,\n      creditNoteNumber: note.CreditNoteNumber,\n      type: note.Type,\n      status: note.Status,\n      contact: note.Contact ? { contactId: note.Contact.ContactID, name: note.Contact.Name } : null,\n      date: note.DateString || note.Date,\n      total: note.Total,\n      remainingCredit: note.RemainingCredit,\n      updatedDateUtc: note.UpdatedDateUTC,\n    })),\n    count: creditNotes.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_credit_note",
+        "description": "Create a credit note. Provide a creditNote object with Type, Contact, LineItems, and optional Status; the handler wraps it in Xero's CreditNotes envelope.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "creditNote": {
+              "type": "object",
+              "description": "Xero CreditNote object. Include Type, Contact, LineItems, and Status as needed.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "creditNote"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/CreditNotes', { CreditNotes: [input.creditNote] }, { headers })\n  const data = await res.json()\n  return {\n    creditNote: Array.isArray(data?.CreditNotes) ? data.CreditNotes[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_quotes",
+        "description": "List quotes with compact quote number, status, contact, dates, and totals.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.status) params.set('Statuses', input.status)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/Quotes${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const quotes = Array.isArray(data?.Quotes) ? data.Quotes : []\n  return {\n    quotes: quotes.map(quote => ({\n      quoteId: quote.QuoteID,\n      quoteNumber: quote.QuoteNumber,\n      status: quote.Status,\n      contact: quote.Contact ? { contactId: quote.Contact.ContactID, name: quote.Contact.Name } : null,\n      date: quote.DateString || quote.Date,\n      expiryDate: quote.ExpiryDateString || quote.ExpiryDate,\n      total: quote.Total,\n      currencyCode: quote.CurrencyCode,\n      updatedDateUtc: quote.UpdatedDateUTC,\n    })),\n    count: quotes.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_quote",
+        "description": "Create a quote. Provide a quote object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Quotes envelope.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "quote": {
+              "type": "object",
+              "description": "Xero Quote object. Include Contact, LineItems, dates, and Status as needed.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "quote"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/Quotes', { Quotes: [input.quote] }, { headers })\n  const data = await res.json()\n  return {\n    quote: Array.isArray(data?.Quotes) ? data.Quotes[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_purchase_orders",
+        "description": "List purchase orders with compact purchase order number, status, contact, delivery date, and totals.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.status) params.set('Statuses', input.status)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/PurchaseOrders${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const purchaseOrders = Array.isArray(data?.PurchaseOrders) ? data.PurchaseOrders : []\n  return {\n    purchaseOrders: purchaseOrders.map(po => ({\n      purchaseOrderId: po.PurchaseOrderID,\n      purchaseOrderNumber: po.PurchaseOrderNumber,\n      status: po.Status,\n      contact: po.Contact ? { contactId: po.Contact.ContactID, name: po.Contact.Name } : null,\n      date: po.DateString || po.Date,\n      deliveryDate: po.DeliveryDateString || po.DeliveryDate,\n      total: po.Total,\n      currencyCode: po.CurrencyCode,\n      updatedDateUtc: po.UpdatedDateUTC,\n    })),\n    count: purchaseOrders.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_purchase_order",
+        "description": "Create a purchase order. Provide a purchaseOrder object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's PurchaseOrders envelope.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "purchaseOrder": {
+              "type": "object",
+              "description": "Xero PurchaseOrder object. Include Contact, LineItems, dates, and Status as needed.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "purchaseOrder"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/PurchaseOrders', { PurchaseOrders: [input.purchaseOrder] }, { headers })\n  const data = await res.json()\n  return {\n    purchaseOrder: Array.isArray(data?.PurchaseOrders) ? data.PurchaseOrders[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_payments",
+        "description": "List payments with compact payment ID, date, amount, status, account, and invoice references.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/Payments${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const payments = Array.isArray(data?.Payments) ? data.Payments : []\n  return {\n    payments: payments.map(payment => ({\n      paymentId: payment.PaymentID,\n      status: payment.Status,\n      date: payment.DateString || payment.Date,\n      amount: payment.Amount,\n      currencyRate: payment.CurrencyRate,\n      account: payment.Account ? { accountId: payment.Account.AccountID, code: payment.Account.Code, name: payment.Account.Name } : null,\n      invoice: payment.Invoice ? { invoiceId: payment.Invoice.InvoiceID, invoiceNumber: payment.Invoice.InvoiceNumber } : null,\n      updatedDateUtc: payment.UpdatedDateUTC,\n    })),\n    count: payments.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_payment",
+        "description": "Create a payment against an invoice, credit note, prepayment, or overpayment. Use list_accounts and get_invoice first to discover valid IDs and amounts.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "payment": {
+              "type": "object",
+              "description": "Xero Payment object. Include Invoice/CreditNote/Prepayment/Overpayment, Account, Date, and Amount.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "payment"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/Payments', { Payments: [input.payment] }, { headers })\n  const data = await res.json()\n  return {\n    payment: Array.isArray(data?.Payments) ? data.Payments[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_bank_transactions",
+        "description": "List bank transactions with compact type, status, contact, date, total, and bank account details.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.status) params.set('Statuses', input.status)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/BankTransactions${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const bankTransactions = Array.isArray(data?.BankTransactions) ? data.BankTransactions : []\n  return {\n    bankTransactions: bankTransactions.map(txn => ({\n      bankTransactionId: txn.BankTransactionID,\n      type: txn.Type,\n      status: txn.Status,\n      contact: txn.Contact ? { contactId: txn.Contact.ContactID, name: txn.Contact.Name } : null,\n      bankAccount: txn.BankAccount ? { accountId: txn.BankAccount.AccountID, code: txn.BankAccount.Code, name: txn.BankAccount.Name } : null,\n      date: txn.DateString || txn.Date,\n      total: txn.Total,\n      currencyCode: txn.CurrencyCode,\n      updatedDateUtc: txn.UpdatedDateUTC,\n    })),\n    count: bankTransactions.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_bank_transaction",
+        "description": "Create a spend or receive bank transaction. Use list_accounts for valid bank/account codes and tax rates before calling this.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "bankTransaction": {
+              "type": "object",
+              "description": "Xero BankTransaction object. Include Type, Contact, BankAccount, LineItems, dates, and Status as needed.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "bankTransaction"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/BankTransactions', { BankTransactions: [input.bankTransaction] }, { headers })\n  const data = await res.json()\n  return {\n    bankTransaction: Array.isArray(data?.BankTransactions) ? data.BankTransactions[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_manual_journals",
+        "description": "List manual journals with compact status, narration, date, journal ID, and line count.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "page": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Xero page number for paginated endpoints."
+            },
+            "where": {
+              "type": "string",
+              "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+            },
+            "order": {
+              "type": "string",
+              "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+            },
+            "modifiedAfter": {
+              "type": "string",
+              "description": "Only include records modified after this RFC3339 timestamp."
+            },
+            "status": {
+              "type": "string",
+              "description": "Convenience status filter for endpoints that support a Status query parameter."
+            },
+            "includeArchived": {
+              "type": "boolean",
+              "description": "Whether to include archived records when the endpoint supports it."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.page) params.set('page', String(input.page))\n  if (input.where) params.set('where', input.where)\n  if (input.order) params.set('order', input.order)\n  if (input.status) params.set('Statuses', input.status)\n  if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)\n  const res = await integration.get(`/api.xro/2.0/ManualJournals${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  const manualJournals = Array.isArray(data?.ManualJournals) ? data.ManualJournals : []\n  return {\n    manualJournals: manualJournals.map(journal => ({\n      manualJournalId: journal.ManualJournalID,\n      narration: journal.Narration,\n      status: journal.Status,\n      date: journal.DateString || journal.Date,\n      lineAmountTypes: journal.LineAmountTypes,\n      journalLineCount: Array.isArray(journal.JournalLines) ? journal.JournalLines.length : undefined,\n      updatedDateUtc: journal.UpdatedDateUTC,\n    })),\n    count: manualJournals.length,\n    page: input.page || 1,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "create_manual_journal",
+        "description": "Create a manual journal. Use this carefully; discover account codes with list_accounts and prefer DRAFT when supported by the organisation workflow.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "manualJournal": {
+              "type": "object",
+              "description": "Xero ManualJournal object. Include Narration, Date, and JournalLines.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "manualJournal"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const res = await integration.post('/api.xro/2.0/ManualJournals', { ManualJournals: [input.manualJournal] }, { headers })\n  const data = await res.json()\n  return {\n    manualJournal: Array.isArray(data?.ManualJournals) ? data.ManualJournals[0] : null,\n  }\n}",
+        "scope": "write",
+        "toolset": "accounting"
+      },
+      {
+        "name": "list_attachments",
+        "description": "List attachments for a supported Xero resource such as Invoices, Contacts, BankTransactions, CreditNotes, PurchaseOrders, or ManualJournals.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "resourceType": {
+              "type": "string",
+              "enum": [
+                "Accounts",
+                "BankTransactions",
+                "BankTransfers",
+                "Contacts",
+                "CreditNotes",
+                "Invoices",
+                "ManualJournals",
+                "PurchaseOrders",
+                "Receipts",
+                "RepeatingInvoices"
+              ],
+              "description": "Xero attachment parent endpoint."
+            },
+            "resourceId": {
+              "type": "string",
+              "description": "ID of the parent Xero resource."
+            }
+          },
+          "required": [
+            "resourceType",
+            "resourceId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const path = `/api.xro/2.0/${encodeURIComponent(input.resourceType)}/${encodeURIComponent(input.resourceId)}/Attachments`\n  const res = await integration.get(path, { headers })\n  const data = await res.json()\n  const attachments = Array.isArray(data?.Attachments) ? data.Attachments : []\n  return {\n    attachments: attachments.map(attachment => ({\n      attachmentId: attachment.AttachmentID,\n      fileName: attachment.FileName,\n      mimeType: attachment.MimeType,\n      contentLength: attachment.ContentLength,\n      includeOnline: attachment.IncludeOnline,\n      url: attachment.Url,\n    })),\n    count: attachments.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "read_attachment_content",
+        "description": "Extract readable text from an attachment on a supported Xero resource. Uses the shared file extractor for PDFs, Office files, CSV, text, HTML, and similar formats.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "resourceType": {
+              "type": "string",
+              "enum": [
+                "Accounts",
+                "BankTransactions",
+                "BankTransfers",
+                "Contacts",
+                "CreditNotes",
+                "Invoices",
+                "ManualJournals",
+                "PurchaseOrders",
+                "Receipts",
+                "RepeatingInvoices"
+              ],
+              "description": "Xero attachment parent endpoint."
+            },
+            "resourceId": {
+              "type": "string",
+              "description": "ID of the parent Xero resource."
+            },
+            "fileName": {
+              "type": "string",
+              "description": "Attachment file name from list_attachments."
+            }
+          },
+          "required": [
+            "resourceType",
+            "resourceId",
+            "fileName"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const path = `/api.xro/2.0/${encodeURIComponent(input.resourceType)}/${encodeURIComponent(input.resourceId)}/Attachments/${encodeURIComponent(input.fileName)}`\n  if (input.tenantId)\n    throw new Error('read_attachment_content currently supports Custom Connections only because the shared file extractor cannot pass xero-tenant-id yet.')\n  const extracted = await utils.extractFileContent({\n    auth: true,\n    source: path,\n  })\n  return {\n    fileName: input.fileName,\n    resourceType: input.resourceType,\n    resourceId: input.resourceId,\n    ...extracted,\n  }\n}",
+        "scope": "read",
+        "toolset": "accounting"
+      },
+      {
+        "name": "get_profit_and_loss",
+        "description": "Get the Profit and Loss report for a date range or period. Returns Xero's report rows plus helper metadata for the query used.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "fromDate": {
+              "type": "string",
+              "description": "Start date in YYYY-MM-DD format."
+            },
+            "toDate": {
+              "type": "string",
+              "description": "End date in YYYY-MM-DD format."
+            },
+            "periods": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of comparison periods."
+            },
+            "timeframe": {
+              "type": "string",
+              "enum": [
+                "MONTH",
+                "QUARTER",
+                "YEAR"
+              ],
+              "description": "Comparison period timeframe."
+            },
+            "trackingCategoryId": {
+              "type": "string"
+            },
+            "trackingOptionId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.fromDate) params.set('fromDate', input.fromDate)\n  if (input.toDate) params.set('toDate', input.toDate)\n  if (input.periods) params.set('periods', String(input.periods))\n  if (input.timeframe) params.set('timeframe', input.timeframe)\n  if (input.trackingCategoryId) params.set('trackingCategoryID', input.trackingCategoryId)\n  if (input.trackingOptionId) params.set('trackingOptionID', input.trackingOptionId)\n  const res = await integration.get(`/api.xro/2.0/Reports/ProfitAndLoss${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      },
+      {
+        "name": "get_balance_sheet",
+        "description": "Get the Balance Sheet report for a date or period. Use this for financial position summaries.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "date": {
+              "type": "string",
+              "description": "Report date in YYYY-MM-DD format."
+            },
+            "periods": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of comparison periods."
+            },
+            "timeframe": {
+              "type": "string",
+              "enum": [
+                "MONTH",
+                "QUARTER",
+                "YEAR"
+              ],
+              "description": "Comparison period timeframe."
+            },
+            "trackingCategoryId": {
+              "type": "string"
+            },
+            "trackingOptionId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.date) params.set('date', input.date)\n  if (input.periods) params.set('periods', String(input.periods))\n  if (input.timeframe) params.set('timeframe', input.timeframe)\n  if (input.trackingCategoryId) params.set('trackingCategoryID', input.trackingCategoryId)\n  if (input.trackingOptionId) params.set('trackingOptionID', input.trackingOptionId)\n  const res = await integration.get(`/api.xro/2.0/Reports/BalanceSheet${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      },
+      {
+        "name": "get_trial_balance",
+        "description": "Get the Trial Balance report at a point in time.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "date": {
+              "type": "string",
+              "description": "Report date in YYYY-MM-DD format."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/TrialBalance${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      },
+      {
+        "name": "get_bank_summary",
+        "description": "Get the Bank Summary report for a date range.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "fromDate": {
+              "type": "string",
+              "description": "Start date in YYYY-MM-DD format."
+            },
+            "toDate": {
+              "type": "string",
+              "description": "End date in YYYY-MM-DD format."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.fromDate) params.set('fromDate', input.fromDate)\n  if (input.toDate) params.set('toDate', input.toDate)\n  const res = await integration.get(`/api.xro/2.0/Reports/BankSummary${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      },
+      {
+        "name": "get_aged_payables_by_contact",
+        "description": "Get the Aged Payables by Contact report. Provide contactId when focusing on one supplier.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "contactId": {
+              "type": "string",
+              "description": "Optional Xero contact ID."
+            },
+            "date": {
+              "type": "string",
+              "description": "Report date in YYYY-MM-DD format."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.contactId) params.set('contactID', input.contactId)\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/AgedPayablesByContact${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      },
+      {
+        "name": "get_aged_receivables_by_contact",
+        "description": "Get the Aged Receivables by Contact report. Provide contactId when focusing on one customer.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "contactId": {
+              "type": "string",
+              "description": "Optional Xero contact ID."
+            },
+            "date": {
+              "type": "string",
+              "description": "Report date in YYYY-MM-DD format."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.contactId) params.set('contactID', input.contactId)\n  if (input.date) params.set('date', input.date)\n  const res = await integration.get(`/api.xro/2.0/Reports/AgedReceivablesByContact${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      },
+      {
+        "name": "get_budget_summary",
+        "description": "Get the Budget Summary report for a date range and period count.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "tenantId": {
+              "type": "string",
+              "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+            },
+            "date": {
+              "type": "string",
+              "description": "Report date in YYYY-MM-DD format."
+            },
+            "periods": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of periods."
+            },
+            "timeframe": {
+              "type": "string",
+              "enum": [
+                "MONTH",
+                "QUARTER",
+                "YEAR"
+              ],
+              "description": "Period timeframe."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const headers = input.tenantId ? { 'xero-tenant-id': input.tenantId } : {}\n  const params = new URLSearchParams()\n  if (input.date) params.set('date', input.date)\n  if (input.periods) params.set('periods', String(input.periods))\n  if (input.timeframe) params.set('timeframe', input.timeframe)\n  const res = await integration.get(`/api.xro/2.0/Reports/BudgetSummary${params.toString() ? `?${params}` : ''}`, { headers })\n  const data = await res.json()\n  return {\n    report: Array.isArray(data?.Reports) ? data.Reports[0] : null,\n    query: Object.fromEntries(params.entries()),\n  }\n}",
+        "scope": "read",
+        "toolset": "reports"
+      }
+    ],
+    "variantOwnerType": null
   }
 }

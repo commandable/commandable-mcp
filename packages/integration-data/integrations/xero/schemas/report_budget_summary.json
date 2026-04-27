@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "date": {
+      "type": "string",
+      "description": "Report date in YYYY-MM-DD format."
+    },
+    "periods": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of periods."
+    },
+    "timeframe": {
+      "type": "string",
+      "enum": ["MONTH", "QUARTER", "YEAR"],
+      "description": "Period timeframe."
+    }
+  },
+  "additionalProperties": false
+}

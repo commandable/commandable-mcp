@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Xero page number for paginated endpoints."
+    },
+    "where": {
+      "type": "string",
+      "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+    },
+    "order": {
+      "type": "string",
+      "description": "Xero order expression, e.g. UpdatedDateUTC DESC."
+    },
+    "modifiedAfter": {
+      "type": "string",
+      "description": "Only include records modified after this RFC3339 timestamp."
+    },
+    "status": {
+      "type": "string",
+      "description": "Convenience status filter for endpoints that support a Status query parameter."
+    },
+    "includeArchived": {
+      "type": "boolean",
+      "description": "Whether to include archived records when the endpoint supports it."
+    }
+  },
+  "additionalProperties": false
+}

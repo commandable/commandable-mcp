@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "fromDate": {
+      "type": "string",
+      "description": "Start date in YYYY-MM-DD format."
+    },
+    "toDate": {
+      "type": "string",
+      "description": "End date in YYYY-MM-DD format."
+    },
+    "periods": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of comparison periods."
+    },
+    "timeframe": {
+      "type": "string",
+      "enum": ["MONTH", "QUARTER", "YEAR"],
+      "description": "Comparison period timeframe."
+    },
+    "trackingCategoryId": {
+      "type": "string"
+    },
+    "trackingOptionId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

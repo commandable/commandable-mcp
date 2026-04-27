@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "payment": {
+      "type": "object",
+      "description": "Xero Payment object. Include Invoice/CreditNote/Prepayment/Overpayment, Account, Date, and Amount.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["payment"],
+  "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "bankTransaction": {
+      "type": "object",
+      "description": "Xero BankTransaction object. Include Type, Contact, BankAccount, LineItems, dates, and Status as needed.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["bankTransaction"],
+  "additionalProperties": false
+}
