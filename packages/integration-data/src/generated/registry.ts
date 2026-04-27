@@ -4884,7 +4884,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           ],
           "additionalProperties": false
         },
-        "handlerCode": "async (input) => {\n  const userId = encodeURIComponent(input.userId || 'me')\n  const body = {}\n  if (input.draftId)\n    body.id = input.draftId\n  if (input.raw) {\n    body.message = { raw: input.raw }\n    if (input.threadId)\n      body.message.threadId = input.threadId\n    if (Array.isArray(input.labelIds))\n      body.message.labelIds = input.labelIds\n  }\n  const res = await integration.fetch(`/users/${userId}/drafts/send`, { method: 'POST', body })\n  return await res.json()\n}",
+        "handlerCode": "async (input) => {\n  const userId = encodeURIComponent(input.userId || 'me')\n  if (input.raw && !input.draftId) {\n    const message = { raw: input.raw }\n    if (input.threadId)\n      message.threadId = input.threadId\n    if (Array.isArray(input.labelIds))\n      message.labelIds = input.labelIds\n    const res = await integration.fetch(`/users/${userId}/messages/send`, { method: 'POST', body: message })\n    return await res.json()\n  }\n\n  const body = {}\n  if (input.draftId)\n    body.id = input.draftId\n  if (input.raw) {\n    body.message = { raw: input.raw }\n    if (input.threadId)\n      body.message.threadId = input.threadId\n    if (Array.isArray(input.labelIds))\n      body.message.labelIds = input.labelIds\n  }\n  const res = await integration.fetch(`/users/${userId}/drafts/send`, { method: 'POST', body })\n  return await res.json()\n}",
         "scope": "write",
         "toolset": "email"
       },
@@ -12908,7 +12908,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
       "name": "Trello",
       "version": "0.1.0",
       "baseUrl": "https://api.trello.com/1",
-      "variantLabel": "Single board",
+      "variantLabel": "Single Board",
       "variantConfig": [
         {
           "key": "board",

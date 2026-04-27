@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 import { readFileSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
 
 const env = process.env as Record<string, string | undefined>
 const INTEGRATION_TEST_MARKER = 'Commandable Integration Test'
@@ -44,6 +44,18 @@ function ensureFixtureReady(fileName: string): string {
   return path
 }
 
+function makeRawMessage(toEmail: string, subject: string, text: string): string {
+  const mime = [
+    `To: ${toEmail}`,
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    text,
+  ].join('\r\n')
+  return Buffer.from(mime, 'utf8').toString('base64url')
+}
+
 function wrapBase64(value: string): string {
   return value.match(/.{1,76}/g)?.join('\r\n') || value
 }
@@ -82,13 +94,17 @@ function makeRawMessageWithAttachment(args: {
   return Buffer.from(mime, 'utf8').toString('base64url')
 }
 
+async function sleep(ms: number) {
+  await new Promise(resolve => setTimeout(resolve, ms))
+}
+
 async function waitForAttachment(gmail: ReturnType<typeof createToolbox>, messageId: string) {
   let lastMessage: any
   for (let attempt = 0; attempt < 8; attempt++) {
     lastMessage = await gmail.read('read_email')({ messageId })
     if (Array.isArray(lastMessage?.attachments) && lastMessage.attachments.length > 0)
       return lastMessage
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await sleep(1500)
   }
   return lastMessage
 }
@@ -102,15 +118,33 @@ async function waitForExtractedAttachment(
     lastResult = await gmail.read('read_attachment_content')(input)
     if (!lastResult?.message && typeof lastResult?.content === 'string')
       return lastResult
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await sleep(1500)
   }
   return lastResult
 }
 
-suiteOrSkip('google-gmail read handlers (live)', () => {
+async function expectEventuallyRejects(fn: () => Promise<unknown>, label: string) {
+  let lastResult: unknown
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      lastResult = await fn()
+    }
+    catch {
+      return
+    }
+    await sleep(1500)
+  }
+  throw new Error(`Expected ${label} to become unreadable, but the last read returned: ${JSON.stringify(lastResult)}`)
+}
+
+suiteOrSkip('google-gmail handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
-      const ctx: { email?: string, labelId?: string, messageId?: string, threadId?: string, draftId?: string } = {}
+      const liveCoverage = createLiveToolCoverage({
+        integrationName: 'google-gmail',
+        credentialVariant: variant.key,
+      })
+      const ctx: { email?: string, labelId?: string, mutationLabelId: string } = { mutationLabelId: 'STARRED' }
       let gmail: ReturnType<typeof createToolbox>
       let gmailFetch: (path: string, init?: RequestInit) => Promise<Response>
 
@@ -124,109 +158,214 @@ suiteOrSkip('google-gmail read handlers (live)', () => {
           proxy,
           node,
           variant.key,
+          { coverage: liveCoverage },
         )
 
         const profile = await gmail.read('get_profile')({})
         ctx.email = profile?.emailAddress
+        expect(ctx.email).toBeTruthy()
 
         const labels = await gmail.read('list_labels')({})
         ctx.labelId = labels?.labels?.[0]?.id
+        ctx.mutationLabelId = labels?.labels?.find((label: any) => label?.id === 'STARRED')?.id || 'STARRED'
+      }, 60000)
 
-        const listedMessages = await gmail.read('list_messages')({ maxResults: 5 })
-        ctx.messageId = listedMessages?.messages?.[0]?.id
-        if (ctx.messageId) {
-          const msg = await gmail.read('get_message')({ messageId: ctx.messageId, format: 'minimal' })
-          ctx.threadId = msg?.threadId
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
+      it('reads mailbox metadata, labels, messages, and threads', async () => {
+        const profile = await gmail.read('get_profile')({})
+        expect(profile?.emailAddress || profile?.messagesTotal !== undefined).toBeTruthy()
+
+        const labels = await gmail.read('list_labels')({})
+        expect(Array.isArray(labels?.labels)).toBe(true)
+        const labelId = ctx.labelId || labels?.labels?.[0]?.id
+        if (labelId) {
+          const label = await gmail.read('get_label')({ labelId })
+          expect(label?.id).toBe(labelId)
         }
 
-        if (ctx.email) {
-          const draft = await gmail.write('create_draft_email')({
-            to: ctx.email,
-            subject: `CmdTest Gmail Draft ${Date.now()}`,
-            body: 'Draft created by integration live tests.',
-          })
-          ctx.draftId = draft?.id
+        const sent = await gmail.write('send_email')({
+          to: ctx.email,
+          subject: `CmdTest Gmail read ${Date.now()}`,
+          body: 'Disposable message for Gmail read live tests.',
+        })
+        const messageId = sent?.id || ''
+        expect(messageId).toBeTruthy()
+        try {
+          const listedMessages = await gmail.read('list_messages')({ maxResults: 10 })
+          expect(listedMessages?.resultSizeEstimate !== undefined || Array.isArray(listedMessages?.messages)).toBe(true)
+
+          const message = await gmail.read('get_message')({ messageId, format: 'full' })
+          expect(message?.id).toBe(messageId)
+          expect(message?.threadId).toBeTruthy()
+
+          const email = await gmail.read('read_email')({ messageId })
+          expect(email?.id).toBe(messageId)
+          expect(typeof email?.subject).toBe('string')
+          expect(typeof email?.from).toBe('string')
+          expect(typeof email?.date).toBe('string')
+          expect(typeof email?.snippet).toBe('string')
+          expect(typeof email?.body).toBe('string')
+          expect(Array.isArray(email?.labelIds)).toBe(true)
+          expect(Array.isArray(email?.attachments)).toBe(true)
+
+          const listedThreads = await gmail.read('list_threads')({ maxResults: 10 })
+          expect(listedThreads?.resultSizeEstimate !== undefined || Array.isArray(listedThreads?.threads)).toBe(true)
+
+          const thread = await gmail.read('get_thread')({ threadId: message.threadId, format: 'full' })
+          expect(thread?.id).toBe(message.threadId)
+        }
+        finally {
+          await safeCleanup(async () => messageId ? gmail.write('delete_message')({ messageId }) : Promise.resolve())
+        }
+      }, 90000)
+
+      it('creates, reads, and deletes a draft', async () => {
+        const created = await gmail.write('create_draft_email')({
+          to: ctx.email,
+          subject: `CmdTest Gmail Draft ${Date.now()}`,
+          body: 'Draft created by integration live tests.',
+        })
+        const draftId = created?.id || ''
+        expect(draftId).toBeTruthy()
+
+        const drafts = await gmail.read('list_drafts')({ maxResults: 10 })
+        expect(drafts?.resultSizeEstimate !== undefined || Array.isArray(drafts?.drafts)).toBe(true)
+
+        const draft = await gmail.read('get_draft')({ draftId })
+        expect(draft?.id).toBe(draftId)
+
+        const deleted = await gmail.write('delete_draft')({ draftId })
+        expect(deleted?.success === true || deleted === '').toBe(true)
+      }, 60000)
+
+      it('sends an existing draft and cleans up the sent message', async () => {
+        const created = await gmail.write('create_draft_email')({
+          to: ctx.email,
+          subject: `CmdTest Gmail send_draft ${Date.now()}`,
+          body: 'Draft sent by integration live test.',
+        })
+        const draftId = created?.id || ''
+        expect(draftId).toBeTruthy()
+
+        let messageId = ''
+        try {
+          const sent = await gmail.write('send_draft')({ draftId })
+          messageId = sent?.id || ''
+          expect(messageId).toBeTruthy()
+
+          const message = await gmail.read('get_message')({ messageId, format: 'minimal' })
+          expect(message?.id).toBe(messageId)
+        }
+        finally {
+          await safeCleanup(async () => messageId ? gmail.write('delete_message')({ messageId }) : Promise.resolve())
         }
       }, 60000)
 
-      afterAll(async () => {
-        await safeCleanup(async () => ctx.draftId ? gmail.write('delete_draft')({ draftId: ctx.draftId }) : Promise.resolve())
-      }, 30000)
+      it('sends a raw draft payload and cleans up the sent message', async () => {
+        let messageId = ''
+        try {
+          const raw = makeRawMessage(ctx.email!, `CmdTest Gmail send_draft raw ${Date.now()}`, 'Raw payload draft-send mode.')
+          const sent = await gmail.write('send_draft')({ raw })
+          messageId = sent?.id || ''
+          expect(messageId).toBeTruthy()
 
-      it('get_profile returns mailbox profile', async () => {
-        const result = await gmail.read('get_profile')({})
-        expect(result?.emailAddress || result?.messagesTotal !== undefined).toBeTruthy()
-      }, 30000)
+          const message = await gmail.read('get_message')({ messageId, format: 'minimal' })
+          expect(message?.id).toBe(messageId)
+        }
+        finally {
+          await safeCleanup(async () => messageId ? gmail.write('delete_message')({ messageId }) : Promise.resolve())
+        }
+      }, 60000)
 
-      it('list_labels returns labels', async () => {
-        const result = await gmail.read('list_labels')({})
-        expect(Array.isArray(result?.labels)).toBe(true)
-      }, 30000)
+      it('modifies, trashes, restores, and deletes a disposable message', async () => {
+        const sent = await gmail.write('send_email')({
+          to: ctx.email,
+          subject: `CmdTest Gmail message lifecycle ${Date.now()}`,
+          body: 'Disposable message for message lifecycle tools.',
+        })
+        const messageId = sent?.id || ''
+        expect(messageId).toBeTruthy()
 
-      it('get_label returns a label when available', async () => {
-        if (!ctx.labelId)
-          return expect(true).toBe(true)
-        const result = await gmail.read('get_label')({ labelId: ctx.labelId })
-        expect(result?.id).toBe(ctx.labelId)
-      }, 30000)
+        const modified = await gmail.write('modify_message')({
+          messageId,
+          addLabelIds: [ctx.mutationLabelId],
+        })
+        expect(modified?.id).toBe(messageId)
 
-      it('list_messages returns messages list', async () => {
-        const result = await gmail.read('list_messages')({ maxResults: 10 })
-        expect(result?.resultSizeEstimate !== undefined || Array.isArray(result?.messages)).toBe(true)
-      }, 30000)
+        const trashed = await gmail.write('trash_message')({ messageId })
+        expect(trashed?.id).toBe(messageId)
 
-      it('get_message returns a message when available', async () => {
-        if (!ctx.messageId)
-          return expect(true).toBe(true)
-        const result = await gmail.read('get_message')({ messageId: ctx.messageId, format: 'full' })
-        expect(result?.id).toBe(ctx.messageId)
-      }, 30000)
+        const untrashed = await gmail.write('untrash_message')({ messageId })
+        expect(untrashed?.id).toBe(messageId)
 
-      it('list_threads returns threads list', async () => {
-        const result = await gmail.read('list_threads')({ maxResults: 10 })
-        expect(result?.resultSizeEstimate !== undefined || Array.isArray(result?.threads)).toBe(true)
-      }, 30000)
+        const deleted = await gmail.write('delete_message')({ messageId })
+        expect(deleted?.success === true || deleted === '').toBe(true)
+        await expectEventuallyRejects(
+          () => gmail.read('get_message')({ messageId, format: 'minimal' }),
+          `message ${messageId}`,
+        )
+      }, 90000)
 
-      it('get_thread returns a thread when available', async () => {
-        if (!ctx.threadId)
-          return expect(true).toBe(true)
-        const result = await gmail.read('get_thread')({ threadId: ctx.threadId, format: 'full' })
-        expect(result?.id).toBe(ctx.threadId)
-      }, 30000)
+      it('modifies, trashes, restores, and deletes a disposable thread', async () => {
+        const sent = await gmail.write('send_email')({
+          to: ctx.email,
+          subject: `CmdTest Gmail thread lifecycle ${Date.now()}`,
+          body: 'Disposable message for thread lifecycle tools.',
+        })
+        const messageId = sent?.id || ''
+        expect(messageId).toBeTruthy()
 
-      it('list_drafts returns drafts list', async () => {
-        const result = await gmail.read('list_drafts')({ maxResults: 10 })
-        expect(result?.resultSizeEstimate !== undefined || Array.isArray(result?.drafts)).toBe(true)
-      }, 30000)
+        const message = await gmail.read('get_message')({ messageId, format: 'minimal' })
+        const threadId = message?.threadId || ''
+        expect(threadId).toBeTruthy()
 
-      it('get_draft returns draft details when available', async () => {
-        if (!ctx.draftId)
-          return expect(true).toBe(true)
-        const result = await gmail.read('get_draft')({ draftId: ctx.draftId })
-        expect(result?.id).toBe(ctx.draftId)
-      }, 30000)
+        const modified = await gmail.write('modify_thread')({
+          threadId,
+          addLabelIds: [ctx.mutationLabelId],
+        })
+        expect(modified?.id).toBe(threadId)
 
-      it('read_email returns flat decoded message when a message is available', async () => {
-        if (!ctx.messageId)
-          return expect(true).toBe(true)
-        const result = await gmail.read('read_email')({ messageId: ctx.messageId })
-        expect(result?.id).toBe(ctx.messageId)
-        expect(typeof result?.subject).toBe('string')
-        expect(typeof result?.from).toBe('string')
-        expect(typeof result?.date).toBe('string')
-        expect(typeof result?.snippet).toBe('string')
-        expect(typeof result?.body).toBe('string')
-        expect(Array.isArray(result?.labelIds)).toBe(true)
-        expect(Array.isArray(result?.attachments)).toBe(true)
-      }, 30000)
+        const trashed = await gmail.write('trash_thread')({ threadId })
+        expect(trashed?.id).toBe(threadId)
 
-      it('read_attachment_content extracts a sent fixture attachment round trip', async () => {
-        if (!ctx.email)
-          return expect(true).toBe(true)
+        const untrashed = await gmail.write('untrash_thread')({ threadId })
+        expect(untrashed?.id).toBe(threadId)
 
+        const deleted = await gmail.write('delete_thread')({ threadId })
+        expect(deleted?.success === true || deleted === '').toBe(true)
+        await expectEventuallyRejects(
+          () => gmail.read('get_thread')({ threadId, format: 'minimal' }),
+          `thread ${threadId}`,
+        )
+      }, 90000)
+
+      it('creates, updates, and deletes a label', async () => {
+        const created = await gmail.admin('create_label')({
+          name: `CmdTest Label ${Date.now()}`,
+          labelListVisibility: 'labelShow',
+          messageListVisibility: 'show',
+        })
+        const labelId = created?.id || ''
+        expect(labelId).toBeTruthy()
+
+        const updated = await gmail.admin('update_label')({
+          labelId,
+          name: `CmdTest Label Updated ${Date.now()}`,
+          labelListVisibility: 'labelHide',
+        })
+        expect(updated?.id).toBe(labelId)
+
+        const deleted = await gmail.admin('delete_label')({ labelId })
+        expect(deleted?.success === true || deleted === '').toBe(true)
+      }, 60000)
+
+      it('extracts a sent fixture attachment round trip', async () => {
         const sourcePath = ensureFixtureReady(ATTACHMENT_FIXTURE.fileName)
         const raw = makeRawMessageWithAttachment({
-          toEmail: ctx.email,
+          toEmail: ctx.email!,
           subject: `CmdTest Gmail Attachment ${Date.now()}`,
           text: 'Attachment extraction round-trip test.',
           fileName: ATTACHMENT_FIXTURE.fileName,
