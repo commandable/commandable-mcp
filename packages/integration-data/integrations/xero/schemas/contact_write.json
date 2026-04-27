@@ -24,7 +24,7 @@
     "lastName": {
       "type": "string"
     },
-    "contact": {
+    "extraFields": {
       "type": "object",
       "description": "Additional Xero Contact fields. Values here override common fields.",
       "additionalProperties": true

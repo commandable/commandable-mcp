@@ -29,6 +29,14 @@
     },
     "trackingOptionId": {
       "type": "string"
+    },
+    "standardLayout": {
+      "type": "boolean",
+      "description": "Use Xero's standard Profit and Loss layout when true."
+    },
+    "paymentsOnly": {
+      "type": "boolean",
+      "description": "Limit the report to payments-only values when supported by the organisation."
     }
   },
   "additionalProperties": false

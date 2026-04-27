@@ -41,6 +41,9 @@ suiteOrSkip('xero handlers (live)', () => {
     const tracking = await xero.read('list_tracking_categories')({})
     expect(Array.isArray(tracking?.trackingCategories)).toBe(true)
 
+    const contactGroups = await xero.read('list_contact_groups')({})
+    expect(Array.isArray(contactGroups?.contactGroups)).toBe(true)
+
     const currencies = await xero.read('list_currencies')({})
     expect(Array.isArray(currencies?.currencies)).toBe(true)
   }, 60000)
@@ -107,13 +110,13 @@ suiteOrSkip('xero handlers (live)', () => {
       name: `Commandable Xero Test ${runId}`,
       emailAddress: `commandable-xero-${runId}@example.com`,
     })
-    expect(contact?.contact?.ContactID).toBeTruthy()
+    expect(contact?.contact?.contactId).toBeTruthy()
 
     const updatedContact = await xero.write('update_contact')({
-      contactId: contact.contact.ContactID,
-      contact: { ContactStatus: 'ARCHIVED' },
+      contactId: contact.contact.contactId,
+      extraFields: { ContactStatus: 'ARCHIVED' },
     })
-    expect(updatedContact?.contact?.ContactID).toBe(contact.contact.ContactID)
+    expect(updatedContact?.contact?.contactId).toBe(contact.contact.contactId)
   }, 90000)
 
   it.skip('references fixture-dependent write tools for usage parity', async () => {
@@ -123,17 +126,63 @@ suiteOrSkip('xero handlers (live)', () => {
       name: 'Commandable Fixture Item',
     })
     await xero.write('update_item')({
-      itemId: item.item.ItemID,
-      item: { Name: 'Commandable Fixture Item Updated' },
+      itemId: item.item.itemId,
+      extraFields: { Name: 'Commandable Fixture Item Updated' },
     })
-    await xero.write('create_invoice')({ invoice: {} })
-    await xero.write('update_invoice')({ invoiceId: 'fixture-invoice-id', invoice: {} })
-    await xero.write('create_credit_note')({ creditNote: {} })
-    await xero.write('create_quote')({ quote: {} })
-    await xero.write('create_purchase_order')({ purchaseOrder: {} })
-    await xero.write('create_payment')({ payment: {} })
-    await xero.write('create_bank_transaction')({ bankTransaction: {} })
-    await xero.write('create_manual_journal')({ manualJournal: {} })
+    await xero.write('create_tracking_category')({
+      name: 'Commandable Fixture Tracking',
+    })
+    await xero.write('create_tracking_options')({
+      trackingCategoryId: 'fixture-tracking-category-id',
+      optionNames: ['One', 'Two'],
+    })
+    await xero.write('update_tracking_category')({
+      trackingCategoryId: 'fixture-tracking-category-id',
+      status: 'ARCHIVED',
+    })
+    await xero.write('update_tracking_options')({
+      trackingCategoryId: 'fixture-tracking-category-id',
+      trackingOptionId: 'fixture-tracking-option-id',
+      status: 'ARCHIVED',
+    })
+    await xero.write('create_invoice')({
+      contactId: 'fixture-contact-id',
+      lineItems: [{ description: 'Service', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    })
+    await xero.write('update_invoice')({
+      invoiceId: 'fixture-invoice-id',
+      status: 'SUBMITTED',
+    })
+    await xero.write('create_credit_note')({
+      contactId: 'fixture-contact-id',
+      lineItems: [{ description: 'Credit', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    })
+    await xero.write('create_quote')({
+      contactId: 'fixture-contact-id',
+      lineItems: [{ description: 'Quote', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    })
+    await xero.write('create_purchase_order')({
+      contactId: 'fixture-contact-id',
+      lineItems: [{ description: 'Purchase', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    })
+    await xero.write('create_payment')({
+      invoiceId: 'fixture-invoice-id',
+      accountId: 'fixture-account-id',
+      amount: 10,
+    })
+    await xero.write('create_bank_transaction')({
+      type: 'SPEND',
+      bankAccountId: 'fixture-bank-account-id',
+      contactId: 'fixture-contact-id',
+      lineItems: [{ description: 'Spend', quantity: 1, unitAmount: 10, accountCode: '200', taxType: 'NONE' }],
+    })
+    await xero.write('create_manual_journal')({
+      narration: 'Fixture journal',
+      journalLines: [
+        { accountCode: '200', lineAmount: 10 },
+        { accountCode: '400', lineAmount: -10 },
+      ],
+    })
   })
 
   it.skip('references attachment extraction for usage parity', async () => {

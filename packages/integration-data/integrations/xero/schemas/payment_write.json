@@ -6,12 +6,32 @@
       "type": "string",
       "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
     },
-    "payment": {
+    "invoiceId": {
+      "type": "string",
+      "description": "Invoice ID from list_invoices or get_invoice."
+    },
+    "accountId": {
+      "type": "string",
+      "description": "Payment account ID from list_accounts."
+    },
+    "amount": {
+      "type": "number",
+      "description": "Payment amount."
+    },
+    "date": {
+      "type": "string",
+      "description": "Payment date in YYYY-MM-DD format. Defaults to today when omitted."
+    },
+    "reference": {
+      "type": "string",
+      "description": "Optional payment reference."
+    },
+    "extraFields": {
       "type": "object",
-      "description": "Xero Payment object. Include Invoice/CreditNote/Prepayment/Overpayment, Account, Date, and Amount.",
+      "description": "Advanced Xero Payment fields to merge into the generated payment object.",
       "additionalProperties": true
     }
   },
-  "required": ["payment"],
+  "required": ["invoiceId", "accountId", "amount"],
   "additionalProperties": false
 }

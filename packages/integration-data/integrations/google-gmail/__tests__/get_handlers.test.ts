@@ -1,7 +1,16 @@
+import { Buffer } from 'node:buffer'
+import { readFileSync, statSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
 
 const env = process.env as Record<string, string | undefined>
+const INTEGRATION_TEST_MARKER = 'Commandable Integration Test'
+const ATTACHMENT_FIXTURE = {
+  fileName: 'sample.pdf',
+  mimeType: 'application/pdf',
+  expectedKind: 'pdf',
+}
 
 interface VariantConfig {
   key: string
@@ -21,19 +30,99 @@ const variants: VariantConfig[] = [
 
 const suiteOrSkip = variants.length > 0 ? describe : describe.skip
 
+function fixturePath(fileName: string): string {
+  return fileURLToPath(new URL(`../../__tests__/fixtures/file-extraction/${fileName}`, import.meta.url))
+}
+
+function ensureFixtureReady(fileName: string): string {
+  const path = fixturePath(fileName)
+  const stats = statSync(path, { throwIfNoEntry: false })
+  if (!stats)
+    throw new Error(`Missing integration test fixture: ${path}`)
+  if (stats.size === 0)
+    throw new Error(`Integration test fixture is still an empty placeholder: ${path}. Replace it with a real file that contains "${INTEGRATION_TEST_MARKER}" in extractable text.`)
+  return path
+}
+
+function wrapBase64(value: string): string {
+  return value.match(/.{1,76}/g)?.join('\r\n') || value
+}
+
+function makeRawMessageWithAttachment(args: {
+  toEmail: string
+  subject: string
+  text: string
+  fileName: string
+  mimeType: string
+  bytes: Buffer
+}): string {
+  const boundary = `cmd-gmail-boundary-${Date.now()}`
+  const mime = [
+    `To: ${args.toEmail}`,
+    `Subject: ${args.subject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    args.text,
+    '',
+    `--${boundary}`,
+    `Content-Type: ${args.mimeType}; name="${args.fileName}"`,
+    'Content-Transfer-Encoding: base64',
+    `Content-Disposition: attachment; filename="${args.fileName}"`,
+    '',
+    wrapBase64(args.bytes.toString('base64')),
+    '',
+    `--${boundary}--`,
+    '',
+  ].join('\r\n')
+  return Buffer.from(mime, 'utf8').toString('base64url')
+}
+
+async function waitForAttachment(gmail: ReturnType<typeof createToolbox>, messageId: string) {
+  let lastMessage: any
+  for (let attempt = 0; attempt < 8; attempt++) {
+    lastMessage = await gmail.read('read_email')({ messageId })
+    if (Array.isArray(lastMessage?.attachments) && lastMessage.attachments.length > 0)
+      return lastMessage
+    await new Promise(resolve => setTimeout(resolve, 1500))
+  }
+  return lastMessage
+}
+
+async function waitForExtractedAttachment(
+  gmail: ReturnType<typeof createToolbox>,
+  input: Record<string, unknown>,
+) {
+  let lastResult: any
+  for (let attempt = 0; attempt < 8; attempt++) {
+    lastResult = await gmail.read('read_attachment_content')(input)
+    if (!lastResult?.message && typeof lastResult?.content === 'string')
+      return lastResult
+    await new Promise(resolve => setTimeout(resolve, 1500))
+  }
+  return lastResult
+}
+
 suiteOrSkip('google-gmail read handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
       const ctx: { email?: string, labelId?: string, messageId?: string, threadId?: string, draftId?: string } = {}
       let gmail: ReturnType<typeof createToolbox>
+      let gmailFetch: (path: string, init?: RequestInit) => Promise<Response>
 
       beforeAll(async () => {
         const credentialStore = createCredentialStore(async () => variant.credentials())
         const proxy = createProxy(credentialStore)
+        const node = createIntegrationNode('google-gmail', { label: 'Google Gmail', credentialId: 'google-gmail-creds', credentialVariant: variant.key })
+        gmailFetch = (path, init) => proxy.call(node, path, init)
         gmail = createToolbox(
           'google-gmail',
           proxy,
-          createIntegrationNode('google-gmail', { label: 'Google Gmail', credentialId: 'google-gmail-creds', credentialVariant: variant.key }),
+          node,
           variant.key,
         )
 
@@ -128,7 +217,61 @@ suiteOrSkip('google-gmail read handlers (live)', () => {
         expect(typeof result?.snippet).toBe('string')
         expect(typeof result?.body).toBe('string')
         expect(Array.isArray(result?.labelIds)).toBe(true)
+        expect(Array.isArray(result?.attachments)).toBe(true)
       }, 30000)
+
+      it('read_attachment_content extracts a sent fixture attachment round trip', async () => {
+        if (!ctx.email)
+          return expect(true).toBe(true)
+
+        const sourcePath = ensureFixtureReady(ATTACHMENT_FIXTURE.fileName)
+        const raw = makeRawMessageWithAttachment({
+          toEmail: ctx.email,
+          subject: `CmdTest Gmail Attachment ${Date.now()}`,
+          text: 'Attachment extraction round-trip test.',
+          fileName: ATTACHMENT_FIXTURE.fileName,
+          mimeType: ATTACHMENT_FIXTURE.mimeType,
+          bytes: readFileSync(sourcePath),
+        })
+        let messageId = ''
+
+        try {
+          const sentRes = await gmailFetch('/users/me/messages/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ raw }),
+          })
+          const sent = await sentRes.json()
+          if (!sentRes.ok)
+            throw new Error(`Failed to send Gmail fixture attachment (${sentRes.status}): ${JSON.stringify(sent)}`)
+          messageId = sent?.id || ''
+          expect(messageId).toBeTruthy()
+
+          const email = await waitForAttachment(gmail, messageId)
+          expect(email?.id).toBe(messageId)
+          expect(Array.isArray(email?.attachments)).toBe(true)
+          expect(email.attachments.length).toBeGreaterThan(0)
+
+          const attachment = email.attachments.find((item: any) => item?.filename === ATTACHMENT_FIXTURE.fileName) || email.attachments[0]
+          expect(attachment?.attachmentId).toBeTruthy()
+
+          const result = await waitForExtractedAttachment(gmail, {
+            messageId,
+            attachmentId: attachment.attachmentId,
+            mimeType: attachment.mimeType || ATTACHMENT_FIXTURE.mimeType,
+          })
+
+          expect(result?.messageId).toBe(messageId)
+          expect(result?.attachmentId).toBe(attachment.attachmentId)
+          expect(result?.filename || attachment.filename || ATTACHMENT_FIXTURE.fileName).toBe(ATTACHMENT_FIXTURE.fileName)
+          expect(result?.kind).toBe(ATTACHMENT_FIXTURE.expectedKind)
+          expect(String(result?.content || '')).toContain(INTEGRATION_TEST_MARKER)
+          expect(result?.message).toBeUndefined()
+        }
+        finally {
+          await safeCleanup(async () => messageId ? gmail.write('delete_message')({ messageId }) : Promise.resolve())
+        }
+      }, 120000)
     })
   }
 })

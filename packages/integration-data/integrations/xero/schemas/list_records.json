@@ -13,7 +13,7 @@
     },
     "where": {
       "type": "string",
-      "description": "Xero where filter expression, e.g. Status==\"AUTHORISED\"."
+      "description": "Advanced Xero where filter expression, e.g. Status==\"AUTHORISED\". Prefer the explicit filter fields when available."
     },
     "order": {
       "type": "string",
@@ -26,6 +26,24 @@
     "status": {
       "type": "string",
       "description": "Convenience status filter for endpoints that support a Status query parameter."
+    },
+    "contactIds": {
+      "type": "array",
+      "description": "Filter invoices/transactions to one or more contact IDs from list_contacts.",
+      "items": { "type": "string" }
+    },
+    "invoiceNumbers": {
+      "type": "array",
+      "description": "Filter invoices by invoice number. For invoices, line items are returned by Xero when invoice numbers are supplied.",
+      "items": { "type": "string" }
+    },
+    "fromDate": {
+      "type": "string",
+      "description": "Convenience start date filter in YYYY-MM-DD format for date-based resources."
+    },
+    "toDate": {
+      "type": "string",
+      "description": "Convenience end date filter in YYYY-MM-DD format for date-based resources."
     },
     "includeArchived": {
       "type": "boolean",

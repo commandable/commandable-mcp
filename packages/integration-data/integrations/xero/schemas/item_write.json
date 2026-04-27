@@ -22,7 +22,7 @@
       "type": "string",
       "description": "Sales description."
     },
-    "item": {
+    "extraFields": {
       "type": "object",
       "description": "Additional Xero Item fields. Values here override common fields.",
       "additionalProperties": true

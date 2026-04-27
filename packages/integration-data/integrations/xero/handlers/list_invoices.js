@@ -5,6 +5,8 @@ async (input) => {
   if (input.where) params.set('where', input.where)
   if (input.order) params.set('order', input.order)
   if (input.status) params.set('Statuses', input.status)
+  if (Array.isArray(input.contactIds) && input.contactIds.length) params.set('ContactIDs', input.contactIds.join(','))
+  if (Array.isArray(input.invoiceNumbers) && input.invoiceNumbers.length) params.set('InvoiceNumbers', input.invoiceNumbers.join(','))
   if (input.modifiedAfter) params.set('If-Modified-Since', input.modifiedAfter)
   const res = await integration.get(`/api.xro/2.0/Invoices${params.toString() ? `?${params}` : ''}`, { headers })
   const data = await res.json()

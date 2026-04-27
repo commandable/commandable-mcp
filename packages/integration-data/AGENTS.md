@@ -233,6 +233,12 @@ const extracted = await utils.extractFileContent({
   auth: true,
   source: `/drives/${driveId}/items/${itemId}/content`,
 })
+
+// Inline bytes, e.g. APIs that return base64 file content
+const extracted = await utils.extractFileContent({
+  auth: false,
+  source: `data:${mimeType || 'application/octet-stream'};base64,${base64}`,
+})
 ```
 
 Returns `{ kind, content, warnings?, metadata? }`.

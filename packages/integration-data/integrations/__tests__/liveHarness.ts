@@ -1,5 +1,5 @@
 import { IntegrationProxy } from '../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../core/src/integrations/dataLoader.js'
+import { loadIntegrationTools } from '../../src/loader.js'
 import { createSafeHandlerFromString } from '../../../core/src/integrations/sandbox.js'
 import { buildSandboxUtils } from '../../../core/src/integrations/sandboxUtils.js'
 import { createGetIntegration } from '../../../core/src/integrations/getIntegration.js'

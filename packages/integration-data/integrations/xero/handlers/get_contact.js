@@ -3,8 +3,24 @@ async (input) => {
   const res = await integration.get(`/api.xro/2.0/Contacts/${encodeURIComponent(input.id)}`, { headers })
   const data = await res.json()
   const contacts = Array.isArray(data?.Contacts) ? data.Contacts : []
+  const contact = contacts[0] || null
 
   return {
-    contact: contacts[0] || null,
+    contact: contact
+      ? {
+          contactId: contact.ContactID,
+          name: contact.Name,
+          emailAddress: contact.EmailAddress,
+          firstName: contact.FirstName,
+          lastName: contact.LastName,
+          contactStatus: contact.ContactStatus,
+          isSupplier: contact.IsSupplier,
+          isCustomer: contact.IsCustomer,
+          balances: contact.Balances,
+          phones: contact.Phones,
+          addresses: contact.Addresses,
+          updatedDateUtc: contact.UpdatedDateUTC,
+        }
+      : null,
   }
 }

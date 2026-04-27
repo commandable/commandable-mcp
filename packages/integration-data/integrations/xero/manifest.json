@@ -49,6 +49,46 @@
       "scope": "read"
     },
     {
+      "name": "list_contact_groups",
+      "description": "List contact groups, or provide contactGroupId to fetch one group with contacts. Use this when users ask about Xero customer/supplier groupings.",
+      "inputSchema": "schemas/contact_group_list.json",
+      "handler": "handlers/list_contact_groups.js",
+      "scope": "read",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_tracking_category",
+      "description": "Create a tracking category. Use list_tracking_categories first to avoid duplicates.",
+      "inputSchema": "schemas/tracking_category_write.json",
+      "handler": "handlers/create_tracking_category.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "create_tracking_options",
+      "description": "Create up to 10 tracking options in a tracking category. Get trackingCategoryId from list_tracking_categories.",
+      "inputSchema": "schemas/tracking_options_write.json",
+      "handler": "handlers/create_tracking_options.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "update_tracking_category",
+      "description": "Rename or archive a tracking category. Get trackingCategoryId from list_tracking_categories.",
+      "inputSchema": "schemas/tracking_category_write.json",
+      "handler": "handlers/update_tracking_category.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
+      "name": "update_tracking_options",
+      "description": "Rename or archive a tracking option. Get trackingCategoryId and trackingOptionId from list_tracking_categories.",
+      "inputSchema": "schemas/tracking_options_write.json",
+      "handler": "handlers/update_tracking_options.js",
+      "scope": "write",
+      "toolset": "accounting"
+    },
+    {
       "name": "list_currencies",
       "description": "List currencies configured in the connected Xero organisation.",
       "inputSchema": "schemas/tenant_optional.json",
@@ -73,7 +113,7 @@
     },
     {
       "name": "create_contact",
-      "description": "Create a contact. Provide name/email/common fields or a contact object for advanced Xero fields; the handler wraps it in Xero's Contacts envelope.",
+      "description": "Create a contact from flat fields. Use extraFields only for advanced Xero fields; returns a compact summary and Xero link when available.",
       "inputSchema": "schemas/contact_write.json",
       "handler": "handlers/create_contact.js",
       "scope": "write",
@@ -105,7 +145,7 @@
     },
     {
       "name": "create_item",
-      "description": "Create an item. Provide common fields or an item object for advanced Xero fields.",
+      "description": "Create an item from flat fields. Use extraFields only for advanced Xero fields.",
       "inputSchema": "schemas/item_write.json",
       "handler": "handlers/create_item.js",
       "scope": "write",
@@ -121,7 +161,7 @@
     },
     {
       "name": "list_invoices",
-      "description": "List invoices with compact totals, status, contact, dates, and invoice number. Filter by where/status/page; use get_invoice for line items.",
+      "description": "List invoices with compact totals, status, contact, dates, and invoice number. Prefer explicit filters like status, contactIds, invoiceNumbers, fromDate/toDate; use get_invoice for line items.",
       "inputSchema": "schemas/list_records.json",
       "handler": "handlers/list_invoices.js",
       "scope": "read",
@@ -137,7 +177,7 @@
     },
     {
       "name": "create_invoice",
-      "description": "Create an invoice, usually as DRAFT first. Provide an invoice object with Type, Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Invoices envelope.",
+      "description": "Create an invoice or bill from flat fields. Get contactId from list_contacts, accountCode from list_accounts, taxType from list_tax_rates, and tracking from list_tracking_categories. Returns a compact summary and Xero link.",
       "inputSchema": "schemas/invoice_write.json",
       "handler": "handlers/create_invoice.js",
       "scope": "write",
@@ -161,7 +201,7 @@
     },
     {
       "name": "create_credit_note",
-      "description": "Create a credit note. Provide a creditNote object with Type, Contact, LineItems, and optional Status; the handler wraps it in Xero's CreditNotes envelope.",
+      "description": "Create a credit note from flat fields. Get contactId from list_contacts, accountCode from list_accounts, and taxType from list_tax_rates. Returns a compact summary and Xero link.",
       "inputSchema": "schemas/credit_note_write.json",
       "handler": "handlers/create_credit_note.js",
       "scope": "write",
@@ -177,7 +217,7 @@
     },
     {
       "name": "create_quote",
-      "description": "Create a quote. Provide a quote object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's Quotes envelope.",
+      "description": "Create a quote from flat fields. Get contactId from list_contacts, accountCode from list_accounts, and taxType from list_tax_rates. Returns a compact summary and Xero link.",
       "inputSchema": "schemas/quote_write.json",
       "handler": "handlers/create_quote.js",
       "scope": "write",
@@ -193,7 +233,7 @@
     },
     {
       "name": "create_purchase_order",
-      "description": "Create a purchase order. Provide a purchaseOrder object with Contact, LineItems, dates, and optional Status; the handler wraps it in Xero's PurchaseOrders envelope.",
+      "description": "Create a purchase order from flat fields. Get supplier contactId from list_contacts and line account/tax values from list_accounts/list_tax_rates.",
       "inputSchema": "schemas/purchase_order_write.json",
       "handler": "handlers/create_purchase_order.js",
       "scope": "write",
@@ -209,7 +249,7 @@
     },
     {
       "name": "create_payment",
-      "description": "Create a payment against an invoice, credit note, prepayment, or overpayment. Use list_accounts and get_invoice first to discover valid IDs and amounts.",
+      "description": "Create a payment against an invoice. Use get_invoice for invoiceId/amount due and list_accounts for the payment accountId. Returns a compact summary and Xero link.",
       "inputSchema": "schemas/payment_write.json",
       "handler": "handlers/create_payment.js",
       "scope": "write",

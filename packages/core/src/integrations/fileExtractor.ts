@@ -38,6 +38,10 @@ function isAbsoluteHttpUrl(value: string): boolean {
   }
 }
 
+function isDataUrl(value: string): boolean {
+  return String(value || '').trimStart().toLowerCase().startsWith('data:')
+}
+
 function parseContentDispositionFilename(value: string | null): string | undefined {
   if (!value)
     return undefined
@@ -114,6 +118,41 @@ function inferFilename(response: Response, source: string): string {
   return `downloaded-file${ext}`
 }
 
+function parseDataUrl(source: string): { bytes: Buffer, filename: string } {
+  const match = String(source || '').match(/^data:([^,]*),(.*)$/s)
+  if (!match)
+    throw new HttpError(400, 'Invalid data URL passed to extractFileContent.')
+
+  const metadata = match[1] || ''
+  const rawPayload = match[2] || ''
+  const metadataParts = metadata.split(';').map(part => part.trim()).filter(Boolean)
+  const mimeType = metadataParts.find(part => part.toLowerCase() !== 'base64' && !part.includes('=')) || 'application/octet-stream'
+  const isBase64 = metadataParts.some(part => part.toLowerCase() === 'base64')
+  if (!isBase64)
+    throw new HttpError(400, 'extractFileContent data URLs must use base64 encoding.')
+
+  let payload = rawPayload.replace(/\s/g, '')
+  try {
+    payload = decodeURIComponent(payload)
+  }
+  catch {}
+
+  if (!payload || payload.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(payload))
+    throw new HttpError(400, 'extractFileContent received an invalid base64 data URL payload.')
+
+  return {
+    bytes: Buffer.from(payload, 'base64'),
+    filename: `downloaded-file${extensionFromContentType(mimeType)}`,
+  }
+}
+
+async function readResponseFile(response: Response, source: string): Promise<{ bytes: Buffer, filename: string }> {
+  return {
+    bytes: Buffer.from(await response.arrayBuffer()),
+    filename: inferFilename(response, source),
+  }
+}
+
 async function downloadWithAuth(args: ExtractFileContentArgs, getIntegration: (id: string) => { fetch: (path: string, init?: RequestInit) => Promise<Response> }): Promise<Response> {
   if (!args.integration)
     throw new HttpError(400, 'extractFileContent requires an exact integration id/reference when `auth` is true.')
@@ -123,7 +162,7 @@ async function downloadWithAuth(args: ExtractFileContentArgs, getIntegration: (i
 
 async function downloadWithoutAuth(args: ExtractFileContentArgs): Promise<Response> {
   if (!isAbsoluteHttpUrl(args.source))
-    throw new HttpError(400, 'extractFileContent requires an absolute http(s) URL when `auth` is false.')
+    throw new HttpError(400, 'extractFileContent requires an absolute http(s) URL or data URL when `auth` is false.')
   return fetch(args.source, { method: 'GET' })
 }
 
@@ -147,22 +186,29 @@ export function createExtractFileContent(
     if (!capability.enabled)
       throw new HttpError(501, formatFileProcessingUnavailableMessage(capability))
 
-    const response = resolvedArgs.auth
-      ? await downloadWithAuth(resolvedArgs, getIntegration)
-      : await downloadWithoutAuth(resolvedArgs)
+    const downloaded = isDataUrl(resolvedArgs.source)
+      ? (!resolvedArgs.auth
+          ? parseDataUrl(resolvedArgs.source)
+          : (() => { throw new HttpError(400, 'extractFileContent data URLs must use `auth: false`.') })())
+      : await (async () => {
+          const response = resolvedArgs.auth
+            ? await downloadWithAuth(resolvedArgs, getIntegration)
+            : await downloadWithoutAuth(resolvedArgs)
 
-    if (!response.ok) {
-      const bodyText = await response.text().catch(() => '')
-      throw new HttpError(response.status, `Failed to download file (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.`)
-    }
+          if (!response.ok) {
+            const bodyText = await response.text().catch(() => '')
+            throw new HttpError(response.status, `Failed to download file (${response.status})${bodyText ? `: ${bodyText.slice(0, 500)}` : ''}.`)
+          }
+
+          return await readResponseFile(response, resolvedArgs.source)
+        })()
 
     const tempDir = await mkdtemp(join(tmpdir(), 'commandable-extract-'))
     try {
-      const filename = inferFilename(response, resolvedArgs.source)
+      const filename = downloaded.filename
       const filePath = join(tempDir, filename)
       const outputPath = join(tempDir, 'result.json')
-      const bytes = Buffer.from(await response.arrayBuffer())
-      await writeFile(filePath, bytes)
+      await writeFile(filePath, downloaded.bytes)
 
       const pythonArgs = [extractorScriptPath(), '--input', filePath, '--output', outputPath]
       const previewPages = typeof resolvedArgs.previewPages === 'number' && resolvedArgs.previewPages > 0

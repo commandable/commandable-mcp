@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "contactGroupId": {
+      "type": "string",
+      "description": "Optional contact group ID to retrieve one group with contacts."
+    }
+  },
+  "additionalProperties": false
+}

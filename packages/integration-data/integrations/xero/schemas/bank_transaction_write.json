@@ -1,17 +1,75 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "definitions": {
+    "lineItem": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Line item description."
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "unitAmount": {
+          "type": "number"
+        },
+        "accountCode": {
+          "type": "string",
+          "description": "Account code from list_accounts."
+        },
+        "taxType": {
+          "type": "string",
+          "description": "Tax type from list_tax_rates."
+        }
+      },
+      "required": ["description", "quantity", "unitAmount", "accountCode", "taxType"],
+      "additionalProperties": false
+    }
+  },
   "properties": {
     "tenantId": {
       "type": "string",
       "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
     },
-    "bankTransaction": {
+    "type": {
+      "type": "string",
+      "enum": ["RECEIVE", "SPEND"],
+      "description": "RECEIVE for money received, SPEND for money spent."
+    },
+    "bankAccountId": {
+      "type": "string",
+      "description": "Bank account ID from list_accounts."
+    },
+    "contactId": {
+      "type": "string",
+      "description": "Contact ID from list_contacts."
+    },
+    "lineItems": {
+      "type": "array",
+      "description": "Bank transaction line items.",
+      "items": { "$ref": "#/definitions/lineItem" },
+      "minItems": 1
+    },
+    "reference": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "description": "Transaction date in YYYY-MM-DD format."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "AUTHORISED"],
+      "description": "Prefer DRAFT unless the user explicitly asks to authorise."
+    },
+    "extraFields": {
       "type": "object",
-      "description": "Xero BankTransaction object. Include Type, Contact, BankAccount, LineItems, dates, and Status as needed.",
+      "description": "Advanced Xero BankTransaction fields to merge into the generated object.",
       "additionalProperties": true
     }
   },
-  "required": ["bankTransaction"],
+  "required": ["type", "bankAccountId", "contactId", "lineItems"],
   "additionalProperties": false
 }

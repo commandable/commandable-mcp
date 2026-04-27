@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string",
+      "description": "Xero tenant ID from list_connections. Omit for Custom Connections."
+    },
+    "trackingCategoryId": {
+      "type": "string",
+      "description": "Tracking category ID from list_tracking_categories."
+    },
+    "optionNames": {
+      "type": "array",
+      "description": "Names of tracking options to create. Maximum 10 per call.",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 10
+    },
+    "trackingOptionId": {
+      "type": "string",
+      "description": "Required for update_tracking_options when updating one existing option."
+    },
+    "name": {
+      "type": "string",
+      "description": "New option name for update_tracking_options."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ACTIVE", "ARCHIVED"],
+      "description": "Optional option status for update_tracking_options."
+    }
+  },
+  "additionalProperties": false
+}
