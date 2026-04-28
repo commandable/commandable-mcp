@@ -21,6 +21,11 @@ type LiveToolCoverage = {
   record: (scope: keyof ToolSet, name: string) => void
 }
 
+export type LiveToolRetry = (
+  run: (input: any) => Promise<any>,
+  context: { type: string, scope: keyof ToolSet, name: string },
+) => (input: any) => Promise<any>
+
 export type LiveToolCoverageOptions = {
   integrationName: string
   credentialVariant?: string
@@ -206,14 +211,15 @@ function compileTool(proxy: IntegrationProxy, node: any, tool: ToolDef) {
   }
 }
 
-export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string, opts?: { coverage?: LiveToolCoverage }) {
+export function createToolbox(type: string, proxy: IntegrationProxy, node: any, credentialVariant?: string, opts?: { coverage?: LiveToolCoverage, retry?: LiveToolRetry }) {
   const tools = getTools(type, credentialVariant)
 
   const findTool = (scope: keyof ToolSet, name: string) => tools[scope].find(t => t.name === name)
   const compileCoveredTool = (scope: keyof ToolSet, name: string, tool: ToolDef) => {
     const run = compileTool(proxy, node, tool)
+    const runWithRetry = opts?.retry?.(run, { type, scope, name }) ?? run
     return async (input: any) => {
-      const result = await run(input)
+      const result = await runWithRetry(input)
       opts?.coverage?.record(scope, name)
       return result
     }
@@ -251,6 +257,7 @@ export function createLiveToolbox(args: {
   credentialId?: string
   credentialVariant?: string
   coverage?: LiveToolCoverage
+  retry?: LiveToolRetry
 }) {
   const credentialStore = createCredentialStore(async () => args.credentials())
   const proxy = createProxy(credentialStore)
@@ -259,7 +266,7 @@ export function createLiveToolbox(args: {
     credentialId: args.credentialId,
     credentialVariant: args.credentialVariant,
   })
-  const toolbox = createToolbox(args.type, proxy, node, args.credentialVariant, { coverage: args.coverage })
+  const toolbox = createToolbox(args.type, proxy, node, args.credentialVariant, { coverage: args.coverage, retry: args.retry })
 
   return { toolbox, proxy, node }
 }

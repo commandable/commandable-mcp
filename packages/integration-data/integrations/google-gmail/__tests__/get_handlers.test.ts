@@ -3,6 +3,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
 import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 const env = process.env as Record<string, string | undefined>
@@ -156,7 +157,7 @@ suiteOrSkip('google-gmail handlers (live)', () => {
           proxy,
           node,
           variant.key,
-          { coverage: liveCoverage },
+          { coverage: liveCoverage, retry: retryGoogleTemporaryIssues },
         )
 
         const profile = await gmail.read('get_profile')({})

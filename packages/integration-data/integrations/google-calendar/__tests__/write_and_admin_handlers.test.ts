@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLiveRunId, createLiveToolCoverage, createLiveToolbox, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
 import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Calendar write/admin tests using credentials
@@ -48,6 +49,7 @@ suite('google-calendar write & admin handlers (live)', () => {
       label: 'Google Calendar',
       credentialId: 'google-calendar-creds',
       coverage: liveCoverage,
+      retry: retryGoogleTemporaryIssues,
     }).toolbox
 
     buildWrite = (name: string) => calendar.write(name)

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
 import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Docs write tests -- runs once per available credential variant.
@@ -48,13 +49,14 @@ suiteOrSkip('google-workspace docs write handlers (live)', () => {
           proxy,
           createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds', credentialVariant: variant.key }),
           variant.key,
-          { coverage: liveCoverage },
+          { coverage: liveCoverage, retry: retryGoogleTemporaryIssues },
         )
         drive = createToolbox(
           'google-workspace',
           proxy,
           createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds', credentialVariant: variant.key }),
           variant.key,
+          { retry: retryGoogleTemporaryIssues },
         )
 
         const folder = await drive.write('create_folder')({

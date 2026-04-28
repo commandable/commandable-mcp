@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
 import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Slides read tests using credentials
@@ -30,8 +31,8 @@ suite('google-workspace slides read handlers (live)', () => {
       subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
     }))
     const proxy = createProxy(credentialStore)
-    slides = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { coverage: liveCoverage })
-    drive = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
+    slides = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { coverage: liveCoverage, retry: retryGoogleTemporaryIssues })
+    drive = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { retry: retryGoogleTemporaryIssues })
 
     // Create dedicated folder + presentation for this run
     const folder = await drive.write('create_folder')({ name: `CmdTest Slides ${Date.now()}` })
