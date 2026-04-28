@@ -2,13 +2,13 @@ async (input) => {
   const { documentId, findText, textStyle, fields } = input
   // 1) Find first match via replaceAllText with unique marker
   const marker = `__CMD_MARK_${Date.now()}__`
-  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
+  const replaceRes = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
     method: 'POST',
     body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },
   })
   const rep = await replaceRes.json()
   // 2) Get doc, locate marker, compute indices
-  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)
+  const getRes = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)
   const doc = await getRes.json()
   let startIndex = -1
   let endIndex = -1
@@ -37,6 +37,6 @@ async (input) => {
   const requests = []
   requests.push({ updateTextStyle: { range: { startIndex, endIndex }, textStyle, fields: fields || Object.keys(textStyle || {}).join(',') } })
   requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } })
-  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })
+  const res = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })
   return await res.json()
 }

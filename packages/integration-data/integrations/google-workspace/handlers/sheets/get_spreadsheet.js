@@ -8,7 +8,7 @@ async (input) => {
   if (input.fields)
     params.set('fields', input.fields)
   const qs = params.toString()
-  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}${qs ? `?${qs}` : ''}`
+  const path = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path)
   return await res.json()
 }

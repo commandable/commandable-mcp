@@ -17,7 +17,7 @@ async (input) => {
   }
 
   const { presentationId } = input
-  const path = `/presentations/${encodeURIComponent(presentationId)}`
+  const path = `https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}`
   const res = await integration.fetch(path)
   const presentation = await res.json()
 

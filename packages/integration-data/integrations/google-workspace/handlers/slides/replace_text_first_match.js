@@ -1,6 +1,6 @@
 async (input) => {
   const { presentationId, findText, replaceText, matchCase } = input
-  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {
+  const res = await integration.fetch(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {
     method: 'POST',
     body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: Boolean(matchCase) }, replaceText } }] },
   })

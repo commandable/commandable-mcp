@@ -15,6 +15,6 @@ async (input) => {
   params.set('pageSize', String(input.pageSize || 20))
   if (input.pageToken)
     params.set('pageToken', input.pageToken)
-  const res = await integration.fetch(`/files?${params.toString()}`)
+  const res = await integration.fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`)
   return await res.json()
 }

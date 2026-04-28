@@ -6,7 +6,7 @@ async (input) => {
   if (input['thumbnailProperties.mimeType'])
     params.set('thumbnailProperties.mimeType', String(input['thumbnailProperties.mimeType']))
   const qs = params.toString()
-  const path = `/presentations/${encodeURIComponent(presentationId)}/pages/${encodeURIComponent(pageObjectId)}/thumbnail${qs ? `?${qs}` : ''}`
+  const path = `https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}/pages/${encodeURIComponent(pageObjectId)}/thumbnail${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path)
   return await res.json()
 }

@@ -21,7 +21,7 @@ async (input) => {
     if (typeof input.mimeType === 'string' && input.mimeType.trim())
       return input.mimeType.trim()
 
-    const metaRes = await integration.fetch(`/files/${fileId}?fields=id,name,mimeType`)
+    const metaRes = await integration.fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType`)
     const meta = await metaRes.json()
     return meta?.mimeType || ''
   }
@@ -70,8 +70,8 @@ async (input) => {
   }
 
   const source = isGoogleNative
-    ? `/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`
-    : `/files/${fileId}?alt=media`
+    ? `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=${encodeURIComponent(exportMimeType)}`
+    : `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`
 
   if (isTextLikeMimeType(exportMimeType || mimeType)) {
     const textResult = await readTextContent(source)

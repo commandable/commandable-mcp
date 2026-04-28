@@ -12,7 +12,7 @@ async (input) => {
   if (responseDateTimeRenderOption)
     params.set('responseDateTimeRenderOption', responseDateTimeRenderOption)
   const qs = params.toString()
-  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:append${qs ? `?${qs}` : ''}`
+  const path = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:append${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path, { method: 'POST', body: { values } })
   return await res.json()
 }

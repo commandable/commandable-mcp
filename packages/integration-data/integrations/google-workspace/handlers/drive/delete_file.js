@@ -1,5 +1,5 @@
 async (input) => {
-  const res = await integration.fetch(`/files/${encodeURIComponent(input.fileId)}`, {
+  const res = await integration.fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(input.fileId)}`, {
     method: 'DELETE',
   })
   if (res.status === 204)
