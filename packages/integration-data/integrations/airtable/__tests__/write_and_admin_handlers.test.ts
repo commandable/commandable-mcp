@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../core/src/integrations/dataLoader.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createLiveRunId, createLiveToolCoverage, createLiveToolbox, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Airtable write tests using credentials
 // Required env vars:
@@ -16,7 +16,6 @@ interface Ctx {
 }
 
 const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
   'AIRTABLE_TOKEN',
 )
@@ -24,48 +23,36 @@ const suite = hasEnv(
   : describe.skip
 
 suite('airtable write handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('airtable-write'))
+  const runId = createLiveRunId('airtable-write')
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
+  let airtable: ReturnType<typeof createToolbox>
   let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
   let buildReadHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const credentialStore = {
-      getCredentials: async () => ({ token: env.AIRTABLE_TOKEN || '' }),
-    }
-
-    const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
-      spaceId: 'ci',
-      id: 'node-airtable',
-      referenceId: 'node-airtable',
+    airtable = createLiveToolbox({
       type: 'airtable',
+      credentials: () => ({ token: env.AIRTABLE_TOKEN || '' }),
       label: 'Airtable',
-      connectionMethod: 'credentials',
       credentialId: 'airtable-creds',
-    } as any
+      coverage: liveCoverage,
+    }).toolbox
 
-    const tools = loadIntegrationTools('airtable')
-    expect(tools).toBeTruthy()
-
-    buildWriteHandler = (name: string) => {
-      const tool = tools!.write.find(t => t.name === name)
-      expect(tool, `write tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    buildReadHandler = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `read tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+    buildWriteHandler = (name: string) => airtable.write(name)
+    buildReadHandler = (name: string) => airtable.read(name)
 
     // Resolve base/table for write tests
     ctx.baseId = env.AIRTABLE_TEST_WRITE_BASE_ID
     ctx.tableId = env.AIRTABLE_TEST_WRITE_TABLE_ID
+
+    if (env.CI && (!ctx.baseId || !ctx.tableId))
+      throw new Error('Airtable live tests require AIRTABLE_TEST_WRITE_BASE_ID and AIRTABLE_TEST_WRITE_TABLE_ID in CI.')
 
     if (!ctx.baseId || !ctx.tableId) {
       const list_bases = buildReadHandler('list_bases')
@@ -89,7 +76,7 @@ suite('airtable write handlers (live)', () => {
 
     // Create
     const create_record = buildWriteHandler('create_record')
-    const created = await create_record({ baseId: ctx.baseId, tableId: ctx.tableId, fields: { [fieldName]: `CmdTest ${Date.now()}` } })
+    const created = await create_record({ baseId: ctx.baseId, tableId: ctx.tableId, fields: { [fieldName]: `${runId} Created` } })
     const createdRec = created?.records?.[0] || created
     expect(createdRec?.id).toBeTruthy()
     ctx.createdRecordId = createdRec.id
@@ -101,7 +88,7 @@ suite('airtable write handlers (live)', () => {
 
     // Update
     const update_record = buildWriteHandler('update_record')
-    const updated = await update_record({ baseId: ctx.baseId, tableId: ctx.tableId, recordId: ctx.createdRecordId, fields: { [fieldName]: `CmdTest Updated ${Date.now()}` } })
+    const updated = await update_record({ baseId: ctx.baseId, tableId: ctx.tableId, recordId: ctx.createdRecordId, fields: { [fieldName]: `${runId} Updated` } })
     const updatedRec = updated?.records?.[0] || updated
     expect(updatedRec?.id).toBe(ctx.createdRecordId)
 

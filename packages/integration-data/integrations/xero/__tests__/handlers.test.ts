@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
-import { xeroLiveCoverageSkips } from './liveCoverageSkips.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 const env = process.env as Record<string, string | undefined>
 
@@ -12,11 +12,7 @@ const suiteOrSkip = hasEnv('XERO_CLIENT_ID', 'XERO_CLIENT_SECRET')
   : describe.skip
 const fixturesDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../__tests__/fixtures/file-extraction')
 
-const liveCoverage = createLiveToolCoverage({
-  integrationName: 'xero',
-  credentialVariant: 'custom_connection',
-  skippedTools: xeroLiveCoverageSkips,
-})
+const liveCoverage = createLiveToolCoverage(getPlanEntry('xero-custom-connection'))
 
 function createXeroToolbox() {
   const { node, proxy } = createXeroHarnessParts()

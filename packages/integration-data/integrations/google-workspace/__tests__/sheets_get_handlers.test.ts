@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Sheets read tests using credentials
 // Required env vars:
@@ -10,6 +11,12 @@ const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   : describe.skip
 
 suite('google-workspace sheets read handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('google-workspace-sheets-read'))
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   let sheets: ReturnType<typeof createToolbox>
   let drive: ReturnType<typeof createToolbox>
   let sheetTitle: string | undefined
@@ -24,7 +31,7 @@ suite('google-workspace sheets read handlers (live)', () => {
       subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
     }))
     const proxy = createProxy(credentialStore)
-    sheets = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
+    sheets = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { coverage: liveCoverage })
     drive = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
 
     // Create dedicated folder + spreadsheet for this run

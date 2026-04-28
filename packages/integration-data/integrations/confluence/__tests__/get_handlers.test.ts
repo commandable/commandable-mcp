@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Confluence read tests using credentials
 //
@@ -14,6 +15,12 @@ const suiteOrSkip = hasEnv('CONFLUENCE_DOMAIN', 'CONFLUENCE_EMAIL', 'CONFLUENCE_
 
 suiteOrSkip('confluence read handlers (live)', () => {
   describe('variant: api_token', () => {
+    const liveCoverage = createLiveToolCoverage(getPlanEntry('confluence-api-token-read'))
+
+    afterAll(() => {
+      liveCoverage.assertComplete()
+    })
+
     const ctx: {
       spaceId?: string
       spaceKey?: string
@@ -35,6 +42,7 @@ suiteOrSkip('confluence read handlers (live)', () => {
         proxy,
         createIntegrationNode('confluence', { label: 'Confluence', credentialId: 'confluence-creds', credentialVariant: 'api_token' }),
         'api_token',
+        { coverage: liveCoverage },
       )
 
       try {

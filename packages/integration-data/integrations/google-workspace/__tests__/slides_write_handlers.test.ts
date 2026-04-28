@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Slides write tests using credentials
 // Required env vars:
@@ -12,6 +13,12 @@ const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   : describe.skip
 
 suite('google-workspace slides write handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('google-workspace-slides-write'))
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
   let slides: ReturnType<typeof createToolbox>
   let drive: ReturnType<typeof createToolbox>
@@ -24,7 +31,7 @@ suite('google-workspace slides write handlers (live)', () => {
       subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
     }))
     const proxy = createProxy(credentialStore)
-    slides = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
+    slides = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { coverage: liveCoverage })
     drive = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
 
     const folder = await drive.write('create_folder')({ name: `CmdTest Slides Write ${Date.now()}` })

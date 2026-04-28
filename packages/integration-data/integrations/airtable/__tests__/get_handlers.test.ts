@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../core/src/integrations/dataLoader.js'
+import { createLiveRunId, createLiveToolCoverage, createLiveToolbox, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Airtable integration tests using credentials
 // Required env vars:
@@ -17,7 +17,6 @@ interface Ctx {
 }
 
 const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
   'AIRTABLE_TOKEN',
 )
@@ -25,50 +24,34 @@ const suite = hasEnv(
   : describe.skip
 
 suite('airtable read handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('airtable-read'))
+  const runId = createLiveRunId('airtable-read')
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
+  let airtable: ReturnType<typeof createToolbox>
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
   let buildWriteHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const credentialStore = {
-      getCredentials: async () => ({ token: env.AIRTABLE_TOKEN || '' }),
-    }
-
-    const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
-      spaceId: 'ci',
-      id: 'node-airtable',
-      referenceId: 'node-airtable',
+    airtable = createLiveToolbox({
       type: 'airtable',
+      credentials: () => ({ token: env.AIRTABLE_TOKEN || '' }),
       label: 'Airtable',
-      connectionMethod: 'credentials',
       credentialId: 'airtable-creds',
-    } as any
+      coverage: liveCoverage,
+    }).toolbox
 
-    const tools = loadIntegrationTools('airtable')
-    expect(tools).toBeTruthy()
+    buildHandler = (name: string) => airtable.read(name)
+    buildWriteHandler = (name: string) => airtable.write(name)
 
-    buildHandler = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `tool ${name} exists`).toBeTruthy()
-      const integration = {
-        fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init),
-      }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+    if (env.CI && (!env.AIRTABLE_TEST_WRITE_BASE_ID || !env.AIRTABLE_TEST_WRITE_TABLE_ID))
+      throw new Error('Airtable live tests require AIRTABLE_TEST_WRITE_BASE_ID and AIRTABLE_TEST_WRITE_TABLE_ID in CI.')
 
-    buildWriteHandler = (name: string) => {
-      const tool = tools!.write.find(t => t.name === name)
-      expect(tool, `write tool ${name} exists`).toBeTruthy()
-      const integration = {
-        fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init),
-      }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    // Use explicit test base/table if provided, otherwise auto-discover from first base
+    // Use explicit test base/table if provided, otherwise auto-discover from first base for local smoke runs.
     if (env.AIRTABLE_TEST_WRITE_BASE_ID && env.AIRTABLE_TEST_WRITE_TABLE_ID) {
       ctx.baseId = env.AIRTABLE_TEST_WRITE_BASE_ID
       ctx.tableId = env.AIRTABLE_TEST_WRITE_TABLE_ID
@@ -94,7 +77,7 @@ suite('airtable read handlers (live)', () => {
         const created = await create_record({
           baseId: ctx.baseId,
           tableId: ctx.tableId,
-          fields: { Name: `ReadTest ${Date.now()}` },
+          fields: { Name: `${runId} ReadTest` },
         })
         const rec = created?.records?.[0] || created
         ctx.ownedRecordId = rec?.id

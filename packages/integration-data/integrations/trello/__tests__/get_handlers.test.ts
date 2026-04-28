@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // This is a LIVE integration test suite that hits Trello using credentials.
 // Required env vars:
@@ -20,7 +21,13 @@ const suite = hasEnv(
   ? describe
   : describe.skip
 
+const liveReadCoverage = createLiveToolCoverage(getPlanEntry('trello-read'))
+
 suite('trello read handlers (live)', () => {
+  afterAll(() => {
+    liveReadCoverage.assertComplete()
+  })
+
   const ids: Ids = {}
   let boardId: string | undefined
   let listId: string | undefined
@@ -32,7 +39,7 @@ suite('trello read handlers (live)', () => {
     const credentialStore = createCredentialStore(async () => ({ apiKey: env.TRELLO_API_KEY || '', apiToken: env.TRELLO_API_TOKEN || '' }))
     const proxy = createProxy(credentialStore)
     const node = createIntegrationNode('trello', { label: 'Trello', credentialId: 'trello-creds' })
-    trello = createToolbox('trello', proxy, node)
+    trello = createToolbox('trello', proxy, node, undefined, { coverage: liveReadCoverage })
 
     // Create an isolated board/list/card for this run so tests don’t touch random user boards.
     const board = await trello.write('create_board')({ name: `CmdTest Trello Read ${Date.now()}`, defaultLists: false })

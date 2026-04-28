@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Docs read tests -- runs once per available credential variant.
 // Required env vars (at least one):
@@ -29,6 +30,12 @@ const suiteOrSkip = variants.length > 0 ? describe : describe.skip
 suiteOrSkip('google-workspace docs read handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
+      const liveCoverage = createLiveToolCoverage(getPlanEntry(`google-workspace-docs-${variant.key.replace(/_/g, '-')}-read`))
+
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
       let docs: ReturnType<typeof createToolbox>
       let drive: ReturnType<typeof createToolbox>
       let folderId: string | undefined
@@ -42,6 +49,7 @@ suiteOrSkip('google-workspace docs read handlers (live)', () => {
           proxy,
           createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds', credentialVariant: variant.key }),
           variant.key,
+          { coverage: liveCoverage },
         )
         drive = createToolbox(
           'google-workspace',

@@ -1,12 +1,14 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   createCredentialStore,
   createIntegrationNode,
+  createLiveToolCoverage,
   createProxy,
   createToolbox,
   hasEnv,
   safeCleanup,
 } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE HubSpot write tests using credentials
 // Required env vars:
@@ -20,6 +22,8 @@ import {
 
 const env = process.env as Record<string, string | undefined>
 const suite = hasEnv('HUBSPOT_TOKEN') ? describe : describe.skip
+
+const liveCoverage = createLiveToolCoverage(getPlanEntry('hubspot-write'))
 
 function pickFirstPipelineAndStage(resp: any): { pipelineId?: string, stageId?: string } {
   const pipelines = resp?.results || resp?.pipelines || resp
@@ -40,6 +44,10 @@ function pickFirstPipelineAndStage(resp: any): { pipelineId?: string, stageId?: 
 }
 
 suite('hubspot write handlers (live)', () => {
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: {
     contactId?: string
     companyId?: string
@@ -55,7 +63,7 @@ suite('hubspot write handlers (live)', () => {
     const credentialStore = createCredentialStore(async () => ({ token: env.HUBSPOT_TOKEN || '' }))
     const proxy = createProxy(credentialStore)
     const node = createIntegrationNode('hubspot')
-    const toolbox = createToolbox('hubspot', proxy, node)
+    const toolbox = createToolbox('hubspot', proxy, node, undefined, { coverage: liveCoverage })
 
     // IMPORTANT: These literal tool-name strings are intentionally present so usage-parity can verify coverage.
     read = {

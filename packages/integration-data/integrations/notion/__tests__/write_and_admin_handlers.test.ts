@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveRunId, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 interface Ctx {
   createdPageId?: string
@@ -15,6 +16,13 @@ const suite = hasEnv(
   : describe.skip
 
 suite('notion write handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('notion-write'))
+  const runId = createLiveRunId('notion')
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
   let notion: ReturnType<typeof createToolbox>
 
@@ -22,13 +30,13 @@ suite('notion write handlers (live)', () => {
     const env = process.env as Record<string, string | undefined>
     const credentialStore = createCredentialStore(async () => ({ token: env.NOTION_TOKEN || '' }))
     const proxy = createProxy(credentialStore)
-    notion = createToolbox('notion', proxy, createIntegrationNode('notion', { label: 'Notion', credentialId: 'notion-creds' }))
+    notion = createToolbox('notion', proxy, createIntegrationNode('notion', { label: 'Notion', credentialId: 'notion-creds' }), undefined, { coverage: liveCoverage })
 
     // Create a dedicated database under a known parent page for this run
     const create_database = notion.write('create_database')
     const createdDb = await create_database({
       parent: { page_id: env.NOTION_TEST_PARENT_PAGE_ID },
-      title: [{ type: 'text', text: { content: `CmdTest DB ${Date.now()}` } }],
+      title: [{ type: 'text', text: { content: `${runId} DB` } }],
       properties: {
         Name: { title: {} },
         Status: { select: { options: [{ name: 'Open' }, { name: 'Done' }] } },
@@ -61,7 +69,7 @@ suite('notion write handlers (live)', () => {
       return expect(true).toBe(true)
 
     const create_page = notion.write('create_page')
-    const titleText = `CmdTest ${Date.now()}`
+    const titleText = `${runId} page`
     const created = await create_page({
       parent: { database_id: ctx.testDatabaseId },
       properties: {
@@ -185,7 +193,7 @@ suite('notion write handlers (live)', () => {
     const create_database = notion.write('create_database')
     const created = await create_database({
       parent: { page_id: ctx.createdPageId },
-      title: [{ type: 'text', text: { content: `CmdDB ${Date.now()}` } }],
+      title: [{ type: 'text', text: { content: `${runId} child DB` } }],
       properties: {
         Name: { title: {} },
         Status: { select: { options: [{ name: 'Open' }, { name: 'Done' }] } },

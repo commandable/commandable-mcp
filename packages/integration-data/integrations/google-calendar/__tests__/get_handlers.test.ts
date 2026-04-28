@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../core/src/integrations/dataLoader.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createLiveToolCoverage, createLiveToolbox, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Calendar read tests using credentials
 // Required env vars:
@@ -12,7 +12,6 @@ interface Ctx {
 }
 
 const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
   'GOOGLE_TOKEN',
 )
@@ -21,39 +20,30 @@ const suite = hasEnv(
   : describe.skip
 
 suite('google-calendar read handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('google-calendar-read'))
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
+  let calendar: ReturnType<typeof createToolbox>
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const credentialStore = {
-      getCredentials: async () => ({
+    calendar = createLiveToolbox({
+      type: 'google-calendar',
+      credentials: () => ({
         token: env.GOOGLE_TOKEN || '',
         serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
         subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
       }),
-    }
-
-    const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
-      spaceId: 'ci',
-      id: 'node-gcal',
-      referenceId: 'node-gcal',
-      type: 'google-calendar',
       label: 'Google Calendar',
-      connectionMethod: 'credentials',
       credentialId: 'google-calendar-creds',
-    } as any
+      coverage: liveCoverage,
+    }).toolbox
 
-    const tools = loadIntegrationTools('google-calendar')
-    expect(tools).toBeTruthy()
-
-    buildHandler = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+    buildHandler = (name: string) => calendar.read(name)
 
     const list_calendars = buildHandler('list_calendars')
     const calendars = await list_calendars({})

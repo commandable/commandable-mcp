@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Jira read tests using credentials
 //
@@ -17,6 +18,12 @@ const suiteOrSkip = hasEnv('JIRA_DOMAIN', 'JIRA_EMAIL', 'JIRA_API_TOKEN') ? desc
 
 suiteOrSkip('jira read handlers (live)', () => {
   describe('variant: api_token', () => {
+      const liveCoverage = createLiveToolCoverage(getPlanEntry('jira-api-token-read'))
+
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
       const ctx: {
         projectKey?: string
         issueKey?: string
@@ -33,7 +40,7 @@ suiteOrSkip('jira read handlers (live)', () => {
           apiToken: env.JIRA_API_TOKEN!,
         }))
         const proxy = createProxy(credentialStore)
-        jira = createToolbox('jira', proxy, createIntegrationNode('jira', { label: 'Jira', credentialId: 'jira-creds', credentialVariant: 'api_token' }), 'api_token')
+        jira = createToolbox('jira', proxy, createIntegrationNode('jira', { label: 'Jira', credentialId: 'jira-creds', credentialVariant: 'api_token' }), 'api_token', { coverage: liveCoverage })
 
         try {
           const list_projects = jira.read('list_projects')

@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../core/src/integrations/dataLoader.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createLiveToolCoverage, createLiveToolbox, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Notion integration tests using credentials
 // Required env vars:
@@ -13,7 +13,6 @@ interface Ctx {
 }
 
 const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv(
   'NOTION_TOKEN',
 )
@@ -21,37 +20,26 @@ const suite = hasEnv(
   : describe.skip
 
 suite('notion read handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('notion-read'))
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
+  let notion: ReturnType<typeof createToolbox>
   let buildHandler: (name: string) => ((input: any) => Promise<any>)
 
   beforeAll(async () => {
-    const credentialStore = {
-      getCredentials: async () => ({ token: env.NOTION_TOKEN || '' }),
-    }
-
-    const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
-      spaceId: 'ci',
-      id: 'node-notion',
-      referenceId: 'node-notion',
+    notion = createLiveToolbox({
       type: 'notion',
+      credentials: () => ({ token: env.NOTION_TOKEN || '' }),
       label: 'Notion',
-      connectionMethod: 'credentials',
       credentialId: 'notion-creds',
-    } as any
+      coverage: liveCoverage,
+    }).toolbox
 
-    const tools = loadIntegrationTools('notion')
-    expect(tools).toBeTruthy()
-
-    buildHandler = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `tool ${name} exists`).toBeTruthy()
-      const integration = {
-        fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init),
-      }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+    buildHandler = (name: string) => notion.read(name)
 
     // Try to discover some IDs via search
     const search = buildHandler('search')

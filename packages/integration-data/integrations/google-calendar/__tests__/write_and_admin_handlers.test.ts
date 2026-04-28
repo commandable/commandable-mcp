@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { IntegrationProxy } from '../../../../core/src/integrations/proxy.js'
-import { loadIntegrationTools } from '../../../../core/src/integrations/dataLoader.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createLiveRunId, createLiveToolCoverage, createLiveToolbox, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Calendar write/admin tests using credentials
 // Required env vars:
@@ -15,13 +15,20 @@ interface Ctx {
 }
 
 const env = process.env as Record<string, string>
-const hasEnv = (...keys: string[]) => keys.every(k => !!env[k] && env[k].trim().length > 0)
 const suite = hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON', 'GOOGLE_IMPERSONATE_SUBJECT')
   ? describe
   : describe.skip
 
 suite('google-calendar write & admin handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('google-calendar-write-admin'))
+  const runId = createLiveRunId('gcal')
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = { calendarId: 'primary' }
+  let calendar: ReturnType<typeof createToolbox>
   let buildWrite: (name: string) => ((input: any) => Promise<any>)
   let buildRead: (name: string) => ((input: any) => Promise<any>)
   let buildAdmin: (name: string) => ((input: any) => Promise<any>)
@@ -31,53 +38,21 @@ suite('google-calendar write & admin handlers (live)', () => {
 
     ctx.calendarId = GOOGLE_CALENDAR_TEST_CALENDAR_ID || 'primary'
 
-    const credentialStore = {
-      getCredentials: async () => ({
+    calendar = createLiveToolbox({
+      type: 'google-calendar',
+      credentials: () => ({
         token: env.GOOGLE_TOKEN || '',
         serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
         subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
       }),
-    }
-
-    const proxy = new IntegrationProxy({ credentialStore })
-    const integrationNode = {
-      spaceId: 'ci',
-      id: 'node-gcal',
-      referenceId: 'node-gcal',
-      type: 'google-calendar',
       label: 'Google Calendar',
-      connectionMethod: 'credentials',
       credentialId: 'google-calendar-creds',
-    } as any
+      coverage: liveCoverage,
+    }).toolbox
 
-    const tools = loadIntegrationTools('google-calendar')
-    expect(tools).toBeTruthy()
-
-    buildWrite = (name: string) => {
-      const tool = tools!.write.find(t => t.name === name)
-      expect(tool, `write tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    buildRead = (name: string) => {
-      const tool = tools!.read.find(t => t.name === name)
-      expect(tool, `read tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
-
-    buildAdmin = (name: string) => {
-      const tool = tools!.admin.find(t => t.name === name)
-        || tools!.write.find(t => t.name === name)
-        || tools!.read.find(t => t.name === name)
-      expect(tool, `admin tool ${name} exists`).toBeTruthy()
-      const integration = { fetch: (path: string, init?: RequestInit) => proxy.call(integrationNode, path, init) }
-      const build = new Function('integration', `return (${tool!.handlerCode});`)
-      return build(integration) as (input: any) => Promise<any>
-    }
+    buildWrite = (name: string) => calendar.write(name)
+    buildRead = (name: string) => calendar.read(name)
+    buildAdmin = (name: string) => calendar.admin(name)
   }, 60000)
 
   it('create_event -> get_event -> patch_event -> delete_event', async () => {
@@ -86,7 +61,7 @@ suite('google-calendar write & admin handlers (live)', () => {
     const create_event = buildWrite('create_event')
     const created = await create_event({
       calendarId: ctx.calendarId,
-      summary: `CmdTest ${Date.now()}`,
+      summary: `${runId} event`,
       start: { dateTime: now.toISOString() },
       end: { dateTime: inOneHour.toISOString() },
     })
@@ -99,7 +74,7 @@ suite('google-calendar write & admin handlers (live)', () => {
     expect(got?.id).toBe(createdId)
 
     const patch_event = buildWrite('patch_event')
-    const patched = await patch_event({ calendarId: ctx.calendarId, eventId: createdId, body: { summary: `CmdTest Updated ${Date.now()}` } })
+    const patched = await patch_event({ calendarId: ctx.calendarId, eventId: createdId, body: { summary: `${runId} updated` } })
     expect(patched?.id).toBe(createdId)
 
     const delete_event = buildWrite('delete_event')
@@ -135,7 +110,7 @@ suite('google-calendar write & admin handlers (live)', () => {
     if (!process.env.GOOGLE_CALENDAR_TEST_QUICK_ADD)
       return expect(true).toBe(true)
     const quick_add = buildWrite('quick_add')
-    const res = await quick_add({ calendarId: ctx.calendarId, text: `Lunch tomorrow ${Date.now()}` })
+    const res = await quick_add({ calendarId: ctx.calendarId, text: `${runId} lunch tomorrow` })
     expect(res?.id).toBeTruthy()
   }, 60000)
 
@@ -145,7 +120,7 @@ suite('google-calendar write & admin handlers (live)', () => {
     const create_event = buildWrite('create_event')
     const now = new Date()
     const inOneHour = new Date(now.getTime() + 60 * 60 * 1000)
-    const created = await create_event({ calendarId: ctx.calendarId, summary: `CmdTest Move ${Date.now()}`, start: { dateTime: now.toISOString() }, end: { dateTime: inOneHour.toISOString() } })
+    const created = await create_event({ calendarId: ctx.calendarId, summary: `${runId} move`, start: { dateTime: now.toISOString() }, end: { dateTime: inOneHour.toISOString() } })
     const eventId = created?.id
     expect(eventId).toBeTruthy()
     const move_event = buildWrite('move_event')

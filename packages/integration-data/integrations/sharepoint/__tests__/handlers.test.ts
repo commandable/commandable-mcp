@@ -2,7 +2,8 @@ import { readFileSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 /** Must appear in extractable text in every shared fixture under `integrations/__tests__/fixtures/file-extraction/`. */
 const INTEGRATION_TEST_MARKER = 'Commandable Integration Test'
@@ -128,6 +129,12 @@ async function uploadDriveChildFileContent(args: {
 
 suiteOrSkip('sharepoint handlers (live)', () => {
   describe('variant: app_credentials', () => {
+    const liveCoverage = createLiveToolCoverage(getPlanEntry('sharepoint-app-credentials'))
+
+    afterAll(() => {
+      liveCoverage.assertComplete()
+    })
+
     const ctx: {
       siteId?: string
       siteName?: string
@@ -156,6 +163,7 @@ suiteOrSkip('sharepoint handlers (live)', () => {
           credentialVariant: 'app_credentials',
         }),
         'app_credentials',
+        { coverage: liveCoverage },
       )
       sharepoint = toolbox
 

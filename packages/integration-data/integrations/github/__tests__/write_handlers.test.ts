@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE GitHub write tests -- runs once per available credential variant.
 // Required env vars (at least one):
@@ -48,6 +49,12 @@ async function withRetry<T>(
 suiteOrSkip('github write handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
+      const liveCoverage = createLiveToolCoverage(getPlanEntry(`github-${variant.key.replace(/_/g, '-')}-write`))
+
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
       const ctx = {
         owner: env._GITHUB_TEST_OWNER,
         repo: env._GITHUB_TEST_REPO,
@@ -58,7 +65,7 @@ suiteOrSkip('github write handlers (live)', () => {
         const credentialStore = createCredentialStore(async () => ({ token: variant.token }))
         const proxy = createProxy(credentialStore)
         const node = createIntegrationNode('github', { credentialVariant: variant.key })
-        toolbox = createToolbox('github', proxy, node, variant.key)
+        toolbox = createToolbox('github', proxy, node, variant.key, { coverage: liveCoverage })
       }, 30000)
 
       it('create_issue -> update_issue -> comment_on_issue -> list_issue_comments -> close_issue roundtrip', async () => {
