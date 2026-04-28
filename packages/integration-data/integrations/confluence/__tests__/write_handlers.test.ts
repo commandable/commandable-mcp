@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Confluence write tests using credentials
 //
@@ -21,6 +22,12 @@ const suiteOrSkip = (hasEnv('CONFLUENCE_DOMAIN', 'CONFLUENCE_EMAIL', 'CONFLUENCE
 
 suiteOrSkip('confluence write handlers (live)', () => {
   describe('variant: api_token', () => {
+    const liveCoverage = createLiveToolCoverage(getPlanEntry('confluence-api-token-write'))
+
+    afterAll(() => {
+      liveCoverage.assertComplete()
+    })
+
     const ctx: {
       spaceId?: string
       createdPageId?: string
@@ -42,6 +49,7 @@ suiteOrSkip('confluence write handlers (live)', () => {
         proxy,
         createIntegrationNode('confluence', { label: 'Confluence', credentialId: 'confluence-creds', credentialVariant: 'api_token' }),
         'api_token',
+        { coverage: liveCoverage },
       )
 
       // Resolve spaceId from configured space key.

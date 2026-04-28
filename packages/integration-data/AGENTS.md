@@ -407,7 +407,20 @@ Copied from `new_integration_prompt.md` and `integrations/README.md` for complet
 
 ## Integration testing
 
-Every integration should have tests that protect both manifest coverage and real handler behaviour.
+This package is an integration product. The important test is whether the integration code we ship actually works against the real provider API.
+
+Every integration must have tests that protect both manifest coverage and real handler behaviour. For integration handlers, mocked HTTP clients, proxy spies, URL-construction assertions, and fake provider responses are not acceptable substitutes for live coverage. Those tests can be useful in `packages/core` when testing runtime plumbing, but they do not prove an integration works and must not be presented as handler coverage in this package.
+
+Required standards:
+
+- Every shipped manifest tool must be exercised through live tests against the real provider API unless there is a concrete documented reason it is unsafe or impossible.
+- Every credential variant must have a live health check test that calls the real configured provider endpoint.
+- Live tests must call tools through the public toolbox/runtime path, not by invoking handler internals directly.
+- Tests must assert provider behaviour and user-facing output, not only that a request was constructed or did not throw.
+- Static usage parity is only a guardrail; it is never enough by itself.
+- Any skipped tool must be listed in `skippedTools` with a specific reason. Do not skip a tool just because it needs setup.
+
+Do not add tests in `integrations/**/__tests__` that pretend to cover provider behaviour with mocks, stubbed `integration.fetch`, proxy spies, or hand-written fake responses. If a test does not reach the real provider API, it is not an integration test.
 
 ### Static usage parity
 

@@ -6,7 +6,7 @@ async (input) => {
   if (Array.isArray(responsePageObjectIds))
     responsePageObjectIds.forEach(id => params.append('responsePageObjectIds', String(id)))
   const qs = params.toString()
-  const path = `/presentations/${encodeURIComponent(presentationId)}:batchUpdate${qs ? `?${qs}` : ''}`
+  const path = `https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}:batchUpdate${qs ? `?${qs}` : ''}`
   const body = { requests }
   if (writeControl)
     body.writeControl = writeControl

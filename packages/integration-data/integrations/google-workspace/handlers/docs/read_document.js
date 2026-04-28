@@ -154,7 +154,7 @@ async (input) => {
   }
 
   const { documentId } = input
-  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)
+  const res = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)
   const doc = await res.json()
 
   const content = doc?.body?.content || []

@@ -12,7 +12,7 @@ async (input) => {
   if (input.emailAddress) body.emailAddress = input.emailAddress
   if (input.domain) body.domain = input.domain
   const qs = params.toString()
-  const res = await integration.fetch(`/files/${fileId}/permissions${qs ? `?${qs}` : ''}`, {
+  const res = await integration.fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions${qs ? `?${qs}` : ''}`, {
     method: 'POST',
     body,
   })

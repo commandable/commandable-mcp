@@ -1,6 +1,6 @@
 async (input) => {
   const { presentationId, text, slideIndex = 0 } = input
-  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)
+  const presRes = await integration.fetch(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}`)
   const pres = await presRes.json()
   const slide = (pres?.slides || [])[slideIndex]
   if (!slide)
@@ -8,7 +8,7 @@ async (input) => {
   const titleShape = (slide.pageElements || []).find(el => el.shape?.placeholder?.type === 'TITLE')
   if (!titleShape?.objectId)
     return { presentationId, applied: false, replies: [] }
-  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {
+  const res = await integration.fetch(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {
     method: 'POST',
     body: { requests: [{ insertText: { objectId: titleShape.objectId, insertionIndex: -1, text } }] },
   })

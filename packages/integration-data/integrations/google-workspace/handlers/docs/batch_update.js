@@ -4,7 +4,7 @@ async (input) => {
   if (includeTabStops !== undefined)
     params.set('includeTabStops', String(includeTabStops))
   const qs = params.toString()
-  const path = `/documents/${encodeURIComponent(documentId)}:batchUpdate${qs ? `?${qs}` : ''}`
+  const path = `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate${qs ? `?${qs}` : ''}`
   const body = { requests }
   if (writeControl)
     body.writeControl = writeControl

@@ -3,7 +3,9 @@ import { extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getGoogleAccessToken } from '../../../../core/src/integrations/googleServiceAccount.js'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 /** Must appear in extractable text in every shared fixture under `integrations/__tests__/fixtures/file-extraction/`. */
 const INTEGRATION_TEST_MARKER = 'Commandable Integration Test'
@@ -128,6 +130,12 @@ const suiteOrSkip = variants.length > 0 ? describe : describe.skip
 suiteOrSkip('google-workspace drive handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
+      const liveCoverage = createLiveToolCoverage(getPlanEntry(`google-workspace-drive-${variant.key.replace(/_/g, '-')}`))
+
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
       const ctx: { folderId?: string, fileId?: string, destFolderId?: string } = {}
       let drive: ReturnType<typeof createToolbox>
 
@@ -139,6 +147,7 @@ suiteOrSkip('google-workspace drive handlers (live)', () => {
           proxy,
           createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds', credentialVariant: variant.key }),
           variant.key,
+          { coverage: liveCoverage, retry: retryGoogleTemporaryIssues },
         )
 
         const folder = await drive.write('create_folder')({ name: `CmdTest Drive ${Date.now()}` })

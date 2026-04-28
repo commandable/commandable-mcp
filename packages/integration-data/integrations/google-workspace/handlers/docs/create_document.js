@@ -4,6 +4,6 @@ async (input) => {
   if (title !== undefined)
     body.title = title
   Object.assign(body, rest)
-  const res = await integration.fetch(`/documents`, { method: 'POST', body })
+  const res = await integration.fetch(`https://docs.googleapis.com/v1/documents`, { method: 'POST', body })
   return await res.json()
 }

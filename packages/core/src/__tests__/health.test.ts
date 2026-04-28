@@ -104,7 +104,7 @@ describe('checkIntegrationHealth', () => {
     const result = await checkIntegrationHealth({ integration, proxy })
     expect(result.status).toBe('connected')
     expect(result.skipped).toBeFalsy()
-    expect(calls).toEqual([{ path: '/about?fields=user', init: { method: 'GET', headers: undefined } }])
+    expect(calls).toEqual([{ path: 'https://www.googleapis.com/drive/v3/about?fields=user', init: { method: 'GET', headers: undefined } }])
   })
 
   it('runs the concrete SharePoint app-credential health endpoint', async () => {

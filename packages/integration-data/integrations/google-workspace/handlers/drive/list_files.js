@@ -10,6 +10,6 @@ async (input) => {
     params.set('pageToken', input.pageToken)
   if (input.orderBy)
     params.set('orderBy', input.orderBy)
-  const res = await integration.fetch(`/files?${params.toString()}`)
+  const res = await integration.fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`)
   return await res.json()
 }

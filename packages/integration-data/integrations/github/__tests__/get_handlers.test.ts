@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE GitHub read tests -- runs once per available credential variant.
 // Required env vars (at least one):
@@ -23,6 +24,12 @@ const suiteOrSkip = variants.length > 0 ? describe : describe.skip
 suiteOrSkip('github read handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
+      const liveCoverage = createLiveToolCoverage(getPlanEntry(`github-${variant.key.replace(/_/g, '-')}-read`))
+
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
       interface Ctx {
         owner?: string
         repo?: string
@@ -38,7 +45,7 @@ suiteOrSkip('github read handlers (live)', () => {
         const credentialStore = createCredentialStore(async () => ({ token: variant.token }))
         const proxy = createProxy(credentialStore)
         const node = createIntegrationNode('github', { credentialVariant: variant.key })
-        toolbox = createToolbox('github', proxy, node, variant.key)
+        toolbox = createToolbox('github', proxy, node, variant.key, { coverage: liveCoverage })
 
         const list_repos = toolbox.read('list_repos')
         const repos = await list_repos({})

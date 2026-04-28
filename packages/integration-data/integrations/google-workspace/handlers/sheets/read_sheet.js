@@ -43,7 +43,7 @@ async (input) => {
   if (input.valueRenderOption) params.set('valueRenderOption', input.valueRenderOption)
 
   const qs = params.toString()
-  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}${qs ? `?${qs}` : ''}`
+  const path = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path)
   const payload = await res.json()
 

@@ -1,13 +1,13 @@
 async (input) => {
   const { documentId, findText } = input
   const marker = `__CMD_MARK_${Date.now()}__`
-  const replaceRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
+  const replaceRes = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, {
     method: 'POST',
     body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },
   })
   await replaceRes.json()
 
-  const getRes = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)
+  const getRes = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)
   const doc = await getRes.json()
   let startIndex = -1
   let endIndex = -1
@@ -31,7 +31,7 @@ async (input) => {
       break
   }
   if (startIndex < 0) {
-    const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)
+    const confirm = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)
     const got = await confirm.json()
     return { documentId: got?.documentId || documentId, applied: false, replies: [] }
   }
@@ -40,11 +40,11 @@ async (input) => {
   requests.push({ deleteContentRange: { range: { startIndex, endIndex } } })
   // also clean any remaining markers
   requests.push({ replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: '' } })
-  const res = await integration.fetch(`/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })
+  const res = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}:batchUpdate`, { method: 'POST', body: { requests } })
   const out = await res.json()
   if (out?.documentId || Array.isArray(out?.replies))
     return { ...out, applied: true }
-  const confirm = await integration.fetch(`/documents/${encodeURIComponent(documentId)}`)
+  const confirm = await integration.fetch(`https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}`)
   const got = await confirm.json()
   return { documentId: got?.documentId || documentId, applied: true, replies: Array.isArray(out?.replies) ? out.replies : [] }
 }

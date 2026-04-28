@@ -160,21 +160,6 @@ function assertAbsoluteUrlIsAllowed(
   }
 }
 
-function resolveRelativeBaseUrl(provider: string, baseUrl: string, rawPath: string): string {
-  if (provider !== 'google-workspace')
-    return baseUrl
-
-  const pathOnly = String(rawPath || '').split('?', 1)[0] || ''
-  if (pathOnly === '/documents' || pathOnly.startsWith('/documents/'))
-    return 'https://docs.googleapis.com/v1'
-  if (pathOnly === '/spreadsheets' || pathOnly.startsWith('/spreadsheets/'))
-    return 'https://sheets.googleapis.com/v4'
-  if (pathOnly === '/presentations' || pathOnly.startsWith('/presentations/'))
-    return 'https://slides.googleapis.com/v1'
-
-  return baseUrl
-}
-
 function joinWithoutDuplicateSegments(baseUrl: string, rawPath: string): string {
   let pathOnly = rawPath || ''
   let queryPart = ''
@@ -526,10 +511,7 @@ export class IntegrationProxy {
         finalUrl = path
       }
       else {
-        finalUrl = joinWithoutDuplicateSegments(
-          resolveRelativeBaseUrl(provider, typeConfig.baseUrl, path),
-          path,
-        )
+        finalUrl = joinWithoutDuplicateSegments(typeConfig.baseUrl, path)
       }
 
       const queryString = resolvedQuery.toString()

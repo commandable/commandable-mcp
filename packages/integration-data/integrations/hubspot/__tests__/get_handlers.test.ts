@@ -1,11 +1,13 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   createCredentialStore,
   createIntegrationNode,
+  createLiveToolCoverage,
   createProxy,
   createToolbox,
   hasEnv,
 } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE HubSpot read tests using credentials
 // Required env vars:
@@ -20,7 +22,13 @@ import {
 const env = process.env as Record<string, string | undefined>
 const suite = hasEnv('HUBSPOT_TOKEN') ? describe : describe.skip
 
+const liveCoverage = createLiveToolCoverage(getPlanEntry('hubspot-read'))
+
 suite('hubspot read handlers (live)', () => {
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: {
     contactId?: string
     companyId?: string
@@ -39,7 +47,7 @@ suite('hubspot read handlers (live)', () => {
     const credentialStore = createCredentialStore(async () => ({ token: env.HUBSPOT_TOKEN || '' }))
     const proxy = createProxy(credentialStore)
     const node = createIntegrationNode('hubspot')
-    const toolbox = createToolbox('hubspot', proxy, node)
+    const toolbox = createToolbox('hubspot', proxy, node, undefined, { coverage: liveCoverage })
 
     // IMPORTANT: These literal tool-name strings are intentionally present so usage-parity can verify coverage.
     read = {

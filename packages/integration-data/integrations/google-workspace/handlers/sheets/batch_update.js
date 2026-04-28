@@ -8,7 +8,7 @@ async (input) => {
   if (responseIncludeGridData !== undefined)
     params.set('responseIncludeGridData', String(responseIncludeGridData))
   const qs = params.toString()
-  const path = `/spreadsheets/${encodeURIComponent(spreadsheetId)}:batchUpdate${qs ? `?${qs}` : ''}`
+  const path = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}:batchUpdate${qs ? `?${qs}` : ''}`
   const res = await integration.fetch(path, { method: 'POST', body: { requests } })
   return await res.json()
 }

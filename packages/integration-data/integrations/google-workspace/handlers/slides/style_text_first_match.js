@@ -2,13 +2,13 @@ async (input) => {
   const { presentationId, findText, textStyle, fields } = input
   // Replace first match with a marker to derive objectId/range
   const marker = `__CMD_MARK_${Date.now()}__`
-  const rep = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {
+  const rep = await integration.fetch(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, {
     method: 'POST',
     body: { requests: [{ replaceAllText: { containsText: { text: findText, matchCase: false }, replaceText: marker } }] },
   })
   await rep.json()
   // Scan pages for marker and apply style to that range on the text element
-  const presRes = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}`)
+  const presRes = await integration.fetch(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}`)
   const pres = await presRes.json()
   let targetObjectId = null
   let startIndex = -1
@@ -42,7 +42,7 @@ async (input) => {
     { updateTextStyle: { objectId: targetObjectId, style: textStyle, textRange: { type: 'FIXED_RANGE', startIndex, endIndex }, fields: fields || Object.keys(textStyle || {}).join(',') } },
     { replaceAllText: { containsText: { text: marker, matchCase: true }, replaceText: findText } },
   ]
-  const res = await integration.fetch(`/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, { method: 'POST', body: { requests } })
+  const res = await integration.fetch(`https://slides.googleapis.com/v1/presentations/${encodeURIComponent(presentationId)}:batchUpdate`, { method: 'POST', body: { requests } })
   const out = await res.json()
   return out?.presentationId ? { ...out, applied: true } : { presentationId, applied: true, replies: out?.replies || [] }
 }

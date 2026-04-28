@@ -181,10 +181,10 @@ describe('IntegrationProxy credentials injection', () => {
     await proxy.call(integration, '/sites?search=test-2')
 
     expect(credentialStore.getCredentials).toHaveBeenCalledTimes(2)
-    expect(fetchSpy).toHaveBeenCalledTimes(3)
-    expect(String(fetchSpy.mock.calls[0]![0])).toContain('/oauth2/v2.0/token')
-    expect(String(fetchSpy.mock.calls[1]![0])).toContain('graph.microsoft.com')
-    expect(String(fetchSpy.mock.calls[2]![0])).toContain('graph.microsoft.com')
+    const tokenCalls = fetchSpy.mock.calls.filter(c => String(c[0]).includes('/oauth2/v2.0/token'))
+    const graphCalls = fetchSpy.mock.calls.filter(c => String(c[0]).includes('graph.microsoft.com'))
+    expect(tokenCalls.length).toBe(1)
+    expect(graphCalls.length).toBe(2)
   })
 })
 

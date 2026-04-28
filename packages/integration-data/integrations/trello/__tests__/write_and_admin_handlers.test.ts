@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 interface Ctx {
   boardId?: string
@@ -16,7 +17,13 @@ const suite = hasEnv(
   ? describe
   : describe.skip
 
+const liveWriteCoverage = createLiveToolCoverage(getPlanEntry('trello-write'))
+
 suite('trello write handlers (live)', () => {
+  afterAll(() => {
+    liveWriteCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
   let trello: ReturnType<typeof createToolbox>
 
@@ -25,7 +32,7 @@ suite('trello write handlers (live)', () => {
     const credentialStore = createCredentialStore(async () => ({ apiKey: env.TRELLO_API_KEY || '', apiToken: env.TRELLO_API_TOKEN || '' }))
     const proxy = createProxy(credentialStore)
     const node = createIntegrationNode('trello', { label: 'Trello', credentialId: 'trello-creds' })
-    trello = createToolbox('trello', proxy, node)
+    trello = createToolbox('trello', proxy, node, undefined, { coverage: liveWriteCoverage })
 
     // Create an isolated board + two lists for this test run
     const create_board = trello.write('create_board')

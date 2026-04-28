@@ -3,6 +3,8 @@ import { readFileSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, safeCleanup } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 const env = process.env as Record<string, string | undefined>
 const INTEGRATION_TEST_MARKER = 'Commandable Integration Test'
@@ -140,10 +142,7 @@ async function expectEventuallyRejects(fn: () => Promise<unknown>, label: string
 suiteOrSkip('google-gmail handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
-      const liveCoverage = createLiveToolCoverage({
-        integrationName: 'google-gmail',
-        credentialVariant: variant.key,
-      })
+      const liveCoverage = createLiveToolCoverage(getPlanEntry(`google-gmail-${variant.key.replace(/_/g, '-')}`))
       const ctx: { email?: string, labelId?: string, mutationLabelId: string } = { mutationLabelId: 'STARRED' }
       let gmail: ReturnType<typeof createToolbox>
       let gmailFetch: (path: string, init?: RequestInit) => Promise<Response>
@@ -158,7 +157,7 @@ suiteOrSkip('google-gmail handlers (live)', () => {
           proxy,
           node,
           variant.key,
-          { coverage: liveCoverage },
+          { coverage: liveCoverage, retry: retryGoogleTemporaryIssues },
         )
 
         const profile = await gmail.read('get_profile')({})

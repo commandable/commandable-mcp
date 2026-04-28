@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv } from '../../__tests__/liveHarness.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE GitHub write tests -- runs once per available credential variant.
 // Required env vars (at least one):
@@ -48,6 +49,12 @@ async function withRetry<T>(
 suiteOrSkip('github write handlers (live)', () => {
   for (const variant of variants) {
     describe(`variant: ${variant.key}`, () => {
+      const liveCoverage = createLiveToolCoverage(getPlanEntry(`github-${variant.key.replace(/_/g, '-')}-write`))
+
+      afterAll(() => {
+        liveCoverage.assertComplete()
+      })
+
       const ctx = {
         owner: env._GITHUB_TEST_OWNER,
         repo: env._GITHUB_TEST_REPO,
@@ -58,7 +65,7 @@ suiteOrSkip('github write handlers (live)', () => {
         const credentialStore = createCredentialStore(async () => ({ token: variant.token }))
         const proxy = createProxy(credentialStore)
         const node = createIntegrationNode('github', { credentialVariant: variant.key })
-        toolbox = createToolbox('github', proxy, node, variant.key)
+        toolbox = createToolbox('github', proxy, node, variant.key, { coverage: liveCoverage })
       }, 30000)
 
       it('create_issue -> update_issue -> comment_on_issue -> list_issue_comments -> close_issue roundtrip', async () => {
@@ -91,6 +98,8 @@ suiteOrSkip('github write handlers (live)', () => {
       }, 90000)
 
       it('fork_repo forks a public repo (best effort)', async () => {
+        if (variant.key !== 'classic_pat')
+          return expect(true).toBe(true)
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
         const fork_repo = toolbox.write('fork_repo')
@@ -105,29 +114,21 @@ suiteOrSkip('github write handlers (live)', () => {
         }
       }, 30000)
 
-      it('create_release creates a draft release (classic_pat only)', async () => {
-        if (!toolbox.hasTool('write', 'create_repo'))
-          return expect(true).toBe(true)
+      it('create_release creates a draft release', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
         const create_release = toolbox.write('create_release')
         const tagName = `v0.0.0-test-${Date.now()}`
-        try {
-          const result = await create_release({
-            owner: ctx.owner,
-            repo: ctx.repo,
-            tag_name: tagName,
-            name: `Test Release ${tagName}`,
-            body: 'Draft release created by integration tests.',
-            draft: true,
-          })
-          expect(result?.tag_name).toBe(tagName)
-          expect(result?.draft).toBe(true)
-        }
-        catch {
-          // May fail if insufficient permissions -- that's ok
-          expect(true).toBe(true)
-        }
+        const result = await create_release({
+          owner: ctx.owner,
+          repo: ctx.repo,
+          tag_name: tagName,
+          name: `Test Release ${tagName}`,
+          body: 'Draft release created by integration tests.',
+          draft: true,
+        })
+        expect(result?.tag_name).toBe(tagName)
+        expect(result?.draft).toBe(true)
       }, 30000)
 
       it('create_repo -> delete_repo lifecycle (classic_pat only)', async () => {

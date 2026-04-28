@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createCredentialStore, createIntegrationNode, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { createCredentialStore, createIntegrationNode, createLiveToolCoverage, createProxy, createToolbox, hasEnv, safeCleanup } from '../../__tests__/liveHarness.js'
+import { retryGoogleTemporaryIssues } from '../../__tests__/googleLiveRetry.js'
+import { getPlanEntry } from '../../__tests__/liveCoveragePlan.js'
 
 // LIVE Google Sheets write tests using credentials
 // Required env vars:
@@ -17,6 +19,12 @@ const suite = (hasEnv('GOOGLE_TOKEN') || hasEnv('GOOGLE_SERVICE_ACCOUNT_JSON'))
   : describe.skip
 
 suite('google-workspace sheets write handlers (live)', () => {
+  const liveCoverage = createLiveToolCoverage(getPlanEntry('google-workspace-sheets-write'))
+
+  afterAll(() => {
+    liveCoverage.assertComplete()
+  })
+
   const ctx: Ctx = {}
   let sheets: ReturnType<typeof createToolbox>
   let drive: ReturnType<typeof createToolbox>
@@ -30,8 +38,8 @@ suite('google-workspace sheets write handlers (live)', () => {
       subject: env.GOOGLE_IMPERSONATE_SUBJECT || '',
     }))
     const proxy = createProxy(credentialStore)
-    sheets = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
-    drive = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }))
+    sheets = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { coverage: liveCoverage, retry: retryGoogleTemporaryIssues })
+    drive = createToolbox('google-workspace', proxy, createIntegrationNode('google-workspace', { label: 'Google Workspace', credentialId: 'google-workspace-creds' }), undefined, { retry: retryGoogleTemporaryIssues })
 
     const folder = await drive.write('create_folder')({ name: `CmdTest Sheets Write ${Date.now()}` })
     ctx.folderId = folder?.id

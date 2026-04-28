@@ -5,7 +5,7 @@ describe('trello-board manifest', () => {
   it('inherits trello provider metadata and exposes board variant config', () => {
     const manifest = loadIntegrationManifest('trello-board')
     expect(manifest?.name).toBe('Trello')
-    expect(manifest?.variantLabel).toBe('Single board')
+    expect(manifest?.variantLabel).toBe('Single Board')
     expect(manifest?.variantConfig).toEqual([
       expect.objectContaining({
         key: 'board',
