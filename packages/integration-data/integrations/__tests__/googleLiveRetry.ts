@@ -8,11 +8,32 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function errorText(error: unknown): string {
+  if (error instanceof Error) {
+    const cause = 'cause' in error ? errorText((error as Error & { cause?: unknown }).cause) : ''
+    return [error.message, error.stack, cause].filter(Boolean).join('\n')
+  }
+
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>
+    const parts = [
+      typeof record.message === 'string' ? record.message : '',
+      typeof record.stack === 'string' ? record.stack : '',
+      'cause' in record ? errorText(record.cause) : '',
+    ]
+    try {
+      parts.push(JSON.stringify(record))
+    }
+    catch {}
+    return parts.filter(Boolean).join('\n')
+  }
+
+  return String(error)
+}
+
 function isTemporaryGoogleProxyError(error: unknown) {
-  const text = error instanceof Error
-    ? `${error.message}\n${error.stack || ''}`
-    : String(error)
-  return /temporary issue/i.test(text)
+  const text = errorText(error)
+  return /temporary issue|backendError|internalError/i.test(text)
 }
 
 async function withGoogleTemporaryIssueRetry<T>(
@@ -37,8 +58,8 @@ async function withGoogleTemporaryIssueRetry<T>(
     }
   }
 
-  if (lastError instanceof Error && isTemporaryGoogleProxyError(lastError))
-    throw new Error(`Google temporary issue retry exhausted for ${toolLabel}: ${lastError.message}`)
+  if (isTemporaryGoogleProxyError(lastError))
+    throw new Error(`Google temporary issue retry exhausted for ${toolLabel}: ${errorText(lastError)}`)
 
   throw lastError
 }
