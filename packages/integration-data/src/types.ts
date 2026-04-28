@@ -8,6 +8,19 @@ export interface CredentialPreprocessHandlerConfig {
 
 export type CredentialPreprocessConfig = string | CredentialPreprocessHandlerConfig
 
+export type CredentialHealthCheck
+  = | {
+    path: string
+    method?: string
+    headers?: Record<string, string>
+    expectStatus?: number | number[]
+    description?: string
+  }
+  | {
+    notViable: true
+    reason?: string
+  }
+
 export interface CredentialVariantConfig {
   label: string
   schema: JSONSchema7
@@ -17,14 +30,7 @@ export interface CredentialVariantConfig {
     query?: Record<string, string>
   }
   preprocess?: CredentialPreprocessConfig
-  healthCheck:
-    | {
-      path: string
-      method?: string
-    }
-    | {
-      notViable: true
-    }
+  healthCheck: CredentialHealthCheck
 }
 
 export interface CredentialVariantsFile {
@@ -42,14 +48,7 @@ export interface IntegrationCredentialConfig {
     query?: Record<string, string>
   }
   preprocess?: CredentialPreprocessConfig
-  healthCheck:
-    | {
-      path: string
-      method?: string
-    }
-    | {
-      notViable: true
-    }
+  healthCheck: CredentialHealthCheck
 }
 
 export interface ManifestToolRef {

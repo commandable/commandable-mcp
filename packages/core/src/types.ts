@@ -79,6 +79,19 @@ export type IntegrationCredentialPreprocess =
     allowedOrigins?: string[] | null
   }
 
+export type IntegrationHealthCheck
+  = | {
+    path: string
+    method?: string
+    headers?: Record<string, string>
+    expectStatus?: number | number[]
+    description?: string
+  }
+  | {
+    notViable: true
+    reason?: string
+  }
+
 export interface IntegrationCredentialVariant {
   label: string
   credentialSchema: JSONSchema7
@@ -89,7 +102,7 @@ export interface IntegrationCredentialVariant {
   baseUrlTemplate?: string | null
   /** Explicit absolute origins/wildcards the integration may call with injected credentials. */
   allowedOrigins?: string[] | null
-  healthCheck?: { path: string, method?: string } | { notViable: true } | null
+  healthCheck?: IntegrationHealthCheck | null
   hintMarkdown?: string | null
   /** Credential transforms that require async work before request injection.
    *  Use 'google_service_account' for the built-in JWT-signing flow, or a sandboxed

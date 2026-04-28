@@ -36,16 +36,24 @@ export async function checkIntegrationHealth(params: {
   const healthCheck = variant?.healthCheck
   const path = healthCheck && 'path' in healthCheck ? healthCheck.path : null
   const method = healthCheck && 'path' in healthCheck ? (healthCheck.method ?? 'GET') : 'GET'
+  const headers = healthCheck && 'path' in healthCheck ? healthCheck.headers : undefined
+  const expectedStatuses = healthCheck && 'path' in healthCheck && healthCheck.expectStatus !== undefined
+    ? (Array.isArray(healthCheck.expectStatus) ? healthCheck.expectStatus : [healthCheck.expectStatus])
+    : []
 
   if (!path) {
     return { status: 'connected', skipped: true, checkedAt }
   }
 
   try {
-    await proxy.call(integration, path, { method })
+    await proxy.call(integration, path, { method, headers })
     return { status: 'connected', checkedAt }
   }
   catch (err: any) {
+    const statusCode = err?.statusCode ?? null
+    if (typeof statusCode === 'number' && expectedStatuses.includes(statusCode))
+      return { status: 'connected', checkedAt, message: err.message }
+
     // Missing credentials — proxy throws before making the HTTP call
     if (err?.statusCode === 400 && err?.message?.includes('No credentials')) {
       return { status: 'disconnected', checkedAt, message: err.message }
@@ -54,7 +62,6 @@ export async function checkIntegrationHealth(params: {
       return { status: 'disconnected', checkedAt, message: err.message }
     }
 
-    const statusCode = err?.statusCode ?? null
     if (statusCode === 401) {
       return { status: 'invalid_credentials', checkedAt, message: err.message }
     }

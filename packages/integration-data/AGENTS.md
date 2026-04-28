@@ -282,7 +282,9 @@ For OAuth flows that require a token exchange before injection (e.g. SharePoint 
 
 The preprocess handler receives `(creds, utils)` and returns an object whose keys are available as placeholders in `injection`. `utils.tokenFetch` is available for outbound token requests.
 
-`healthCheck` is either `{ "path": "/some/endpoint" }` (GET, expects 2xx) or `{ "notViable": true }` (skip health check — used when OAuth tokens are short-lived and the check is meaningless before first use).
+`healthCheck` is normally `{ "path": "/some/endpoint" }` (GET, expects 2xx). The path must be a safe authenticated read that proves the credentials and any `preprocess` token exchange work end-to-end. Optional fields include `method`, `headers`, `expectStatus`, and `description`; keep `method` as GET unless the provider has a genuinely read-only alternative.
+
+`{ "notViable": true, "reason": "..." }` is exceptional. Do not use it just because credentials require OAuth or preprocessing. Prefer a tiny authenticated endpoint such as "current user", "whoami", "metadata", or "list one item" after preprocessing has run.
 
 ---
 

@@ -69,6 +69,54 @@ function validateCredentialVariant(type: string, variantKey: string, variant: Cr
       `Invalid credentials config for '${type}/${variantKey}': declare exactly one of 'healthCheck.path' or 'healthCheck.notViable: true'.`,
     )
   }
+
+  if (hasHealthCheckPath) {
+    if ('method' in healthCheck && healthCheck.method !== undefined && typeof healthCheck.method !== 'string') {
+      throw new Error(
+        `Invalid credentials config for '${type}/${variantKey}': healthCheck.method must be a string when provided.`,
+      )
+    }
+
+    if ('headers' in healthCheck && healthCheck.headers !== undefined) {
+      const headers = healthCheck.headers
+      if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+        throw new Error(
+          `Invalid credentials config for '${type}/${variantKey}': healthCheck.headers must be an object when provided.`,
+        )
+      }
+
+      for (const [headerName, headerValue] of Object.entries(headers)) {
+        if (!headerName.trim() || typeof headerValue !== 'string') {
+          throw new Error(
+            `Invalid credentials config for '${type}/${variantKey}': healthCheck.headers must map non-empty names to string values.`,
+          )
+        }
+      }
+    }
+
+    if ('expectStatus' in healthCheck && healthCheck.expectStatus !== undefined) {
+      const expectedStatuses = Array.isArray(healthCheck.expectStatus)
+        ? healthCheck.expectStatus
+        : [healthCheck.expectStatus]
+      if (!expectedStatuses.length || expectedStatuses.some(status => !Number.isInteger(status) || status < 100 || status > 599)) {
+        throw new Error(
+          `Invalid credentials config for '${type}/${variantKey}': healthCheck.expectStatus must be an HTTP status code or non-empty array of status codes.`,
+        )
+      }
+    }
+
+    if ('description' in healthCheck && healthCheck.description !== undefined && typeof healthCheck.description !== 'string') {
+      throw new Error(
+        `Invalid credentials config for '${type}/${variantKey}': healthCheck.description must be a string when provided.`,
+      )
+    }
+  }
+
+  if (healthCheckNotViable && 'reason' in healthCheck && healthCheck.reason !== undefined && typeof healthCheck.reason !== 'string') {
+    throw new Error(
+      `Invalid credentials config for '${type}/${variantKey}': healthCheck.reason must be a string when provided.`,
+    )
+  }
 }
 
 function validateCredentialVariantsFile(type: string, raw: CredentialVariantsFile): CredentialVariantsFile {

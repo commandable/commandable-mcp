@@ -1,7 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { checkIntegrationHealth } from '../integrations/health.js'
-import { IntegrationProxy } from '../integrations/proxy.js'
 import { createDb } from '../db/client.js'
 import { ensureSchema } from '../db/migrate.js'
 import { updateIntegrationHealth } from '../db/integrationStore.js'
@@ -84,8 +83,7 @@ describe('checkIntegrationHealth', () => {
     expect(result.status).toBe('disconnected')
   })
 
-  it('returns connected (skipped) for providers without a health endpoint', async () => {
-    // google-workspace explicitly marks health checks as not viable, so health is skipped
+  it('runs the concrete Google Workspace health endpoint', async () => {
     const integration: IntegrationData = {
       id: 'gworkspace-test',
       referenceId: 'gworkspace-test',
@@ -95,19 +93,21 @@ describe('checkIntegrationHealth', () => {
       credentialId: 'gworkspace-test-creds',
       spaceId: 'local',
     }
-    const proxy = new IntegrationProxy({ credentialStore })
+    const calls: Array<{ path: string, init: RequestInit }> = []
+    const proxy = {
+      call: async (_integration: IntegrationData, path: string, init: RequestInit) => {
+        calls.push({ path, init })
+        return new Response(JSON.stringify({ user: { emailAddress: 'test@example.com' } }), { status: 200 })
+      },
+    } as any
+
     const result = await checkIntegrationHealth({ integration, proxy })
     expect(result.status).toBe('connected')
-    expect(result.skipped).toBe(true)
+    expect(result.skipped).toBeFalsy()
+    expect(calls).toEqual([{ path: '/about?fields=user', init: { method: 'GET', headers: undefined } }])
   })
 
-  it('returns connected (skipped) for sharepoint app credentials without a health endpoint', async () => {
-    await credentialStore.saveCredentials('local', 'sharepoint-test-creds', {
-      tenantId: 'tenant-123',
-      clientId: 'client-123',
-      clientSecret: 'secret-123',
-    })
-
+  it('runs the concrete SharePoint app-credential health endpoint', async () => {
     const integration: IntegrationData = {
       id: 'sharepoint-test',
       referenceId: 'sharepoint-test',
@@ -118,10 +118,18 @@ describe('checkIntegrationHealth', () => {
       credentialVariant: 'app_credentials',
       spaceId: 'local',
     }
-    const proxy = new IntegrationProxy({ credentialStore })
+    const calls: Array<{ path: string, init: RequestInit }> = []
+    const proxy = {
+      call: async (_integration: IntegrationData, path: string, init: RequestInit) => {
+        calls.push({ path, init })
+        return new Response(JSON.stringify({ value: [] }), { status: 200 })
+      },
+    } as any
+
     const result = await checkIntegrationHealth({ integration, proxy })
     expect(result.status).toBe('connected')
-    expect(result.skipped).toBe(true)
+    expect(result.skipped).toBeFalsy()
+    expect(calls).toEqual([{ path: '/sites?search=*&$top=1', init: { method: 'GET', headers: undefined } }])
   })
 })
 

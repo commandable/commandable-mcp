@@ -5781,7 +5781,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
           },
           "preprocess": "google_service_account",
           "healthCheck": {
-            "notViable": true
+            "path": "/about?fields=user",
+            "description": "Validates that the service account can mint a Google access token and call the Drive API."
           }
         },
         "oauth_token": {
@@ -5806,7 +5807,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             }
           },
           "healthCheck": {
-            "notViable": true
+            "path": "/about?fields=user",
+            "description": "Validates that the OAuth token can call the Drive API."
           }
         }
       },
@@ -11095,7 +11097,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             }
           },
           "healthCheck": {
-            "notViable": true
+            "path": "/sites?search=*&$top=1",
+            "description": "Validates that app credentials can obtain a Microsoft Graph token and read SharePoint sites."
           }
         }
       },
@@ -11589,7 +11592,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             }
           },
           "healthCheck": {
-            "notViable": true
+            "path": "/sites?search=*&$top=1",
+            "description": "Validates that app credentials can obtain a Microsoft Graph token and read SharePoint sites."
           }
         }
       },
@@ -14161,7 +14165,8 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
             }
           },
           "healthCheck": {
-            "notViable": true
+            "path": "/connections",
+            "description": "Validates that the Custom Connection credentials can obtain a Xero access token."
           }
         }
       },
