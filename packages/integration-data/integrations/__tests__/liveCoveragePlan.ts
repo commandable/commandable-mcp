@@ -22,6 +22,10 @@ export const googleCalendarWriteAdminSkips: Record<string, string> = {
   delete_acl: 'Set GOOGLE_CALENDAR_TEST_ADMIN_WRITE=1 to run ACL mutation live tests (insert/get/update/delete_acl).',
 }
 
+export const githubFineGrainedWriteSkips: Record<string, string> = {
+  fork_repo: 'Fine-grained PATs are normally scoped to specific repositories; fork creation is account-level, noisy, and not reliably cleanup-safe in live CI.',
+}
+
 export const liveCoveragePlan: LiveCoveragePlanEntry[] = [
   { id: 'airtable-read', integrationName: 'airtable', scopes: ['read'] },
   { id: 'airtable-write', integrationName: 'airtable', scopes: ['write'] },
@@ -32,7 +36,7 @@ export const liveCoveragePlan: LiveCoveragePlanEntry[] = [
   { id: 'github-classic-pat-read', integrationName: 'github', credentialVariant: 'classic_pat', scopes: ['read'] },
   { id: 'github-classic-pat-write', integrationName: 'github', credentialVariant: 'classic_pat', scopes: ['write'] },
   { id: 'github-fine-grained-pat-read', integrationName: 'github', credentialVariant: 'fine_grained_pat', scopes: ['read'] },
-  { id: 'github-fine-grained-pat-write', integrationName: 'github', credentialVariant: 'fine_grained_pat', scopes: ['write'] },
+  { id: 'github-fine-grained-pat-write', integrationName: 'github', credentialVariant: 'fine_grained_pat', scopes: ['write'], skippedTools: githubFineGrainedWriteSkips },
 
   { id: 'google-calendar-read', integrationName: 'google-calendar', scopes: ['read'] },
   { id: 'google-calendar-write-admin', integrationName: 'google-calendar', scopes: ['write', 'admin'], skippedTools: googleCalendarWriteAdminSkips },

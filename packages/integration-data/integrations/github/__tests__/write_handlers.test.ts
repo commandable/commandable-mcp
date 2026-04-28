@@ -98,6 +98,8 @@ suiteOrSkip('github write handlers (live)', () => {
       }, 90000)
 
       it('fork_repo forks a public repo (best effort)', async () => {
+        if (variant.key !== 'classic_pat')
+          return expect(true).toBe(true)
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
         const fork_repo = toolbox.write('fork_repo')
@@ -112,29 +114,21 @@ suiteOrSkip('github write handlers (live)', () => {
         }
       }, 30000)
 
-      it('create_release creates a draft release (classic_pat only)', async () => {
-        if (!toolbox.hasTool('write', 'create_repo'))
-          return expect(true).toBe(true)
+      it('create_release creates a draft release', async () => {
         if (!ctx.owner || !ctx.repo)
           return expect(true).toBe(true)
         const create_release = toolbox.write('create_release')
         const tagName = `v0.0.0-test-${Date.now()}`
-        try {
-          const result = await create_release({
-            owner: ctx.owner,
-            repo: ctx.repo,
-            tag_name: tagName,
-            name: `Test Release ${tagName}`,
-            body: 'Draft release created by integration tests.',
-            draft: true,
-          })
-          expect(result?.tag_name).toBe(tagName)
-          expect(result?.draft).toBe(true)
-        }
-        catch {
-          // May fail if insufficient permissions -- that's ok
-          expect(true).toBe(true)
-        }
+        const result = await create_release({
+          owner: ctx.owner,
+          repo: ctx.repo,
+          tag_name: tagName,
+          name: `Test Release ${tagName}`,
+          body: 'Draft release created by integration tests.',
+          draft: true,
+        })
+        expect(result?.tag_name).toBe(tagName)
+        expect(result?.draft).toBe(true)
       }, 30000)
 
       it('create_repo -> delete_repo lifecycle (classic_pat only)', async () => {
