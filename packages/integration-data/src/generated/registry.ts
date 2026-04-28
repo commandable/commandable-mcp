@@ -5348,7 +5348,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
   "google-workspace": {
     "manifest": {
       "name": "google-workspace",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "baseUrl": "https://www.googleapis.com/drive/v3",
       "allowedOrigins": [
         "https://*.googleapis.com"
