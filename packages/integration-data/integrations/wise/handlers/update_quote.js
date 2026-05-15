@@ -29,6 +29,8 @@ async (input) => {
     ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),
   }
   const res = await integration.patch(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(input.quoteId)}`, body)
-  const quote = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   return { quote: summarizeQuote(quote) }
 }

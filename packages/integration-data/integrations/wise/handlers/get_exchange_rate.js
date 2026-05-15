@@ -5,7 +5,9 @@ async (input) => {
   if (input.time) params.set('time', input.time)
 
   const res = await integration.get(`/v1/rates?${params}`)
-  const data = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const rates = Array.isArray(data) ? data : []
   const rate = rates[0] || null
 

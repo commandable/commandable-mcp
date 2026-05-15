@@ -4,8 +4,14 @@ async (input) => {
     type: input.type,
     ...(input.name ? { name: input.name } : {}),
   }
-  const res = await integration.post(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances`, body)
-  const balance = await res.json()
+  const res = await integration.post(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances`, body, {
+    headers: {
+      'X-idempotence-uuid': uuid.v4(),
+    },
+  })
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const balance = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
 
   return {
     balance: {

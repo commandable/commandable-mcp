@@ -1,6 +1,9 @@
 async (input) => {
-  const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/account-details-orders`)
-  const data = await res.json()
+  const currency = encodeURIComponent(String(input.currency).toUpperCase())
+  const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/account-details-orders?currency=${currency}`)
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const orders = Array.isArray(data) ? data : []
 
   return {

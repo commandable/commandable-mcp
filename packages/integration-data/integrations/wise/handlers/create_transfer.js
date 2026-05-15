@@ -1,5 +1,4 @@
 async (input) => {
-  const makeCustomerTransactionId = () => `commandable-${Date.now()}-${Math.random().toString(16).slice(2)}`
   const summarizeTransfer = transfer => {
     const transferId = transfer?.id
     return {
@@ -31,11 +30,13 @@ async (input) => {
   const body = {
     targetAccount: input.targetAccountId,
     quoteUuid: input.quoteId,
-    customerTransactionId: input.customerTransactionId || makeCustomerTransactionId(),
+    customerTransactionId: uuid.v4(),
     ...(Object.keys(details).length ? { details } : {}),
   }
 
   const res = await integration.post('/v1/transfers', body)
-  const transfer = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   return { transfer: summarizeTransfer(transfer) }
 }

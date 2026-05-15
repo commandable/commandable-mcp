@@ -196,7 +196,7 @@ Paths are relative to the integration's `baseUrl`. Auth headers/query params are
 
 ### Sandbox globals
 
-Available: `URL`, `URLSearchParams`, `encodeURIComponent`, `decodeURIComponent`, `btoa`, `atob`, `escape`, `unescape`, `console`, `utils`, `getIntegration`
+Available: `URL`, `URLSearchParams`, `encodeURIComponent`, `decodeURIComponent`, `btoa`, `atob`, `escape`, `unescape`, `console`, `uuid`, `utils`, `getIntegration` (`uuid.v4()` returns a random RFC 4122 UUID string)
 
 **Not available**: `Buffer`, `fetch`, `process`, `require`, `eval`, `Function`, `global`, `globalThis`, `setTimeout`, `setInterval`
 

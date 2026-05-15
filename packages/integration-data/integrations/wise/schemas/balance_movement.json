@@ -28,10 +28,6 @@
     "reference": {
       "type": "string",
       "description": "Optional movement reference."
-    },
-    "idempotenceUuid": {
-      "type": "string",
-      "description": "Optional Wise X-idempotence-uuid header. Reuse when retrying the same movement request."
     }
   },
   "required": ["profileId", "sourceBalanceId", "targetBalanceId"],

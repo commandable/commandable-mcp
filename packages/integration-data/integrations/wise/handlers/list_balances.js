@@ -4,7 +4,9 @@ async (input) => {
   params.set('types', types.join(','))
 
   const res = await integration.get(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances?${params}`)
-  const data = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const balances = Array.isArray(data) ? data : []
 
   return {

@@ -10,7 +10,9 @@ async (input) => {
   if (input.offset) params.set('offset', String(input.offset))
 
   const res = await integration.get(`/v1/transfers${params.toString() ? `?${params}` : ''}`)
-  const data = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const transfers = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : [])
 
   return {

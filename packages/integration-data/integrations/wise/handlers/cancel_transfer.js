@@ -1,6 +1,8 @@
 async (input) => {
   const res = await integration.put(`/v1/transfers/${encodeURIComponent(input.transferId)}/cancel`, {})
-  const transfer = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : {}
 
   return {
     transfer: {

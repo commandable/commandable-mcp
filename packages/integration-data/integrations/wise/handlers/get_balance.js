@@ -1,6 +1,8 @@
 async (input) => {
   const res = await integration.get(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances/${encodeURIComponent(input.balanceId)}`)
-  const balance = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const balance = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
 
   return {
     balance: {

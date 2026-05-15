@@ -131,7 +131,7 @@
     },
     {
       "name": "list_account_details_orders",
-      "description": "List Wise account-details orders for the connected profile so the agent can track pending, waiting, or completed receive-details setup.",
+      "description": "List Wise account-details orders for the connected profile and a currency (Wise requires the currency query parameter).",
       "injectFromConfig": {
         "profileId": "profileId"
       }

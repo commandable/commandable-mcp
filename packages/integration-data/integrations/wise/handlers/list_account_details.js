@@ -1,6 +1,8 @@
 async (input) => {
   const res = await integration.get(`/v1/profiles/${encodeURIComponent(input.profileId)}/account-details`)
-  const data = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const details = Array.isArray(data) ? data : []
 
   return {

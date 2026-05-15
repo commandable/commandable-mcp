@@ -22,6 +22,11 @@ function expectId(value: unknown, label: string) {
   return value as string | number
 }
 
+function createWiseRecipientName() {
+  const suffix = Array.from({ length: 8 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('')
+  return `Commandable Wise ${suffix}`
+}
+
 async function ensureStandardBalance(parts: ReturnType<typeof createWiseSandboxToolbox>, profileId: string | number, currency = 'GBP') {
   const { toolbox, proxy, node } = parts
 
@@ -94,7 +99,7 @@ suiteOrSkip('wise handlers (sandbox live)', () => {
 
     const recipient = await wise.write('create_recipient_simple')({
       profileId,
-      accountHolderName: `Commandable Wise ${runId}`,
+      accountHolderName: createWiseRecipientName(),
       currency: 'EUR',
       country: 'DE',
       legalType: 'PRIVATE',
@@ -186,7 +191,7 @@ suiteOrSkip('wise handlers (sandbox live)', () => {
     const details = await wise.read('list_account_details')({ profileId })
     expect(Array.isArray(details?.accountDetails)).toBe(true)
 
-    const orders = await wise.read('list_account_details_orders')({ profileId })
+    const orders = await wise.read('list_account_details_orders')({ profileId, currency: 'GBP' })
     expect(Array.isArray(orders?.orders)).toBe(true)
   }, 60000)
 })

@@ -74,7 +74,7 @@ describe('integration engine ports', () => {
         const md = utils.html.toMarkdown('<p>Hello</p>')
         const html = utils.html.fromMarkdown('**bold**')
         const doc = utils.adf.fromMarkdown('# Title')
-        return { md, html, docType: doc?.type, version: doc?.version }
+        return { md, html, docType: doc?.type, version: doc?.version, id: uuid.v4() }
       }`,
       () => ({}),
       utils,
@@ -85,6 +85,7 @@ describe('integration engine ports', () => {
     expect(String(res.result?.html)).toContain('<strong>')
     expect(res.result?.docType).toBe('doc')
     expect(res.result?.version).toBe(1)
+    expect(res.result?.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
   })
 
   it('does not inject utils that were not requested', async () => {

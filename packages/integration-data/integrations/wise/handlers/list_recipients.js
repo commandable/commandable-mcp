@@ -6,7 +6,9 @@ async (input) => {
   if (input.seekPosition !== undefined) params.set('seekPosition', String(input.seekPosition))
 
   const res = await integration.get(`/v2/accounts${params.toString() ? `?${params}` : ''}`)
-  const data = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const recipients = Array.isArray(data?.content) ? data.content : (Array.isArray(data) ? data : [])
 
   const summarizeRecipient = account => ({

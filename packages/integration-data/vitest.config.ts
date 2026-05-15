@@ -48,6 +48,17 @@ else {
 }
 
 export default defineConfig({
+  resolve: {
+    /**
+     * Live tests import `@commandable/mcp-core` source, which calls `loadIntegrationVariants` from this package.
+     * Node would otherwise resolve `@commandable/integration-data` to `dist/`, which is often stale or missing
+     * after `generate:registry` until a full package build — then the proxy throws
+     * `Provider 'wise' does not support credentials-based auth yet` (null type config).
+     */
+    alias: {
+      '@commandable/integration-data': path.join(__dirname, 'src/index.ts'),
+    },
+  },
   test: {
     include: ['integrations/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
   },

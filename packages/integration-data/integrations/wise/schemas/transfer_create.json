@@ -9,10 +9,6 @@
       "type": "string",
       "description": "Wise quote UUID."
     },
-    "customerTransactionId": {
-      "type": "string",
-      "description": "Optional idempotency identifier. Reuse when retrying the same transfer request."
-    },
     "reference": {
       "type": "string",
       "description": "Payment reference shown to the recipient where supported."

@@ -25,6 +25,8 @@ async (input) => {
   })
 
   const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(input.quoteId)}`)
-  const quote = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   return { quote: summarizeQuote(quote) }
 }

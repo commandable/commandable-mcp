@@ -4,7 +4,6 @@ async (input) => {
   if (!input.recipientId && !input.recipient)
     throw new Error('Provide recipientId or recipient fields')
 
-  const makeCustomerTransactionId = () => `commandable-${Date.now()}-${Math.random().toString(16).slice(2)}`
   const summarizeQuote = quote => ({
     quoteId: quote?.id,
     sourceCurrency: quote?.sourceCurrency,
@@ -56,7 +55,11 @@ async (input) => {
     ...(input.recipientId !== undefined ? { targetAccount: input.recipientId } : {}),
   }
   const quoteRes = await integration.post(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes`, quoteBody)
-  let quote = await quoteRes.json()
+  const quoteResponseBodyText = await quoteRes.text()
+  const quoteResponseBodyTrimmed = quoteResponseBodyText.trim()
+  let quote = quoteResponseBodyTrimmed ? JSON.parse(quoteResponseBodyTrimmed) : null
+  if (!quote?.id)
+    throw new Error(`Wise quote creation returned no usable quote (HTTP ${typeof quoteRes.status === 'number' ? quoteRes.status : 'unknown'})`)
 
   let recipientId = input.recipientId
   let recipient = null
@@ -113,7 +116,9 @@ async (input) => {
       ...(data.ownedByCustomer !== undefined ? { ownedByCustomer: data.ownedByCustomer } : {}),
     }
     const recipientRes = await integration.post('/v1/accounts', recipientBody)
-    recipient = await recipientRes.json()
+    const recipientResponseBodyText = await recipientRes.text()
+    const recipientResponseBodyTrimmed = recipientResponseBodyText.trim()
+    recipient = recipientResponseBodyTrimmed ? JSON.parse(recipientResponseBodyTrimmed) : null
     recipientId = recipient?.id
     if (!recipientId)
       throw new Error('Wise recipient creation did not return an id')
@@ -121,22 +126,32 @@ async (input) => {
     const updateRes = await integration.patch(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(quote.id)}`, {
       targetAccount: recipientId,
     })
-    quote = await updateRes.json()
+    const quoteUpdateResponseBodyText = await updateRes.text()
+    const quoteUpdateResponseBodyTrimmed = quoteUpdateResponseBodyText.trim()
+    quote = quoteUpdateResponseBodyTrimmed ? JSON.parse(quoteUpdateResponseBodyTrimmed) : null
+    if (!quote?.id)
+      throw new Error(`Wise quote update returned no usable quote (HTTP ${typeof updateRes.status === 'number' ? updateRes.status : 'unknown'})`)
   }
   else {
     const recipientRes = await integration.get(`/v2/accounts/${encodeURIComponent(recipientId)}`)
-    recipient = await recipientRes.json()
+    const existingRecipientResponseBodyText = await recipientRes.text()
+    const existingRecipientResponseBodyTrimmed = existingRecipientResponseBodyText.trim()
+    recipient = existingRecipientResponseBodyTrimmed ? JSON.parse(existingRecipientResponseBodyTrimmed) : null
   }
 
   const transferDetails = input.reference ? { reference: input.reference } : {}
   const transferBody = {
     targetAccount: recipientId,
     quoteUuid: quote.id,
-    customerTransactionId: input.customerTransactionId || makeCustomerTransactionId(),
+    customerTransactionId: uuid.v4(),
     ...(Object.keys(transferDetails).length ? { details: transferDetails } : {}),
   }
   const transferRes = await integration.post('/v1/transfers', transferBody)
-  const transfer = await transferRes.json()
+  const transferResponseBodyText = await transferRes.text()
+  const transferResponseBodyTrimmed = transferResponseBodyText.trim()
+  const transfer = transferResponseBodyTrimmed ? JSON.parse(transferResponseBodyTrimmed) : null
+  if (!transfer?.id)
+    throw new Error(`Wise transfer creation returned no usable transfer (HTTP ${typeof transferRes.status === 'number' ? transferRes.status : 'unknown'})`)
 
   return {
     quote: summarizeQuote(quote),

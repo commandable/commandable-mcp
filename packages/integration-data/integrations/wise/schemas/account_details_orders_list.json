@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise personal or business profile ID."
+    },
+    "currency": {
+      "type": "string",
+      "description": "ISO currency code; Wise requires this query parameter when listing account-details orders (e.g. GBP, EUR)."
+    }
+  },
+  "required": ["profileId", "currency"],
+  "additionalProperties": false
+}

@@ -55,7 +55,9 @@ async (input) => {
   }
 
   const res = await integration.post('/v1/accounts', body)
-  const account = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const account = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
 
   return {
     recipient: {

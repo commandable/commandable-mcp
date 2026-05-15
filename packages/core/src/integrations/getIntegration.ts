@@ -25,8 +25,9 @@ export function createGetIntegration(
       })
     }
 
+    /** Pass structured bodies through so `normalizeRequestInit` sets `Content-Type: application/json` (string bodies default to text/plain). */
     const verbWithBody = (method: string) => (path: string, body: any, init: RequestInit = {}) =>
-      proxy.call(integration, path, { ...init, method, body: JSON.stringify(body) })
+      proxy.call(integration, path, { ...init, method, body })
 
     const verbNoBody = (method: string) => (path: string, init: RequestInit = {}) =>
       proxy.call(integration, path, { ...init, method })

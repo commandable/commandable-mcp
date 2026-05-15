@@ -1,6 +1,8 @@
 async (input) => {
   const res = await integration.get(`/v2/accounts/${encodeURIComponent(input.recipientId)}`)
-  const account = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const account = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
 
   return {
     recipient: {

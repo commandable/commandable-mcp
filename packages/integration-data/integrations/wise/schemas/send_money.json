@@ -28,10 +28,6 @@
       "type": "string",
       "description": "Payment reference shown to the recipient where supported."
     },
-    "customerTransactionId": {
-      "type": "string",
-      "description": "Optional idempotency identifier."
-    },
     "payOut": {
       "type": "string",
       "description": "Wise payout method. Defaults to BANK_TRANSFER when omitted."

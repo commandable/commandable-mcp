@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { URL, URLSearchParams } from 'node:url'
 import vm from 'node:vm'
 import * as zodLib from 'zod'
@@ -68,6 +69,7 @@ export async function loadWorkflowModule(source: string, getIntegration?: Functi
   const context = vm.createContext({
     console: isolatedConsole,
     getIntegration: getIntegration || (() => ({ fetch: undefined, post: undefined })),
+    uuid: { v4: randomUUID },
     URL,
     URLSearchParams,
     atob: safeAtob,
@@ -156,6 +158,7 @@ export function createSafeHandlerFromString(
   const context = vm.createContext({
     console: isolatedConsole,
     getIntegration,
+    uuid: { v4: randomUUID },
     utils: utils || {},
     module: {},
     URL,

@@ -1,6 +1,8 @@
 async (input) => {
   const res = await integration.get(`/v1/transfers/${encodeURIComponent(input.transferId)}`)
-  const transfer = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const transferId = transfer?.id || input.transferId
 
   return {

@@ -1,7 +1,6 @@
 async (input) => {
   if (!input.quoteId && (input.amount === undefined || !input.currency))
     throw new Error('Provide quoteId for cross-currency movement, or amount and currency for same-currency movement')
-  const makeIdempotenceUuid = () => `commandable-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
   const body = {
     sourceBalanceId: input.sourceBalanceId,
@@ -13,10 +12,12 @@ async (input) => {
 
   const res = await integration.post(`/v2/profiles/${encodeURIComponent(input.profileId)}/balance-movements`, body, {
     headers: {
-      'X-idempotence-uuid': input.idempotenceUuid || makeIdempotenceUuid(),
+      'X-idempotence-uuid': uuid.v4(),
     },
   })
-  const movement = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const movement = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
 
   return {
     movement: {

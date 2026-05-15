@@ -1,6 +1,8 @@
 async () => {
   const res = await integration.get('/v2/profiles')
-  const profiles = await res.json()
+  const responseBodyText = await res.text()
+  const responseBodyTrimmed = responseBodyText.trim()
+  const profiles = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null
   const list = Array.isArray(profiles) ? profiles : []
 
   return {

@@ -199,8 +199,8 @@
     },
     {
       "name": "list_account_details_orders",
-      "description": "List Wise account-details orders for a profile so the agent can track pending, waiting, or completed receive-details setup.",
-      "inputSchema": "schemas/profile_id.json",
+      "description": "List Wise account-details orders for a profile and currency so the agent can track pending, waiting, or completed receive-details setup.",
+      "inputSchema": "schemas/account_details_orders_list.json",
       "handler": "handlers/list_account_details_orders.js",
       "scope": "read",
       "toolset": "receive_money"
