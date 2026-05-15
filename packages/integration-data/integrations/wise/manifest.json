@@ -1,0 +1,209 @@
+{
+  "name": "wise",
+  "version": "0.1.0",
+  "baseUrl": "https://api.wise.com",
+  "variants": [
+    {
+      "type": "wise-profile",
+      "manifest": "variants/wise-profile/manifest.json"
+    }
+  ],
+  "toolsets": {
+    "send_money": {
+      "label": "Send Money",
+      "description": "Prepare Wise money transfers by creating quotes, recipients, and transfer orders for the user to fund in Wise"
+    },
+    "balances": {
+      "label": "Balances",
+      "description": "Read and manage Wise multi-currency balances and balance movements"
+    },
+    "receive_money": {
+      "label": "Receive Money",
+      "description": "Read and order Wise account details for receiving local or international payments"
+    }
+  },
+  "tools": [
+    {
+      "name": "list_profiles",
+      "description": "List Wise profiles available to the personal API token. Use this first to choose the personal or business profileId required by most other tools.",
+      "inputSchema": "schemas/empty.json",
+      "handler": "handlers/list_profiles.js",
+      "scope": "read"
+    },
+    {
+      "name": "get_exchange_rate",
+      "description": "Get the current Wise exchange rate for a currency pair. Use this for quick rate checks; use create_quote when you need fees, delivery estimates, or a locked rate for a transfer.",
+      "inputSchema": "schemas/exchange_rate.json",
+      "handler": "handlers/get_exchange_rate.js",
+      "scope": "read"
+    },
+    {
+      "name": "create_quote",
+      "description": "Create an authenticated Wise quote for a profile. Provide source/target currencies and either sourceAmount or targetAmount. The rate is locked for about 30 minutes and the quoteId is used by create_transfer.",
+      "inputSchema": "schemas/quote_create.json",
+      "handler": "handlers/create_quote.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "get_quote",
+      "description": "Get a Wise quote by quoteId for a profile, including rate, fees, delivery estimates, and pay-in/pay-out options.",
+      "inputSchema": "schemas/quote_id.json",
+      "handler": "handlers/get_quote.js",
+      "scope": "read",
+      "toolset": "send_money"
+    },
+    {
+      "name": "update_quote",
+      "description": "Update a Wise quote, usually to attach targetAccount after creating or selecting a recipient. Use get_recipient or create_recipient_simple first to get targetAccount.",
+      "inputSchema": "schemas/quote_update.json",
+      "handler": "handlers/update_quote.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "list_recipients",
+      "description": "List Wise recipient accounts with compact identity, currency, and account-summary fields. Filter by profileId and currency when possible; use get_recipient for full details.",
+      "inputSchema": "schemas/recipient_list.json",
+      "handler": "handlers/list_recipients.js",
+      "scope": "read",
+      "toolset": "send_money"
+    },
+    {
+      "name": "get_recipient",
+      "description": "Get full details for a Wise recipient account by recipientId. Use this before creating a transfer when you need to confirm bank details or ownership.",
+      "inputSchema": "schemas/recipient_id.json",
+      "handler": "handlers/get_recipient.js",
+      "scope": "read",
+      "toolset": "send_money"
+    },
+    {
+      "name": "get_recipient_requirements",
+      "description": "Get Wise's dynamic recipient-account requirements for a quote. Use this when create_recipient_simple needs uncommon banking fields for a country/currency route.",
+      "inputSchema": "schemas/recipient_requirements.json",
+      "handler": "handlers/get_recipient_requirements.js",
+      "scope": "read",
+      "toolset": "send_money"
+    },
+    {
+      "name": "create_recipient_simple",
+      "description": "Create a Wise recipient from flat common banking fields such as IBAN, BIC/SWIFT, sort code, account number, routing number, email, or phone. Use extraFields for uncommon fields returned by get_recipient_requirements.",
+      "inputSchema": "schemas/recipient_create.json",
+      "handler": "handlers/create_recipient_simple.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "deactivate_recipient",
+      "description": "Deactivate a Wise recipient account by recipientId. This removes it from active recipient lists but does not affect historical transfers.",
+      "inputSchema": "schemas/recipient_id.json",
+      "handler": "handlers/deactivate_recipient.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "create_transfer",
+      "description": "Create a Wise transfer order from a quoteId and targetAccountId. This does not send money; it prepares a transfer for the user to fund in Wise within 14 days.",
+      "inputSchema": "schemas/transfer_create.json",
+      "handler": "handlers/create_transfer.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "get_transfer",
+      "description": "Get Wise transfer status and tracking details by transferId. Use this to check whether a prepared or funded transfer is waiting, processing, completed, cancelled, or failed.",
+      "inputSchema": "schemas/transfer_id.json",
+      "handler": "handlers/get_transfer.js",
+      "scope": "read",
+      "toolset": "send_money"
+    },
+    {
+      "name": "list_transfers",
+      "description": "List Wise transfers with compact status, amount, currency, recipient, and date fields. Filter by profileId, status, currency, or date range when possible.",
+      "inputSchema": "schemas/transfer_list.json",
+      "handler": "handlers/list_transfers.js",
+      "scope": "read",
+      "toolset": "send_money"
+    },
+    {
+      "name": "cancel_transfer",
+      "description": "Cancel a Wise transfer that is still in a cancellable state. Use get_transfer first to confirm the current status.",
+      "inputSchema": "schemas/transfer_id.json",
+      "handler": "handlers/cancel_transfer.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "send_money",
+      "description": "High-level Wise send-money preparation flow: creates or selects a recipient, creates a quote, creates a transfer order, and returns the Wise funding next step. It intentionally does not fund the transfer or move money.",
+      "inputSchema": "schemas/send_money.json",
+      "handler": "handlers/send_money.js",
+      "scope": "write",
+      "toolset": "send_money"
+    },
+    {
+      "name": "list_balances",
+      "description": "List Wise multi-currency balances for a profile, including standard balances and savings jars. Use this before balance movements or to check available funds.",
+      "inputSchema": "schemas/balance_list.json",
+      "handler": "handlers/list_balances.js",
+      "scope": "read",
+      "toolset": "balances"
+    },
+    {
+      "name": "get_balance",
+      "description": "Get a Wise balance by profileId and balanceId, including currency, type, name, and available amount.",
+      "inputSchema": "schemas/balance_id.json",
+      "handler": "handlers/get_balance.js",
+      "scope": "read",
+      "toolset": "balances"
+    },
+    {
+      "name": "create_balance",
+      "description": "Open a Wise balance for a currency or create a named savings jar. Standard balances are limited to one per currency.",
+      "inputSchema": "schemas/balance_create.json",
+      "handler": "handlers/create_balance.js",
+      "scope": "write",
+      "toolset": "balances"
+    },
+    {
+      "name": "move_money_between_balances",
+      "description": "Move or convert money between Wise balances. For cross-currency moves, create a BALANCE payOut quote first and provide quoteId.",
+      "inputSchema": "schemas/balance_movement.json",
+      "handler": "handlers/move_money_between_balances.js",
+      "scope": "write",
+      "toolset": "balances"
+    },
+    {
+      "name": "get_total_funds",
+      "description": "Get total account funds across Wise balances valued in a target currency. Use this for an account-level liquidity snapshot.",
+      "inputSchema": "schemas/total_funds.json",
+      "handler": "handlers/get_total_funds.js",
+      "scope": "read",
+      "toolset": "balances"
+    },
+    {
+      "name": "list_account_details",
+      "description": "List Wise local and international account details for a profile, including receive options and example details where available.",
+      "inputSchema": "schemas/profile_id.json",
+      "handler": "handlers/list_account_details.js",
+      "scope": "read",
+      "toolset": "receive_money"
+    },
+    {
+      "name": "create_account_details_order",
+      "description": "Order Wise account details for a currency and profile. The resulting order may require verification or top-up steps in Wise.",
+      "inputSchema": "schemas/account_details_order.json",
+      "handler": "handlers/create_account_details_order.js",
+      "scope": "write",
+      "toolset": "receive_money"
+    },
+    {
+      "name": "list_account_details_orders",
+      "description": "List Wise account-details orders for a profile and currency so the agent can track pending, waiting, or completed receive-details setup.",
+      "inputSchema": "schemas/account_details_orders_list.json",
+      "handler": "handlers/list_account_details_orders.js",
+      "scope": "read",
+      "toolset": "receive_money"
+    }
+  ]
+}

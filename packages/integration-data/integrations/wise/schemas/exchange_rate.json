@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "sourceCurrency": {
+      "type": "string",
+      "description": "Source currency code, such as GBP."
+    },
+    "targetCurrency": {
+      "type": "string",
+      "description": "Target currency code, such as EUR."
+    },
+    "time": {
+      "type": "string",
+      "description": "Optional ISO timestamp for a historical rate."
+    }
+  },
+  "required": ["sourceCurrency", "targetCurrency"],
+  "additionalProperties": false
+}

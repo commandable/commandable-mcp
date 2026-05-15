@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID that owns the quote."
+    },
+    "sourceCurrency": {
+      "type": "string",
+      "description": "Currency the sender pays from."
+    },
+    "targetCurrency": {
+      "type": "string",
+      "description": "Currency the recipient receives."
+    },
+    "sourceAmount": {
+      "type": "number",
+      "description": "Amount in sourceCurrency. Provide either sourceAmount or targetAmount."
+    },
+    "targetAmount": {
+      "type": "number",
+      "description": "Amount in targetCurrency. Provide either sourceAmount or targetAmount."
+    },
+    "payOut": {
+      "type": "string",
+      "description": "Wise payout method such as BANK_TRANSFER or BALANCE."
+    },
+    "preferredPayIn": {
+      "type": "string",
+      "description": "Optional preferred pay-in method such as BALANCE."
+    },
+    "targetAccount": {
+      "type": ["integer", "string"],
+      "description": "Optional recipient account ID to attach to the quote."
+    }
+  },
+  "required": ["profileId", "sourceCurrency", "targetCurrency"],
+  "additionalProperties": false
+}

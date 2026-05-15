@@ -1,4 +1,5 @@
 import { listIntegrationCatalog, loadIntegrationManifest } from '../../src/loader.js'
+import { wiseLiveCoverageSkips } from '../wise/__tests__/liveCoverageSkips.js'
 import { xeroLiveCoverageSkips } from '../xero/__tests__/liveCoverageSkips.js'
 
 export type LiveCoverageScope = 'read' | 'write' | 'admin'
@@ -68,6 +69,8 @@ export const liveCoveragePlan: LiveCoveragePlanEntry[] = [
 
   { id: 'trello-read', integrationName: 'trello', scopes: ['read'] },
   { id: 'trello-write', integrationName: 'trello', scopes: ['write'] },
+
+  { id: 'wise-sandbox-personal-token', integrationName: 'wise', credentialVariant: 'personal_token_sandbox', skippedTools: wiseLiveCoverageSkips },
 
   { id: 'xero-custom-connection', integrationName: 'xero', credentialVariant: 'custom_connection', skippedTools: xeroLiveCoverageSkips },
 ]

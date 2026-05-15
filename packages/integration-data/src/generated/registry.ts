@@ -13761,6 +13761,2323 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
     ],
     "variantOwnerType": "trello"
   },
+  "wise": {
+    "manifest": {
+      "name": "wise",
+      "version": "0.1.0",
+      "baseUrl": "https://api.wise.com",
+      "toolsets": {
+        "send_money": {
+          "label": "Send Money",
+          "description": "Prepare Wise money transfers by creating quotes, recipients, and transfer orders for the user to fund in Wise"
+        },
+        "balances": {
+          "label": "Balances",
+          "description": "Read and manage Wise multi-currency balances and balance movements"
+        },
+        "receive_money": {
+          "label": "Receive Money",
+          "description": "Read and order Wise account details for receiving local or international payments"
+        }
+      },
+      "tools": [
+        {
+          "name": "list_profiles",
+          "description": "List Wise profiles available to the personal API token. Use this first to choose the personal or business profileId required by most other tools.",
+          "inputSchema": "schemas/empty.json",
+          "handler": "handlers/list_profiles.js",
+          "scope": "read"
+        },
+        {
+          "name": "get_exchange_rate",
+          "description": "Get the current Wise exchange rate for a currency pair. Use this for quick rate checks; use create_quote when you need fees, delivery estimates, or a locked rate for a transfer.",
+          "inputSchema": "schemas/exchange_rate.json",
+          "handler": "handlers/get_exchange_rate.js",
+          "scope": "read"
+        },
+        {
+          "name": "create_quote",
+          "description": "Create an authenticated Wise quote for a profile. Provide source/target currencies and either sourceAmount or targetAmount. The rate is locked for about 30 minutes and the quoteId is used by create_transfer.",
+          "inputSchema": "schemas/quote_create.json",
+          "handler": "handlers/create_quote.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "get_quote",
+          "description": "Get a Wise quote by quoteId for a profile, including rate, fees, delivery estimates, and pay-in/pay-out options.",
+          "inputSchema": "schemas/quote_id.json",
+          "handler": "handlers/get_quote.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "update_quote",
+          "description": "Update a Wise quote, usually to attach targetAccount after creating or selecting a recipient. Use get_recipient or create_recipient_simple first to get targetAccount.",
+          "inputSchema": "schemas/quote_update.json",
+          "handler": "handlers/update_quote.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "list_recipients",
+          "description": "List Wise recipient accounts with compact identity, currency, and account-summary fields. Filter by profileId and currency when possible; use get_recipient for full details.",
+          "inputSchema": "schemas/recipient_list.json",
+          "handler": "handlers/list_recipients.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "get_recipient",
+          "description": "Get full details for a Wise recipient account by recipientId. Use this before creating a transfer when you need to confirm bank details or ownership.",
+          "inputSchema": "schemas/recipient_id.json",
+          "handler": "handlers/get_recipient.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "get_recipient_requirements",
+          "description": "Get Wise's dynamic recipient-account requirements for a quote. Use this when create_recipient_simple needs uncommon banking fields for a country/currency route.",
+          "inputSchema": "schemas/recipient_requirements.json",
+          "handler": "handlers/get_recipient_requirements.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "create_recipient_simple",
+          "description": "Create a Wise recipient from flat common banking fields such as IBAN, BIC/SWIFT, sort code, account number, routing number, email, or phone. Use extraFields for uncommon fields returned by get_recipient_requirements.",
+          "inputSchema": "schemas/recipient_create.json",
+          "handler": "handlers/create_recipient_simple.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "deactivate_recipient",
+          "description": "Deactivate a Wise recipient account by recipientId. This removes it from active recipient lists but does not affect historical transfers.",
+          "inputSchema": "schemas/recipient_id.json",
+          "handler": "handlers/deactivate_recipient.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "create_transfer",
+          "description": "Create a Wise transfer order from a quoteId and targetAccountId. This does not send money; it prepares a transfer for the user to fund in Wise within 14 days.",
+          "inputSchema": "schemas/transfer_create.json",
+          "handler": "handlers/create_transfer.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "get_transfer",
+          "description": "Get Wise transfer status and tracking details by transferId. Use this to check whether a prepared or funded transfer is waiting, processing, completed, cancelled, or failed.",
+          "inputSchema": "schemas/transfer_id.json",
+          "handler": "handlers/get_transfer.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "list_transfers",
+          "description": "List Wise transfers with compact status, amount, currency, recipient, and date fields. Filter by profileId, status, currency, or date range when possible.",
+          "inputSchema": "schemas/transfer_list.json",
+          "handler": "handlers/list_transfers.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "cancel_transfer",
+          "description": "Cancel a Wise transfer that is still in a cancellable state. Use get_transfer first to confirm the current status.",
+          "inputSchema": "schemas/transfer_id.json",
+          "handler": "handlers/cancel_transfer.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "send_money",
+          "description": "High-level Wise send-money preparation flow: creates or selects a recipient, creates a quote, creates a transfer order, and returns the Wise funding next step. It intentionally does not fund the transfer or move money.",
+          "inputSchema": "schemas/send_money.json",
+          "handler": "handlers/send_money.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "list_balances",
+          "description": "List Wise multi-currency balances for a profile, including standard balances and savings jars. Use this before balance movements or to check available funds.",
+          "inputSchema": "schemas/balance_list.json",
+          "handler": "handlers/list_balances.js",
+          "scope": "read",
+          "toolset": "balances"
+        },
+        {
+          "name": "get_balance",
+          "description": "Get a Wise balance by profileId and balanceId, including currency, type, name, and available amount.",
+          "inputSchema": "schemas/balance_id.json",
+          "handler": "handlers/get_balance.js",
+          "scope": "read",
+          "toolset": "balances"
+        },
+        {
+          "name": "create_balance",
+          "description": "Open a Wise balance for a currency or create a named savings jar. Standard balances are limited to one per currency.",
+          "inputSchema": "schemas/balance_create.json",
+          "handler": "handlers/create_balance.js",
+          "scope": "write",
+          "toolset": "balances"
+        },
+        {
+          "name": "move_money_between_balances",
+          "description": "Move or convert money between Wise balances. For cross-currency moves, create a BALANCE payOut quote first and provide quoteId.",
+          "inputSchema": "schemas/balance_movement.json",
+          "handler": "handlers/move_money_between_balances.js",
+          "scope": "write",
+          "toolset": "balances"
+        },
+        {
+          "name": "get_total_funds",
+          "description": "Get total account funds across Wise balances valued in a target currency. Use this for an account-level liquidity snapshot.",
+          "inputSchema": "schemas/total_funds.json",
+          "handler": "handlers/get_total_funds.js",
+          "scope": "read",
+          "toolset": "balances"
+        },
+        {
+          "name": "list_account_details",
+          "description": "List Wise local and international account details for a profile, including receive options and example details where available.",
+          "inputSchema": "schemas/profile_id.json",
+          "handler": "handlers/list_account_details.js",
+          "scope": "read",
+          "toolset": "receive_money"
+        },
+        {
+          "name": "create_account_details_order",
+          "description": "Order Wise account details for a currency and profile. The resulting order may require verification or top-up steps in Wise.",
+          "inputSchema": "schemas/account_details_order.json",
+          "handler": "handlers/create_account_details_order.js",
+          "scope": "write",
+          "toolset": "receive_money"
+        },
+        {
+          "name": "list_account_details_orders",
+          "description": "List Wise account-details orders for a profile and currency so the agent can track pending, waiting, or completed receive-details setup.",
+          "inputSchema": "schemas/account_details_orders_list.json",
+          "handler": "handlers/list_account_details_orders.js",
+          "scope": "read",
+          "toolset": "receive_money"
+        }
+      ]
+    },
+    "usageGuide": "## Wise workflow\n\nMost Wise API operations require a `profileId`. Start with `list_profiles` and choose the intended personal or business profile before creating quotes, recipients, transfers, balances, or account details.\n\nFor sending money, use this sequence:\n\n1. `list_profiles` to choose the profile.\n2. `list_recipients` or `create_recipient_simple` to choose or create the beneficiary.\n3. `create_quote` to lock the exchange rate and fees for about 30 minutes.\n4. `create_transfer` to prepare the transfer order.\n5. Ask the user to fund the transfer in Wise using the returned funding link or by opening Wise.\n\nThe `send_money` tool performs steps 2-4 in one call. It does not fund the transfer. It returns `requiresAction: \"FUND_IN_WISE_UI\"` and a `fundingUrl` when a transfer order is created.\n\n## Funding caveat\n\nCreating a transfer is not the same as sending money. Wise only starts processing when the transfer is funded. API funding is SCA-protected and is not available through this v1 integration. Prepared transfers normally expire if they are not funded within 14 days.\n\n## Recipient requirements\n\nWise recipient fields vary by country, currency, and payout route. Prefer `create_recipient_simple` for common routes such as IBAN, SWIFT/BIC, UK sort code, US routing number, account number, email, or phone. If Wise rejects a recipient as missing route-specific details, call `get_recipient_requirements` for the quote and retry with the needed fields in `extraFields` or an explicit `type`.\n\n## Quotes and idempotency\n\nUse `create_quote` when you need Wise's exact fee, delivery estimate, and locked exchange rate. `get_exchange_rate` is only for quick rate checks.\n\n`create_transfer` and `send_money` accept `customerTransactionId` for idempotency. If omitted, the handler generates one. Reuse the same value when retrying the same transfer request after a network failure.\n\n## Balances and account details\n\nUse `list_balances` before moving money between balances so you can choose valid `balanceId` values. Cross-currency balance movements usually need a quote created with `payOut: \"BALANCE\"`.\n\nUse `list_account_details` to see local and international receiving details that already exist. `create_account_details_order` may return requirements that must be completed in Wise before the account details become active.\n",
+    "variants": {
+      "variants": {
+        "personal_token": {
+          "label": "Production Personal API Token",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "apiToken": {
+                "type": "string",
+                "title": "Personal API Token",
+                "description": "Wise personal API token for your Wise business account.",
+                "format": "password"
+              }
+            },
+            "required": [
+              "apiToken"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{apiToken}}",
+              "Accept": "application/json"
+            }
+          },
+          "healthCheck": {
+            "path": "/v2/profiles",
+            "description": "Validates that the Wise personal API token can list available profiles."
+          }
+        },
+        "personal_token_sandbox": {
+          "label": "Sandbox Personal API Token",
+          "baseUrlTemplate": "https://api.wise-sandbox.com",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "apiToken": {
+                "type": "string",
+                "title": "Sandbox Personal API Token",
+                "description": "Wise sandbox personal API token. Production tokens do not work against the sandbox API.",
+                "format": "password"
+              }
+            },
+            "required": [
+              "apiToken"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{apiToken}}",
+              "Accept": "application/json"
+            }
+          },
+          "healthCheck": {
+            "path": "/v2/profiles",
+            "description": "Validates that the Wise sandbox token can list available sandbox profiles."
+          }
+        }
+      },
+      "default": "personal_token"
+    },
+    "hint": "1. Choose the credential variant that matches the environment you want to connect: Production Personal API Token for https://api.wise.com, or Sandbox Personal API Token for https://api.wise-sandbox.com.\n2. For production, log in to your Wise business account at https://wise.com/. For sandbox, log in to the Wise sandbox at https://wise-sandbox.com/.\n3. Go to Your Account > Connect and manage apps > API tokens.\n4. Click Add new token and complete Wise's two-step verification prompt.\n5. Copy the token when Wise shows it. It is only displayed once.\n6. Paste the token into Commandable. Production tokens only work with the production variant; sandbox tokens only work with the sandbox variant.\n7. Personal API tokens can prepare transfers, manage recipients, and read transfer status, but this integration does not fund transfers via API.",
+    "hintsByVariant": {},
+    "tools": [
+      {
+        "name": "list_profiles",
+        "description": "List Wise profiles available to the personal API token. Use this first to choose the personal or business profileId required by most other tools.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        },
+        "handlerCode": "async () => {\n  const res = await integration.get('/v2/profiles')\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const profiles = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const list = Array.isArray(profiles) ? profiles : []\n\n  return {\n    profiles: list.map(profile => ({\n      profileId: profile.id,\n      type: profile.type,\n      name: profile.fullName || profile.name || profile.businessName,\n      firstName: profile.firstName,\n      lastName: profile.lastName,\n      businessName: profile.businessName,\n      email: profile.email,\n      country: profile.address?.country,\n      currency: profile.currency,\n    })),\n    count: list.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "get_exchange_rate",
+        "description": "Get the current Wise exchange rate for a currency pair. Use this for quick rate checks; use create_quote when you need fees, delivery estimates, or a locked rate for a transfer.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sourceCurrency": {
+              "type": "string",
+              "description": "Source currency code, such as GBP."
+            },
+            "targetCurrency": {
+              "type": "string",
+              "description": "Target currency code, such as EUR."
+            },
+            "time": {
+              "type": "string",
+              "description": "Optional ISO timestamp for a historical rate."
+            }
+          },
+          "required": [
+            "sourceCurrency",
+            "targetCurrency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('source', String(input.sourceCurrency).toUpperCase())\n  params.set('target', String(input.targetCurrency).toUpperCase())\n  if (input.time) params.set('time', input.time)\n\n  const res = await integration.get(`/v1/rates?${params}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const rates = Array.isArray(data) ? data : []\n  const rate = rates[0] || null\n\n  return {\n    sourceCurrency: String(input.sourceCurrency).toUpperCase(),\n    targetCurrency: String(input.targetCurrency).toUpperCase(),\n    rate: rate?.rate ?? null,\n    time: rate?.time ?? input.time ?? null,\n    rawCount: rates.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "create_quote",
+        "description": "Create an authenticated Wise quote for a profile. Provide source/target currencies and either sourceAmount or targetAmount. The rate is locked for about 30 minutes and the quoteId is used by create_transfer.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote."
+            },
+            "sourceCurrency": {
+              "type": "string",
+              "description": "Currency the sender pays from."
+            },
+            "targetCurrency": {
+              "type": "string",
+              "description": "Currency the recipient receives."
+            },
+            "sourceAmount": {
+              "type": "number",
+              "description": "Amount in sourceCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "targetAmount": {
+              "type": "number",
+              "description": "Amount in targetCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "payOut": {
+              "type": "string",
+              "description": "Wise payout method such as BANK_TRANSFER or BALANCE."
+            },
+            "preferredPayIn": {
+              "type": "string",
+              "description": "Optional preferred pay-in method such as BALANCE."
+            },
+            "targetAccount": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Optional recipient account ID to attach to the quote."
+            }
+          },
+          "required": [
+            "profileId",
+            "sourceCurrency",
+            "targetCurrency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (input.sourceAmount === undefined && input.targetAmount === undefined)\n    throw new Error('Provide sourceAmount or targetAmount')\n\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    profileId: quote?.profile,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    payOut: quote?.payOut,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    targetAccount: quote?.targetAccount,\n    rateExpirationTime: quote?.rateExpirationTime,\n    paymentOptions: Array.isArray(quote?.paymentOptions)\n      ? quote.paymentOptions.map(option => ({\n          payIn: option.payIn,\n          payOut: option.payOut,\n          sourceAmount: option.sourceAmount,\n          targetAmount: option.targetAmount,\n          fee: option.fee,\n          estimatedDelivery: option.estimatedDelivery,\n        }))\n      : [],\n    createdTime: quote?.createdTime,\n  })\n\n  const body = {\n    sourceCurrency: String(input.sourceCurrency).toUpperCase(),\n    targetCurrency: String(input.targetCurrency).toUpperCase(),\n    ...(input.sourceAmount !== undefined ? { sourceAmount: input.sourceAmount } : {}),\n    ...(input.targetAmount !== undefined ? { targetAmount: input.targetAmount } : {}),\n    ...(input.payOut ? { payOut: input.payOut } : {}),\n    ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),\n    ...(input.targetAccount !== undefined ? { targetAccount: input.targetAccount } : {}),\n  }\n\n  const res = await integration.post(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes`, body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { quote: summarizeQuote(quote) }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "get_quote",
+        "description": "Get a Wise quote by quoteId for a profile, including rate, fees, delivery estimates, and pay-in/pay-out options.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID."
+            }
+          },
+          "required": [
+            "profileId",
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    profileId: quote?.profile,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    payOut: quote?.payOut,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    targetAccount: quote?.targetAccount,\n    rateExpirationTime: quote?.rateExpirationTime,\n    paymentOptions: Array.isArray(quote?.paymentOptions)\n      ? quote.paymentOptions.map(option => ({\n          payIn: option.payIn,\n          payOut: option.payOut,\n          sourceAmount: option.sourceAmount,\n          targetAmount: option.targetAmount,\n          fee: option.fee,\n          estimatedDelivery: option.estimatedDelivery,\n        }))\n      : [],\n    createdTime: quote?.createdTime,\n  })\n\n  const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(input.quoteId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { quote: summarizeQuote(quote) }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "update_quote",
+        "description": "Update a Wise quote, usually to attach targetAccount after creating or selecting a recipient. Use get_recipient or create_recipient_simple first to get targetAccount.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID."
+            },
+            "targetAccount": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Recipient account ID to attach to the quote."
+            },
+            "payOut": {
+              "type": "string",
+              "description": "Optional payout method override."
+            },
+            "preferredPayIn": {
+              "type": "string",
+              "description": "Optional pay-in method override."
+            }
+          },
+          "required": [
+            "profileId",
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    profileId: quote?.profile,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    payOut: quote?.payOut,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    targetAccount: quote?.targetAccount,\n    rateExpirationTime: quote?.rateExpirationTime,\n    paymentOptions: Array.isArray(quote?.paymentOptions)\n      ? quote.paymentOptions.map(option => ({\n          payIn: option.payIn,\n          payOut: option.payOut,\n          sourceAmount: option.sourceAmount,\n          targetAmount: option.targetAmount,\n          fee: option.fee,\n          estimatedDelivery: option.estimatedDelivery,\n        }))\n      : [],\n  })\n\n  const body = {\n    ...(input.targetAccount !== undefined ? { targetAccount: input.targetAccount } : {}),\n    ...(input.payOut ? { payOut: input.payOut } : {}),\n    ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),\n  }\n  const res = await integration.patch(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(input.quoteId)}`, body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { quote: summarizeQuote(quote) }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "list_recipients",
+        "description": "List Wise recipient accounts with compact identity, currency, and account-summary fields. Filter by profileId and currency when possible; use get_recipient for full details.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Optional Wise profile ID to filter recipients."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Optional recipient currency filter."
+            },
+            "size": {
+              "type": "integer",
+              "description": "Optional maximum number of recipients to return."
+            },
+            "seekPosition": {
+              "type": "integer",
+              "description": "Optional pagination cursor used by Wise."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.profileId !== undefined) params.set('profile', String(input.profileId))\n  if (input.currency) params.set('currency', String(input.currency).toUpperCase())\n  if (input.size) params.set('size', String(input.size))\n  if (input.seekPosition !== undefined) params.set('seekPosition', String(input.seekPosition))\n\n  const res = await integration.get(`/v2/accounts${params.toString() ? `?${params}` : ''}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const recipients = Array.isArray(data?.content) ? data.content : (Array.isArray(data) ? data : [])\n\n  const summarizeRecipient = account => ({\n    recipientId: account?.id,\n    profileId: account?.profile,\n    accountHolderName: account?.accountHolderName,\n    currency: account?.currency,\n    country: account?.country,\n    type: account?.type,\n    active: account?.active,\n    ownedByCustomer: account?.ownedByCustomer,\n    legalType: account?.legalType,\n    bankName: account?.details?.bankName,\n    accountSummary: account?.details?.accountNumber\n      ? `...${String(account.details.accountNumber).slice(-4)}`\n      : (account?.details?.iban ? `${String(account.details.iban).slice(0, 4)}...${String(account.details.iban).slice(-4)}` : undefined),\n  })\n\n  return {\n    recipients: recipients.map(summarizeRecipient),\n    count: recipients.length,\n    seekPositionForNext: data?.seekPositionForNext,\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "get_recipient",
+        "description": "Get full details for a Wise recipient account by recipientId. Use this before creating a transfer when you need to confirm bank details or ownership.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "recipientId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise recipient account ID."
+            }
+          },
+          "required": [
+            "recipientId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v2/accounts/${encodeURIComponent(input.recipientId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const account = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    recipient: {\n      recipientId: account?.id,\n      profileId: account?.profile,\n      accountHolderName: account?.accountHolderName,\n      currency: account?.currency,\n      country: account?.country,\n      type: account?.type,\n      active: account?.active,\n      ownedByCustomer: account?.ownedByCustomer,\n      legalType: account?.legalType,\n      details: account?.details,\n      requirements: account?.requirements,\n      created: account?.created,\n      updated: account?.updated,\n    },\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "get_recipient_requirements",
+        "description": "Get Wise's dynamic recipient-account requirements for a quote. Use this when create_recipient_simple needs uncommon banking fields for a country/currency route.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID whose route determines recipient requirements."
+            }
+          },
+          "required": [
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/quotes/${encodeURIComponent(input.quoteId)}/account-requirements`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const requirements = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    quoteId: input.quoteId,\n    requirements,\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "create_recipient_simple",
+        "description": "Create a Wise recipient from flat common banking fields such as IBAN, BIC/SWIFT, sort code, account number, routing number, email, or phone. Use extraFields for uncommon fields returned by get_recipient_requirements.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the recipient."
+            },
+            "accountHolderName": {
+              "type": "string",
+              "description": "Recipient account holder name."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Recipient currency."
+            },
+            "country": {
+              "type": "string",
+              "description": "Recipient bank country code."
+            },
+            "type": {
+              "type": "string",
+              "description": "Optional explicit Wise recipient type. If omitted, the handler infers a common type from supplied fields."
+            },
+            "ownedByCustomer": {
+              "type": "boolean",
+              "description": "Whether this recipient account is owned by the Wise customer."
+            },
+            "legalType": {
+              "type": "string",
+              "enum": [
+                "PRIVATE",
+                "BUSINESS"
+              ],
+              "description": "Recipient legal type."
+            },
+            "iban": {
+              "type": "string"
+            },
+            "bic": {
+              "type": "string"
+            },
+            "swiftCode": {
+              "type": "string"
+            },
+            "accountNumber": {
+              "type": "string"
+            },
+            "sortCode": {
+              "type": "string"
+            },
+            "routingNumber": {
+              "type": "string"
+            },
+            "aba": {
+              "type": "string"
+            },
+            "bsbCode": {
+              "type": "string"
+            },
+            "institutionNumber": {
+              "type": "string"
+            },
+            "transitNumber": {
+              "type": "string"
+            },
+            "branchCode": {
+              "type": "string"
+            },
+            "bankCode": {
+              "type": "string"
+            },
+            "clabe": {
+              "type": "string"
+            },
+            "ifscCode": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "phoneNumber": {
+              "type": "string"
+            },
+            "address": {
+              "type": "object",
+              "description": "Optional address fields accepted by Wise for routes that require them.",
+              "additionalProperties": true
+            },
+            "extraFields": {
+              "type": "object",
+              "description": "Additional Wise recipient details fields returned by get_recipient_requirements.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "profileId",
+            "accountHolderName",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const compact = value => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value\n  const currency = String(input.currency).toUpperCase()\n  const country = input.country ? String(input.country).toUpperCase() : undefined\n\n  const inferType = () => {\n    if (input.type) return input.type\n    if (input.iban) return 'iban'\n    if (currency === 'GBP' && input.sortCode && input.accountNumber) return 'sort_code'\n    if (currency === 'USD' && (input.routingNumber || input.aba) && input.accountNumber) return 'aba'\n    if (currency === 'AUD' && input.bsbCode && input.accountNumber) return 'australian'\n    if (currency === 'CAD' && input.institutionNumber && input.transitNumber && input.accountNumber) return 'canadian'\n    if (currency === 'MXN' && input.clabe) return 'clabe'\n    if (currency === 'INR' && input.ifscCode && input.accountNumber) return 'indian'\n    if (input.swiftCode || input.bic) return 'swift_code'\n    if (input.email) return 'email'\n    if (input.phoneNumber) return 'mobile_wallet'\n    return undefined\n  }\n\n  const type = inferType()\n  if (!type)\n    throw new Error('Could not infer Wise recipient type. Provide type or common banking fields such as iban, sortCode+accountNumber, routingNumber+accountNumber, or swiftCode.')\n\n  const details = {\n    ...(country ? { country } : {}),\n    ...(input.legalType ? { legalType: input.legalType } : {}),\n    ...(input.iban ? { IBAN: compact(input.iban) } : {}),\n    ...(input.bic ? { BIC: compact(input.bic) } : {}),\n    ...(input.swiftCode ? { swiftCode: compact(input.swiftCode) } : {}),\n    ...(input.accountNumber ? { accountNumber: compact(input.accountNumber) } : {}),\n    ...(input.sortCode ? { sortCode: compact(input.sortCode) } : {}),\n    ...(input.routingNumber ? { routingNumber: compact(input.routingNumber) } : {}),\n    ...(input.aba ? { abartn: compact(input.aba), aba: compact(input.aba) } : {}),\n    ...(input.bsbCode ? { bsbCode: compact(input.bsbCode) } : {}),\n    ...(input.institutionNumber ? { institutionNumber: compact(input.institutionNumber) } : {}),\n    ...(input.transitNumber ? { transitNumber: compact(input.transitNumber) } : {}),\n    ...(input.branchCode ? { branchCode: compact(input.branchCode) } : {}),\n    ...(input.bankCode ? { bankCode: compact(input.bankCode) } : {}),\n    ...(input.clabe ? { clabe: compact(input.clabe) } : {}),\n    ...(input.ifscCode ? { ifscCode: compact(input.ifscCode) } : {}),\n    ...(input.email ? { email: input.email } : {}),\n    ...(input.phoneNumber ? { phoneNumber: input.phoneNumber } : {}),\n    ...(input.address ? { address: input.address } : {}),\n    ...(input.extraFields || {}),\n  }\n\n  const body = {\n    profile: input.profileId,\n    accountHolderName: input.accountHolderName,\n    currency,\n    type,\n    details,\n    ...(input.ownedByCustomer !== undefined ? { ownedByCustomer: input.ownedByCustomer } : {}),\n  }\n\n  const res = await integration.post('/v1/accounts', body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const account = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    recipient: {\n      recipientId: account?.id,\n      profileId: account?.profile,\n      accountHolderName: account?.accountHolderName,\n      currency: account?.currency,\n      country: account?.country,\n      type: account?.type,\n      active: account?.active,\n      ownedByCustomer: account?.ownedByCustomer,\n      legalType: account?.legalType,\n      details: account?.details,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "deactivate_recipient",
+        "description": "Deactivate a Wise recipient account by recipientId. This removes it from active recipient lists but does not affect historical transfers.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "recipientId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise recipient account ID."
+            }
+          },
+          "required": [
+            "recipientId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.delete(`/v1/accounts/${encodeURIComponent(input.recipientId)}`)\n  let data = null\n  if (res.status !== 204) {\n    const responseBodyText = await res.text()\n    const responseBodyTrimmed = responseBodyText.trim()\n    if (responseBodyTrimmed)\n      data = JSON.parse(responseBodyTrimmed)\n  }\n  return {\n    recipientId: input.recipientId,\n    deactivated: res.ok,\n    result: data,\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "create_transfer",
+        "description": "Create a Wise transfer order from a quoteId and targetAccountId. This does not send money; it prepares a transfer for the user to fund in Wise within 14 days.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "targetAccountId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise recipient account ID."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID."
+            },
+            "reference": {
+              "type": "string",
+              "description": "Payment reference shown to the recipient where supported."
+            },
+            "sourceOfFunds": {
+              "type": "string",
+              "description": "Optional Wise source-of-funds value when required."
+            },
+            "transferPurpose": {
+              "type": "string",
+              "description": "Optional Wise transfer-purpose value when required."
+            },
+            "extraDetails": {
+              "type": "object",
+              "description": "Additional Wise transfer details.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "targetAccountId",
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const summarizeTransfer = transfer => {\n    const transferId = transfer?.id\n    return {\n      transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      rate: transfer?.rate,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n      fundingUrl: transferId ? `https://wise.com/transfer/${encodeURIComponent(transferId)}` : null,\n      requiresAction: 'FUND_IN_WISE_UI',\n      nextStep: 'Open Wise to fund this prepared transfer. The Wise API funding endpoint is intentionally not used by this integration.',\n    }\n  }\n\n  const details = {\n    ...(input.reference ? { reference: input.reference } : {}),\n    ...(input.sourceOfFunds ? { sourceOfFunds: input.sourceOfFunds } : {}),\n    ...(input.transferPurpose ? { transferPurpose: input.transferPurpose } : {}),\n    ...(input.extraDetails || {}),\n  }\n  const body = {\n    targetAccount: input.targetAccountId,\n    quoteUuid: input.quoteId,\n    customerTransactionId: uuid.v4(),\n    ...(Object.keys(details).length ? { details } : {}),\n  }\n\n  const res = await integration.post('/v1/transfers', body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { transfer: summarizeTransfer(transfer) }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "get_transfer",
+        "description": "Get Wise transfer status and tracking details by transferId. Use this to check whether a prepared or funded transfer is waiting, processing, completed, cancelled, or failed.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "transferId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise transfer ID."
+            }
+          },
+          "required": [
+            "transferId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/transfers/${encodeURIComponent(input.transferId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const transferId = transfer?.id || input.transferId\n\n  return {\n    transfer: {\n      transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      rate: transfer?.rate,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n      fundingUrl: `https://wise.com/transfer/${encodeURIComponent(transferId)}`,\n    },\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "list_transfers",
+        "description": "List Wise transfers with compact status, amount, currency, recipient, and date fields. Filter by profileId, status, currency, or date range when possible.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Optional profile ID to filter transfers."
+            },
+            "status": {
+              "type": "string",
+              "description": "Optional Wise transfer status filter."
+            },
+            "sourceCurrency": {
+              "type": "string",
+              "description": "Optional source currency filter."
+            },
+            "targetCurrency": {
+              "type": "string",
+              "description": "Optional target currency filter."
+            },
+            "createdDateStart": {
+              "type": "string",
+              "description": "Optional ISO date/time lower bound."
+            },
+            "createdDateEnd": {
+              "type": "string",
+              "description": "Optional ISO date/time upper bound."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Optional maximum transfers to return."
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Optional pagination offset."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.profileId !== undefined) params.set('profile', String(input.profileId))\n  if (input.status) params.set('status', input.status)\n  if (input.sourceCurrency) params.set('sourceCurrency', String(input.sourceCurrency).toUpperCase())\n  if (input.targetCurrency) params.set('targetCurrency', String(input.targetCurrency).toUpperCase())\n  if (input.createdDateStart) params.set('createdDateStart', input.createdDateStart)\n  if (input.createdDateEnd) params.set('createdDateEnd', input.createdDateEnd)\n  if (input.limit) params.set('limit', String(input.limit))\n  if (input.offset) params.set('offset', String(input.offset))\n\n  const res = await integration.get(`/v1/transfers${params.toString() ? `?${params}` : ''}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const transfers = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : [])\n\n  return {\n    transfers: transfers.map(transfer => ({\n      transferId: transfer?.id,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n    })),\n    count: transfers.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "cancel_transfer",
+        "description": "Cancel a Wise transfer that is still in a cancellable state. Use get_transfer first to confirm the current status.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "transferId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise transfer ID."
+            }
+          },
+          "required": [
+            "transferId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.put(`/v1/transfers/${encodeURIComponent(input.transferId)}/cancel`, {})\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : {}\n\n  return {\n    transfer: {\n      transferId: transfer?.id || input.transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      cancelled: transfer?.status === 'cancelled' || transfer?.status === 'cancelled_by_user',\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "send_money",
+        "description": "High-level Wise send-money preparation flow: creates or selects a recipient, creates a quote, creates a transfer order, and returns the Wise funding next step. It intentionally does not fund the transfer or move money.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote and transfer."
+            },
+            "sourceCurrency": {
+              "type": "string"
+            },
+            "targetCurrency": {
+              "type": "string"
+            },
+            "sourceAmount": {
+              "type": "number",
+              "description": "Amount in sourceCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "targetAmount": {
+              "type": "number",
+              "description": "Amount in targetCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "recipientId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Existing recipient account ID. If omitted, recipient fields are used to create one."
+            },
+            "recipient": {
+              "type": "object",
+              "description": "Flat recipient fields matching create_recipient_simple when recipientId is omitted.",
+              "additionalProperties": true
+            },
+            "reference": {
+              "type": "string",
+              "description": "Payment reference shown to the recipient where supported."
+            },
+            "payOut": {
+              "type": "string",
+              "description": "Wise payout method. Defaults to BANK_TRANSFER when omitted."
+            },
+            "preferredPayIn": {
+              "type": "string",
+              "description": "Optional preferred pay-in method."
+            }
+          },
+          "required": [
+            "profileId",
+            "sourceCurrency",
+            "targetCurrency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (input.sourceAmount === undefined && input.targetAmount === undefined)\n    throw new Error('Provide sourceAmount or targetAmount')\n  if (!input.recipientId && !input.recipient)\n    throw new Error('Provide recipientId or recipient fields')\n\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    rateExpirationTime: quote?.rateExpirationTime,\n  })\n  const summarizeRecipient = account => ({\n    recipientId: account?.id,\n    accountHolderName: account?.accountHolderName,\n    currency: account?.currency,\n    type: account?.type,\n    active: account?.active,\n    accountSummary: account?.details?.accountNumber\n      ? `...${String(account.details.accountNumber).slice(-4)}`\n      : (account?.details?.iban ? `${String(account.details.iban).slice(0, 4)}...${String(account.details.iban).slice(-4)}` : undefined),\n  })\n  const summarizeTransfer = transfer => {\n    const transferId = transfer?.id\n    return {\n      transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n      fundingUrl: transferId ? `https://wise.com/transfer/${encodeURIComponent(transferId)}` : null,\n      requiresAction: 'FUND_IN_WISE_UI',\n      nextStep: 'Open Wise to fund this prepared transfer. This integration intentionally does not call Wise API funding endpoints.',\n    }\n  }\n\n  const quoteBody = {\n    sourceCurrency: String(input.sourceCurrency).toUpperCase(),\n    targetCurrency: String(input.targetCurrency).toUpperCase(),\n    ...(input.sourceAmount !== undefined ? { sourceAmount: input.sourceAmount } : {}),\n    ...(input.targetAmount !== undefined ? { targetAmount: input.targetAmount } : {}),\n    ...(input.payOut ? { payOut: input.payOut } : {}),\n    ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),\n    ...(input.recipientId !== undefined ? { targetAccount: input.recipientId } : {}),\n  }\n  const quoteRes = await integration.post(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes`, quoteBody)\n  const quoteResponseBodyText = await quoteRes.text()\n  const quoteResponseBodyTrimmed = quoteResponseBodyText.trim()\n  let quote = quoteResponseBodyTrimmed ? JSON.parse(quoteResponseBodyTrimmed) : null\n  if (!quote?.id)\n    throw new Error(`Wise quote creation returned no usable quote (HTTP ${typeof quoteRes.status === 'number' ? quoteRes.status : 'unknown'})`)\n\n  let recipientId = input.recipientId\n  let recipient = null\n  if (!recipientId) {\n    const data = input.recipient || {}\n    const compact = value => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value\n    const currency = String(data.currency || input.targetCurrency).toUpperCase()\n    const inferType = () => {\n      if (data.type) return data.type\n      if (data.iban) return 'iban'\n      if (currency === 'GBP' && data.sortCode && data.accountNumber) return 'sort_code'\n      if (currency === 'USD' && (data.routingNumber || data.aba) && data.accountNumber) return 'aba'\n      if (currency === 'AUD' && data.bsbCode && data.accountNumber) return 'australian'\n      if (currency === 'CAD' && data.institutionNumber && data.transitNumber && data.accountNumber) return 'canadian'\n      if (currency === 'MXN' && data.clabe) return 'clabe'\n      if (currency === 'INR' && data.ifscCode && data.accountNumber) return 'indian'\n      if (data.swiftCode || data.bic) return 'swift_code'\n      if (data.email) return 'email'\n      if (data.phoneNumber) return 'mobile_wallet'\n      return undefined\n    }\n    const type = inferType()\n    if (!type)\n      throw new Error('Could not infer recipient type. Provide recipient.type or common banking fields.')\n\n    const details = {\n      ...(data.country ? { country: String(data.country).toUpperCase() } : {}),\n      ...(data.legalType ? { legalType: data.legalType } : {}),\n      ...(data.iban ? { IBAN: compact(data.iban) } : {}),\n      ...(data.bic ? { BIC: compact(data.bic) } : {}),\n      ...(data.swiftCode ? { swiftCode: compact(data.swiftCode) } : {}),\n      ...(data.accountNumber ? { accountNumber: compact(data.accountNumber) } : {}),\n      ...(data.sortCode ? { sortCode: compact(data.sortCode) } : {}),\n      ...(data.routingNumber ? { routingNumber: compact(data.routingNumber) } : {}),\n      ...(data.aba ? { abartn: compact(data.aba), aba: compact(data.aba) } : {}),\n      ...(data.bsbCode ? { bsbCode: compact(data.bsbCode) } : {}),\n      ...(data.institutionNumber ? { institutionNumber: compact(data.institutionNumber) } : {}),\n      ...(data.transitNumber ? { transitNumber: compact(data.transitNumber) } : {}),\n      ...(data.branchCode ? { branchCode: compact(data.branchCode) } : {}),\n      ...(data.bankCode ? { bankCode: compact(data.bankCode) } : {}),\n      ...(data.clabe ? { clabe: compact(data.clabe) } : {}),\n      ...(data.ifscCode ? { ifscCode: compact(data.ifscCode) } : {}),\n      ...(data.email ? { email: data.email } : {}),\n      ...(data.phoneNumber ? { phoneNumber: data.phoneNumber } : {}),\n      ...(data.address ? { address: data.address } : {}),\n      ...(data.extraFields || {}),\n    }\n    const recipientBody = {\n      profile: input.profileId,\n      accountHolderName: data.accountHolderName,\n      currency,\n      type,\n      details,\n      ...(data.ownedByCustomer !== undefined ? { ownedByCustomer: data.ownedByCustomer } : {}),\n    }\n    const recipientRes = await integration.post('/v1/accounts', recipientBody)\n    const recipientResponseBodyText = await recipientRes.text()\n    const recipientResponseBodyTrimmed = recipientResponseBodyText.trim()\n    recipient = recipientResponseBodyTrimmed ? JSON.parse(recipientResponseBodyTrimmed) : null\n    recipientId = recipient?.id\n    if (!recipientId)\n      throw new Error('Wise recipient creation did not return an id')\n\n    const updateRes = await integration.patch(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(quote.id)}`, {\n      targetAccount: recipientId,\n    })\n    const quoteUpdateResponseBodyText = await updateRes.text()\n    const quoteUpdateResponseBodyTrimmed = quoteUpdateResponseBodyText.trim()\n    quote = quoteUpdateResponseBodyTrimmed ? JSON.parse(quoteUpdateResponseBodyTrimmed) : null\n    if (!quote?.id)\n      throw new Error(`Wise quote update returned no usable quote (HTTP ${typeof updateRes.status === 'number' ? updateRes.status : 'unknown'})`)\n  }\n  else {\n    const recipientRes = await integration.get(`/v2/accounts/${encodeURIComponent(recipientId)}`)\n    const existingRecipientResponseBodyText = await recipientRes.text()\n    const existingRecipientResponseBodyTrimmed = existingRecipientResponseBodyText.trim()\n    recipient = existingRecipientResponseBodyTrimmed ? JSON.parse(existingRecipientResponseBodyTrimmed) : null\n  }\n\n  const transferDetails = input.reference ? { reference: input.reference } : {}\n  const transferBody = {\n    targetAccount: recipientId,\n    quoteUuid: quote.id,\n    customerTransactionId: uuid.v4(),\n    ...(Object.keys(transferDetails).length ? { details: transferDetails } : {}),\n  }\n  const transferRes = await integration.post('/v1/transfers', transferBody)\n  const transferResponseBodyText = await transferRes.text()\n  const transferResponseBodyTrimmed = transferResponseBodyText.trim()\n  const transfer = transferResponseBodyTrimmed ? JSON.parse(transferResponseBodyTrimmed) : null\n  if (!transfer?.id)\n    throw new Error(`Wise transfer creation returned no usable transfer (HTTP ${typeof transferRes.status === 'number' ? transferRes.status : 'unknown'})`)\n\n  return {\n    quote: summarizeQuote(quote),\n    recipient: summarizeRecipient(recipient),\n    transfer: summarizeTransfer(transfer),\n    funding: {\n      required: true,\n      method: 'WISE_UI',\n      url: transfer?.id ? `https://wise.com/transfer/${encodeURIComponent(transfer.id)}` : null,\n      note: 'The transfer has been prepared but not funded. The user must approve and fund it in Wise.',\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "list_balances",
+        "description": "List Wise multi-currency balances for a profile, including standard balances and savings jars. Use this before balance movements or to check available funds.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "STANDARD",
+                  "SAVINGS"
+                ]
+              },
+              "description": "Balance types to include. Defaults to STANDARD and SAVINGS."
+            }
+          },
+          "required": [
+            "profileId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const types = Array.isArray(input.types) && input.types.length ? input.types : ['STANDARD', 'SAVINGS']\n  params.set('types', types.join(','))\n\n  const res = await integration.get(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances?${params}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const balances = Array.isArray(data) ? data : []\n\n  return {\n    balances: balances.map(balance => ({\n      balanceId: balance?.id,\n      currency: balance?.currency,\n      type: balance?.type,\n      name: balance?.name,\n      amount: balance?.amount?.value ?? balance?.amount,\n      reservedAmount: balance?.reservedAmount?.value ?? balance?.reservedAmount,\n      cashAmount: balance?.cashAmount?.value ?? balance?.cashAmount,\n      totalWorth: balance?.totalWorth?.value ?? balance?.totalWorth,\n      investmentState: balance?.investmentState,\n      creationTime: balance?.creationTime,\n      modificationTime: balance?.modificationTime,\n    })),\n    count: balances.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "balances"
+      },
+      {
+        "name": "get_balance",
+        "description": "Get a Wise balance by profileId and balanceId, including currency, type, name, and available amount.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "balanceId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise balance ID."
+            }
+          },
+          "required": [
+            "profileId",
+            "balanceId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances/${encodeURIComponent(input.balanceId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const balance = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    balance: {\n      balanceId: balance?.id,\n      currency: balance?.currency,\n      type: balance?.type,\n      name: balance?.name,\n      amount: balance?.amount?.value ?? balance?.amount,\n      reservedAmount: balance?.reservedAmount?.value ?? balance?.reservedAmount,\n      cashAmount: balance?.cashAmount?.value ?? balance?.cashAmount,\n      totalWorth: balance?.totalWorth?.value ?? balance?.totalWorth,\n      investmentState: balance?.investmentState,\n      creationTime: balance?.creationTime,\n      modificationTime: balance?.modificationTime,\n      details: balance,\n    },\n  }\n}",
+        "scope": "read",
+        "toolset": "balances"
+      },
+      {
+        "name": "create_balance",
+        "description": "Open a Wise balance for a currency or create a named savings jar. Standard balances are limited to one per currency.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency code for the new balance."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "STANDARD",
+                "SAVINGS"
+              ],
+              "description": "Balance type. STANDARD is the default account; SAVINGS is a jar."
+            },
+            "name": {
+              "type": "string",
+              "description": "Required by Wise for SAVINGS balances."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const body = {\n    currency: String(input.currency).toUpperCase(),\n    type: input.type,\n    ...(input.name ? { name: input.name } : {}),\n  }\n  const res = await integration.post(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances`, body, {\n    headers: {\n      'X-idempotence-uuid': uuid.v4(),\n    },\n  })\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const balance = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    balance: {\n      balanceId: balance?.id,\n      currency: balance?.currency,\n      type: balance?.type,\n      name: balance?.name,\n      amount: balance?.amount?.value ?? balance?.amount,\n      investmentState: balance?.investmentState,\n      creationTime: balance?.creationTime,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "balances"
+      },
+      {
+        "name": "move_money_between_balances",
+        "description": "Move or convert money between Wise balances. For cross-currency moves, create a BALANCE payOut quote first and provide quoteId.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "sourceBalanceId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Balance ID to move money from."
+            },
+            "targetBalanceId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Balance ID to move money to."
+            },
+            "amount": {
+              "type": "number",
+              "description": "Amount to move when not using quoteId."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency for amount when not using quoteId."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Quote ID for cross-currency balance movement."
+            },
+            "reference": {
+              "type": "string",
+              "description": "Optional movement reference."
+            }
+          },
+          "required": [
+            "profileId",
+            "sourceBalanceId",
+            "targetBalanceId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (!input.quoteId && (input.amount === undefined || !input.currency))\n    throw new Error('Provide quoteId for cross-currency movement, or amount and currency for same-currency movement')\n\n  const body = {\n    sourceBalanceId: input.sourceBalanceId,\n    targetBalanceId: input.targetBalanceId,\n    ...(input.quoteId ? { quoteId: input.quoteId } : {}),\n    ...(input.amount !== undefined ? { amount: { value: input.amount, currency: String(input.currency).toUpperCase() } } : {}),\n    ...(input.reference ? { reference: input.reference } : {}),\n  }\n\n  const res = await integration.post(`/v2/profiles/${encodeURIComponent(input.profileId)}/balance-movements`, body, {\n    headers: {\n      'X-idempotence-uuid': uuid.v4(),\n    },\n  })\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const movement = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    movement: {\n      movementId: movement?.id,\n      status: movement?.status,\n      sourceBalanceId: movement?.sourceBalanceId ?? input.sourceBalanceId,\n      targetBalanceId: movement?.targetBalanceId ?? input.targetBalanceId,\n      quoteId: movement?.quoteId ?? input.quoteId,\n      amount: movement?.amount,\n      createdTime: movement?.createdTime,\n      details: movement,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "balances"
+      },
+      {
+        "name": "get_total_funds",
+        "description": "Get total account funds across Wise balances valued in a target currency. Use this for an account-level liquidity snapshot.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency to value total funds in."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/profiles/${encodeURIComponent(input.profileId)}/total-funds/${encodeURIComponent(String(input.currency).toUpperCase())}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const funds = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    profileId: input.profileId,\n    currency: String(input.currency).toUpperCase(),\n    totalWorth: funds?.totalWorth,\n    totalAvailable: funds?.totalAvailable,\n    totalCash: funds?.totalCash,\n    overdraft: funds?.overdraft,\n    details: funds,\n  }\n}",
+        "scope": "read",
+        "toolset": "balances"
+      },
+      {
+        "name": "list_account_details",
+        "description": "List Wise local and international account details for a profile, including receive options and example details where available.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise personal or business profile ID."
+            }
+          },
+          "required": [
+            "profileId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/profiles/${encodeURIComponent(input.profileId)}/account-details`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const details = Array.isArray(data) ? data : []\n\n  return {\n    accountDetails: details.map(item => ({\n      id: item?.id,\n      currency: item?.currency,\n      title: item?.title,\n      type: item?.type,\n      status: item?.status,\n      active: item?.active,\n      accountHolderName: item?.accountHolderName,\n      receiveOptions: item?.receiveOptions,\n      details: item?.details,\n    })),\n    count: details.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "receive_money"
+      },
+      {
+        "name": "create_account_details_order",
+        "description": "Order Wise account details for a currency and profile. The resulting order may require verification or top-up steps in Wise.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency to order receiving account details for."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.post(`/v1/profiles/${encodeURIComponent(input.profileId)}/account-details-orders`, {\n    currency: String(input.currency).toUpperCase(),\n  })\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const order = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    order: {\n      orderId: order?.id,\n      currency: order?.currency,\n      status: order?.status,\n      requirements: order?.requirements,\n      details: order,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "receive_money"
+      },
+      {
+        "name": "list_account_details_orders",
+        "description": "List Wise account-details orders for a profile and currency so the agent can track pending, waiting, or completed receive-details setup.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise personal or business profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "ISO currency code; Wise requires this query parameter when listing account-details orders (e.g. GBP, EUR)."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const currency = encodeURIComponent(String(input.currency).toUpperCase())\n  const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/account-details-orders?currency=${currency}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const orders = Array.isArray(data) ? data : []\n\n  return {\n    orders: orders.map(order => ({\n      orderId: order?.id,\n      currency: order?.currency,\n      status: order?.status,\n      requirements: order?.requirements,\n      createdTime: order?.createdTime,\n      updatedTime: order?.updatedTime,\n    })),\n    count: orders.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "receive_money"
+      }
+    ],
+    "variantOwnerType": null
+  },
+  "wise-profile": {
+    "manifest": {
+      "name": "wise",
+      "version": "0.1.0",
+      "baseUrl": "https://api.wise.com",
+      "toolsets": {
+        "send_money": {
+          "label": "Send Money",
+          "description": "Prepare Wise money transfers by creating quotes, recipients, and transfer orders for the user to fund in Wise"
+        },
+        "balances": {
+          "label": "Balances",
+          "description": "Read and manage Wise multi-currency balances and balance movements"
+        },
+        "receive_money": {
+          "label": "Receive Money",
+          "description": "Read and order Wise account details for receiving local or international payments"
+        }
+      },
+      "variantLabel": "Single Profile",
+      "variantConfig": [
+        {
+          "key": "profile",
+          "label": "Profile",
+          "selectionMode": "single",
+          "listHandler": "async (config) => {\n  const res = await integration.fetch('/v2/profiles')\n  const profiles = await res.json()\n  if (!Array.isArray(profiles))\n    return []\n\n  return profiles\n    .map(profile => {\n      const id = profile?.id == null ? '' : String(profile.id)\n      const type = profile?.type ? String(profile.type) : ''\n      const name = profile?.businessName || profile?.fullName || profile?.name || [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || id\n      const label = type ? `${name} (${type})` : name\n      return { id, name: label }\n    })\n    .filter(profile => profile.id && profile.name)\n}"
+        }
+      ],
+      "tools": [
+        {
+          "name": "get_exchange_rate",
+          "description": "Get the current Wise exchange rate for a currency pair. Use this for quick rate checks; use create_quote when you need fees, delivery estimates, or a locked rate for a transfer.",
+          "inputSchema": "../../schemas/exchange_rate.json",
+          "handler": "../../handlers/get_exchange_rate.js",
+          "scope": "read"
+        },
+        {
+          "name": "create_quote",
+          "description": "Create an authenticated Wise quote for the connected profile. Provide source/target currencies and either sourceAmount or targetAmount. The rate is locked for about 30 minutes and the quoteId is used by create_transfer.",
+          "inputSchema": "../../schemas/quote_create.json",
+          "handler": "../../handlers/create_quote.js",
+          "scope": "write",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "get_quote",
+          "description": "Get a Wise quote by quoteId for the connected profile, including rate, fees, delivery estimates, and pay-in/pay-out options.",
+          "inputSchema": "../../schemas/quote_id.json",
+          "handler": "../../handlers/get_quote.js",
+          "scope": "read",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "update_quote",
+          "description": "Update a Wise quote for the connected profile, usually to attach targetAccount after creating or selecting a recipient.",
+          "inputSchema": "../../schemas/quote_update.json",
+          "handler": "../../handlers/update_quote.js",
+          "scope": "write",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "list_recipients",
+          "description": "List Wise recipient accounts for the connected profile with compact identity, currency, and account-summary fields. Filter by currency when possible; use get_recipient for full details.",
+          "inputSchema": "../../schemas/recipient_list.json",
+          "handler": "../../handlers/list_recipients.js",
+          "scope": "read",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "get_recipient",
+          "description": "Get full details for a Wise recipient account by recipientId. Use this before creating a transfer when you need to confirm bank details or ownership.",
+          "inputSchema": "../../schemas/recipient_id.json",
+          "handler": "../../handlers/get_recipient.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "get_recipient_requirements",
+          "description": "Get Wise's dynamic recipient-account requirements for a quote. Use this when create_recipient_simple needs uncommon banking fields for a country/currency route.",
+          "inputSchema": "../../schemas/recipient_requirements.json",
+          "handler": "../../handlers/get_recipient_requirements.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "create_recipient_simple",
+          "description": "Create a Wise recipient owned by the connected profile from flat common banking fields such as IBAN, BIC/SWIFT, sort code, account number, routing number, email, or phone.",
+          "inputSchema": "../../schemas/recipient_create.json",
+          "handler": "../../handlers/create_recipient_simple.js",
+          "scope": "write",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "deactivate_recipient",
+          "description": "Deactivate a Wise recipient account by recipientId. This removes it from active recipient lists but does not affect historical transfers.",
+          "inputSchema": "../../schemas/recipient_id.json",
+          "handler": "../../handlers/deactivate_recipient.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "create_transfer",
+          "description": "Create a Wise transfer order from a quoteId and targetAccountId. This does not send money; it prepares a transfer for the user to fund in Wise within 14 days.",
+          "inputSchema": "../../schemas/transfer_create.json",
+          "handler": "../../handlers/create_transfer.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "get_transfer",
+          "description": "Get Wise transfer status and tracking details by transferId. Use this to check whether a prepared or funded transfer is waiting, processing, completed, cancelled, or failed.",
+          "inputSchema": "../../schemas/transfer_id.json",
+          "handler": "../../handlers/get_transfer.js",
+          "scope": "read",
+          "toolset": "send_money"
+        },
+        {
+          "name": "list_transfers",
+          "description": "List Wise transfers for the connected profile with compact status, amount, currency, recipient, and date fields.",
+          "inputSchema": "../../schemas/transfer_list.json",
+          "handler": "../../handlers/list_transfers.js",
+          "scope": "read",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "cancel_transfer",
+          "description": "Cancel a Wise transfer that is still in a cancellable state. Use get_transfer first to confirm the current status.",
+          "inputSchema": "../../schemas/transfer_id.json",
+          "handler": "../../handlers/cancel_transfer.js",
+          "scope": "write",
+          "toolset": "send_money"
+        },
+        {
+          "name": "send_money",
+          "description": "High-level Wise send-money preparation flow for the connected profile: creates or selects a recipient, creates a quote, creates a transfer order, and returns the Wise funding next step.",
+          "inputSchema": "../../schemas/send_money.json",
+          "handler": "../../handlers/send_money.js",
+          "scope": "write",
+          "toolset": "send_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "list_balances",
+          "description": "List Wise multi-currency balances for the connected profile, including standard balances and savings jars.",
+          "inputSchema": "../../schemas/balance_list.json",
+          "handler": "../../handlers/list_balances.js",
+          "scope": "read",
+          "toolset": "balances",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "get_balance",
+          "description": "Get a Wise balance by balanceId for the connected profile, including currency, type, name, and available amount.",
+          "inputSchema": "../../schemas/balance_id.json",
+          "handler": "../../handlers/get_balance.js",
+          "scope": "read",
+          "toolset": "balances",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "create_balance",
+          "description": "Open a Wise balance for a currency or create a named savings jar on the connected profile.",
+          "inputSchema": "../../schemas/balance_create.json",
+          "handler": "../../handlers/create_balance.js",
+          "scope": "write",
+          "toolset": "balances",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "move_money_between_balances",
+          "description": "Move or convert money between Wise balances on the connected profile. For cross-currency moves, create a BALANCE payOut quote first and provide quoteId.",
+          "inputSchema": "../../schemas/balance_movement.json",
+          "handler": "../../handlers/move_money_between_balances.js",
+          "scope": "write",
+          "toolset": "balances",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "get_total_funds",
+          "description": "Get total account funds across Wise balances for the connected profile valued in a target currency.",
+          "inputSchema": "../../schemas/total_funds.json",
+          "handler": "../../handlers/get_total_funds.js",
+          "scope": "read",
+          "toolset": "balances",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "list_account_details",
+          "description": "List Wise local and international account details for the connected profile, including receive options and example details where available.",
+          "inputSchema": "../../schemas/profile_id.json",
+          "handler": "../../handlers/list_account_details.js",
+          "scope": "read",
+          "toolset": "receive_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "create_account_details_order",
+          "description": "Order Wise account details for a currency on the connected profile. The resulting order may require verification or top-up steps in Wise.",
+          "inputSchema": "../../schemas/account_details_order.json",
+          "handler": "../../handlers/create_account_details_order.js",
+          "scope": "write",
+          "toolset": "receive_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        },
+        {
+          "name": "list_account_details_orders",
+          "description": "List Wise account-details orders for the connected profile and a currency (Wise requires the currency query parameter).",
+          "inputSchema": "../../schemas/account_details_orders_list.json",
+          "handler": "../../handlers/list_account_details_orders.js",
+          "scope": "read",
+          "toolset": "receive_money",
+          "injectFromConfig": {
+            "profileId": "profileId"
+          }
+        }
+      ]
+    },
+    "usageGuide": "## Wise workflow\n\nMost Wise API operations require a `profileId`. Start with `list_profiles` and choose the intended personal or business profile before creating quotes, recipients, transfers, balances, or account details.\n\nFor sending money, use this sequence:\n\n1. `list_profiles` to choose the profile.\n2. `list_recipients` or `create_recipient_simple` to choose or create the beneficiary.\n3. `create_quote` to lock the exchange rate and fees for about 30 minutes.\n4. `create_transfer` to prepare the transfer order.\n5. Ask the user to fund the transfer in Wise using the returned funding link or by opening Wise.\n\nThe `send_money` tool performs steps 2-4 in one call. It does not fund the transfer. It returns `requiresAction: \"FUND_IN_WISE_UI\"` and a `fundingUrl` when a transfer order is created.\n\n## Funding caveat\n\nCreating a transfer is not the same as sending money. Wise only starts processing when the transfer is funded. API funding is SCA-protected and is not available through this v1 integration. Prepared transfers normally expire if they are not funded within 14 days.\n\n## Recipient requirements\n\nWise recipient fields vary by country, currency, and payout route. Prefer `create_recipient_simple` for common routes such as IBAN, SWIFT/BIC, UK sort code, US routing number, account number, email, or phone. If Wise rejects a recipient as missing route-specific details, call `get_recipient_requirements` for the quote and retry with the needed fields in `extraFields` or an explicit `type`.\n\n## Quotes and idempotency\n\nUse `create_quote` when you need Wise's exact fee, delivery estimate, and locked exchange rate. `get_exchange_rate` is only for quick rate checks.\n\n`create_transfer` and `send_money` accept `customerTransactionId` for idempotency. If omitted, the handler generates one. Reuse the same value when retrying the same transfer request after a network failure.\n\n## Balances and account details\n\nUse `list_balances` before moving money between balances so you can choose valid `balanceId` values. Cross-currency balance movements usually need a quote created with `payOut: \"BALANCE\"`.\n\nUse `list_account_details` to see local and international receiving details that already exist. `create_account_details_order` may return requirements that must be completed in Wise before the account details become active.\n",
+    "variants": {
+      "variants": {
+        "personal_token": {
+          "label": "Production Personal API Token",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "apiToken": {
+                "type": "string",
+                "title": "Personal API Token",
+                "description": "Wise personal API token for your Wise business account.",
+                "format": "password"
+              }
+            },
+            "required": [
+              "apiToken"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{apiToken}}",
+              "Accept": "application/json"
+            }
+          },
+          "healthCheck": {
+            "path": "/v2/profiles",
+            "description": "Validates that the Wise personal API token can list available profiles."
+          }
+        },
+        "personal_token_sandbox": {
+          "label": "Sandbox Personal API Token",
+          "baseUrlTemplate": "https://api.wise-sandbox.com",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "apiToken": {
+                "type": "string",
+                "title": "Sandbox Personal API Token",
+                "description": "Wise sandbox personal API token. Production tokens do not work against the sandbox API.",
+                "format": "password"
+              }
+            },
+            "required": [
+              "apiToken"
+            ],
+            "additionalProperties": false
+          },
+          "injection": {
+            "headers": {
+              "Authorization": "Bearer {{apiToken}}",
+              "Accept": "application/json"
+            }
+          },
+          "healthCheck": {
+            "path": "/v2/profiles",
+            "description": "Validates that the Wise sandbox token can list available sandbox profiles."
+          }
+        }
+      },
+      "default": "personal_token"
+    },
+    "hint": "1. Choose the credential variant that matches the environment you want to connect: Production Personal API Token for https://api.wise.com, or Sandbox Personal API Token for https://api.wise-sandbox.com.\n2. For production, log in to your Wise business account at https://wise.com/. For sandbox, log in to the Wise sandbox at https://wise-sandbox.com/.\n3. Go to Your Account > Connect and manage apps > API tokens.\n4. Click Add new token and complete Wise's two-step verification prompt.\n5. Copy the token when Wise shows it. It is only displayed once.\n6. Paste the token into Commandable. Production tokens only work with the production variant; sandbox tokens only work with the sandbox variant.\n7. Personal API tokens can prepare transfers, manage recipients, and read transfer status, but this integration does not fund transfers via API.",
+    "hintsByVariant": {},
+    "tools": [
+      {
+        "name": "get_exchange_rate",
+        "description": "Get the current Wise exchange rate for a currency pair. Use this for quick rate checks; use create_quote when you need fees, delivery estimates, or a locked rate for a transfer.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sourceCurrency": {
+              "type": "string",
+              "description": "Source currency code, such as GBP."
+            },
+            "targetCurrency": {
+              "type": "string",
+              "description": "Target currency code, such as EUR."
+            },
+            "time": {
+              "type": "string",
+              "description": "Optional ISO timestamp for a historical rate."
+            }
+          },
+          "required": [
+            "sourceCurrency",
+            "targetCurrency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  params.set('source', String(input.sourceCurrency).toUpperCase())\n  params.set('target', String(input.targetCurrency).toUpperCase())\n  if (input.time) params.set('time', input.time)\n\n  const res = await integration.get(`/v1/rates?${params}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const rates = Array.isArray(data) ? data : []\n  const rate = rates[0] || null\n\n  return {\n    sourceCurrency: String(input.sourceCurrency).toUpperCase(),\n    targetCurrency: String(input.targetCurrency).toUpperCase(),\n    rate: rate?.rate ?? null,\n    time: rate?.time ?? input.time ?? null,\n    rawCount: rates.length,\n  }\n}",
+        "scope": "read"
+      },
+      {
+        "name": "create_quote",
+        "description": "Create an authenticated Wise quote for the connected profile. Provide source/target currencies and either sourceAmount or targetAmount. The rate is locked for about 30 minutes and the quoteId is used by create_transfer.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote."
+            },
+            "sourceCurrency": {
+              "type": "string",
+              "description": "Currency the sender pays from."
+            },
+            "targetCurrency": {
+              "type": "string",
+              "description": "Currency the recipient receives."
+            },
+            "sourceAmount": {
+              "type": "number",
+              "description": "Amount in sourceCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "targetAmount": {
+              "type": "number",
+              "description": "Amount in targetCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "payOut": {
+              "type": "string",
+              "description": "Wise payout method such as BANK_TRANSFER or BALANCE."
+            },
+            "preferredPayIn": {
+              "type": "string",
+              "description": "Optional preferred pay-in method such as BALANCE."
+            },
+            "targetAccount": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Optional recipient account ID to attach to the quote."
+            }
+          },
+          "required": [
+            "profileId",
+            "sourceCurrency",
+            "targetCurrency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (input.sourceAmount === undefined && input.targetAmount === undefined)\n    throw new Error('Provide sourceAmount or targetAmount')\n\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    profileId: quote?.profile,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    payOut: quote?.payOut,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    targetAccount: quote?.targetAccount,\n    rateExpirationTime: quote?.rateExpirationTime,\n    paymentOptions: Array.isArray(quote?.paymentOptions)\n      ? quote.paymentOptions.map(option => ({\n          payIn: option.payIn,\n          payOut: option.payOut,\n          sourceAmount: option.sourceAmount,\n          targetAmount: option.targetAmount,\n          fee: option.fee,\n          estimatedDelivery: option.estimatedDelivery,\n        }))\n      : [],\n    createdTime: quote?.createdTime,\n  })\n\n  const body = {\n    sourceCurrency: String(input.sourceCurrency).toUpperCase(),\n    targetCurrency: String(input.targetCurrency).toUpperCase(),\n    ...(input.sourceAmount !== undefined ? { sourceAmount: input.sourceAmount } : {}),\n    ...(input.targetAmount !== undefined ? { targetAmount: input.targetAmount } : {}),\n    ...(input.payOut ? { payOut: input.payOut } : {}),\n    ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),\n    ...(input.targetAccount !== undefined ? { targetAccount: input.targetAccount } : {}),\n  }\n\n  const res = await integration.post(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes`, body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { quote: summarizeQuote(quote) }\n}",
+        "scope": "write",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "get_quote",
+        "description": "Get a Wise quote by quoteId for the connected profile, including rate, fees, delivery estimates, and pay-in/pay-out options.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID."
+            }
+          },
+          "required": [
+            "profileId",
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    profileId: quote?.profile,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    payOut: quote?.payOut,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    targetAccount: quote?.targetAccount,\n    rateExpirationTime: quote?.rateExpirationTime,\n    paymentOptions: Array.isArray(quote?.paymentOptions)\n      ? quote.paymentOptions.map(option => ({\n          payIn: option.payIn,\n          payOut: option.payOut,\n          sourceAmount: option.sourceAmount,\n          targetAmount: option.targetAmount,\n          fee: option.fee,\n          estimatedDelivery: option.estimatedDelivery,\n        }))\n      : [],\n    createdTime: quote?.createdTime,\n  })\n\n  const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(input.quoteId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { quote: summarizeQuote(quote) }\n}",
+        "scope": "read",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "update_quote",
+        "description": "Update a Wise quote for the connected profile, usually to attach targetAccount after creating or selecting a recipient.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID."
+            },
+            "targetAccount": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Recipient account ID to attach to the quote."
+            },
+            "payOut": {
+              "type": "string",
+              "description": "Optional payout method override."
+            },
+            "preferredPayIn": {
+              "type": "string",
+              "description": "Optional pay-in method override."
+            }
+          },
+          "required": [
+            "profileId",
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    profileId: quote?.profile,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    payOut: quote?.payOut,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    targetAccount: quote?.targetAccount,\n    rateExpirationTime: quote?.rateExpirationTime,\n    paymentOptions: Array.isArray(quote?.paymentOptions)\n      ? quote.paymentOptions.map(option => ({\n          payIn: option.payIn,\n          payOut: option.payOut,\n          sourceAmount: option.sourceAmount,\n          targetAmount: option.targetAmount,\n          fee: option.fee,\n          estimatedDelivery: option.estimatedDelivery,\n        }))\n      : [],\n  })\n\n  const body = {\n    ...(input.targetAccount !== undefined ? { targetAccount: input.targetAccount } : {}),\n    ...(input.payOut ? { payOut: input.payOut } : {}),\n    ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),\n  }\n  const res = await integration.patch(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(input.quoteId)}`, body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const quote = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { quote: summarizeQuote(quote) }\n}",
+        "scope": "write",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "list_recipients",
+        "description": "List Wise recipient accounts for the connected profile with compact identity, currency, and account-summary fields. Filter by currency when possible; use get_recipient for full details.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Optional Wise profile ID to filter recipients."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Optional recipient currency filter."
+            },
+            "size": {
+              "type": "integer",
+              "description": "Optional maximum number of recipients to return."
+            },
+            "seekPosition": {
+              "type": "integer",
+              "description": "Optional pagination cursor used by Wise."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.profileId !== undefined) params.set('profile', String(input.profileId))\n  if (input.currency) params.set('currency', String(input.currency).toUpperCase())\n  if (input.size) params.set('size', String(input.size))\n  if (input.seekPosition !== undefined) params.set('seekPosition', String(input.seekPosition))\n\n  const res = await integration.get(`/v2/accounts${params.toString() ? `?${params}` : ''}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const recipients = Array.isArray(data?.content) ? data.content : (Array.isArray(data) ? data : [])\n\n  const summarizeRecipient = account => ({\n    recipientId: account?.id,\n    profileId: account?.profile,\n    accountHolderName: account?.accountHolderName,\n    currency: account?.currency,\n    country: account?.country,\n    type: account?.type,\n    active: account?.active,\n    ownedByCustomer: account?.ownedByCustomer,\n    legalType: account?.legalType,\n    bankName: account?.details?.bankName,\n    accountSummary: account?.details?.accountNumber\n      ? `...${String(account.details.accountNumber).slice(-4)}`\n      : (account?.details?.iban ? `${String(account.details.iban).slice(0, 4)}...${String(account.details.iban).slice(-4)}` : undefined),\n  })\n\n  return {\n    recipients: recipients.map(summarizeRecipient),\n    count: recipients.length,\n    seekPositionForNext: data?.seekPositionForNext,\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "get_recipient",
+        "description": "Get full details for a Wise recipient account by recipientId. Use this before creating a transfer when you need to confirm bank details or ownership.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "recipientId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise recipient account ID."
+            }
+          },
+          "required": [
+            "recipientId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v2/accounts/${encodeURIComponent(input.recipientId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const account = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    recipient: {\n      recipientId: account?.id,\n      profileId: account?.profile,\n      accountHolderName: account?.accountHolderName,\n      currency: account?.currency,\n      country: account?.country,\n      type: account?.type,\n      active: account?.active,\n      ownedByCustomer: account?.ownedByCustomer,\n      legalType: account?.legalType,\n      details: account?.details,\n      requirements: account?.requirements,\n      created: account?.created,\n      updated: account?.updated,\n    },\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "get_recipient_requirements",
+        "description": "Get Wise's dynamic recipient-account requirements for a quote. Use this when create_recipient_simple needs uncommon banking fields for a country/currency route.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID whose route determines recipient requirements."
+            }
+          },
+          "required": [
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/quotes/${encodeURIComponent(input.quoteId)}/account-requirements`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const requirements = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    quoteId: input.quoteId,\n    requirements,\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "create_recipient_simple",
+        "description": "Create a Wise recipient owned by the connected profile from flat common banking fields such as IBAN, BIC/SWIFT, sort code, account number, routing number, email, or phone.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the recipient."
+            },
+            "accountHolderName": {
+              "type": "string",
+              "description": "Recipient account holder name."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Recipient currency."
+            },
+            "country": {
+              "type": "string",
+              "description": "Recipient bank country code."
+            },
+            "type": {
+              "type": "string",
+              "description": "Optional explicit Wise recipient type. If omitted, the handler infers a common type from supplied fields."
+            },
+            "ownedByCustomer": {
+              "type": "boolean",
+              "description": "Whether this recipient account is owned by the Wise customer."
+            },
+            "legalType": {
+              "type": "string",
+              "enum": [
+                "PRIVATE",
+                "BUSINESS"
+              ],
+              "description": "Recipient legal type."
+            },
+            "iban": {
+              "type": "string"
+            },
+            "bic": {
+              "type": "string"
+            },
+            "swiftCode": {
+              "type": "string"
+            },
+            "accountNumber": {
+              "type": "string"
+            },
+            "sortCode": {
+              "type": "string"
+            },
+            "routingNumber": {
+              "type": "string"
+            },
+            "aba": {
+              "type": "string"
+            },
+            "bsbCode": {
+              "type": "string"
+            },
+            "institutionNumber": {
+              "type": "string"
+            },
+            "transitNumber": {
+              "type": "string"
+            },
+            "branchCode": {
+              "type": "string"
+            },
+            "bankCode": {
+              "type": "string"
+            },
+            "clabe": {
+              "type": "string"
+            },
+            "ifscCode": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "phoneNumber": {
+              "type": "string"
+            },
+            "address": {
+              "type": "object",
+              "description": "Optional address fields accepted by Wise for routes that require them.",
+              "additionalProperties": true
+            },
+            "extraFields": {
+              "type": "object",
+              "description": "Additional Wise recipient details fields returned by get_recipient_requirements.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "profileId",
+            "accountHolderName",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const compact = value => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value\n  const currency = String(input.currency).toUpperCase()\n  const country = input.country ? String(input.country).toUpperCase() : undefined\n\n  const inferType = () => {\n    if (input.type) return input.type\n    if (input.iban) return 'iban'\n    if (currency === 'GBP' && input.sortCode && input.accountNumber) return 'sort_code'\n    if (currency === 'USD' && (input.routingNumber || input.aba) && input.accountNumber) return 'aba'\n    if (currency === 'AUD' && input.bsbCode && input.accountNumber) return 'australian'\n    if (currency === 'CAD' && input.institutionNumber && input.transitNumber && input.accountNumber) return 'canadian'\n    if (currency === 'MXN' && input.clabe) return 'clabe'\n    if (currency === 'INR' && input.ifscCode && input.accountNumber) return 'indian'\n    if (input.swiftCode || input.bic) return 'swift_code'\n    if (input.email) return 'email'\n    if (input.phoneNumber) return 'mobile_wallet'\n    return undefined\n  }\n\n  const type = inferType()\n  if (!type)\n    throw new Error('Could not infer Wise recipient type. Provide type or common banking fields such as iban, sortCode+accountNumber, routingNumber+accountNumber, or swiftCode.')\n\n  const details = {\n    ...(country ? { country } : {}),\n    ...(input.legalType ? { legalType: input.legalType } : {}),\n    ...(input.iban ? { IBAN: compact(input.iban) } : {}),\n    ...(input.bic ? { BIC: compact(input.bic) } : {}),\n    ...(input.swiftCode ? { swiftCode: compact(input.swiftCode) } : {}),\n    ...(input.accountNumber ? { accountNumber: compact(input.accountNumber) } : {}),\n    ...(input.sortCode ? { sortCode: compact(input.sortCode) } : {}),\n    ...(input.routingNumber ? { routingNumber: compact(input.routingNumber) } : {}),\n    ...(input.aba ? { abartn: compact(input.aba), aba: compact(input.aba) } : {}),\n    ...(input.bsbCode ? { bsbCode: compact(input.bsbCode) } : {}),\n    ...(input.institutionNumber ? { institutionNumber: compact(input.institutionNumber) } : {}),\n    ...(input.transitNumber ? { transitNumber: compact(input.transitNumber) } : {}),\n    ...(input.branchCode ? { branchCode: compact(input.branchCode) } : {}),\n    ...(input.bankCode ? { bankCode: compact(input.bankCode) } : {}),\n    ...(input.clabe ? { clabe: compact(input.clabe) } : {}),\n    ...(input.ifscCode ? { ifscCode: compact(input.ifscCode) } : {}),\n    ...(input.email ? { email: input.email } : {}),\n    ...(input.phoneNumber ? { phoneNumber: input.phoneNumber } : {}),\n    ...(input.address ? { address: input.address } : {}),\n    ...(input.extraFields || {}),\n  }\n\n  const body = {\n    profile: input.profileId,\n    accountHolderName: input.accountHolderName,\n    currency,\n    type,\n    details,\n    ...(input.ownedByCustomer !== undefined ? { ownedByCustomer: input.ownedByCustomer } : {}),\n  }\n\n  const res = await integration.post('/v1/accounts', body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const account = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    recipient: {\n      recipientId: account?.id,\n      profileId: account?.profile,\n      accountHolderName: account?.accountHolderName,\n      currency: account?.currency,\n      country: account?.country,\n      type: account?.type,\n      active: account?.active,\n      ownedByCustomer: account?.ownedByCustomer,\n      legalType: account?.legalType,\n      details: account?.details,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "deactivate_recipient",
+        "description": "Deactivate a Wise recipient account by recipientId. This removes it from active recipient lists but does not affect historical transfers.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "recipientId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise recipient account ID."
+            }
+          },
+          "required": [
+            "recipientId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.delete(`/v1/accounts/${encodeURIComponent(input.recipientId)}`)\n  let data = null\n  if (res.status !== 204) {\n    const responseBodyText = await res.text()\n    const responseBodyTrimmed = responseBodyText.trim()\n    if (responseBodyTrimmed)\n      data = JSON.parse(responseBodyTrimmed)\n  }\n  return {\n    recipientId: input.recipientId,\n    deactivated: res.ok,\n    result: data,\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "create_transfer",
+        "description": "Create a Wise transfer order from a quoteId and targetAccountId. This does not send money; it prepares a transfer for the user to fund in Wise within 14 days.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "targetAccountId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise recipient account ID."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Wise quote UUID."
+            },
+            "reference": {
+              "type": "string",
+              "description": "Payment reference shown to the recipient where supported."
+            },
+            "sourceOfFunds": {
+              "type": "string",
+              "description": "Optional Wise source-of-funds value when required."
+            },
+            "transferPurpose": {
+              "type": "string",
+              "description": "Optional Wise transfer-purpose value when required."
+            },
+            "extraDetails": {
+              "type": "object",
+              "description": "Additional Wise transfer details.",
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "targetAccountId",
+            "quoteId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const summarizeTransfer = transfer => {\n    const transferId = transfer?.id\n    return {\n      transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      rate: transfer?.rate,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n      fundingUrl: transferId ? `https://wise.com/transfer/${encodeURIComponent(transferId)}` : null,\n      requiresAction: 'FUND_IN_WISE_UI',\n      nextStep: 'Open Wise to fund this prepared transfer. The Wise API funding endpoint is intentionally not used by this integration.',\n    }\n  }\n\n  const details = {\n    ...(input.reference ? { reference: input.reference } : {}),\n    ...(input.sourceOfFunds ? { sourceOfFunds: input.sourceOfFunds } : {}),\n    ...(input.transferPurpose ? { transferPurpose: input.transferPurpose } : {}),\n    ...(input.extraDetails || {}),\n  }\n  const body = {\n    targetAccount: input.targetAccountId,\n    quoteUuid: input.quoteId,\n    customerTransactionId: uuid.v4(),\n    ...(Object.keys(details).length ? { details } : {}),\n  }\n\n  const res = await integration.post('/v1/transfers', body)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  return { transfer: summarizeTransfer(transfer) }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "get_transfer",
+        "description": "Get Wise transfer status and tracking details by transferId. Use this to check whether a prepared or funded transfer is waiting, processing, completed, cancelled, or failed.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "transferId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise transfer ID."
+            }
+          },
+          "required": [
+            "transferId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/transfers/${encodeURIComponent(input.transferId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const transferId = transfer?.id || input.transferId\n\n  return {\n    transfer: {\n      transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      rate: transfer?.rate,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n      fundingUrl: `https://wise.com/transfer/${encodeURIComponent(transferId)}`,\n    },\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money"
+      },
+      {
+        "name": "list_transfers",
+        "description": "List Wise transfers for the connected profile with compact status, amount, currency, recipient, and date fields.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Optional profile ID to filter transfers."
+            },
+            "status": {
+              "type": "string",
+              "description": "Optional Wise transfer status filter."
+            },
+            "sourceCurrency": {
+              "type": "string",
+              "description": "Optional source currency filter."
+            },
+            "targetCurrency": {
+              "type": "string",
+              "description": "Optional target currency filter."
+            },
+            "createdDateStart": {
+              "type": "string",
+              "description": "Optional ISO date/time lower bound."
+            },
+            "createdDateEnd": {
+              "type": "string",
+              "description": "Optional ISO date/time upper bound."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Optional maximum transfers to return."
+            },
+            "offset": {
+              "type": "integer",
+              "description": "Optional pagination offset."
+            }
+          },
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  if (input.profileId !== undefined) params.set('profile', String(input.profileId))\n  if (input.status) params.set('status', input.status)\n  if (input.sourceCurrency) params.set('sourceCurrency', String(input.sourceCurrency).toUpperCase())\n  if (input.targetCurrency) params.set('targetCurrency', String(input.targetCurrency).toUpperCase())\n  if (input.createdDateStart) params.set('createdDateStart', input.createdDateStart)\n  if (input.createdDateEnd) params.set('createdDateEnd', input.createdDateEnd)\n  if (input.limit) params.set('limit', String(input.limit))\n  if (input.offset) params.set('offset', String(input.offset))\n\n  const res = await integration.get(`/v1/transfers${params.toString() ? `?${params}` : ''}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const transfers = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : [])\n\n  return {\n    transfers: transfers.map(transfer => ({\n      transferId: transfer?.id,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n    })),\n    count: transfers.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "cancel_transfer",
+        "description": "Cancel a Wise transfer that is still in a cancellable state. Use get_transfer first to confirm the current status.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "transferId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise transfer ID."
+            }
+          },
+          "required": [
+            "transferId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.put(`/v1/transfers/${encodeURIComponent(input.transferId)}/cancel`, {})\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const transfer = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : {}\n\n  return {\n    transfer: {\n      transferId: transfer?.id || input.transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      cancelled: transfer?.status === 'cancelled' || transfer?.status === 'cancelled_by_user',\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money"
+      },
+      {
+        "name": "send_money",
+        "description": "High-level Wise send-money preparation flow for the connected profile: creates or selects a recipient, creates a quote, creates a transfer order, and returns the Wise funding next step.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID that owns the quote and transfer."
+            },
+            "sourceCurrency": {
+              "type": "string"
+            },
+            "targetCurrency": {
+              "type": "string"
+            },
+            "sourceAmount": {
+              "type": "number",
+              "description": "Amount in sourceCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "targetAmount": {
+              "type": "number",
+              "description": "Amount in targetCurrency. Provide either sourceAmount or targetAmount."
+            },
+            "recipientId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Existing recipient account ID. If omitted, recipient fields are used to create one."
+            },
+            "recipient": {
+              "type": "object",
+              "description": "Flat recipient fields matching create_recipient_simple when recipientId is omitted.",
+              "additionalProperties": true
+            },
+            "reference": {
+              "type": "string",
+              "description": "Payment reference shown to the recipient where supported."
+            },
+            "payOut": {
+              "type": "string",
+              "description": "Wise payout method. Defaults to BANK_TRANSFER when omitted."
+            },
+            "preferredPayIn": {
+              "type": "string",
+              "description": "Optional preferred pay-in method."
+            }
+          },
+          "required": [
+            "profileId",
+            "sourceCurrency",
+            "targetCurrency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (input.sourceAmount === undefined && input.targetAmount === undefined)\n    throw new Error('Provide sourceAmount or targetAmount')\n  if (!input.recipientId && !input.recipient)\n    throw new Error('Provide recipientId or recipient fields')\n\n  const summarizeQuote = quote => ({\n    quoteId: quote?.id,\n    sourceCurrency: quote?.sourceCurrency,\n    targetCurrency: quote?.targetCurrency,\n    sourceAmount: quote?.sourceAmount,\n    targetAmount: quote?.targetAmount,\n    rate: quote?.rate,\n    fee: quote?.fee,\n    rateExpirationTime: quote?.rateExpirationTime,\n  })\n  const summarizeRecipient = account => ({\n    recipientId: account?.id,\n    accountHolderName: account?.accountHolderName,\n    currency: account?.currency,\n    type: account?.type,\n    active: account?.active,\n    accountSummary: account?.details?.accountNumber\n      ? `...${String(account.details.accountNumber).slice(-4)}`\n      : (account?.details?.iban ? `${String(account.details.iban).slice(0, 4)}...${String(account.details.iban).slice(-4)}` : undefined),\n  })\n  const summarizeTransfer = transfer => {\n    const transferId = transfer?.id\n    return {\n      transferId,\n      status: transfer?.status,\n      targetAccountId: transfer?.targetAccount,\n      quoteId: transfer?.quoteUuid,\n      customerTransactionId: transfer?.customerTransactionId,\n      reference: transfer?.details?.reference,\n      sourceCurrency: transfer?.sourceCurrency,\n      targetCurrency: transfer?.targetCurrency,\n      sourceValue: transfer?.sourceValue,\n      targetValue: transfer?.targetValue,\n      created: transfer?.created,\n      estimatedDelivery: transfer?.estimatedDelivery,\n      fundingUrl: transferId ? `https://wise.com/transfer/${encodeURIComponent(transferId)}` : null,\n      requiresAction: 'FUND_IN_WISE_UI',\n      nextStep: 'Open Wise to fund this prepared transfer. This integration intentionally does not call Wise API funding endpoints.',\n    }\n  }\n\n  const quoteBody = {\n    sourceCurrency: String(input.sourceCurrency).toUpperCase(),\n    targetCurrency: String(input.targetCurrency).toUpperCase(),\n    ...(input.sourceAmount !== undefined ? { sourceAmount: input.sourceAmount } : {}),\n    ...(input.targetAmount !== undefined ? { targetAmount: input.targetAmount } : {}),\n    ...(input.payOut ? { payOut: input.payOut } : {}),\n    ...(input.preferredPayIn ? { preferredPayIn: input.preferredPayIn } : {}),\n    ...(input.recipientId !== undefined ? { targetAccount: input.recipientId } : {}),\n  }\n  const quoteRes = await integration.post(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes`, quoteBody)\n  const quoteResponseBodyText = await quoteRes.text()\n  const quoteResponseBodyTrimmed = quoteResponseBodyText.trim()\n  let quote = quoteResponseBodyTrimmed ? JSON.parse(quoteResponseBodyTrimmed) : null\n  if (!quote?.id)\n    throw new Error(`Wise quote creation returned no usable quote (HTTP ${typeof quoteRes.status === 'number' ? quoteRes.status : 'unknown'})`)\n\n  let recipientId = input.recipientId\n  let recipient = null\n  if (!recipientId) {\n    const data = input.recipient || {}\n    const compact = value => typeof value === 'string' ? value.replace(/[\\s-]/g, '') : value\n    const currency = String(data.currency || input.targetCurrency).toUpperCase()\n    const inferType = () => {\n      if (data.type) return data.type\n      if (data.iban) return 'iban'\n      if (currency === 'GBP' && data.sortCode && data.accountNumber) return 'sort_code'\n      if (currency === 'USD' && (data.routingNumber || data.aba) && data.accountNumber) return 'aba'\n      if (currency === 'AUD' && data.bsbCode && data.accountNumber) return 'australian'\n      if (currency === 'CAD' && data.institutionNumber && data.transitNumber && data.accountNumber) return 'canadian'\n      if (currency === 'MXN' && data.clabe) return 'clabe'\n      if (currency === 'INR' && data.ifscCode && data.accountNumber) return 'indian'\n      if (data.swiftCode || data.bic) return 'swift_code'\n      if (data.email) return 'email'\n      if (data.phoneNumber) return 'mobile_wallet'\n      return undefined\n    }\n    const type = inferType()\n    if (!type)\n      throw new Error('Could not infer recipient type. Provide recipient.type or common banking fields.')\n\n    const details = {\n      ...(data.country ? { country: String(data.country).toUpperCase() } : {}),\n      ...(data.legalType ? { legalType: data.legalType } : {}),\n      ...(data.iban ? { IBAN: compact(data.iban) } : {}),\n      ...(data.bic ? { BIC: compact(data.bic) } : {}),\n      ...(data.swiftCode ? { swiftCode: compact(data.swiftCode) } : {}),\n      ...(data.accountNumber ? { accountNumber: compact(data.accountNumber) } : {}),\n      ...(data.sortCode ? { sortCode: compact(data.sortCode) } : {}),\n      ...(data.routingNumber ? { routingNumber: compact(data.routingNumber) } : {}),\n      ...(data.aba ? { abartn: compact(data.aba), aba: compact(data.aba) } : {}),\n      ...(data.bsbCode ? { bsbCode: compact(data.bsbCode) } : {}),\n      ...(data.institutionNumber ? { institutionNumber: compact(data.institutionNumber) } : {}),\n      ...(data.transitNumber ? { transitNumber: compact(data.transitNumber) } : {}),\n      ...(data.branchCode ? { branchCode: compact(data.branchCode) } : {}),\n      ...(data.bankCode ? { bankCode: compact(data.bankCode) } : {}),\n      ...(data.clabe ? { clabe: compact(data.clabe) } : {}),\n      ...(data.ifscCode ? { ifscCode: compact(data.ifscCode) } : {}),\n      ...(data.email ? { email: data.email } : {}),\n      ...(data.phoneNumber ? { phoneNumber: data.phoneNumber } : {}),\n      ...(data.address ? { address: data.address } : {}),\n      ...(data.extraFields || {}),\n    }\n    const recipientBody = {\n      profile: input.profileId,\n      accountHolderName: data.accountHolderName,\n      currency,\n      type,\n      details,\n      ...(data.ownedByCustomer !== undefined ? { ownedByCustomer: data.ownedByCustomer } : {}),\n    }\n    const recipientRes = await integration.post('/v1/accounts', recipientBody)\n    const recipientResponseBodyText = await recipientRes.text()\n    const recipientResponseBodyTrimmed = recipientResponseBodyText.trim()\n    recipient = recipientResponseBodyTrimmed ? JSON.parse(recipientResponseBodyTrimmed) : null\n    recipientId = recipient?.id\n    if (!recipientId)\n      throw new Error('Wise recipient creation did not return an id')\n\n    const updateRes = await integration.patch(`/v3/profiles/${encodeURIComponent(input.profileId)}/quotes/${encodeURIComponent(quote.id)}`, {\n      targetAccount: recipientId,\n    })\n    const quoteUpdateResponseBodyText = await updateRes.text()\n    const quoteUpdateResponseBodyTrimmed = quoteUpdateResponseBodyText.trim()\n    quote = quoteUpdateResponseBodyTrimmed ? JSON.parse(quoteUpdateResponseBodyTrimmed) : null\n    if (!quote?.id)\n      throw new Error(`Wise quote update returned no usable quote (HTTP ${typeof updateRes.status === 'number' ? updateRes.status : 'unknown'})`)\n  }\n  else {\n    const recipientRes = await integration.get(`/v2/accounts/${encodeURIComponent(recipientId)}`)\n    const existingRecipientResponseBodyText = await recipientRes.text()\n    const existingRecipientResponseBodyTrimmed = existingRecipientResponseBodyText.trim()\n    recipient = existingRecipientResponseBodyTrimmed ? JSON.parse(existingRecipientResponseBodyTrimmed) : null\n  }\n\n  const transferDetails = input.reference ? { reference: input.reference } : {}\n  const transferBody = {\n    targetAccount: recipientId,\n    quoteUuid: quote.id,\n    customerTransactionId: uuid.v4(),\n    ...(Object.keys(transferDetails).length ? { details: transferDetails } : {}),\n  }\n  const transferRes = await integration.post('/v1/transfers', transferBody)\n  const transferResponseBodyText = await transferRes.text()\n  const transferResponseBodyTrimmed = transferResponseBodyText.trim()\n  const transfer = transferResponseBodyTrimmed ? JSON.parse(transferResponseBodyTrimmed) : null\n  if (!transfer?.id)\n    throw new Error(`Wise transfer creation returned no usable transfer (HTTP ${typeof transferRes.status === 'number' ? transferRes.status : 'unknown'})`)\n\n  return {\n    quote: summarizeQuote(quote),\n    recipient: summarizeRecipient(recipient),\n    transfer: summarizeTransfer(transfer),\n    funding: {\n      required: true,\n      method: 'WISE_UI',\n      url: transfer?.id ? `https://wise.com/transfer/${encodeURIComponent(transfer.id)}` : null,\n      note: 'The transfer has been prepared but not funded. The user must approve and fund it in Wise.',\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "send_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "list_balances",
+        "description": "List Wise multi-currency balances for the connected profile, including standard balances and savings jars.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "STANDARD",
+                  "SAVINGS"
+                ]
+              },
+              "description": "Balance types to include. Defaults to STANDARD and SAVINGS."
+            }
+          },
+          "required": [
+            "profileId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const params = new URLSearchParams()\n  const types = Array.isArray(input.types) && input.types.length ? input.types : ['STANDARD', 'SAVINGS']\n  params.set('types', types.join(','))\n\n  const res = await integration.get(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances?${params}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const balances = Array.isArray(data) ? data : []\n\n  return {\n    balances: balances.map(balance => ({\n      balanceId: balance?.id,\n      currency: balance?.currency,\n      type: balance?.type,\n      name: balance?.name,\n      amount: balance?.amount?.value ?? balance?.amount,\n      reservedAmount: balance?.reservedAmount?.value ?? balance?.reservedAmount,\n      cashAmount: balance?.cashAmount?.value ?? balance?.cashAmount,\n      totalWorth: balance?.totalWorth?.value ?? balance?.totalWorth,\n      investmentState: balance?.investmentState,\n      creationTime: balance?.creationTime,\n      modificationTime: balance?.modificationTime,\n    })),\n    count: balances.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "balances",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "get_balance",
+        "description": "Get a Wise balance by balanceId for the connected profile, including currency, type, name, and available amount.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "balanceId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise balance ID."
+            }
+          },
+          "required": [
+            "profileId",
+            "balanceId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances/${encodeURIComponent(input.balanceId)}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const balance = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    balance: {\n      balanceId: balance?.id,\n      currency: balance?.currency,\n      type: balance?.type,\n      name: balance?.name,\n      amount: balance?.amount?.value ?? balance?.amount,\n      reservedAmount: balance?.reservedAmount?.value ?? balance?.reservedAmount,\n      cashAmount: balance?.cashAmount?.value ?? balance?.cashAmount,\n      totalWorth: balance?.totalWorth?.value ?? balance?.totalWorth,\n      investmentState: balance?.investmentState,\n      creationTime: balance?.creationTime,\n      modificationTime: balance?.modificationTime,\n      details: balance,\n    },\n  }\n}",
+        "scope": "read",
+        "toolset": "balances",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "create_balance",
+        "description": "Open a Wise balance for a currency or create a named savings jar on the connected profile.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency code for the new balance."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "STANDARD",
+                "SAVINGS"
+              ],
+              "description": "Balance type. STANDARD is the default account; SAVINGS is a jar."
+            },
+            "name": {
+              "type": "string",
+              "description": "Required by Wise for SAVINGS balances."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency",
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const body = {\n    currency: String(input.currency).toUpperCase(),\n    type: input.type,\n    ...(input.name ? { name: input.name } : {}),\n  }\n  const res = await integration.post(`/v4/profiles/${encodeURIComponent(input.profileId)}/balances`, body, {\n    headers: {\n      'X-idempotence-uuid': uuid.v4(),\n    },\n  })\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const balance = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    balance: {\n      balanceId: balance?.id,\n      currency: balance?.currency,\n      type: balance?.type,\n      name: balance?.name,\n      amount: balance?.amount?.value ?? balance?.amount,\n      investmentState: balance?.investmentState,\n      creationTime: balance?.creationTime,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "balances",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "move_money_between_balances",
+        "description": "Move or convert money between Wise balances on the connected profile. For cross-currency moves, create a BALANCE payOut quote first and provide quoteId.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "sourceBalanceId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Balance ID to move money from."
+            },
+            "targetBalanceId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Balance ID to move money to."
+            },
+            "amount": {
+              "type": "number",
+              "description": "Amount to move when not using quoteId."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency for amount when not using quoteId."
+            },
+            "quoteId": {
+              "type": "string",
+              "description": "Quote ID for cross-currency balance movement."
+            },
+            "reference": {
+              "type": "string",
+              "description": "Optional movement reference."
+            }
+          },
+          "required": [
+            "profileId",
+            "sourceBalanceId",
+            "targetBalanceId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  if (!input.quoteId && (input.amount === undefined || !input.currency))\n    throw new Error('Provide quoteId for cross-currency movement, or amount and currency for same-currency movement')\n\n  const body = {\n    sourceBalanceId: input.sourceBalanceId,\n    targetBalanceId: input.targetBalanceId,\n    ...(input.quoteId ? { quoteId: input.quoteId } : {}),\n    ...(input.amount !== undefined ? { amount: { value: input.amount, currency: String(input.currency).toUpperCase() } } : {}),\n    ...(input.reference ? { reference: input.reference } : {}),\n  }\n\n  const res = await integration.post(`/v2/profiles/${encodeURIComponent(input.profileId)}/balance-movements`, body, {\n    headers: {\n      'X-idempotence-uuid': uuid.v4(),\n    },\n  })\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const movement = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    movement: {\n      movementId: movement?.id,\n      status: movement?.status,\n      sourceBalanceId: movement?.sourceBalanceId ?? input.sourceBalanceId,\n      targetBalanceId: movement?.targetBalanceId ?? input.targetBalanceId,\n      quoteId: movement?.quoteId ?? input.quoteId,\n      amount: movement?.amount,\n      createdTime: movement?.createdTime,\n      details: movement,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "balances",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "get_total_funds",
+        "description": "Get total account funds across Wise balances for the connected profile valued in a target currency.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency to value total funds in."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/profiles/${encodeURIComponent(input.profileId)}/total-funds/${encodeURIComponent(String(input.currency).toUpperCase())}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const funds = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    profileId: input.profileId,\n    currency: String(input.currency).toUpperCase(),\n    totalWorth: funds?.totalWorth,\n    totalAvailable: funds?.totalAvailable,\n    totalCash: funds?.totalCash,\n    overdraft: funds?.overdraft,\n    details: funds,\n  }\n}",
+        "scope": "read",
+        "toolset": "balances",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "list_account_details",
+        "description": "List Wise local and international account details for the connected profile, including receive options and example details where available.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise personal or business profile ID."
+            }
+          },
+          "required": [
+            "profileId"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.get(`/v1/profiles/${encodeURIComponent(input.profileId)}/account-details`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const details = Array.isArray(data) ? data : []\n\n  return {\n    accountDetails: details.map(item => ({\n      id: item?.id,\n      currency: item?.currency,\n      title: item?.title,\n      type: item?.type,\n      status: item?.status,\n      active: item?.active,\n      accountHolderName: item?.accountHolderName,\n      receiveOptions: item?.receiveOptions,\n      details: item?.details,\n    })),\n    count: details.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "receive_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "create_account_details_order",
+        "description": "Order Wise account details for a currency on the connected profile. The resulting order may require verification or top-up steps in Wise.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Currency to order receiving account details for."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const res = await integration.post(`/v1/profiles/${encodeURIComponent(input.profileId)}/account-details-orders`, {\n    currency: String(input.currency).toUpperCase(),\n  })\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const order = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n\n  return {\n    order: {\n      orderId: order?.id,\n      currency: order?.currency,\n      status: order?.status,\n      requirements: order?.requirements,\n      details: order,\n    },\n  }\n}",
+        "scope": "write",
+        "toolset": "receive_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      },
+      {
+        "name": "list_account_details_orders",
+        "description": "List Wise account-details orders for the connected profile and a currency (Wise requires the currency query parameter).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "profileId": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Wise personal or business profile ID."
+            },
+            "currency": {
+              "type": "string",
+              "description": "ISO currency code; Wise requires this query parameter when listing account-details orders (e.g. GBP, EUR)."
+            }
+          },
+          "required": [
+            "profileId",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "handlerCode": "async (input) => {\n  const currency = encodeURIComponent(String(input.currency).toUpperCase())\n  const res = await integration.get(`/v3/profiles/${encodeURIComponent(input.profileId)}/account-details-orders?currency=${currency}`)\n  const responseBodyText = await res.text()\n  const responseBodyTrimmed = responseBodyText.trim()\n  const data = responseBodyTrimmed ? JSON.parse(responseBodyTrimmed) : null\n  const orders = Array.isArray(data) ? data : []\n\n  return {\n    orders: orders.map(order => ({\n      orderId: order?.id,\n      currency: order?.currency,\n      status: order?.status,\n      requirements: order?.requirements,\n      createdTime: order?.createdTime,\n      updatedTime: order?.updatedTime,\n    })),\n    count: orders.length,\n  }\n}",
+        "scope": "read",
+        "toolset": "receive_money",
+        "injectFromConfig": {
+          "profileId": "profileId"
+        }
+      }
+    ],
+    "variantOwnerType": "wise"
+  },
   "xero": {
     "manifest": {
       "name": "xero",

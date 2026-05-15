@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID that owns the quote."
+    },
+    "quoteId": {
+      "type": "string",
+      "description": "Wise quote UUID."
+    },
+    "targetAccount": {
+      "type": ["integer", "string"],
+      "description": "Recipient account ID to attach to the quote."
+    },
+    "payOut": {
+      "type": "string",
+      "description": "Optional payout method override."
+    },
+    "preferredPayIn": {
+      "type": "string",
+      "description": "Optional pay-in method override."
+    }
+  },
+  "required": ["profileId", "quoteId"],
+  "additionalProperties": false
+}

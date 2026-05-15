@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "transferId": {
+      "type": ["integer", "string"],
+      "description": "Wise transfer ID."
+    }
+  },
+  "required": ["transferId"],
+  "additionalProperties": false
+}

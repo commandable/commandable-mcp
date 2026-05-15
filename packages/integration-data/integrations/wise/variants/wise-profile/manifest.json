@@ -1,0 +1,140 @@
+{
+  "type": "wise-profile",
+  "variantLabel": "Single Profile",
+  "variantConfig": [
+    {
+      "key": "profile",
+      "label": "Profile",
+      "selectionMode": "single",
+      "listHandler": "async (config) => {\n  const res = await integration.fetch('/v2/profiles')\n  const profiles = await res.json()\n  if (!Array.isArray(profiles))\n    return []\n\n  return profiles\n    .map(profile => {\n      const id = profile?.id == null ? '' : String(profile.id)\n      const type = profile?.type ? String(profile.type) : ''\n      const name = profile?.businessName || profile?.fullName || profile?.name || [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || id\n      const label = type ? `${name} (${type})` : name\n      return { id, name: label }\n    })\n    .filter(profile => profile.id && profile.name)\n}"
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_exchange_rate"
+    },
+    {
+      "name": "create_quote",
+      "description": "Create an authenticated Wise quote for the connected profile. Provide source/target currencies and either sourceAmount or targetAmount. The rate is locked for about 30 minutes and the quoteId is used by create_transfer.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "get_quote",
+      "description": "Get a Wise quote by quoteId for the connected profile, including rate, fees, delivery estimates, and pay-in/pay-out options.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "update_quote",
+      "description": "Update a Wise quote for the connected profile, usually to attach targetAccount after creating or selecting a recipient.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "list_recipients",
+      "description": "List Wise recipient accounts for the connected profile with compact identity, currency, and account-summary fields. Filter by currency when possible; use get_recipient for full details.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "get_recipient"
+    },
+    {
+      "name": "get_recipient_requirements"
+    },
+    {
+      "name": "create_recipient_simple",
+      "description": "Create a Wise recipient owned by the connected profile from flat common banking fields such as IBAN, BIC/SWIFT, sort code, account number, routing number, email, or phone.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "deactivate_recipient"
+    },
+    {
+      "name": "create_transfer"
+    },
+    {
+      "name": "get_transfer"
+    },
+    {
+      "name": "list_transfers",
+      "description": "List Wise transfers for the connected profile with compact status, amount, currency, recipient, and date fields.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "cancel_transfer"
+    },
+    {
+      "name": "send_money",
+      "description": "High-level Wise send-money preparation flow for the connected profile: creates or selects a recipient, creates a quote, creates a transfer order, and returns the Wise funding next step.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "list_balances",
+      "description": "List Wise multi-currency balances for the connected profile, including standard balances and savings jars.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "get_balance",
+      "description": "Get a Wise balance by balanceId for the connected profile, including currency, type, name, and available amount.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "create_balance",
+      "description": "Open a Wise balance for a currency or create a named savings jar on the connected profile.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "move_money_between_balances",
+      "description": "Move or convert money between Wise balances on the connected profile. For cross-currency moves, create a BALANCE payOut quote first and provide quoteId.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "get_total_funds",
+      "description": "Get total account funds across Wise balances for the connected profile valued in a target currency.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "list_account_details",
+      "description": "List Wise local and international account details for the connected profile, including receive options and example details where available.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "create_account_details_order",
+      "description": "Order Wise account details for a currency on the connected profile. The resulting order may require verification or top-up steps in Wise.",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    },
+    {
+      "name": "list_account_details_orders",
+      "description": "List Wise account-details orders for the connected profile and a currency (Wise requires the currency query parameter).",
+      "injectFromConfig": {
+        "profileId": "profileId"
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID."
+    },
+    "currency": {
+      "type": "string",
+      "description": "Currency code for the new balance."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["STANDARD", "SAVINGS"],
+      "description": "Balance type. STANDARD is the default account; SAVINGS is a jar."
+    },
+    "name": {
+      "type": "string",
+      "description": "Required by Wise for SAVINGS balances."
+    }
+  },
+  "required": ["profileId", "currency", "type"],
+  "additionalProperties": false
+}

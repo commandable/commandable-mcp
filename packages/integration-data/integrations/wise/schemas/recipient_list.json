@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Optional Wise profile ID to filter recipients."
+    },
+    "currency": {
+      "type": "string",
+      "description": "Optional recipient currency filter."
+    },
+    "size": {
+      "type": "integer",
+      "description": "Optional maximum number of recipients to return."
+    },
+    "seekPosition": {
+      "type": "integer",
+      "description": "Optional pagination cursor used by Wise."
+    }
+  },
+  "additionalProperties": false
+}

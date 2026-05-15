@@ -137,6 +137,13 @@ const cases: HealthCheckCase[] = [
     enabled: hasEnv('TRELLO_API_KEY', 'TRELLO_API_TOKEN'),
   },
   {
+    label: 'wise/personal_token_sandbox',
+    type: 'wise',
+    credentialVariant: 'personal_token_sandbox',
+    credentials: () => ({ apiToken: env.WISE_SANDBOX_API_TOKEN || '' }),
+    enabled: hasEnv('WISE_SANDBOX_API_TOKEN'),
+  },
+  {
     label: 'xero/custom_connection',
     type: 'xero',
     credentialVariant: 'custom_connection',

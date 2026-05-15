@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID."
+    },
+    "currency": {
+      "type": "string",
+      "description": "Currency to order receiving account details for."
+    }
+  },
+  "required": ["profileId", "currency"],
+  "additionalProperties": false
+}

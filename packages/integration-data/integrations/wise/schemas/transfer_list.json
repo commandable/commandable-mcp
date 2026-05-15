@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Optional profile ID to filter transfers."
+    },
+    "status": {
+      "type": "string",
+      "description": "Optional Wise transfer status filter."
+    },
+    "sourceCurrency": {
+      "type": "string",
+      "description": "Optional source currency filter."
+    },
+    "targetCurrency": {
+      "type": "string",
+      "description": "Optional target currency filter."
+    },
+    "createdDateStart": {
+      "type": "string",
+      "description": "Optional ISO date/time lower bound."
+    },
+    "createdDateEnd": {
+      "type": "string",
+      "description": "Optional ISO date/time upper bound."
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Optional maximum transfers to return."
+    },
+    "offset": {
+      "type": "integer",
+      "description": "Optional pagination offset."
+    }
+  },
+  "additionalProperties": false
+}

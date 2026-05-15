@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise personal or business profile ID."
+    }
+  },
+  "required": ["profileId"],
+  "additionalProperties": false
+}
