@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID that owns the quote and transfer."
+    },
+    "sourceCurrency": { "type": "string" },
+    "targetCurrency": { "type": "string" },
+    "sourceAmount": {
+      "type": "number",
+      "description": "Amount in sourceCurrency. Provide either sourceAmount or targetAmount."
+    },
+    "targetAmount": {
+      "type": "number",
+      "description": "Amount in targetCurrency. Provide either sourceAmount or targetAmount."
+    },
+    "recipientId": {
+      "type": ["integer", "string"],
+      "description": "Existing recipient account ID. If omitted, recipient fields are used to create one."
+    },
+    "recipient": {
+      "type": "object",
+      "description": "Flat recipient fields matching create_recipient_simple when recipientId is omitted.",
+      "additionalProperties": true
+    },
+    "reference": {
+      "type": "string",
+      "description": "Payment reference shown to the recipient where supported."
+    },
+    "customerTransactionId": {
+      "type": "string",
+      "description": "Optional idempotency identifier."
+    },
+    "payOut": {
+      "type": "string",
+      "description": "Wise payout method. Defaults to BANK_TRANSFER when omitted."
+    },
+    "preferredPayIn": {
+      "type": "string",
+      "description": "Optional preferred pay-in method."
+    }
+  },
+  "required": ["profileId", "sourceCurrency", "targetCurrency"],
+  "additionalProperties": false
+}

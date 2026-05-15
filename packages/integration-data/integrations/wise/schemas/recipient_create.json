@@ -1,0 +1,62 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID that owns the recipient."
+    },
+    "accountHolderName": {
+      "type": "string",
+      "description": "Recipient account holder name."
+    },
+    "currency": {
+      "type": "string",
+      "description": "Recipient currency."
+    },
+    "country": {
+      "type": "string",
+      "description": "Recipient bank country code."
+    },
+    "type": {
+      "type": "string",
+      "description": "Optional explicit Wise recipient type. If omitted, the handler infers a common type from supplied fields."
+    },
+    "ownedByCustomer": {
+      "type": "boolean",
+      "description": "Whether this recipient account is owned by the Wise customer."
+    },
+    "legalType": {
+      "type": "string",
+      "enum": ["PRIVATE", "BUSINESS"],
+      "description": "Recipient legal type."
+    },
+    "iban": { "type": "string" },
+    "bic": { "type": "string" },
+    "swiftCode": { "type": "string" },
+    "accountNumber": { "type": "string" },
+    "sortCode": { "type": "string" },
+    "routingNumber": { "type": "string" },
+    "aba": { "type": "string" },
+    "bsbCode": { "type": "string" },
+    "institutionNumber": { "type": "string" },
+    "transitNumber": { "type": "string" },
+    "branchCode": { "type": "string" },
+    "bankCode": { "type": "string" },
+    "clabe": { "type": "string" },
+    "ifscCode": { "type": "string" },
+    "email": { "type": "string" },
+    "phoneNumber": { "type": "string" },
+    "address": {
+      "type": "object",
+      "description": "Optional address fields accepted by Wise for routes that require them.",
+      "additionalProperties": true
+    },
+    "extraFields": {
+      "type": "object",
+      "description": "Additional Wise recipient details fields returned by get_recipient_requirements.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["profileId", "accountHolderName", "currency"],
+  "additionalProperties": false
+}

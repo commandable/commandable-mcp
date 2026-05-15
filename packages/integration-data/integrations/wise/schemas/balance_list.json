@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID."
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["STANDARD", "SAVINGS"]
+      },
+      "description": "Balance types to include. Defaults to STANDARD and SAVINGS."
+    }
+  },
+  "required": ["profileId"],
+  "additionalProperties": false
+}

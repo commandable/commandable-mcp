@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "recipientId": {
+      "type": ["integer", "string"],
+      "description": "Wise recipient account ID."
+    }
+  },
+  "required": ["recipientId"],
+  "additionalProperties": false
+}

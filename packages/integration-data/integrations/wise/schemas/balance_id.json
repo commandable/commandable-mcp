@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID."
+    },
+    "balanceId": {
+      "type": ["integer", "string"],
+      "description": "Wise balance ID."
+    }
+  },
+  "required": ["profileId", "balanceId"],
+  "additionalProperties": false
+}

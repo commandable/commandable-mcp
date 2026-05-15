@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID that owns the quote."
+    },
+    "quoteId": {
+      "type": "string",
+      "description": "Wise quote UUID."
+    }
+  },
+  "required": ["profileId", "quoteId"],
+  "additionalProperties": false
+}

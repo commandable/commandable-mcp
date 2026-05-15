@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "profileId": {
+      "type": ["integer", "string"],
+      "description": "Wise profile ID."
+    },
+    "sourceBalanceId": {
+      "type": ["integer", "string"],
+      "description": "Balance ID to move money from."
+    },
+    "targetBalanceId": {
+      "type": ["integer", "string"],
+      "description": "Balance ID to move money to."
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount to move when not using quoteId."
+    },
+    "currency": {
+      "type": "string",
+      "description": "Currency for amount when not using quoteId."
+    },
+    "quoteId": {
+      "type": "string",
+      "description": "Quote ID for cross-currency balance movement."
+    },
+    "reference": {
+      "type": "string",
+      "description": "Optional movement reference."
+    },
+    "idempotenceUuid": {
+      "type": "string",
+      "description": "Optional Wise X-idempotence-uuid header. Reuse when retrying the same movement request."
+    }
+  },
+  "required": ["profileId", "sourceBalanceId", "targetBalanceId"],
+  "additionalProperties": false
+}

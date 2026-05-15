@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "targetAccountId": {
+      "type": ["integer", "string"],
+      "description": "Wise recipient account ID."
+    },
+    "quoteId": {
+      "type": "string",
+      "description": "Wise quote UUID."
+    },
+    "customerTransactionId": {
+      "type": "string",
+      "description": "Optional idempotency identifier. Reuse when retrying the same transfer request."
+    },
+    "reference": {
+      "type": "string",
+      "description": "Payment reference shown to the recipient where supported."
+    },
+    "sourceOfFunds": {
+      "type": "string",
+      "description": "Optional Wise source-of-funds value when required."
+    },
+    "transferPurpose": {
+      "type": "string",
+      "description": "Optional Wise transfer-purpose value when required."
+    },
+    "extraDetails": {
+      "type": "object",
+      "description": "Additional Wise transfer details.",
+      "additionalProperties": true
+    }
+  },
+  "required": ["targetAccountId", "quoteId"],
+  "additionalProperties": false
+}
