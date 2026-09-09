@@ -3505,14 +3505,6 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
                 "type": "string",
                 "title": "Subject / impersonated user (optional)",
                 "description": "User email to impersonate via Google Workspace domain-wide delegation. Required for most Calendar operations."
-              },
-              "scopes": {
-                "type": "array",
-                "title": "OAuth scopes (optional)",
-                "description": "Optional override for OAuth scopes. Defaults to calendar.",
-                "items": {
-                  "type": "string"
-                }
               }
             },
             "required": [
@@ -4319,14 +4311,6 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
                 "type": "string",
                 "title": "Subject / impersonated user (optional)",
                 "description": "User email to impersonate via Google Workspace domain-wide delegation. Usually required for mailbox access."
-              },
-              "scopes": {
-                "type": "array",
-                "title": "OAuth scopes (optional)",
-                "description": "Optional override for OAuth scopes. Defaults to full Gmail access.",
-                "items": {
-                  "type": "string"
-                }
               }
             },
             "required": [
@@ -5759,14 +5743,6 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
                 "type": "string",
                 "title": "Subject / impersonated user (optional)",
                 "description": "Optional user email to impersonate when using Google Workspace domain-wide delegation."
-              },
-              "scopes": {
-                "type": "array",
-                "title": "OAuth scopes (optional)",
-                "description": "Optional override for OAuth scopes. Defaults to drive + documents + spreadsheets + presentations.",
-                "items": {
-                  "type": "string"
-                }
               }
             },
             "required": [
@@ -5817,7 +5793,7 @@ export const GENERATED_INTEGRATIONS: Record<string, GeneratedIntegrationEntry> =
     "hint": null,
     "hintsByVariant": {
       "oauth_token": "Obtain a short-lived Google OAuth access token using these scopes:\n\n- `https://www.googleapis.com/auth/drive.file`\n- `https://www.googleapis.com/auth/documents`\n- `https://www.googleapis.com/auth/spreadsheets`\n- `https://www.googleapis.com/auth/presentations`\n\nYou can use the Google OAuth 2.0 Playground (`https://developers.google.com/oauthplayground/`) or your own OAuth flow.\n\nNote: OAuth access tokens are short-lived (typically 1 hour). For long-running use or full enterprise access, prefer the Service Account variant.",
-      "service_account": "Provide a Google service account JSON key.\n\nOptional fields:\n\n1. `subject` if you are using domain-wide delegation and want to impersonate a user\n2. `scopes` if you need to override the defaults\n\nDefault scopes for this integration:\n\n- `https://www.googleapis.com/auth/drive`\n- `https://www.googleapis.com/auth/documents`\n- `https://www.googleapis.com/auth/spreadsheets`\n- `https://www.googleapis.com/auth/presentations`\n\nFor full Workspace access, make sure the service account has been granted access to the relevant Drive files or shared drives, or use domain-wide delegation where appropriate."
+      "service_account": "Provide a Google service account JSON key.\n\nOptional field:\n\n- `subject` if you are using domain-wide delegation and want to impersonate a user\n\nFor full Workspace access, make sure the service account has been granted access to the relevant Drive files or shared drives, or use domain-wide delegation where appropriate."
     },
     "tools": [
       {
